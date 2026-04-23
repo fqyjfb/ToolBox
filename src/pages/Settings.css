@@ -1,0 +1,11 @@
+.settings-scroll-container {
+  height: calc(100% - 48px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-right: 8px;
+}
+
+.settings-scroll-container::-webkit-scrollbar {
+  display: none;
+}

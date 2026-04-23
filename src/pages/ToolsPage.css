@@ -1,0 +1,114 @@
+.tools-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tools-page-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tools-grid-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-auto-rows: 96px;
+  gap: 12px;
+}
+
+.tools-grid-item {
+  border-radius: 10px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.tools-grid-item-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 4px;
+}
+
+.tools-grid-item:hover {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+.tools-grid-item-name {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 4px;
+}
+
+@media (max-width: 480px) {
+  .tools-grid-wrapper {
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    grid-auto-rows: 72px;
+    gap: 8px;
+  }
+
+  .tools-grid-item-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .tools-grid-item-name {
+    font-size: 10px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .tools-grid-wrapper {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    grid-auto-rows: 80px;
+    gap: 10px;
+  }
+
+  .tools-grid-item-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .tools-grid-item-name {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tools-grid-wrapper {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    grid-auto-rows: 90px;
+    gap: 10px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .tools-grid-wrapper {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-auto-rows: 100px;
+    gap: 12px;
+  }
+
+  .tools-grid-item-icon {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .tools-grid-wrapper {
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+    grid-auto-rows: 108px;
+    gap: 14px;
+  }
+}

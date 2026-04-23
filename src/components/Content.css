@@ -1,0 +1,207 @@
+.switch {
+  font-size: 14px;
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #73C0FC;
+  transition: .4s;
+  border-radius: 30px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  border-radius: 15px;
+  left: 2px;
+  bottom: 2px;
+  z-index: 2;
+  background-color: #e8e8e8;
+  transition: .4s;
+}
+
+.sun svg {
+  position: absolute;
+  top: 2px;
+  left: 28px;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+}
+
+.moon svg {
+  fill: #73C0FC;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+}
+
+.sun svg {
+  animation: rotate 15s linear infinite;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.moon svg {
+  animation: tilt 5s linear infinite;
+}
+
+@keyframes tilt {
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.input:checked + .slider {
+  background-color: #183153;
+}
+
+.input:focus + .slider {
+  box-shadow: 0 0 1px #183153;
+}
+
+.input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+.sidebar-logo .logo-button {
+  position: relative;
+  display: flex;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  font-weight: 600;
+  transition: 0.5s;
+}
+
+.sidebar-logo .logo-hub {
+  background: #f7971d;
+  color: black;
+  padding: 0 4px;
+  border-radius: 6px;
+  animation: wee 0.5s ease;
+  transition: 0.5s;
+}
+
+.sidebar-logo .logo-ui {
+  position: relative;
+  padding: 0 4px;
+  color: #111827;
+}
+
+.sidebar-logo .logo-ui::before,
+.sidebar-logo .logo-ui::after {
+  content: "";
+  position: absolute;
+  background: radial-gradient(circle at 50% 50%, #f7471d, #f7471d00 75%);
+  width: 16px;
+  height: 16px;
+  bottom: 3px;
+  opacity: 0;
+  transition: 0.5s;
+}
+
+.sidebar-logo .logo-ui::before {
+  left: 0px;
+}
+
+.sidebar-logo .logo-ui::after {
+  left: 16px;
+}
+
+.sidebar-logo .logo-button:hover .logo-ui::before,
+.sidebar-logo .logo-button:hover .logo-ui::after {
+  opacity: 1;
+}
+
+.sidebar-logo .logo-button:active .logo-ui::before,
+.sidebar-logo .logo-button:active .logo-ui::after {
+  opacity: 0;
+}
+
+.sidebar-logo .logo-button:active {
+  scale: 0.9;
+  rotate: -6deg;
+}
+
+.sidebar-logo .logo-button:active .logo-hub {
+  animation: none;
+  rotate: -6deg;
+}
+
+@keyframes wee {
+  0% {
+    rotate: -6deg;
+  }
+  25% {
+    rotate: 16deg;
+  }
+  50% {
+    rotate: -12deg;
+  }
+  75% {
+    rotate: 8deg;
+  }
+  100% {
+    rotate: 0deg;
+  }
+}
+
+.dark .sidebar-logo .logo-button {
+  color: white;
+}
+
+.dark .sidebar-logo .logo-ui {
+  color: white;
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+input[type="search"]::-moz-search-cancel-button {
+  -moz-appearance: none;
+}
+
+input[type="search"]::-ms-clear {
+  display: none;
+  width: 0;
+  height: 0;
+}

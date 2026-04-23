@@ -1,0 +1,89 @@
+.nav-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  padding-top: 1rem;
+}
+
+.nav-sidebar .nav-item {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin: 8px 0;
+}
+
+.nav-sidebar .nav-item a {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 20%;
+  color: var(--color-text-secondary);
+  background-color: var(--color-sidebar-item);
+  transition: all 0.3s ease-in-out;
+}
+
+.nav-sidebar .nav-item a:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.nav-sidebar .nav-item a svg {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+}
+
+.nav-sidebar .nav-item a:hover {
+  color: var(--color-bg-primary);
+}
+
+.nav-sidebar .nav-item a .filled {
+  position: absolute;
+  top: auto;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background-color: var(--color-primary);
+  transition: all 0.3s ease-in-out;
+}
+
+.nav-sidebar .nav-item.active a .filled,
+.nav-sidebar .nav-item a:hover .filled {
+  height: 100%;
+}
+
+.nav-sidebar .nav-item.active a {
+  color: var(--color-bg-primary);
+}
+
+.nav-sidebar .nav-item .tooltip {
+  position: absolute;
+  top: -10px;
+  left: calc(100% + 12px);
+  transform: translateY(-50%);
+  color: var(--color-text-primary);
+  padding: 6px 10px;
+  border-radius: 15px;
+  opacity: 0;
+  visibility: hidden;
+  font-size: 14px;
+  white-space: nowrap;
+  background-color: var(--color-tooltip);
+  transition: all 0.3s ease;
+  z-index: 100;
+}
+
+.nav-sidebar .nav-item:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  top: 50%;
+}

@@ -1,0 +1,118 @@
+.todo-checkbox-wrapper {
+  --background: var(--color-bg-primary);
+  --text: var(--color-text-primary);
+  --check: var(--color-primary);
+  --disabled: var(--color-text-tertiary);
+  --border-color: var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.todo-checkbox {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative;
+  height: 18px;
+  width: 18px;
+  outline: none;
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  background: var(--background);
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.todo-checkbox:hover {
+  border-color: var(--check);
+}
+
+.todo-checkbox::before,
+.todo-checkbox::after {
+  content: "";
+  position: absolute;
+  height: 2px;
+  top: auto;
+  background: var(--check);
+  border-radius: 2px;
+}
+
+.todo-checkbox::before {
+  width: 0px;
+  right: 60%;
+  transform-origin: right bottom;
+}
+
+.todo-checkbox::after {
+  width: 0px;
+  left: 40%;
+  transform-origin: left bottom;
+}
+
+.todo-checkbox:checked {
+  border-color: var(--check);
+  background: transparent;
+}
+
+.todo-checkbox:checked::before {
+  animation: check-01 0.4s ease forwards;
+}
+
+.todo-checkbox:checked::after {
+  animation: check-02 0.4s ease forwards;
+}
+
+@keyframes check-01 {
+  0% {
+    width: 4px;
+    top: auto;
+    transform: rotate(0);
+  }
+
+  50% {
+    width: 0px;
+    top: auto;
+    transform: rotate(0);
+  }
+
+  51% {
+    width: 0px;
+    top: 9px;
+    transform: rotate(45deg);
+  }
+
+  100% {
+    width: 5px;
+    top: 9px;
+    transform: rotate(45deg);
+  }
+}
+
+@keyframes check-02 {
+  0% {
+    width: 4px;
+    top: auto;
+    transform: rotate(0);
+  }
+
+  50% {
+    width: 0px;
+    top: auto;
+    transform: rotate(0);
+  }
+
+  51% {
+    width: 0px;
+    top: 9px;
+    transform: rotate(-45deg);
+  }
+
+  100% {
+    width: 10px;
+    top: 9px;
+    transform: rotate(-45deg);
+  }
+}
