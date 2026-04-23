@@ -733,16 +733,128 @@ Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
     return { code: -1, msg: '快捷键不存在' };
   });
   
-  ipcMain.handle('get-version', () => {
+  ipcMain.handle('get-version', async () => {
     console.log('[VERSION] Get version requested');
+    let newVersion = '未知';
+    let downloadUrl = 'https://github.com/fqyjfb/ToolBox';
+    
+    try {
+      const https = require('https');
+      const options = {
+        hostname: 'api.github.com',
+        path: '/repos/fqyjfb/ToolBox/releases/latest',
+        headers: {
+          'User-Agent': 'ToolBox-App'
+        }
+      };
+      
+      const response = await new Promise((resolve, reject) => {
+        https.get(options, (res) => {
+          let data = '';
+          res.on('data', (chunk) => { data += chunk; });
+          res.on('end', () => resolve(data));
+          res.on('error', reject);
+        }).on('error', reject);
+      });
+      
+      const release = JSON.parse(response);
+      if (release.tag_name) {
+        newVersion = release.tag_name.replace('v', '');
+      }
+      if (release.assets && release.assets.length > 0) {
+        const installer = release.assets.find(a => a.name.endsWith('.exe'));
+        if (installer) {
+          downloadUrl = installer.browser_download_url;
+        }
+      }
+      console.log('[VERSION] Checked latest version:', newVersion);
+    } catch (error) {
+      console.error('[VERSION] Failed to check updates:', error);
+    }
+    
     return {
       version: app.getVersion(),
       electron: process.versions.electron,
       chrome: process.versions.chrome,
-      newVersion: '未知',
-      github: 'https://github.com',
-      download: 'https://github.com'
+      newVersion: newVersion,
+      github: 'https://github.com/fqyjfb/ToolBox',
+      download: downloadUrl
     };
+  });
+  
+  ipcMain.handle('download-update', async (event, url) => {
+    console.log('[UPDATE] Download update requested:', url);
+    try {
+      const https = require('https');
+      const path = require('path');
+      const fs = require('fs');
+      
+      const downloadPath = path.join(app.getPath('downloads'), 'ToolBox-Setup.exe');
+      
+      return new Promise((resolve, reject) => {
+        https.get(url, (response) => {
+          if (response.statusCode !== 200) {
+            reject({ code: -1, msg: `下载失败，HTTP状态码: ${response.statusCode}` });
+            return;
+          }
+          
+          const totalSize = parseInt(response.headers['content-length'] || '0', 10);
+          let downloadedSize = 0;
+          
+          const file = fs.createWriteStream(downloadPath);
+          
+          response.on('data', (chunk) => {
+            downloadedSize += chunk.length;
+            if (totalSize > 0) {
+              const progress = Math.round((downloadedSize / totalSize) * 100);
+              event.sender.send('update-download-progress', progress);
+            }
+          });
+          
+          response.pipe(file);
+          
+          file.on('finish', () => {
+            file.close();
+            console.log('[UPDATE] Download completed:', downloadPath);
+            event.sender.send('update-download-progress', 100);
+            resolve({ code: 0, msg: '下载完成', path: downloadPath });
+          });
+          
+          file.on('error', (err) => {
+            fs.unlink(downloadPath, () => {});
+            reject({ code: -1, msg: `文件写入失败: ${err.message}` });
+          });
+        }).on('error', (err) => {
+          fs.unlink(downloadPath, () => {});
+          reject({ code: -1, msg: `网络请求失败: ${err.message}` });
+        });
+      });
+    } catch (error) {
+      console.error('[UPDATE] Download error:', error);
+      return { code: -1, msg: `下载失败: ${error.message}` };
+    }
+  });
+  
+  ipcMain.handle('install-update', async (event, filePath) => {
+    console.log('[UPDATE] Install update requested:', filePath);
+    try {
+      const { execFile } = require('child_process');
+      
+      return new Promise((resolve, reject) => {
+        execFile(filePath, [], (error) => {
+          if (error) {
+            console.error('[UPDATE] Install error:', error);
+            reject({ code: -1, msg: `安装启动失败: ${error.message}` });
+          } else {
+            console.log('[UPDATE] Installer started successfully');
+            resolve({ code: 0, msg: '安装程序已启动' });
+          }
+        });
+      });
+    } catch (error) {
+      console.error('[UPDATE] Install error:', error);
+      return { code: -1, msg: `安装失败: ${error.message}` };
+    }
   });
   
   ipcMain.on('open-internal', (event, url) => {

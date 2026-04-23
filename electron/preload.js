@@ -1,10 +1,17 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 let navigateCallback = null;
+let downloadProgressCallback = null;
 
 ipcRenderer.on('navigate-to', (event, path) => {
   if (navigateCallback) {
     navigateCallback(path);
+  }
+});
+
+ipcRenderer.on('update-download-progress', (event, progress) => {
+  if (downloadProgressCallback) {
+    downloadProgressCallback(progress);
   }
 });
 
@@ -26,6 +33,11 @@ contextBridge.exposeInMainWorld('electron', {
   getShortcuts: () => ipcRenderer.invoke('get-shortcuts'),
   updateShortcut: (shortcut) => ipcRenderer.invoke('update-shortcut', shortcut),
   getVersion: () => ipcRenderer.invoke('get-version'),
+  downloadUpdate: (url) => ipcRenderer.invoke('download-update', url),
+  installUpdate: (filePath) => ipcRenderer.invoke('install-update', filePath),
+  onDownloadProgress: (callback) => {
+    downloadProgressCallback = callback;
+  },
   onNavigate: (callback) => {
     navigateCallback = callback;
   }

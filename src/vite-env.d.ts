@@ -24,15 +24,21 @@ interface VersionInfo {
   version: string;
   electron: string;
   chrome: string;
-  newVersion?: string;
-  github?: string;
-  download?: string;
+  newVersion: string;
+  github: string;
+  download: string;
 }
 
 interface UpdateResult {
   code: number;
   msg: string;
   data?: any;
+}
+
+interface DownloadResult {
+  code: number;
+  msg: string;
+  path?: string;
 }
 
 declare interface Window {
@@ -54,6 +60,9 @@ declare interface Window {
     getShortcuts: () => Promise<ShortcutItem[]>;
     updateShortcut: (shortcut: ShortcutItem & { flag?: boolean }) => Promise<UpdateResult>;
     getVersion: () => Promise<VersionInfo>;
+    downloadUpdate: (url: string) => Promise<DownloadResult>;
+    installUpdate: (filePath: string) => Promise<UpdateResult>;
+    onDownloadProgress: (callback: (progress: number) => void) => void;
     onNavigate: (callback: (path: string) => void) => void;
   };
 }

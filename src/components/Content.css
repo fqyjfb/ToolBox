@@ -112,8 +112,8 @@
 }
 
 .sidebar-logo .logo-hub {
-  background: #f7971d;
-  color: black;
+  background: #1f7bb5;
+  color: rgb(255, 255, 255);
   padding: 0 4px;
   border-radius: 6px;
   animation: wee 0.5s ease;

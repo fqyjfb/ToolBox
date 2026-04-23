@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { APP_VERSION } from '../utils/version';
 import { useToastStore } from '../store/toastStore';
-import { ExternalLink, RefreshCw, CheckCircle } from 'lucide-react';
-
-interface VersionInfo {
-  version: string;
-  electron: string;
-  chrome: string;
-  newVersion: string;
-  github: string;
-  download: string;
-}
+import { ExternalLink } from 'lucide-react';
+import GitHubButton from '../components/GitHubButton';
+import UpdateButton from '../components/UpdateButton';
 
 const About: React.FC = () => {
   const { addToast } = useToastStore();
@@ -64,12 +57,6 @@ const About: React.FC = () => {
     }
   };
 
-  const openGitHub = () => {
-    if (versionInfo?.github && window.electron) {
-      window.electron.openExternal(versionInfo.github);
-    }
-  };
-
   return (
     <div className="p-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
@@ -112,29 +99,17 @@ const About: React.FC = () => {
           </div>
         </div>
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs text-gray-500 dark:text-gray-400">检查更新</span>
-            <button
-              onClick={checkForUpdates}
-              disabled={isCheckingUpdate}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
-                isCheckingUpdate
-                  ? 'bg-gray-400 cursor-not-allowed text-white'
-                  : 'bg-primary hover:bg-primary/90 text-white'
-              }`}
-            >
-              {isCheckingUpdate ? (
-                <RefreshCw size={14} className="animate-spin" />
-              ) : hasUpdate ? (
-                <CheckCircle size={14} />
-              ) : (
-                <RefreshCw size={14} />
-              )}
-              {isCheckingUpdate ? '检查中...' : hasUpdate ? '立即更新' : '检查更新'}
-            </button>
+          <div className="flex items-center justify-center gap-3">
+            <UpdateButton 
+              isChecking={isCheckingUpdate}
+              hasUpdate={hasUpdate}
+              onCheck={checkForUpdates}
+              downloadUrl={versionInfo?.download || ''}
+            />
+            <GitHubButton />
           </div>
           {hasUpdate && versionInfo && (
-            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800">
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800">
               <p className="text-xs text-blue-700 dark:text-blue-400">
                 发现新版本: <span className="font-semibold">{versionInfo.newVersion}</span>
               </p>
@@ -146,20 +121,6 @@ const About: React.FC = () => {
               </button>
             </div>
           )}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400">项目地址</span>
-            <button
-              onClick={openGitHub}
-              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
-            >
-              GitHub <ExternalLink size={12} />
-            </button>
-          </div>
-        </div>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            ToolBox 是一个集成多种实用工具的桌面应用程序，帮助用户提高工作效率。
-          </p>
         </div>
       </div>
     </div>
