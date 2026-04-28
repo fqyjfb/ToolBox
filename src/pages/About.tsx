@@ -7,7 +7,7 @@ import UpdateButton from '../components/UpdateButton';
 
 const About: React.FC = () => {
   const { addToast } = useToastStore();
-  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+  const [versionInfo, setVersionInfo] = useState<AppVersionInfo | null>(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [hasUpdate, setHasUpdate] = useState(false);
 

@@ -20,7 +20,7 @@ interface ShortcutItem {
   isGlobal: number;
 }
 
-interface VersionInfo {
+interface AppVersionInfo {
   version: string;
   electron: string;
   chrome: string;
@@ -59,7 +59,7 @@ declare interface Window {
     clearCache: () => Promise<UpdateResult>;
     getShortcuts: () => Promise<ShortcutItem[]>;
     updateShortcut: (shortcut: ShortcutItem & { flag?: boolean }) => Promise<UpdateResult>;
-    getVersion: () => Promise<VersionInfo>;
+    getVersion: () => Promise<AppVersionInfo>;
     downloadUpdate: (url: string) => Promise<DownloadResult>;
     installUpdate: (filePath: string) => Promise<UpdateResult>;
     onDownloadProgress: (callback: (progress: number) => void) => void;
