@@ -5,9 +5,11 @@ import Toast from './components/Toast';
 import LoadingSpinner from './components/LoadingSpinner';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/AuthStore';
+import { useSidebarStore } from './store/sidebarStore';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
 import { publicRoutes, protectedRoutes, adminRoutes } from './config/routes';
+import { isElectron } from './utils/environment';
 
 const TrayNavigationHandler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useRouterNavigate();
@@ -28,12 +30,13 @@ const TrayNavigationHandler: React.FC<{ children: React.ReactNode }> = ({ childr
 };
 
 function App() {
-  const { isDark } = useThemeStore();
+  const { isDark, setTheme } = useThemeStore();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const admin = useAuthStore((state) => state.admin);
   const isLoading = useAuthStore((state) => state.isLoading);
   const [isInitialized, setIsInitialized] = useState(false);
   const isAdmin = admin && (admin.role === 'super' || admin.role === 'normal');
+  const { setVisible, setPosition } = useSidebarStore();
 
   useEffect(() => {
     if (isDark) {
@@ -42,6 +45,24 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDark]);
+
+  useEffect(() => {
+    const handleSettingChanged = (setting: { name: string; value: any }) => {
+      if (setting.name === 'isMenuVisible') {
+        setVisible(setting.value !== 0);
+      } else if (setting.name === 'leftMenuPosition') {
+        setPosition(setting.value as 'left' | 'right');
+      } else if (setting.name === 'systemTheme') {
+        setTheme(setting.value === 'dark' || (setting.value === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches));
+      }
+    };
+
+    window.electron?.onSettingChanged(handleSettingChanged);
+
+    return () => {
+      window.electron?.onSettingChanged(() => {});
+    };
+  }, [setVisible, setPosition, setTheme]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -78,13 +99,24 @@ function App() {
                     <Layout>
                       <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
                         <Routes>
-                          {publicRoutes.map((route) => (
-                            <Route 
-                              key={route.path} 
-                              path={route.path} 
-                              element={route.element} 
-                            />
-                          ))}
+                          {publicRoutes.map((route) => {
+                            if (route.path === '/launch' && !isElectron()) {
+                              return (
+                                <Route 
+                                  key={route.path} 
+                                  path={route.path} 
+                                  element={<Navigate to="/" replace />} 
+                                />
+                              );
+                            }
+                            return (
+                              <Route 
+                                key={route.path} 
+                                path={route.path} 
+                                element={route.element} 
+                              />
+                            );
+                          })}
 
                           {isAuthenticated ? (
                             <>

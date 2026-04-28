@@ -3,6 +3,7 @@ const path = require('path');
 const url = require('url');
 const fs = require('fs');
 const crypto = require('crypto');
+const { exec } = require('child_process');
 
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 const shortcutsPath = path.join(app.getPath('userData'), 'shortcuts.json');
@@ -76,11 +77,43 @@ const saveShortcuts = (shortcuts) => {
 
 let mainWindow = null;
 let tray = null;
+let memoryCleanupTimer = null;
 
 const iconCacheFolder = path.join(app.getPath('userData'), 'icon-cache');
 if (!fs.existsSync(iconCacheFolder)) {
   fs.mkdirSync(iconCacheFolder, { recursive: true });
 }
+
+const startMemoryOptimization = () => {
+  stopMemoryOptimization();
+  
+  const settings = loadSettings();
+  if (!settings.isMemoryOptimizationEnabled) return;
+
+  const cleanupInterval = 5 * 60 * 1000;
+
+  const cleanup = () => {
+    try {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.executeJavaScript('window.gc && window.gc();');
+        mainWindow.webContents.send('memory-cleanup');
+      }
+    } catch (error) {
+      console.error('[MEMORY] Memory cleanup error:', error);
+    }
+  };
+
+  memoryCleanupTimer = setInterval(cleanup, cleanupInterval);
+  console.log('[MEMORY] Memory optimization started');
+};
+
+const stopMemoryOptimization = () => {
+  if (memoryCleanupTimer) {
+    clearInterval(memoryCleanupTimer);
+    memoryCleanupTimer = null;
+    console.log('[MEMORY] Memory optimization stopped');
+  }
+};
 
 const generateCacheFileName = (filePath) => {
   return crypto.createHash('sha1').update(filePath).digest('hex');
@@ -410,8 +443,8 @@ const createWindow = () => {
       mainWindow.loadURL('data:text/html,<h1>Error</h1><p>Could not find index.html. Please check the console for details.</p>');
     }
   } else {
-    console.log('Running in development mode, loading from http://localhost:5173');
-    mainWindow.loadURL('http://localhost:5173');
+    console.log('Running in development mode, loading from http://localhost:5174');
+    mainWindow.loadURL('http://localhost:5174');
     mainWindow.webContents.openDevTools();
   }
   
@@ -433,6 +466,49 @@ const createWindow = () => {
   mainWindow.on('minimize', (event) => {
     event.preventDefault();
     mainWindow.hide();
+  });
+
+  let isAdjusting = false;
+  mainWindow.on('move', () => {
+    const settings = loadSettings();
+    if (!settings.isWindowEdgeAdsorption) return;
+    if (isAdjusting) return;
+    
+    const { screen } = require('electron');
+    const windowBounds = mainWindow.getBounds();
+    const centerPoint = {
+      x: windowBounds.x + windowBounds.width / 2,
+      y: windowBounds.y + windowBounds.height / 2
+    };
+
+    const display = screen.getDisplayNearestPoint(centerPoint);
+    const workArea = display.workArea;
+    const scaleFactor = display.scaleFactor;
+    const threshold = 30 * scaleFactor;
+
+    const leftEdgeDistance = windowBounds.x - workArea.x;
+    const rightEdgeDistance = (workArea.x + workArea.width) - (windowBounds.x + windowBounds.width);
+    let newBounds = { ...windowBounds};
+
+    if (Math.abs(leftEdgeDistance) <= threshold) {
+      Object.assign(newBounds, {
+        x: workArea.x,
+        y: workArea.y,
+        height: workArea.height
+      });
+    }
+    else if (Math.abs(rightEdgeDistance) <= threshold) {
+      Object.assign(newBounds, {
+        x: workArea.x + workArea.width - windowBounds.width,
+        y: workArea.y,
+        height: workArea.height
+      });
+    }
+    if (JSON.stringify(newBounds) !== JSON.stringify(windowBounds)) {
+      isAdjusting = true;
+      mainWindow.setBounds(newBounds, true);
+      isAdjusting = false;
+    }
   });
 
   const { ipcMain } = require('electron');
@@ -678,22 +754,56 @@ Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
       });
     }
     
+    if (setting.name === 'isMemoryOptimizationEnabled') {
+      startMemoryOptimization();
+    }
+    
+    mainWindow?.webContents.send('setting-changed', { name: setting.name, value: setting.value });
+    
     return { code: 0, msg: '设置已更新' };
   });
   
   ipcMain.handle('clear-cache', async () => {
     console.log('[CACHE] Clear cache requested');
     try {
-      const cacheFolder = path.join(app.getPath('userData'), 'icon-cache');
-      if (fs.existsSync(cacheFolder)) {
-        fs.rmSync(cacheFolder, { recursive: true, force: true });
-        fs.mkdirSync(cacheFolder, { recursive: true });
+      const userDataPath = app.getPath('userData');
+      
+      const cacheFolders = [
+        path.join(userDataPath, 'icon-cache'),
+        path.join(userDataPath, 'Cache'),
+        path.join(userDataPath, 'Code Cache'),
+        path.join(userDataPath, 'GPUCache'),
+        path.join(userDataPath, 'Service Worker')
+      ];
+
+      cacheFolders.forEach(folder => {
+        if (fs.existsSync(folder)) {
+          try {
+            fs.rmSync(folder, { recursive: true, force: true });
+            console.log(`[CACHE] Cleared folder: ${folder}`);
+          } catch (folderError) {
+            console.warn(`[CACHE] Failed to clear folder ${folder}:`, folderError.message);
+          }
+        }
+      });
+
+      fs.mkdirSync(path.join(userDataPath, 'icon-cache'), { recursive: true });
+
+      if (mainWindow && mainWindow.webContents) {
+        try {
+          await mainWindow.webContents.session.clearCache();
+          await mainWindow.webContents.session.clearStorageData();
+          console.log('[CACHE] Cleared browser session cache');
+        } catch (sessionError) {
+          console.warn('[CACHE] Failed to clear session cache:', sessionError.message);
+        }
       }
-      console.log('[CACHE] Cache cleared successfully');
+
+      console.log('[CACHE] All cache cleared successfully');
       return { code: 0, msg: '缓存已清除' };
     } catch (error) {
       console.error('[CACHE] Failed to clear cache:', error);
-      return { code: -1, msg: '清除缓存失败' };
+      return { code: -1, msg: '清除缓存失败: ' + error.message };
     }
   });
   
@@ -1073,18 +1183,56 @@ const createTray = () => {
 
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: '显示/隐藏',
+        label: '系统关机',
         click: () => {
-          console.log('Toggle visibility clicked');
-          if (mainWindow && mainWindow.isVisible()) {
-            mainWindow.hide();
-          } else if (mainWindow) {
-            mainWindow.show();
-          }
+          console.log('Shutdown clicked');
+          exec('shutdown /s /t 0', (error) => {
+            if (error) {
+              console.error('Error shutting down:', error);
+              dialog.showErrorBox('错误', '无法执行关机操作');
+            }
+          });
         },
       },
       {
-        label: '设置',
+        label: '系统重启',
+        click: () => {
+          console.log('Restart clicked');
+          exec('shutdown /r /t 0', (error) => {
+            if (error) {
+              console.error('Error restarting:', error);
+              dialog.showErrorBox('错误', '无法执行重启操作');
+            }
+          });
+        },
+      },
+      {
+        label: '清空回收站',
+        click: () => {
+          console.log('Empty Recycle Bin clicked');
+          exec('powershell -Command "Clear-RecycleBin -Force; exit 0"', (error, stdout, stderr) => {
+            console.log('Recycle bin command completed');
+            dialog.showMessageBox({
+              type: 'info',
+              title: '提示',
+              message: '回收站已清空',
+            });
+          });
+        },
+      },
+      {
+        type: 'separator',
+      },
+      {
+        label: '程序重启',
+        click: () => {
+          console.log('Restart ToolBox clicked');
+          app.relaunch();
+          app.quit();
+        },
+      },
+      {
+        label: '程序设置',
         click: () => {
           console.log('Settings clicked');
           if (mainWindow) {
@@ -1094,7 +1242,10 @@ const createTray = () => {
         },
       },
       {
-        label: '退出',
+        type: 'separator',
+      },
+      {
+        label: '程序退出',
         click: () => {
           console.log('Quit clicked');
           app.quit();

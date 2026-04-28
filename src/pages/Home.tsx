@@ -5,22 +5,33 @@ import { supabase } from '../services/supabase';
 import { websiteService } from '../services/WebsiteService';
 import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps } from '../utils/quickLaunch';
 import { loadHomeTools } from '../utils/homeTools';
+import { isElectron } from '../utils/environment';
+import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../types/hotNews';
 import SearchBar from '../components/home/SearchBar';
 import FavoritesBar, { Bookmark } from '../components/home/FavoritesBar';
 import ToolGrid from '../components/home/ToolGrid';
-import NewsCard from '../components/home/NewsCard';
-import HistoryCard from '../components/home/HistoryCard';
+import NewsContainer from '../components/home/NewsContainer';
 import QuickLaunchBar from '../components/home/QuickLaunchBar';
 import './Home.css';
 
 const Home: React.FC = () => {
+  const isDesktop = isElectron();
+  
   const [sixtySecondsData, setSixtySecondsData] = useState<string[] | null>(null);
   const [sixtySecondsLoading, setSixtySecondsLoading] = useState(false);
   const [sixtySecondsError, setSixtySecondsError] = useState('');
 
-  const [todayInHistoryData, setTodayInHistoryData] = useState<any[] | null>(null);
+  const [todayInHistoryData, setTodayInHistoryData] = useState<TodayInHistoryItem[] | null>(null);
   const [todayInHistoryLoading, setTodayInHistoryLoading] = useState(false);
   const [todayInHistoryError, setTodayInHistoryError] = useState('');
+
+  const [itNewsData, setItNewsData] = useState<ItNewsItem[] | null>(null);
+  const [itNewsLoading, setItNewsLoading] = useState(false);
+  const [itNewsError, setItNewsError] = useState('');
+
+  const [aiNewsData, setAiNewsData] = useState<AiNewsItem[] | null>(null);
+  const [aiNewsLoading, setAiNewsLoading] = useState(false);
+  const [aiNewsError, setAiNewsError] = useState('');
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [favorites, setFavorites] = useState<Bookmark[]>(() => {
@@ -83,6 +94,42 @@ const Home: React.FC = () => {
       setTodayInHistoryError('网络错误，请检查网络连接后重试');
     } finally {
       setTodayInHistoryLoading(false);
+    }
+  }, []);
+
+  const fetchItNews = useCallback(async () => {
+    setItNewsLoading(true);
+    setItNewsError('');
+    
+    try {
+      const data = await hotNewsApi.getItNews();
+      if (data) {
+        setItNewsData(data.data);
+      } else {
+        setItNewsError('获取数据失败，请稍后重试');
+      }
+    } catch {
+      setItNewsError('网络错误，请检查网络连接后重试');
+    } finally {
+      setItNewsLoading(false);
+    }
+  }, []);
+
+  const fetchAiNews = useCallback(async () => {
+    setAiNewsLoading(true);
+    setAiNewsError('');
+    
+    try {
+      const data = await hotNewsApi.getAiNews();
+      if (data) {
+        setAiNewsData(data.data.news);
+      } else {
+        setAiNewsError('获取数据失败，请稍后重试');
+      }
+    } catch {
+      setAiNewsError('网络错误，请检查网络连接后重试');
+    } finally {
+      setAiNewsLoading(false);
     }
   }, []);
 
@@ -170,9 +217,13 @@ const Home: React.FC = () => {
   useEffect(() => {
     fetchSixtySeconds();
     fetchTodayInHistory();
+    fetchItNews();
+    fetchAiNews();
     checkAuth();
-    fetchHomeQuickLaunchApps();
-  }, [fetchSixtySeconds, fetchTodayInHistory, checkAuth, fetchHomeQuickLaunchApps]);
+    if (isDesktop) {
+      fetchHomeQuickLaunchApps();
+    }
+  }, [fetchSixtySeconds, fetchTodayInHistory, fetchItNews, fetchAiNews, checkAuth, fetchHomeQuickLaunchApps, isDesktop]);
 
   useEffect(() => {
     if (shouldFetchFavorites) {
@@ -198,37 +249,43 @@ const Home: React.FC = () => {
 
   return (
     <div className="p-6 h-full">
-      <SearchBar searchTypes={searchTypes} />
-      
-      <div>
+      {/* 搜索区域 - 完全居中 */}
+      <div className="flex flex-col items-center gap-2 mb-6">
+        <SearchBar searchTypes={searchTypes} />
         <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />
+      </div>
       
-        <div className="flex gap-6">
+      <div className="flex gap-6 items-stretch">
           <ToolGrid tools={homeTools} onToolClick={navigateToTool} />
           
-          <div className="flex-1 flex flex-row gap-6">
-            <NewsCard 
-              loading={sixtySecondsLoading} 
-              error={sixtySecondsError} 
-              newsData={sixtySecondsData} 
-              onRetry={fetchSixtySeconds} 
-            />
-            <HistoryCard 
-              loading={todayInHistoryLoading} 
-              error={todayInHistoryError} 
-              historyData={todayInHistoryData} 
-              onRetry={fetchTodayInHistory} 
-            />
-          </div>
-        </div>
+          <NewsContainer 
+            sixtySecondsLoading={sixtySecondsLoading}
+            sixtySecondsError={sixtySecondsError}
+            sixtySecondsData={sixtySecondsData}
+            historyLoading={todayInHistoryLoading}
+            historyError={todayInHistoryError}
+            historyData={todayInHistoryData}
+            itNewsLoading={itNewsLoading}
+            itNewsError={itNewsError}
+            itNewsData={itNewsData}
+            aiNewsLoading={aiNewsLoading}
+            aiNewsError={aiNewsError}
+            aiNewsData={aiNewsData}
+            onRetrySixtySeconds={fetchSixtySeconds}
+            onRetryHistory={fetchTodayInHistory}
+            onRetryItNews={fetchItNews}
+            onRetryAiNews={fetchAiNews}
+          />
+      </div>
 
+      {isDesktop && (
         <QuickLaunchBar 
           apps={homeQuickLaunchApps} 
           onLaunch={handleLaunchApp} 
           onRemove={handleRemoveHomeQuickLaunch}
           onReorder={handleQuickLaunchReorder}
         />
-      </div>
+      )}
     </div>
   );
 };

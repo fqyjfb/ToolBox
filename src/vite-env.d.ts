@@ -64,5 +64,6 @@ declare interface Window {
     installUpdate: (filePath: string) => Promise<UpdateResult>;
     onDownloadProgress: (callback: (progress: number) => void) => void;
     onNavigate: (callback: (path: string) => void) => void;
+    onSettingChanged: (callback: (setting: { name: string; value: any }) => void) => void;
   };
 }

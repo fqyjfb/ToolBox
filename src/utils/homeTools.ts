@@ -15,13 +15,23 @@ export const defaultHomeTools: HomeToolItem[] = [
   { id: 'nav', name: '导航', path: '/nav', color: '#f5a623', textColor: '#fff', iconName: 'Globe' },
   { id: 'account', name: '账号', path: '/tools/account', color: '#00bcd4', textColor: '#fff', iconName: 'Rocket' },
   { id: 'news', name: '新闻', path: '/news', color: '#e91e63', textColor: '#fff', iconName: 'MessageSquare' },
+  { id: 'translate', name: '在线翻译', path: '/tools/translate', color: '#2196F3', textColor: '#fff', iconName: 'Languages' },
 ];
 
 export const loadHomeTools = (): HomeToolItem[] => {
   const savedTools = localStorage.getItem(HOME_TOOLS_KEY);
   if (savedTools) {
     try {
-      return JSON.parse(savedTools);
+      const parsedTools = JSON.parse(savedTools);
+      if (parsedTools.length < defaultHomeTools.length) {
+        const updatedTools = [...parsedTools];
+        for (let i = parsedTools.length; i < defaultHomeTools.length; i++) {
+          updatedTools.push(defaultHomeTools[i]);
+        }
+        saveHomeTools(updatedTools);
+        return updatedTools;
+      }
+      return parsedTools;
     } catch {
       return [...defaultHomeTools];
     }

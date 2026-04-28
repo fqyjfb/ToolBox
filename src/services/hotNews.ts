@@ -1,4 +1,5 @@
 import { cacheService } from './cacheService';
+import { baseApi } from './baseApi';
 import type {
   HotNewsResponse,
   DouyinHotItem,
@@ -14,13 +15,11 @@ import type {
   UnifiedHotItem,
   HotNewsPlatform,
   SixtySecondsResponse,
-  TodayInHistoryResponse
+  TodayInHistoryResponse,
+  ItNewsResponse,
+  AiNewsResponse
 } from '../types/hotNews';
 
-// 接口基础URL
-const BASE_URL = 'https://60s.crystelf.top/v2';
-
-// 平台名称映射
 const PLATFORM_NAMES: Record<HotNewsPlatform, string> = {
   douyin: '抖音',
   rednote: '小红书',
@@ -34,44 +33,23 @@ const PLATFORM_NAMES: Record<HotNewsPlatform, string> = {
   maoyan: '猫眼电影'
 };
 
-// 通用请求方法
 const fetchData = async <T>(url: string, options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<T | null> => {
-  try {
-    const cacheKey = `hot_news_${url.replace(BASE_URL, '').replace(/\//g, '_')}`;
-    
-    // 检查缓存
-    if (!options?.forceRefresh) {
-      const cachedData = cacheService.get<T>(cacheKey);
-      if (cachedData) {
-        return cachedData;
-      }
+  const cacheKey = `hot_news_${url.replace(/\//g, '_')}`;
+  
+  if (!options?.forceRefresh) {
+    const cachedData = cacheService.get<T>(cacheKey);
+    if (cachedData) {
+      return cachedData;
     }
-    
-    // 发送请求
-    const response = await fetch(`${BASE_URL}${url}`, {
-      method: 'GET',
-      signal: options?.signal,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (!response.ok) {
-      return null;
-    }
-    
-    const data = await response.json() as T;
-    
-    // 设置缓存，缓存时间30分钟
-    cacheService.set(cacheKey, data, 30 * 60 * 1000, 'hotNews');
-    
-    return data;
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      // 请求已中止，无需处理
-    }
-    return null;
   }
+  
+  const data = await baseApi.fetch<T>(url, options);
+  
+  if (data) {
+    cacheService.set(cacheKey, data, 30 * 60 * 1000, 'hotNews');
+  }
+  
+  return data;
 };
 
 // 抖音热点
@@ -375,5 +353,15 @@ export const hotNewsApi = {
   // 获取历史上的今天数据
   async getTodayInHistory(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
     return await fetchData<TodayInHistoryResponse>('/today-in-history', options);
+  },
+  
+  // 获取实时IT资讯
+  async getItNews(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
+    return await fetchData<ItNewsResponse>('/it-news', options);
+  },
+  
+  // 获取AI资讯快报
+  async getAiNews(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
+    return await fetchData<AiNewsResponse>('/ai-news', options);
   }
 };

@@ -432,8 +432,8 @@
 
 .tools-grid {
   display: grid;
-  grid-template-columns: repeat(var(--tools-grid-columns), var(--tools-grid-item-size));
-  grid-template-rows: repeat(var(--tools-grid-rows), var(--tools-grid-item-size));
+  grid-template-columns: repeat(3, var(--tools-grid-item-size));
+  grid-template-rows: repeat(3, var(--tools-grid-item-size));
   gap: var(--tools-grid-gap);
 }
 
@@ -463,11 +463,20 @@
   z-index: 10;
 }
 
-.tools-item--wide {
+.tools-item--weather {
+  grid-row: span 2;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  overflow: visible !important;
+  position: relative;
+  z-index: 1;
+}
+
+.tools-item--news {
   grid-column: span 2;
 }
 
-.tools-item--wide:hover {
+.tools-item--news:hover {
   transform: scale(var(--tools-item-hover-scale));
 }
 

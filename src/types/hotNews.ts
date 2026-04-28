@@ -259,5 +259,40 @@ export interface TodayInHistoryResponse {
   message: string;
 }
 
+// IT资讯数据类型
+export interface ItNewsItem {
+  title: string;
+  description: string;
+  link: string;
+  created: string;
+  created_at: number;
+}
+
+export interface ItNewsResponse {
+  code: number;
+  data: ItNewsItem[];
+  message: string;
+}
+
+// AI资讯数据类型
+export interface AiNewsItem {
+  title: string;
+  detail: string;
+  link: string;
+  source: string;
+  date: string;
+}
+
+export interface AiNewsData {
+  date: string;
+  news: AiNewsItem[];
+}
+
+export interface AiNewsResponse {
+  code: number;
+  data: AiNewsData;
+  message: string;
+}
+
 // 热点平台类型
 export type HotNewsPlatform = 'douyin' | 'rednote' | 'bilibili' | 'quark' | 'weibo' | 'baidu' | 'toutiao' | 'zhihu' | 'dongchedi' | 'maoyan'

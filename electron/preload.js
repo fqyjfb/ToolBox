@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 let navigateCallback = null;
 let downloadProgressCallback = null;
+let settingChangedCallback = null;
 
 ipcRenderer.on('navigate-to', (event, path) => {
   if (navigateCallback) {
@@ -12,6 +13,12 @@ ipcRenderer.on('navigate-to', (event, path) => {
 ipcRenderer.on('update-download-progress', (event, progress) => {
   if (downloadProgressCallback) {
     downloadProgressCallback(progress);
+  }
+});
+
+ipcRenderer.on('setting-changed', (event, setting) => {
+  if (settingChangedCallback) {
+    settingChangedCallback(setting);
   }
 });
 
@@ -40,5 +47,8 @@ contextBridge.exposeInMainWorld('electron', {
   },
   onNavigate: (callback) => {
     navigateCallback = callback;
+  },
+  onSettingChanged: (callback) => {
+    settingChangedCallback = callback;
   }
 });

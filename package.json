@@ -1,11 +1,12 @@
 {
   "name": "toolbox1.0",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "commonjs",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
+    "dev:electron": "vite --mode electron",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

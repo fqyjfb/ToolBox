@@ -24,7 +24,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ searchTypes }) => {
   };
 
   return (
-    <div className="mb-6">
+    <div>
       <div className="max-w-2xl w-full mx-auto">
         <div className="flex flex-wrap gap-2 mb-2 justify-center">
           {searchTypes.map((type) => (

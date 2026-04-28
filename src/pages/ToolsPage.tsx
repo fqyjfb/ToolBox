@@ -4,7 +4,7 @@ import {
   Phone, RefreshCw, MessageSquare, Clipboard, CheckSquare, Key,
   FileCode, Globe, Smile, Clock, ArrowUpDown, Hash, Copy,
   Table, Link, Map, QrCode, Code, AtSign, Tag, AlignLeft, 
-  Code2, Binary, Braces, Navigation, Newspaper
+  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud
 } from 'lucide-react';
 import ContextMenu, { ContextMenuItem } from '../components/ContextMenu';
 import { HomeToolItem, loadHomeTools, replaceHomeTool } from '../utils/homeTools';
@@ -37,6 +37,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Braces,
   Navigation,
   Newspaper,
+  Languages,
 };
 
 const ToolsPage = () => {
@@ -52,12 +53,14 @@ const ToolsPage = () => {
     { id: 'quick-reply', name: '快捷回复', icon: MessageSquare, path: '/tools/quick-reply', color: '#e91e63', textColor: '#fff' },
     { id: 'cloud-clipboard', name: '云剪贴板', icon: Clipboard, path: '/tools/cloud-clipboard', color: '#67aaf7', textColor: '#fff' },
     { id: 'account', name: '账号管理', icon: Key, path: '/tools/account', color: '#00bcd4', textColor: '#fff' },
+    { id: 'weather', name: '天气预报', icon: Cloud, path: '/tools/weather', color: '#3b82f6', textColor: '#fff' },
     { id: 'navigation', name: '导航', icon: Navigation, path: '/nav', color: '#4caf50', textColor: '#fff' },
     { id: 'news', name: '新闻', icon: Newspaper, path: '/news', color: '#ff9800', textColor: '#fff' },
   ];
 
   const newTools = [
     { id: 'exchange', name: '汇率换算', icon: RefreshCw, path: '/tools/exchange', color: '#f5a623', textColor: '#fff' },
+    { id: 'translate', name: '在线翻译', icon: Languages, path: '/tools/translate', color: '#3b82f6', textColor: '#fff' },
     { id: 'country-code', name: '区号查询', icon: Phone, path: '/tools/country-code', color: '#9c27b0', textColor: '#fff' },
     { id: 'markdown-to-wechat', name: 'Markdown', icon: FileCode, path: '/tools/markdown-to-wechat', color: '#3b82f6', textColor: '#fff' },
     { id: 'ip-info', name: 'IP地址查询', icon: Globe, path: '/tools/ip-info', color: '#06b6d4', textColor: '#fff' },

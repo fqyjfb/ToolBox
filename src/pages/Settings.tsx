@@ -158,6 +158,7 @@ return (
         <input
           type="text"
           value={displayKey}
+          onChange={() => {}}
           onFocus={() => { setIsEditing(true); setCurrentKey(''); }}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
@@ -406,17 +407,27 @@ const Settings: React.FC = () => {
     setBtnLoading(true);
     setBtnText('正在清除缓存');
     try {
-      if (window.electron) {
-        const result = await window.electron.clearCache();
-        if (result.code === 0) {
-          addToast({ type: 'success', message: '缓存已清除' });
-        } else {
-          addToast({ type: 'error', message: result.msg });
-        }
+      if (!window.electron) {
+        addToast({ type: 'error', message: '无法访问Electron API' });
+        return;
+      }
+      
+      if (!window.electron.clearCache) {
+        addToast({ type: 'error', message: '清除缓存API不可用' });
+        return;
+      }
+      
+      const result = await window.electron.clearCache();
+      
+      if (result && result.code === 0) {
+        addToast({ type: 'success', message: '缓存已清除' });
+      } else {
+        const errorMsg = result?.msg || '清除缓存失败';
+        addToast({ type: 'error', message: errorMsg });
       }
     } catch (error) {
-      console.error('Failed to clear cache:', error);
-      addToast({ type: 'error', message: '清除缓存失败' });
+      const errorMessage = error instanceof Error ? error.message : '清除缓存失败';
+      addToast({ type: 'error', message: errorMessage });
     } finally {
       setTimeout(() => {
         setBtnLoading(false);
@@ -575,6 +586,31 @@ const Settings: React.FC = () => {
                     addToast({ type: 'success', message: `浏览器设置已更新为${mode === 'internal' ? '程序弹窗' : '默认浏览器'}` });
                   }} 
                 />
+              </div>
+              <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <span className="text-sm text-gray-700 dark:text-gray-300">天气城市</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    id="weatherCityInput"
+                    defaultValue={localStorage.getItem('weatherCity') || '南京'}
+                    placeholder="请输入城市名称"
+                    className="w-28 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  />
+                  <button
+                    onClick={() => {
+                      const input = document.getElementById('weatherCityInput') as HTMLInputElement;
+                      const city = input.value.trim();
+                      if (city) {
+                        localStorage.setItem('weatherCity', city);
+                        addToast({ type: 'success', message: `天气城市已设置为 ${city}` });
+                      }
+                    }}
+                    className="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+                  >
+                    保存
+                  </button>
+                </div>
               </div>
             </div>
           </div>

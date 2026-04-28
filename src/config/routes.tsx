@@ -18,6 +18,7 @@ const ToolsPage = React.lazy(() => import('../pages/ToolsPage'));
 
 const CountryCodePage = React.lazy(() => import('../pages/tools/country-code'));
 const ExchangePage = React.lazy(() => import('../pages/tools/exchange'));
+const TranslatePage = React.lazy(() => import('../pages/tools/translate'));
 const CloudClipboardPage = React.lazy(() => import('../pages/tools/cloud-clipboard'));
 const QuickReplyPage = React.lazy(() => import('../pages/tools/quick-reply'));
 const TodoManagerPage = React.lazy(() => import('../pages/tools/todo'));
@@ -43,9 +44,14 @@ const HtmlToTextPage = React.lazy(() => import('../pages/tools/html-to-text'));
 const SqlMinifierPage = React.lazy(() => import('../pages/tools/sql-minifier'));
 const HexEncodePage = React.lazy(() => import('../pages/tools/hex-encode'));
 const HexDecodePage = React.lazy(() => import('../pages/tools/hex-decode'));
+const WeatherPage = React.lazy(() => import('../pages/tools/weather'));
 
 const AdminDashboardPage = React.lazy(() => import('../pages/admin'));
 const AdminWebsitesPage = React.lazy(() => import('../pages/admin/websites'));
+const AdminUsersPage = React.lazy(() => import('../pages/admin/users'));
+const AdminUserEditPage = React.lazy(() => import('../pages/admin/user-edit'));
+const AdminToolsPage = React.lazy(() => import('../pages/admin/tools'));
+const AdminDatabasePage = React.lazy(() => import('../pages/admin/database'));
 
 export const publicRoutes: RouteConfig[] = [
   { path: '/', element: <Home /> },
@@ -55,11 +61,13 @@ export const publicRoutes: RouteConfig[] = [
   { path: '/login', element: <LoginPage /> },
   { path: '/settings', element: <Settings /> },
   { path: '/about', element: <About /> },
+  { path: '/tools/weather', element: <WeatherPage /> },
 ];
 
 export const protectedRoutes: RouteConfig[] = [
   { path: '/tools', element: <ToolsPage />, requiresAuth: true },
   { path: '/tools/exchange', element: <ExchangePage />, requiresAuth: true },
+  { path: '/tools/translate', element: <TranslatePage />, requiresAuth: true },
   { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
   { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
   { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
@@ -91,4 +99,8 @@ export const protectedRoutes: RouteConfig[] = [
 export const adminRoutes: RouteConfig[] = [
   { path: '/admin', element: <AdminDashboardPage />, requiresAdmin: true },
   { path: '/admin/websites', element: <AdminWebsitesPage />, requiresAdmin: true },
+  { path: '/admin/users', element: <AdminUsersPage />, requiresAdmin: true },
+  { path: '/admin/users/edit/:id', element: <AdminUserEditPage />, requiresAdmin: true },
+  { path: '/admin/tools', element: <AdminToolsPage />, requiresAdmin: true },
+  { path: '/admin/database', element: <AdminDatabasePage />, requiresAdmin: true },
 ];

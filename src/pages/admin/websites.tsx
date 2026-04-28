@@ -10,6 +10,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import Pagination from '../../components/Pagination';
 import ContextMenu from '../../components/ContextMenu';
 import Switch from '../../components/Switch';
+import CategoryManager, { CategoryItem } from '../../components/CategoryManager';
 import linkIcon from '../../assets/react.svg';
 
 const isForeignDomain = (url: string): boolean => {
@@ -128,24 +129,6 @@ const AdminWebsitesPage: React.FC = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
   const [bookmarkError, setBookmarkError] = useState('');
   
-  // 分类相关状态
-  const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
-  const [isManageCategoryModalOpen, setIsManageCategoryModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [categoryError, setCategoryError] = useState('');
-  
-  // 内联编辑状态
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
-  const [editingCategoryName, setEditingCategoryName] = useState('');
-  
-  // 添加子分类状态
-  const [addingSubCategoryParentId, setAddingSubCategoryParentId] = useState<string | null>(null);
-  const [newSubCategoryName, setNewSubCategoryName] = useState('');
-  
-  // 折叠状态
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  
   // 删除确认对话框状态
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -181,7 +164,7 @@ const AdminWebsitesPage: React.FC = () => {
     checkAuth();
   }, [isAuthenticated, getCurrentAdmin]);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
@@ -209,13 +192,29 @@ const AdminWebsitesPage: React.FC = () => {
     } catch (err: any) {
       addToast({ message: err.message || '加载分类失败', type: 'error' });
     }
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
+  const getAllCategoryIds = (categoryId: string): string[] => {
+    const categoryIds: string[] = [categoryId];
+    const mainCategory = categories.find(cat => cat.id === categoryId);
+    if (mainCategory && mainCategory.children) {
+      mainCategory.children.forEach(child => {
+        categoryIds.push(child.id);
+      });
+    }
+    return categoryIds;
   };
 
-  const loadData = async (currentPage: number = 1, currentPageSize: number = 10, searchTerm: string = '', categoryId: string | null = null) => {
-    setIsLoading(true);
+  const loadData = async (currentPage: number = 1, currentPageSize: number = 10, searchTerm: string = '', categoryId: string | null = null, showLoading: boolean = true) => {
+    if (showLoading) {
+      setIsLoading(true);
+    }
     
     try {
-      await loadCategories();
       
       let query = supabase.from('bookmarks').select('*');
       
@@ -224,7 +223,8 @@ const AdminWebsitesPage: React.FC = () => {
       }
       
       if (categoryId) {
-        query = query.eq('category_id', categoryId);
+        const categoryIds = getAllCategoryIds(categoryId);
+        query = query.in('category_id', categoryIds);
       }
       
       let countQuery = supabase.from('bookmarks').select('*', { count: 'exact', head: true });
@@ -232,7 +232,8 @@ const AdminWebsitesPage: React.FC = () => {
         countQuery = countQuery.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,url.ilike.%${searchTerm}%`);
       }
       if (categoryId) {
-        countQuery = countQuery.eq('category_id', categoryId);
+        const categoryIds = getAllCategoryIds(categoryId);
+        countQuery = countQuery.in('category_id', categoryIds);
       }
       const { count, error: countError } = await countQuery;
       
@@ -257,7 +258,9 @@ const AdminWebsitesPage: React.FC = () => {
       setBookmarkError(err.message || '加载数据失败');
       addToast({ message: err.message || '加载数据失败', type: 'error' });
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -294,7 +297,7 @@ const AdminWebsitesPage: React.FC = () => {
   const handleCategorySelect = (categoryId: string | null) => {
     setSelectedCategory(categoryId);
     setPage(1);
-    loadData(1, pageSize, searchQuery, categoryId);
+    loadData(1, pageSize, searchQuery, categoryId, false);
   };
 
   const getMainCategories = () => {
@@ -435,13 +438,38 @@ const AdminWebsitesPage: React.FC = () => {
         addToast({ message: '删除成功', type: 'success' });
       }
       
-      loadData(page, pageSize, searchQuery, deleteType === 'category' && selectedCategory === deleteTargetId ? null : selectedCategory);
+      if (deleteType === 'category') {
+        await loadCategories();
+      } else {
+        loadData(page, pageSize, searchQuery, selectedCategory);
+      }
     } catch (err: any) {
       addToast({ message: err.message || '删除失败', type: 'error' });
     }
     
     setIsDeleteConfirmOpen(false);
     setDeleteTargetId(null);
+  };
+
+  const handleBookmarkTogglePublic = async (bookmarkId: string, currentState: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('bookmarks')
+        .update({ is_public: !currentState })
+        .eq('id', bookmarkId);
+      
+      if (error) {
+        throw new Error('更新公开状态失败: ' + error.message);
+      }
+      
+      setFilteredBookmarks(prev => prev.map(bookmark => 
+        bookmark.id === bookmarkId ? { ...bookmark, is_public: !currentState } : bookmark
+      ));
+      
+      addToast({ message: `书签已${currentState ? '设为私有' : '设为公开'}`, type: 'success' });
+    } catch (err: any) {
+      addToast({ message: err.message || '更新失败', type: 'error' });
+    }
   };
 
   const handleBookmarkInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -518,18 +546,13 @@ const AdminWebsitesPage: React.FC = () => {
     }
   };
 
-  const handleAddCategorySubmit = async () => {
-    if (!newCategoryName.trim()) {
-      setCategoryError('分类名称不能为空');
-      return;
-    }
-
+  const handleAddCategory = async (name: string, parentId: string | null) => {
     try {
       const { error } = await supabase
         .from('categories')
         .insert({
-          name: newCategoryName.trim(),
-          parent_id: null,
+          name: name.trim(),
+          parent_id: parentId,
           order: 0
         });
       
@@ -537,142 +560,33 @@ const AdminWebsitesPage: React.FC = () => {
         throw new Error('添加分类失败: ' + error.message);
       }
       
-      loadData(page, pageSize, searchQuery, selectedCategory);
-      setNewCategoryName('');
-      setCategoryError('');
+      await loadCategories();
       addToast({ message: '添加成功', type: 'success' });
     } catch (err: any) {
-      setCategoryError(err.message || '添加分类失败');
       addToast({ message: err.message || '添加失败', type: 'error' });
     }
   };
 
-  const handleEditCategorySubmit = async () => {
-    if (!editingCategory || !editingCategory.name.trim()) {
-      setCategoryError('分类名称不能为空');
-      return;
-    }
-
+  const handleUpdateCategory = async (categoryId: string, name: string) => {
     try {
       const { error } = await supabase
         .from('categories')
-        .update({
-          name: editingCategory.name,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', editingCategory.id);
+        .update({ name: name.trim() })
+        .eq('id', categoryId);
       
       if (error) {
         throw new Error('更新分类失败: ' + error.message);
       }
       
-      loadData(page, pageSize, searchQuery, selectedCategory);
-      setIsEditCategoryModalOpen(false);
-      setEditingCategory(null);
-      setCategoryError('');
+      await loadCategories();
       addToast({ message: '更新成功', type: 'success' });
     } catch (err: any) {
-      setCategoryError(err.message || '更新分类失败');
       addToast({ message: err.message || '更新失败', type: 'error' });
     }
-  };
-
-  const handleAddSubCategory = (parentId: string) => {
-    setAddingSubCategoryParentId(parentId);
-    setNewSubCategoryName('');
-    setExpandedCategories(prev => new Set([...prev, parentId]));
-  };
-
-  const handleAddSubCategorySubmit = async () => {
-    if (!addingSubCategoryParentId || !newSubCategoryName.trim()) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .insert({
-          name: newSubCategoryName.trim(),
-          parent_id: addingSubCategoryParentId,
-          order: 0
-        });
-      
-      if (error) {
-        throw new Error('添加子分类失败: ' + error.message);
-      }
-      
-      loadData(page, pageSize, searchQuery, selectedCategory);
-      setNewSubCategoryName('');
-      setAddingSubCategoryParentId(null);
-      addToast({ message: '添加成功', type: 'success' });
-    } catch (err: any) {
-      addToast({ message: err.message || '添加失败', type: 'error' });
-    }
-  };
-
-  const handleCancelAddSubCategory = () => {
-    setAddingSubCategoryParentId(null);
-    setNewSubCategoryName('');
-  };
-
-  const toggleCategoryExpand = (categoryId: string) => {
-    setExpandedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(categoryId)) {
-        next.delete(categoryId);
-      } else {
-        next.add(categoryId);
-      }
-      return next;
-    });
   };
 
   const openBookmarkUrl = (url: string) => {
     openUrl(url);
-  };
-
-  const handleEditCategory = (category: Category) => {
-    setEditingCategoryId(category.id);
-    setEditingCategoryName(category.name);
-  };
-
-  const handleSaveCategoryInline = async () => {
-    if (!editingCategoryId || !editingCategoryName.trim()) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .update({
-          name: editingCategoryName.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', editingCategoryId);
-      
-      if (error) {
-        throw new Error('更新分类失败: ' + error.message);
-      }
-      
-      loadData(page, pageSize, searchQuery, selectedCategory);
-      addToast({ message: '更新成功', type: 'success' });
-    } catch (err: any) {
-      addToast({ message: err.message || '更新失败', type: 'error' });
-    }
-    setEditingCategoryId(null);
-    setEditingCategoryName('');
-  };
-
-  const handleCancelCategoryInline = () => {
-    setEditingCategoryId(null);
-    setEditingCategoryName('');
-  };
-
-  const handleDeleteCategory = (categoryId: string, categoryName: string) => {
-    setDeleteTargetId(categoryId);
-    setDeleteType('category');
-    setDeleteTargetName(categoryName);
-    setIsDeleteConfirmOpen(true);
   };
 
   const handleBookmarkContextMenu = useCallback((e: React.MouseEvent, bookmark: Bookmark) => {
@@ -714,6 +628,8 @@ const AdminWebsitesPage: React.FC = () => {
     ));
   };
 
+  const [activeTab, setActiveTab] = useState<'bookmarks' | 'categories'>('bookmarks');
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -724,150 +640,185 @@ const AdminWebsitesPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col p-6 overflow-hidden">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col h-full">
-        <div className="mb-4 flex-shrink-0">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-            <div className="flex items-center gap-3">
-              <select
-                value={selectedCategory || ''}
-                onChange={(e) => handleCategorySelect(e.target.value || null)}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-              >
-                <option value="">全部</option>
-                {categories.map((mainCategory) => (
-                  <React.Fragment key={mainCategory.id}>
-                    <option value={mainCategory.id}>
-                      {mainCategory.name}
-                    </option>
-                    {mainCategory.children.map((subCategory) => (
-                      <option key={subCategory.id} value={subCategory.id}>
-                        └─ {subCategory.name}
-                      </option>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </select>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col h-full">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex gap-2">
               <button
-                onClick={() => setIsManageCategoryModalOpen(true)}
-                className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-1"
-                title="管理分类"
+                onClick={() => setActiveTab('bookmarks')}
+                className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
+                  activeTab === 'bookmarks'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
               >
-                <List size={14} />
+                网址列表
+              </button>
+              <button
+                onClick={() => setActiveTab('categories')}
+                className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
+                  activeTab === 'categories'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                分类管理
               </button>
             </div>
-            <div className="flex flex-col sm:flex-row sm:gap-2">
-              <div className="relative max-w-[200px] w-full">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="搜索网址..."
-                  className="w-full px-3 py-1.5 pl-8 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                />
-                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                {searchQuery && (
+            {activeTab === 'bookmarks' && (
+              <div className="flex flex-col sm:flex-row sm:gap-2">
+                <div className="relative max-w-[200px] w-full">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="搜索网址..."
+                    className="w-full px-3 py-1.5 pr-24 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        loadData(1, pageSize, '', selectedCategory);
+                      }}
+                      className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      title="清空搜索"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                   <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      loadData(1, pageSize, '', selectedCategory);
-                    }}
-                    className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    title="清空搜索"
+                    onClick={handleSearchSubmit}
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                    title="搜索"
                   >
-                    <X size={14} />
+                    <Search size={16} />
                   </button>
-                )}
+                </div>
+                <button
+                  onClick={handleAddBookmark}
+                  className="p-1.5 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md transition-colors"
+                  title="添加网址"
+                >
+                  <Plus size={16} />
+                </button>
               </div>
-              <button
-                onClick={handleSearchSubmit}
-                className="p-1.5 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md transition-colors"
-                title="搜索"
-              >
-                <Search size={16} />
-              </button>
-              <button
-                onClick={handleAddBookmark}
-                className="p-1.5 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md transition-colors"
-                title="添加网址"
-              >
-                <Plus size={16} />
-              </button>
-            </div>
+            )}
           </div>
         </div>
 
-        <div className="overflow-x-auto flex-1">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
-              <tr>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  标题
-                </th>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  分类
-                </th>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  公开
-                </th>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">
-                  排序
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredBookmarks.map((bookmark) => (
-                <tr 
-                  key={bookmark.id} 
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
-                  onContextMenu={(e) => handleBookmarkContextMenu(e, bookmark)}
+        <div className="flex-1 overflow-auto">
+          {activeTab === 'bookmarks' ? (
+            <div className="p-4">
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button
+                  onClick={() => handleCategorySelect(null)}
+                  className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                    !selectedCategory
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
                 >
-                  <td className="px-4 py-3 sm:px-6">
-                    <div className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1" onClick={() => openBookmarkUrl(bookmark.url)}>
-                      {bookmark.title}
-                      <ExternalLink size={14} />
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-                      {bookmark.description}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {getCategoryName(bookmark.category_id)}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {bookmark.is_public ? '是' : '否'}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 sm:px-6 whitespace-nowrap hidden md:table-cell">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {bookmark.order}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!isLoading && filteredBookmarks.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center">
-                    <List className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                    <span className="text-gray-600 dark:text-gray-400">暂无数据</span>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">
-          <Pagination
-            currentPage={page}
-            total={total}
-            pageSize={pageSize}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
+                  全部
+                </button>
+                {categories.map(mainCategory => (
+                  <button
+                    key={mainCategory.id}
+                    onClick={() => handleCategorySelect(mainCategory.id)}
+                    className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                      selectedCategory === mainCategory.id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {mainCategory.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+                    <tr>
+                      <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        标题
+                      </th>
+                      <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        分类
+                      </th>
+                      <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        公开
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {filteredBookmarks.map((bookmark) => (
+                      <tr 
+                        key={bookmark.id} 
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                        onContextMenu={(e) => handleBookmarkContextMenu(e, bookmark)}
+                      >
+                        <td className="px-4 py-3 sm:px-6">
+                          <div className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1" onClick={() => openBookmarkUrl(bookmark.url)}>
+                            {bookmark.title}
+                            <ExternalLink size={14} />
+                          </div>
+                          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                            {bookmark.description}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {getCategoryName(bookmark.category_id)}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
+                          <Switch
+                            checked={bookmark.is_public}
+                            onChange={() => handleBookmarkTogglePublic(bookmark.id, bookmark.is_public)}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                    {!isLoading && filteredBookmarks.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="py-8 text-center">
+                          <List className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                          <span className="text-gray-600 dark:text-gray-400">暂无数据</span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">
+                <Pagination
+                  currentPage={page}
+                  total={total}
+                  pageSize={pageSize}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="p-4">
+              <CategoryManager
+                categories={categories as CategoryItem[]}
+                selectedCategory={null}
+                onSelectCategory={() => {}}
+                onAddCategory={handleAddCategory}
+                onDeleteCategory={async (categoryId: string) => {
+                  await supabase.from('categories').delete().eq('id', categoryId);
+                  await loadCategories();
+                  addToast({ message: '删除成功', type: 'success' });
+                }}
+                onUpdateCategory={handleUpdateCategory}
+              />
+            </div>
+          )}
         </div>
 
         {/* 添加网址模态框 */}
@@ -1136,258 +1087,6 @@ const AdminWebsitesPage: React.FC = () => {
           </form>
         </Modal>
 
-        {/* 编辑分类模态框 */}
-        <Modal
-          isOpen={isEditCategoryModalOpen}
-          onClose={() => setIsEditCategoryModalOpen(false)}
-          title="编辑分类"
-          confirmText="保存"
-          onConfirm={handleEditCategorySubmit}
-        >
-          {categoryError && (
-            <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-md mb-4">
-              {categoryError}
-            </div>
-          )}
-          <form>
-            <input
-              type="text"
-              value={editingCategory?.name || ''}
-              onChange={(e) => editingCategory && setEditingCategory({ ...editingCategory, name: e.target.value })}
-              placeholder="分类名称"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-            />
-          </form>
-        </Modal>
-
-        {/* 分类管理模态框 */}
-        <Modal
-          isOpen={isManageCategoryModalOpen}
-          onClose={() => setIsManageCategoryModalOpen(false)}
-          title="分类管理"
-          size="lg"
-          showConfirm={false}
-        >
-          <div className="space-y-4 max-h-[400px] overflow-y-auto">
-            {/* 添加主分类 */}
-            <div className="flex items-center gap-2 p-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-md">
-              <span className="text-gray-500 dark:text-gray-400 text-sm">+ 添加主分类</span>
-              <input
-                type="text"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="输入分类名称"
-                className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleAddCategorySubmit();
-                  }
-                }}
-              />
-              <button
-                onClick={handleAddCategorySubmit}
-                disabled={!newCategoryName.trim()}
-                className="p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 disabled:text-gray-400 disabled:cursor-not-allowed"
-                title="保存"
-              >
-                <Check size={16} />
-              </button>
-            </div>
-            
-            {categories.length === 0 ? (
-              <div className="text-center text-gray-500 py-4 text-sm">
-                暂无分类，添加一个吧
-              </div>
-            ) : (
-              categories.map((mainCategory) => (
-                <div key={mainCategory.id} className="space-y-1">
-                  {/* 主分类行 */}
-                  <div 
-                    className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer"
-                    onClick={() => toggleCategoryExpand(mainCategory.id)}
-                  >
-                    {editingCategoryId === mainCategory.id ? (
-                      <div className="flex-1 flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editingCategoryName}
-                          onChange={(e) => setEditingCategoryName(e.target.value)}
-                          className="flex-1 px-2 py-1 border border-blue-400 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                          autoFocus
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleSaveCategoryInline();
-                            } else if (e.key === 'Escape') {
-                              handleCancelCategoryInline();
-                            }
-                          }}
-                        />
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleSaveCategoryInline(); }}
-                          className="p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
-                          title="保存"
-                        >
-                          <Check size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleCancelCategoryInline(); }}
-                          className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                          title="取消"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2">
-                          {/* 折叠箭头 */}
-                          {mainCategory.children && mainCategory.children.length > 0 && (
-                            <span className="text-gray-400 text-sm">
-                              {expandedCategories.has(mainCategory.id) ? '▼' : '▶'}
-                            </span>
-                          )}
-                          <span className="font-medium text-gray-800 dark:text-gray-200">
-                            {mainCategory.name}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          {/* 添加子分类按钮 */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleAddSubCategory(mainCategory.id); }}
-                            className="p-1 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                            title="添加子分类"
-                          >
-                            <Plus size={14} />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleEditCategory(mainCategory); }}
-                            className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                            title="编辑"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteCategory(mainCategory.id, mainCategory.name); }}
-                            className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                            title="删除"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* 子分类区域 */}
-                  {mainCategory.children && mainCategory.children.length > 0 && expandedCategories.has(mainCategory.id) && (
-                    <div className="ml-4 space-y-1">
-                      {/* 添加子分类输入框 */}
-                      {addingSubCategoryParentId === mainCategory.id && (
-                        <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                          <span className="text-gray-400">└─</span>
-                          <input
-                            type="text"
-                            value={newSubCategoryName}
-                            onChange={(e) => setNewSubCategoryName(e.target.value)}
-                            placeholder="输入子分类名称"
-                            className="flex-1 px-2 py-1 border border-blue-400 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleAddSubCategorySubmit();
-                              } else if (e.key === 'Escape') {
-                                handleCancelAddSubCategory();
-                              }
-                            }}
-                          />
-                          <button
-                            onClick={handleAddSubCategorySubmit}
-                            disabled={!newSubCategoryName.trim()}
-                            className="p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 disabled:text-gray-400 disabled:cursor-not-allowed"
-                            title="保存"
-                          >
-                            <Check size={16} />
-                          </button>
-                          <button
-                            onClick={handleCancelAddSubCategory}
-                            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                            title="取消"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      )}
-                      
-                      {/* 子分类列表 */}
-                      {mainCategory.children.map((subCategory) => (
-                        <div key={subCategory.id} className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                          {editingCategoryId === subCategory.id ? (
-                            <div className="flex-1 flex items-center gap-2">
-                              <span className="text-gray-400">└─</span>
-                              <input
-                                type="text"
-                                value={editingCategoryName}
-                                onChange={(e) => setEditingCategoryName(e.target.value)}
-                                className="flex-1 px-2 py-1 border border-blue-400 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                autoFocus
-                                onClick={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleSaveCategoryInline();
-                                  } else if (e.key === 'Escape') {
-                                    handleCancelCategoryInline();
-                                  }
-                                }}
-                              />
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleSaveCategoryInline(); }}
-                                className="p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
-                                title="保存"
-                              >
-                                <Check size={16} />
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleCancelCategoryInline(); }}
-                                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                                title="取消"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <span className="text-gray-600 dark:text-gray-400">
-                                └─ {subCategory.name}
-                              </span>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleEditCategory(subCategory)}
-                                  className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                                  title="编辑"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteCategory(subCategory.id, subCategory.name)}
-                                  className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                                  title="删除"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </Modal>
-
         {/* 删除确认对话框 */}
         <Modal
           isOpen={isDeleteConfirmOpen}
@@ -1424,13 +1123,31 @@ const AdminWebsitesPage: React.FC = () => {
               id: 'edit',
               label: '编辑',
               icon: <Edit size={16} />,
-              onClick: () => contextMenu?.targetData && handleEditBookmark(contextMenu.targetData as Bookmark)
+              onClick: () => {
+                contextMenu?.targetData && handleEditBookmark(contextMenu.targetData as Bookmark);
+                setContextMenu(null);
+              }
+            },
+            {
+              id: 'togglePublic',
+              label: (contextMenu.targetData as Bookmark)?.is_public ? '设为私有' : '设为公开',
+              icon: (contextMenu.targetData as Bookmark)?.is_public ? <Check size={16} /> : <X size={16} />,
+              onClick: () => {
+                const bookmark = contextMenu?.targetData as Bookmark;
+                if (bookmark) {
+                  handleBookmarkTogglePublic(bookmark.id, bookmark.is_public);
+                }
+                setContextMenu(null);
+              }
             },
             {
               id: 'delete',
               label: '删除',
               icon: <Trash2 size={16} />,
-              onClick: () => contextMenu?.targetId && contextMenu?.targetData && handleDeleteBookmark(contextMenu.targetId, (contextMenu.targetData as Bookmark).title)
+              onClick: () => {
+                contextMenu?.targetId && contextMenu?.targetData && handleDeleteBookmark(contextMenu.targetId, (contextMenu.targetData as Bookmark).title);
+                setContextMenu(null);
+              }
             }
           ] : []}
           onClose={() => setContextMenu(null)}

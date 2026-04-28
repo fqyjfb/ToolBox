@@ -641,7 +641,7 @@ const AccountManagerPage: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col h-full">
         <div className="mb-4 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 flex-wrap relative" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => handleCategorySelect(null)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
@@ -691,7 +691,7 @@ const AccountManagerPage: React.FC = () => {
                       )}
                     </button>
                     {hasChildren && isExpanded && category.children && (
-                      <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-[140px] z-10">
+                      <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-[140px] z-50">
                         {category.children.map((child) => (
                           <button
                             key={child.id}

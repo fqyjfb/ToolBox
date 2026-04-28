@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Globe, Settings, Users, BarChart3, Shield, Database } from 'lucide-react';
+import { Globe, Settings, Users, Wrench, Shield, Database } from 'lucide-react';
 
 const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,19 +17,19 @@ const AdminDashboardPage: React.FC = () => {
               <p className="card-title">网址管理</p>
               <p className="card-description">管理网站导航链接</p>
             </div>
-            <div className="admin-card admin-card-small red" onClick={() => {}}>
+            <div className="admin-card admin-card-small red" onClick={() => navigate('/admin/users')}>
               <div className="icon-wrapper">
                 <Users className="w-8 h-8" />
               </div>
               <p className="card-title">用户管理</p>
               <p className="card-description">管理系统用户</p>
             </div>
-            <div className="admin-card admin-card-small green" onClick={() => {}}>
+            <div className="admin-card admin-card-small green" onClick={() => navigate('/admin/tools')}>
               <div className="icon-wrapper">
-                <BarChart3 className="w-8 h-8" />
+                <Wrench className="w-8 h-8" />
               </div>
-              <p className="card-title">数据分析</p>
-              <p className="card-description">查看数据统计</p>
+              <p className="card-title">工具管理</p>
+              <p className="card-description">管理下载工具</p>
             </div>
             <div className="admin-card admin-card-small orange" onClick={() => {}}>
               <div className="icon-wrapper">
@@ -45,12 +45,12 @@ const AdminDashboardPage: React.FC = () => {
               <p className="card-title">系统设置</p>
               <p className="card-description">系统参数配置</p>
             </div>
-            <div className="admin-card admin-card-small pink" onClick={() => {}}>
+            <div className="admin-card admin-card-small pink" onClick={() => navigate('/admin/database')}>
               <div className="icon-wrapper">
                 <Database className="w-8 h-8" />
               </div>
               <p className="card-title">数据管理</p>
-              <p className="card-description">数据库管理</p>
+              <p className="card-description">数据库备份与恢复</p>
             </div>
           </div>
         </div>

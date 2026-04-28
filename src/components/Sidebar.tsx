@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Globe, Wrench, Zap, Key, Crown } from 'lucide-react';
 import { useAuthStore } from '../store/AuthStore';
 import { useSidebarStore } from '../store/sidebarStore';
+import { isElectron } from '../utils/environment';
 import './Sidebar.css';
 
 interface NavItem {
@@ -17,6 +18,7 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const { admin } = useAuthStore();
   const { isVisible } = useSidebarStore();
+  const isDesktop = isElectron();
   
   const getActiveItem = () => {
     const path = location.pathname;
@@ -31,18 +33,12 @@ const Sidebar: React.FC = () => {
   
   const activeItem = getActiveItem();
 
-  const navItems: NavItem[] = [
+  const baseNavItems: NavItem[] = [
     {
       id: 'home',
       title: '首页',
       icon: <Home className="w-6 h-6" />,
       path: '/',
-    },
-    {
-      id: 'launch',
-      title: '快启动',
-      icon: <Zap className="w-6 h-6" />,
-      path: '/launch',
     },
     {
       id: 'nav',
@@ -64,6 +60,17 @@ const Sidebar: React.FC = () => {
     },
   ];
 
+  const navItems: NavItem[] = isDesktop ? [
+    ...baseNavItems.slice(0, 1),
+    {
+      id: 'launch',
+      title: '快启动',
+      icon: <Zap className="w-6 h-6" />,
+      path: '/launch',
+    },
+    ...baseNavItems.slice(1),
+  ] : baseNavItems;
+
   if (!isVisible) {
     return null;
   }
@@ -76,8 +83,8 @@ const Sidebar: React.FC = () => {
         backgroundColor: 'var(--color-sidebar)'
       } as React.CSSProperties}
     >
-      <div className="p-2 flex items-center justify-center" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        <img src="./favicon.png" alt="ToolBox Logo" className="w-10 h-10" />
+      <div className="p-2 flex items-center justify-center cursor-pointer" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties} onClick={() => navigate('/')}>
+        <img src="./favicon.png" alt="ToolBox Logo" className="w-10 h-10 hover:opacity-80 transition-opacity" />
       </div>
       
       <div className="flex-1 py-4 flex justify-center" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
