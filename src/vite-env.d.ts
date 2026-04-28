@@ -24,7 +24,7 @@ interface VersionInfo {
   version: string;
   electron: string;
   chrome: string;
-  newVersion: string;
+  newVersion: string | undefined;
   github: string;
   download: string;
 }

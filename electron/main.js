@@ -1183,69 +1183,93 @@ const createTray = () => {
 
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: '系统关机',
-        click: () => {
-          console.log('Shutdown clicked');
-          exec('shutdown /s /t 0', (error) => {
-            if (error) {
-              console.error('Error shutting down:', error);
-              dialog.showErrorBox('错误', '无法执行关机操作');
-            }
-          });
-        },
+        label: '功能',
+        submenu: [
+          {
+            label: '清空回收站',
+            click: () => {
+              console.log('Empty Recycle Bin clicked');
+              exec('powershell -Command "Clear-RecycleBin -Force; exit 0"', (error, stdout, stderr) => {
+                console.log('Recycle bin command completed');
+                dialog.showMessageBox({
+                  type: 'info',
+                  title: '提示',
+                  message: '回收站已清空',
+                });
+              });
+            },
+          },
+          {
+            label: '我的电脑',
+            click: () => {
+              console.log('My Computer clicked');
+              exec('explorer.exe', (error) => {
+                if (error) {
+                  console.error('Error opening My Computer:', error);
+                  dialog.showErrorBox('错误', '无法打开我的电脑');
+                }
+              });
+            },
+          },
+        ],
       },
       {
-        label: '系统重启',
-        click: () => {
-          console.log('Restart clicked');
-          exec('shutdown /r /t 0', (error) => {
-            if (error) {
-              console.error('Error restarting:', error);
-              dialog.showErrorBox('错误', '无法执行重启操作');
-            }
-          });
-        },
+        label: '系统',
+        submenu: [
+          {
+            label: '关机',
+            click: () => {
+              console.log('Shutdown clicked');
+              exec('shutdown /s /t 0', (error) => {
+                if (error) {
+                  console.error('Error shutting down:', error);
+                  dialog.showErrorBox('错误', '无法执行关机操作');
+                }
+              });
+            },
+          },
+          {
+            label: '重启',
+            click: () => {
+              console.log('Restart clicked');
+              exec('shutdown /r /t 0', (error) => {
+                if (error) {
+                  console.error('Error restarting:', error);
+                  dialog.showErrorBox('错误', '无法执行重启操作');
+                }
+              });
+            },
+          },
+        ],
       },
       {
-        label: '清空回收站',
-        click: () => {
-          console.log('Empty Recycle Bin clicked');
-          exec('powershell -Command "Clear-RecycleBin -Force; exit 0"', (error, stdout, stderr) => {
-            console.log('Recycle bin command completed');
-            dialog.showMessageBox({
-              type: 'info',
-              title: '提示',
-              message: '回收站已清空',
-            });
-          });
-        },
+        label: '程序',
+        submenu: [
+          {
+            label: '设置',
+            click: () => {
+              console.log('Settings clicked');
+              if (mainWindow) {
+                mainWindow.show();
+                mainWindow.webContents.send('navigate-to', '/settings');
+              }
+            },
+          },
+          {
+            label: '重启',
+            click: () => {
+              console.log('Restart ToolBox clicked');
+              app.relaunch();
+              app.quit();
+            },
+          },
+        ],
       },
       {
         type: 'separator',
       },
       {
-        label: '程序重启',
-        click: () => {
-          console.log('Restart ToolBox clicked');
-          app.relaunch();
-          app.quit();
-        },
-      },
-      {
-        label: '程序设置',
-        click: () => {
-          console.log('Settings clicked');
-          if (mainWindow) {
-            mainWindow.show();
-            mainWindow.webContents.send('navigate-to', '/settings');
-          }
-        },
-      },
-      {
-        type: 'separator',
-      },
-      {
-        label: '程序退出',
+        label: '退出',
         click: () => {
           console.log('Quit clicked');
           app.quit();
