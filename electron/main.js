@@ -1203,11 +1203,11 @@ const createTray = () => {
             label: '我的电脑',
             click: () => {
               console.log('My Computer clicked');
-              exec('explorer.exe', (error) => {
-                if (error) {
-                  console.error('Error opening My Computer:', error);
-                  dialog.showErrorBox('错误', '无法打开我的电脑');
-                }
+              shell.openExternal('shell:MyComputerFolder').then(() => {
+                console.log('My Computer opened successfully');
+              }).catch((error) => {
+                console.error('Error opening My Computer:', error);
+                dialog.showErrorBox('错误', '无法打开我的电脑');
               });
             },
           },
