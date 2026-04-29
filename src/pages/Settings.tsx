@@ -407,19 +407,28 @@ const Settings: React.FC = () => {
     setBtnLoading(true);
     setBtnText('正在清除缓存');
     try {
+      const quickLaunchApps = localStorage.getItem('quickLaunchApps');
+      const quickLaunchCategories = localStorage.getItem('quickLaunchCategories');
+      const homeTools = localStorage.getItem('homeTools');
+      const homeQuickLaunchApps = localStorage.getItem('homeQuickLaunchApps');
+
       if (!window.electron) {
         addToast({ type: 'error', message: '无法访问Electron API' });
         return;
       }
-      
+
       if (!window.electron.clearCache) {
         addToast({ type: 'error', message: '清除缓存API不可用' });
         return;
       }
-      
+
       const result = await window.electron.clearCache();
-      
+
       if (result && result.code === 0) {
+        if (quickLaunchApps) localStorage.setItem('quickLaunchApps', quickLaunchApps);
+        if (quickLaunchCategories) localStorage.setItem('quickLaunchCategories', quickLaunchCategories);
+        if (homeTools) localStorage.setItem('homeTools', homeTools);
+        if (homeQuickLaunchApps) localStorage.setItem('homeQuickLaunchApps', homeQuickLaunchApps);
         addToast({ type: 'success', message: '缓存已清除' });
       } else {
         const errorMsg = result?.msg || '清除缓存失败';
