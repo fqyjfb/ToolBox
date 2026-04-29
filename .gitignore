@@ -32,3 +32,6 @@ doc/
 
 # Build output
 dist-electron/
+
+# TypeScript build info
+*.tsbuildinfo

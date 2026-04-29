@@ -5,21 +5,16 @@ import { ExternalLink } from 'lucide-react';
 import GitHubButton from '../components/GitHubButton';
 import UpdateButton from '../components/UpdateButton';
 
-interface VersionInfo {
-  version: string;
-  electron: string;
-  chrome: string;
-  newVersion: string;
-  github: string;
-  download: string;
-}
-
 const About: React.FC = () => {
   const { addToast } = useToastStore();
-  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+  const [webVersion] = useState(APP_VERSION);
+  const [electronVersion, setElectronVersion] = useState<string | null>(null);
+  const [chromeVersion, setChromeVersion] = useState<string | null>(null);
+  const [newVersion, setNewVersion] = useState<string>('');
+  const [downloadUrl, setDownloadUrl] = useState<string>('');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [hasUpdate, setHasUpdate] = useState(false);
-  const isElectron = typeof window !== 'undefined' && window.electron;
+  const isElectron = typeof window !== 'undefined' && !!(window as any).electron;
 
   useEffect(() => {
     if (isElectron) {
@@ -28,10 +23,14 @@ const About: React.FC = () => {
   }, [isElectron]);
 
   const loadVersionInfo = async () => {
-    if (!window.electron) return;
+    const electron = (window as any).electron;
+    if (!electron) return;
     try {
-      const info = await window.electron.getVersion();
-      setVersionInfo(info as VersionInfo);
+      const info: any = await electron.getVersion();
+      setElectronVersion(info.electron);
+      setChromeVersion(info.chrome);
+      setNewVersion(info.newVersion);
+      setDownloadUrl(info.download);
     } catch (error) {
       console.error('Failed to load version info:', error);
     }
@@ -46,9 +45,13 @@ const About: React.FC = () => {
     addToast({ type: 'info', message: '正在检查更新...' });
 
     try {
-      if (window.electron) {
-        const info = await window.electron.getVersion() as VersionInfo;
-        setVersionInfo(info);
+      const electron = (window as any).electron;
+      if (electron) {
+        const info: any = await electron.getVersion();
+        setElectronVersion(info.electron);
+        setChromeVersion(info.chrome);
+        setNewVersion(info.newVersion);
+        setDownloadUrl(info.download);
 
         if (info.newVersion !== '未知' && info.newVersion !== APP_VERSION) {
           setHasUpdate(true);
@@ -67,14 +70,10 @@ const About: React.FC = () => {
   };
 
   const openDownloadPage = () => {
-    if (versionInfo?.download && window.electron) {
-      window.electron.openExternal(versionInfo.download);
+    if (downloadUrl && isElectron) {
+      (window as any).electron.openExternal(downloadUrl);
     }
   };
-
-  const displayVersion = versionInfo?.version || APP_VERSION;
-  const displayElectron = versionInfo?.electron || '41.2.0';
-  const displayChrome = versionInfo?.chrome || '127.0.6533.120';
 
   return (
     <div className="p-6">
@@ -92,7 +91,7 @@ const About: React.FC = () => {
           <div className="flex justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">版本</span>
             <div className="flex items-center gap-2">
-              <span className="text-sm">{displayVersion}</span>
+              <span className="text-sm">{webVersion}</span>
               {hasUpdate && (
                 <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full">
                   有更新
@@ -102,11 +101,11 @@ const About: React.FC = () => {
           </div>
           <div className="flex justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">Electron 版本</span>
-            <span className="text-sm">{displayElectron}</span>
+            <span className="text-sm">{electronVersion || '41.2.0'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">Chrome 版本</span>
-            <span className="text-sm">{displayChrome}</span>
+            <span className="text-sm">{chromeVersion || '127.0.6533.120'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">React 版本</span>
@@ -129,14 +128,14 @@ const About: React.FC = () => {
               isChecking={isCheckingUpdate}
               hasUpdate={hasUpdate}
               onCheck={checkForUpdates}
-              downloadUrl={versionInfo?.download || ''}
+              downloadUrl={downloadUrl}
             />
             <GitHubButton />
           </div>
-          {hasUpdate && versionInfo && (
+          {hasUpdate && (
             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800">
               <p className="text-xs text-blue-700 dark:text-blue-400">
-                发现新版本: <span className="font-semibold">{versionInfo.newVersion}</span>
+                发现新版本: <span className="font-semibold">{newVersion}</span>
               </p>
               <button
                 onClick={openDownloadPage}
