@@ -35,6 +35,16 @@ interface UpdateResult {
   data?: any;
 }
 
+interface FloatConfigItem {
+  id: number;
+  type: 'nav' | 'tool' | 'app' | 'system';
+  action: string;
+  name: string;
+  icon: string;
+  color: string;
+  path?: string;
+}
+
 interface DownloadResult {
   code: number;
   msg: string;
@@ -62,6 +72,10 @@ declare interface Window {
     getVersion: () => Promise<AppVersionInfo>;
     downloadUpdate: (url: string) => Promise<DownloadResult>;
     installUpdate: (filePath: string) => Promise<UpdateResult>;
+    toggleFloatWindow: () => Promise<number>;
+    getFloatConfig: () => Promise<FloatConfigItem[]>;
+    updateFloatConfig: (config: FloatConfigItem[]) => Promise<UpdateResult>;
+    resetFloatConfig: () => Promise<UpdateResult>;
     onDownloadProgress: (callback: (progress: number) => void) => void;
     onNavigate: (callback: (path: string) => void) => void;
     onSettingChanged: (callback: (setting: { name: string; value: any }) => void) => void;

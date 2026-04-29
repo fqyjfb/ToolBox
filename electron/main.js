@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, globalShortcut, screen, ipcMain } = require('electron');
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
@@ -7,6 +7,10 @@ const { exec } = require('child_process');
 
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 const shortcutsPath = path.join(app.getPath('userData'), 'shortcuts.json');
+const floatConfigPath = path.join(app.getPath('userData'), 'floatConfig.json');
+
+let dragOffset = { x: 0, y: 0 };
+let pollIgnoring = true;
 
 const defaultSettings = {
   isWindowEdgeAdsorption: 0,
@@ -19,8 +23,20 @@ const defaultSettings = {
   systemTheme: 'system',
   leftMenuPosition: 'left',
   howLinkOpenMethod: 'internal',
-  defaultWindowSize: { width: 1024, height: 800 }
+  defaultWindowSize: { width: 1024, height: 800 },
+  isFloatWindowEnabled: 0
 };
+
+const defaultFloatConfig = [
+  { id: 1, type: 'nav', action: 'home', name: '主页', icon: 'Home', color: '#03a9f4' },
+  { id: 2, type: 'nav', action: 'tools', name: '工具', icon: 'Wrench', color: '#0462df' },
+  { id: 3, type: 'nav', action: 'quick', name: '快捷启动', icon: 'Zap', color: '#1db954' },
+  { id: 4, type: 'nav', action: 'bookmark', name: '收藏', icon: 'Bookmark', color: '#8c9eff' },
+  { id: 5, type: 'nav', action: 'todo', name: '待办', icon: 'CheckCircle', color: '#bd081c' },
+  { id: 6, type: 'nav', action: 'search', name: '搜索', icon: 'Search', color: '#ea4c89' },
+  { id: 7, type: 'nav', action: 'news', name: '热点', icon: 'Flame', color: '#333' },
+  { id: 8, type: 'nav', action: 'settings', name: '设置', icon: 'Settings', color: '#ff4500' }
+];
 
 const defaultShortcuts = [
   { id: 1, tag: '退出软件', cmd: 'CommandOrControl+Q', isOpen: 1, isGlobal: 1, name: 'softwareExit' },
@@ -75,7 +91,33 @@ const saveShortcuts = (shortcuts) => {
   }
 };
 
+const loadFloatConfig = () => {
+  try {
+    if (fs.existsSync(floatConfigPath)) {
+      const data = fs.readFileSync(floatConfigPath, 'utf-8');
+      const config = JSON.parse(data);
+      const mergedConfig = defaultFloatConfig.map((defaultItem, index) => {
+        const savedItem = config.find(c => c.id === defaultItem.id);
+        return savedItem ? { ...defaultItem, ...savedItem } : defaultItem;
+      });
+      return mergedConfig;
+    }
+  } catch (error) {
+    console.error('Failed to load float config:', error);
+  }
+  return [...defaultFloatConfig];
+};
+
+const saveFloatConfig = (config) => {
+  try {
+    fs.writeFileSync(floatConfigPath, JSON.stringify(config, null, 2));
+  } catch (error) {
+    console.error('Failed to save float config:', error);
+  }
+};
+
 let mainWindow = null;
+let floatWindow = null;
 let tray = null;
 let memoryCleanupTimer = null;
 
@@ -740,6 +782,33 @@ Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
     return result;
   });
   
+  ipcMain.handle('get-float-config', () => {
+    console.log('[FLOAT CONFIG] Get float config requested');
+    return loadFloatConfig();
+  });
+  
+  ipcMain.handle('update-float-config', (event, config) => {
+    console.log('[FLOAT CONFIG] Update float config requested:', config);
+    saveFloatConfig(config);
+    
+    if (floatWindow) {
+      floatWindow.webContents.send('float-config-changed', config);
+    }
+    
+    return { code: 0, msg: '悬浮球配置已更新' };
+  });
+  
+  ipcMain.handle('reset-float-config', () => {
+    console.log('[FLOAT CONFIG] Reset float config requested');
+    saveFloatConfig([...defaultFloatConfig]);
+    
+    if (floatWindow) {
+      floatWindow.webContents.send('float-config-changed', [...defaultFloatConfig]);
+    }
+    
+    return { code: 0, msg: '悬浮球配置已重置' };
+  });
+  
   ipcMain.handle('update-setting', (event, setting) => {
     console.log('[SETTINGS] Update setting requested:', setting);
     const settings = loadSettings();
@@ -761,6 +830,211 @@ Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
     mainWindow?.webContents.send('setting-changed', { name: setting.name, value: setting.value });
     
     return { code: 0, msg: '设置已更新' };
+  });
+  
+  ipcMain.handle('toggle-float-window', () => {
+    console.log('[FLOAT] Toggle float window requested');
+    return toggleFloatWindow();
+  });
+  
+  ipcMain.on('float-window-action', (event, action) => {
+    console.log('[FLOAT] Float window action:', action);
+    
+    if (action.startsWith('open-app:')) {
+      const appPath = action.replace('open-app:', '');
+      console.log('[FLOAT] Opening app:', appPath);
+      shell.openPath(appPath).catch(err => {
+        console.error('[FLOAT] Failed to open app:', err);
+      });
+      return;
+    }
+    
+    if (action.startsWith('nav:')) {
+      const path = action.replace('nav:', '');
+      console.log('[FLOAT] Navigating to:', path);
+      if (mainWindow) {
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('navigate-to', path);
+      }
+      return;
+    }
+    
+    const actions = {
+      home: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('navigate-to', '/');
+        }
+      },
+      tools: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('navigate-to', '/tools');
+        }
+      },
+      quick: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('navigate-to', '/quick');
+        }
+      },
+      bookmark: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('navigate-to', '/nav');
+        }
+      },
+      todo: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('navigate-to', '/tools/todo');
+        }
+      },
+      search: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      },
+      news: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('navigate-to', '/news');
+        }
+      },
+      settings: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('navigate-to', '/settings');
+        }
+      },
+      'clear-recycle-bin': () => {
+        exec('powershell -Command "Clear-RecycleBin -Force; exit 0"', (error) => {
+          if (!error) {
+            dialog.showMessageBox({ type: 'info', title: '提示', message: '回收站已清空' });
+          }
+        });
+      },
+      'open-my-computer': () => {
+        shell.openExternal('shell:MyComputerFolder').catch(() => {
+          dialog.showErrorBox('错误', '无法打开我的电脑');
+        });
+      },
+      shutdown: () => {
+        exec('shutdown /s /t 0');
+      },
+      restart: () => {
+        exec('shutdown /r /t 0');
+      },
+      'restart-app': () => {
+        app.relaunch();
+        app.quit();
+      },
+      discord: () => shell.openExternal('https://discord.com/'),
+      twitter: () => shell.openExternal('https://twitter.com/'),
+      reddit: () => shell.openExternal('https://reddit.com/'),
+      messenger: () => shell.openExternal('https://messenger.com/'),
+      pinterest: () => shell.openExternal('https://pinterest.com/'),
+      instagram: () => shell.openExternal('https://instagram.com/'),
+      snapchat: () => shell.openExternal('https://snapchat.com/'),
+      whatsapp: () => shell.openExternal('https://whatsapp.com/')
+    };
+    if (typeof actions[action] === 'function') {
+      actions[action]();
+    }
+  });
+
+  ipcMain.on('float-drag-start', () => {
+    if (!floatWindow) return;
+    const cursor = screen.getCursorScreenPoint();
+    const [wx, wy] = floatWindow.getPosition();
+    dragOffset = { x: cursor.x - wx, y: cursor.y - wy };
+  });
+
+  ipcMain.on('float-drag-move', () => {
+    if (!floatWindow) return;
+    const { x, y } = screen.getCursorScreenPoint();
+    floatWindow.setPosition(
+      Math.round(x - dragOffset.x),
+      Math.round(y - dragOffset.y)
+    );
+  });
+
+  ipcMain.on('float-drag-end', () => {
+    if (!floatWindow) return;
+    const [bx, by] = floatWindow.getPosition();
+    const settings = loadSettings();
+    settings.floatBallPosition = { x: bx, y: by };
+    saveSettings(settings);
+  });
+
+  ipcMain.on('float-set-ignore-events', (_event, ignore) => {
+    if (!floatWindow) return;
+    if (ignore) {
+      floatWindow.setIgnoreMouseEvents(true, { forward: true });
+    } else {
+      floatWindow.setIgnoreMouseEvents(false);
+    }
+  });
+
+  ipcMain.on('float-show-context-menu', () => {
+    if (!floatWindow) return;
+
+    const menu = Menu.buildFromTemplate([
+      {
+        label: '打开主窗口',
+        click: () => {
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+          }
+        }
+      },
+      {
+        label: '设置',
+        click: () => {
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+            mainWindow.webContents.send('navigate-to', '/settings');
+          }
+        }
+      },
+      { type: 'separator' },
+      {
+        label: '关闭悬浮球',
+        click: () => {
+          const settings = loadSettings();
+          settings.isFloatWindowEnabled = 0;
+          saveSettings(settings);
+          if (floatWindow) {
+            floatWindow.close();
+            floatWindow = null;
+          }
+          mainWindow?.webContents.send('setting-changed', { name: 'isFloatWindowEnabled', value: 0 });
+          refreshTrayMenu();
+        }
+      }
+    ]);
+
+    menu.popup({ window: floatWindow });
+  });
+
+  ipcMain.on('float-drop-files', (_event, paths) => {
+    console.log('[FLOAT] Files dropped:', paths);
+    paths.forEach(p => {
+      shell.openPath(p).catch(err => {
+        console.error('[FLOAT] Failed to open file:', err);
+      });
+    });
   });
   
   ipcMain.handle('clear-cache', async () => {
@@ -1141,6 +1415,238 @@ Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
   
 };
 
+const createFloatWindow = () => {
+  console.log('Creating float window...');
+  
+  if (floatWindow) {
+    floatWindow.show();
+    floatWindow.focus();
+    return;
+  }
+  
+  const displays = screen.getAllDisplays();
+  const primaryDisplay = displays[0];
+  const { width, height } = primaryDisplay.workAreaSize;
+
+  const defaultX = width - 60 - Math.round(150);
+  const defaultY = height - 60 - Math.round(150);
+
+  let x = defaultX;
+  let y = defaultY;
+  const settings = loadSettings();
+  if (settings.floatBallPosition && typeof settings.floatBallPosition.x === 'number' && typeof settings.floatBallPosition.y === 'number') {
+    const inBounds =
+      settings.floatBallPosition.x >= -150 &&
+      settings.floatBallPosition.x <= width - 150 &&
+      settings.floatBallPosition.y >= 0 &&
+      settings.floatBallPosition.y <= height - 40;
+    if (inBounds) {
+      x = settings.floatBallPosition.x;
+      y = settings.floatBallPosition.y;
+    }
+  }
+  
+  floatWindow = new BrowserWindow({
+    width: 300,
+    height: 300,
+    x,
+    y,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    movable: true,
+    focusable: true,
+    hasShadow: false,
+    show: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'float-preload.js'),
+    },
+  });
+
+  if (process.platform === 'darwin') {
+    floatWindow.setAlwaysOnTop(true, 'floating');
+  } else {
+    floatWindow.setAlwaysOnTop(true);
+  }
+
+  floatWindow.setIgnoreMouseEvents(true, { forward: true });
+
+  const POLL_INTERVAL = 80;
+  const BALL_SIZE = 56;
+  const pollTimer = setInterval(() => {
+    if (!floatWindow || floatWindow.isDestroyed()) return;
+    const cursor = screen.getCursorScreenPoint();
+    const bounds = floatWindow.getBounds();
+    const ballCenterX = bounds.x + Math.round(bounds.width / 2);
+    const ballCenterY = bounds.y + bounds.height - 8 - Math.round(BALL_SIZE / 2);
+    const dx = cursor.x - ballCenterX;
+    const dy = cursor.y - ballCenterY;
+    const inBall = dx * dx + dy * dy <= (BALL_SIZE / 2 + 4) * (BALL_SIZE / 2 + 4);
+    if (inBall && pollIgnoring) {
+      pollIgnoring = false;
+      floatWindow.setIgnoreMouseEvents(false);
+    } else if (!inBall && !pollIgnoring) {
+      pollIgnoring = true;
+      floatWindow.setIgnoreMouseEvents(true, { forward: true });
+    }
+  }, POLL_INTERVAL);
+  
+  const floatHtmlPath = path.join(__dirname, 'float.html');
+  
+  if (app.isPackaged) {
+    const packagedPath = path.join(process.resourcesPath, 'app', 'electron', 'float.html');
+    if (fs.existsSync(packagedPath)) {
+      floatWindow.loadFile(packagedPath);
+    } else {
+      floatWindow.loadFile(floatHtmlPath);
+    }
+  } else {
+    floatWindow.loadFile(floatHtmlPath);
+  }
+  
+  floatWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  
+  floatWindow.once('ready-to-show', () => {
+    floatWindow.show();
+    console.log('Float window shown');
+  });
+  
+  floatWindow.on('system-context-menu', (e) => {
+    e.preventDefault();
+  });
+
+  floatWindow.on('closed', () => {
+    clearInterval(pollTimer);
+    console.log('Float window closed');
+    floatWindow = null;
+  });
+
+  console.log('Float window created successfully');
+};
+
+const closeFloatWindow = () => {
+  if (floatWindow) {
+    floatWindow.hide(); // 使用hide而不是close，优化内存
+    console.log('Float window hidden');
+  }
+};
+
+const refreshTrayMenu = () => {
+  if (!tray) return;
+  
+  const settings = loadSettings();
+  const floatWindowLabel = settings.isFloatWindowEnabled === 1 ? '关闭悬浮窗' : '开启悬浮窗';
+  
+  const newContextMenu = Menu.buildFromTemplate([
+    {
+      label: '功能',
+      submenu: [
+        {
+          label: '清空回收站',
+          click: () => {
+            exec('powershell -Command "Clear-RecycleBin -Force; exit 0"', (error) => {
+              if (!error) {
+                dialog.showMessageBox({ type: 'info', title: '提示', message: '回收站已清空' });
+              }
+            });
+          },
+        },
+        {
+          label: '我的电脑',
+          click: () => {
+            shell.openExternal('shell:MyComputerFolder').catch(() => {
+              dialog.showErrorBox('错误', '无法打开我的电脑');
+            });
+          },
+        },
+      ],
+    },
+    {
+      label: '悬浮窗',
+      submenu: [
+        {
+          label: floatWindowLabel,
+          click: () => {
+            toggleFloatWindow();
+          },
+        },
+      ],
+    },
+    {
+      label: '系统',
+      submenu: [
+        {
+          label: '关机',
+          click: () => {
+            exec('shutdown /s /t 0');
+          },
+        },
+        {
+          label: '重启',
+          click: () => {
+            exec('shutdown /r /t 0');
+          },
+        },
+      ],
+    },
+    {
+      label: '程序',
+      submenu: [
+        {
+          label: '设置',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.show();
+              mainWindow.webContents.send('navigate-to', '/settings');
+            }
+          },
+        },
+        {
+          label: '重启',
+          click: () => {
+            app.relaunch();
+            app.quit();
+          },
+        },
+      ],
+    },
+    { type: 'separator' },
+    {
+      label: '退出',
+      click: () => {
+        app.quit();
+      },
+    },
+  ]);
+  
+  tray.setContextMenu(newContextMenu);
+};
+
+const toggleFloatWindow = () => {
+  const settings = loadSettings();
+  if (settings.isFloatWindowEnabled === 1) {
+    // 如果窗口存在，先关闭它
+    if (floatWindow) {
+      floatWindow.close();
+      floatWindow = null;
+      console.log('Float window closed');
+    }
+    settings.isFloatWindowEnabled = 0;
+    saveSettings(settings);
+  } else {
+    createFloatWindow();
+    settings.isFloatWindowEnabled = 1;
+    saveSettings(settings);
+  }
+  mainWindow?.webContents.send('setting-changed', { name: 'isFloatWindowEnabled', value: settings.isFloatWindowEnabled });
+  refreshTrayMenu();
+  return settings.isFloatWindowEnabled;
+};
+
 const createTray = () => {
   console.log('Creating tray...');
   let iconPath = null;
@@ -1181,104 +1687,8 @@ const createTray = () => {
     tray = new Tray(icon);
     console.log('Created tray');
 
-    const contextMenu = Menu.buildFromTemplate([
-      {
-        label: '功能',
-        submenu: [
-          {
-            label: '清空回收站',
-            click: () => {
-              console.log('Empty Recycle Bin clicked');
-              exec('powershell -Command "Clear-RecycleBin -Force; exit 0"', (error, stdout, stderr) => {
-                console.log('Recycle bin command completed');
-                dialog.showMessageBox({
-                  type: 'info',
-                  title: '提示',
-                  message: '回收站已清空',
-                });
-              });
-            },
-          },
-          {
-            label: '我的电脑',
-            click: () => {
-              console.log('My Computer clicked');
-              shell.openExternal('shell:MyComputerFolder').then(() => {
-                console.log('My Computer opened successfully');
-              }).catch((error) => {
-                console.error('Error opening My Computer:', error);
-                dialog.showErrorBox('错误', '无法打开我的电脑');
-              });
-            },
-          },
-        ],
-      },
-      {
-        label: '系统',
-        submenu: [
-          {
-            label: '关机',
-            click: () => {
-              console.log('Shutdown clicked');
-              exec('shutdown /s /t 0', (error) => {
-                if (error) {
-                  console.error('Error shutting down:', error);
-                  dialog.showErrorBox('错误', '无法执行关机操作');
-                }
-              });
-            },
-          },
-          {
-            label: '重启',
-            click: () => {
-              console.log('Restart clicked');
-              exec('shutdown /r /t 0', (error) => {
-                if (error) {
-                  console.error('Error restarting:', error);
-                  dialog.showErrorBox('错误', '无法执行重启操作');
-                }
-              });
-            },
-          },
-        ],
-      },
-      {
-        label: '程序',
-        submenu: [
-          {
-            label: '设置',
-            click: () => {
-              console.log('Settings clicked');
-              if (mainWindow) {
-                mainWindow.show();
-                mainWindow.webContents.send('navigate-to', '/settings');
-              }
-            },
-          },
-          {
-            label: '重启',
-            click: () => {
-              console.log('Restart ToolBox clicked');
-              app.relaunch();
-              app.quit();
-            },
-          },
-        ],
-      },
-      {
-        type: 'separator',
-      },
-      {
-        label: '退出',
-        click: () => {
-          console.log('Quit clicked');
-          app.quit();
-        },
-      },
-    ]);
-
     tray.setToolTip('ToolBox');
-    tray.setContextMenu(contextMenu);
+    refreshTrayMenu();
     console.log('Set tray context menu');
 
     tray.on('click', () => {
@@ -1297,6 +1707,11 @@ const createTray = () => {
 app.whenReady().then(() => {
   createWindow();
   createTray();
+  
+  const settings = loadSettings();
+  if (settings.isFloatWindowEnabled === 1) {
+    createFloatWindow();
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

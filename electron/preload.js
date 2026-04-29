@@ -42,6 +42,10 @@ contextBridge.exposeInMainWorld('electron', {
   getVersion: () => ipcRenderer.invoke('get-version'),
   downloadUpdate: (url) => ipcRenderer.invoke('download-update', url),
   installUpdate: (filePath) => ipcRenderer.invoke('install-update', filePath),
+  toggleFloatWindow: () => ipcRenderer.invoke('toggle-float-window'),
+  getFloatConfig: () => ipcRenderer.invoke('get-float-config'),
+  updateFloatConfig: (config) => ipcRenderer.invoke('update-float-config', config),
+  resetFloatConfig: () => ipcRenderer.invoke('reset-float-config'),
   onDownloadProgress: (callback) => {
     downloadProgressCallback = callback;
   },

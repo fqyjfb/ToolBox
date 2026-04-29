@@ -5,11 +5,25 @@ import { userService } from '../../services/UserService'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import Pagination from '../../components/Pagination'
 import { useToastStore } from '../../store/toastStore'
+import ContextMenu from '../../components/ContextMenu'
+import { useContextMenu } from '../../hooks/useContextMenu'
+
+interface UserItem {
+  id: string
+  username: string
+  name: string
+  email: string
+  phone: string
+  memberLevel: string
+  vipExpireAt: string | null
+  isBanned: boolean
+  createdAt: string
+}
 
 const UserListPage: React.FC = () => {
   const navigate = useNavigate()
   const { addToast } = useToastStore()
-  const [users, setUsers] = useState<any[]>([])
+  const [users, setUsers] = useState<UserItem[]>([])
   const [total, setTotal] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -19,6 +33,34 @@ const UserListPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [memberLevelFilter, setMemberLevelFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  
+  const { contextMenu, handleContextMenu, handleClose, handleItemClick } = useContextMenu<UserItem>()
+  
+  const menuItems = [
+    {
+      id: 'edit',
+      label: '编辑',
+      icon: <Edit size={14} />,
+      onClick: (user: UserItem) => {
+        navigate(`/admin/users/edit/${user.id}`)
+      },
+    },
+    {
+      id: 'reset-password',
+      label: '重置密码',
+      icon: <Lock size={14} />,
+      onClick: async (user: UserItem) => {
+        setIsLoading(true)
+        const result = await userService.resetPassword(user.id)
+        if (result.success) {
+          addToast({ type: 'success', message: result.message })
+        } else {
+          addToast({ type: 'error', message: result.message })
+        }
+        setIsLoading(false)
+      },
+    },
+  ]
 
   const fetchUsers = async (
     pageNum = currentPage, 
@@ -93,20 +135,7 @@ const UserListPage: React.FC = () => {
     fetchUsers(1, pageSize, { search: '' })
   }
 
-  const handleEdit = (id: string) => {
-    navigate(`/admin/users/edit/${id}`)
-  }
-
-  const handleResetPassword = async (id: string) => {
-    setIsLoading(true)
-    const result = await userService.resetPassword(id)
-    if (result.success) {
-      addToast({ type: 'success', message: result.message })
-    } else {
-      addToast({ type: 'error', message: result.message })
-    }
-    setIsLoading(false)
-  }
+  
 
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-gray-400" />
@@ -249,14 +278,16 @@ const UserListPage: React.FC = () => {
                     {renderSortIcon('created_at')}
                   </div>
                 </th>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  操作
-                </th>
+                
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <tr 
+                  key={user.id} 
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  onContextMenu={(e) => handleContextMenu(e, user, menuItems)}
+                >
                   <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {user.username}
@@ -304,29 +335,11 @@ const UserListPage: React.FC = () => {
                       {new Date(user.createdAt).toLocaleString()}
                     </div>
                   </td>
-                  <td className="px-4 py-3 sm:px-6 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEdit(user.id)}
-                        className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                        title="编辑"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleResetPassword(user.id)}
-                        className="p-1 text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300"
-                        title="重置密码"
-                      >
-                        <Lock size={16} />
-                      </button>
-                    </div>
-                  </td>
                 </tr>
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center">
+                  <td colSpan={8} className="py-8 text-center">
                     <div className="text-gray-600 dark:text-gray-400">暂无数据</div>
                   </td>
                 </tr>
@@ -345,6 +358,21 @@ const UserListPage: React.FC = () => {
           />
         </div>
       </div>
+      
+      {contextMenu && (
+        <ContextMenu
+          isOpen={!!contextMenu}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenu.items.map(item => ({
+            id: item.id,
+            label: item.label,
+            icon: item.icon,
+            onClick: () => handleItemClick(item.onClick),
+          }))}
+          onClose={handleClose}
+        />
+      )}
     </div>
   )
 }

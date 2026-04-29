@@ -10,6 +10,14 @@ export interface WeatherInfo {
   air_quality: AirQuality;
   sunrise: Sunrise;
   life_indices: LifeIndex[];
+  alerts?: Alert[];
+}
+
+export interface Alert {
+  type: string;
+  level: string;
+  detail: string;
+  updated: string;
 }
 
 export interface Location {

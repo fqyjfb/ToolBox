@@ -152,21 +152,19 @@ const ToolsPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-6 overflow-hidden">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 tools-page-container">
-        <div className="tools-page-content">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">我的工具</h2>
-            <div className="tools-grid-wrapper">
-              {existingTools.map(renderToolCard)}
-            </div>
+    <div className="h-full p-6 overflow-auto">
+      <div className="tools-page-content">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">我的工具</h2>
+          <div className="tools-grid-wrapper">
+            {existingTools.map(renderToolCard)}
           </div>
+        </div>
 
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">实用工具</h2>
-            <div className="tools-grid-wrapper">
-              {newTools.map(renderToolCard)}
-            </div>
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">实用工具</h2>
+          <div className="tools-grid-wrapper">
+            {newTools.map(renderToolCard)}
           </div>
         </div>
       </div>
