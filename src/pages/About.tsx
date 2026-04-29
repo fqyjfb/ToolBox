@@ -5,36 +5,51 @@ import { ExternalLink } from 'lucide-react';
 import GitHubButton from '../components/GitHubButton';
 import UpdateButton from '../components/UpdateButton';
 
+interface VersionInfo {
+  version: string;
+  electron: string;
+  chrome: string;
+  newVersion: string;
+  github: string;
+  download: string;
+}
+
 const About: React.FC = () => {
   const { addToast } = useToastStore();
-  const [versionInfo, setVersionInfo] = useState<AppVersionInfo | null>(null);
+  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [hasUpdate, setHasUpdate] = useState(false);
+  const isElectron = typeof window !== 'undefined' && window.electron;
 
   useEffect(() => {
-    loadVersionInfo();
-  }, []);
+    if (isElectron) {
+      loadVersionInfo();
+    }
+  }, [isElectron]);
 
   const loadVersionInfo = async () => {
+    if (!window.electron) return;
     try {
-      if (window.electron) {
-        const info = await window.electron.getVersion() as AppVersionInfo;
-        setVersionInfo(info);
-      }
+      const info = await window.electron.getVersion();
+      setVersionInfo(info as VersionInfo);
     } catch (error) {
       console.error('Failed to load version info:', error);
     }
   };
 
   const checkForUpdates = async () => {
+    if (!isElectron) {
+      addToast({ type: 'info', message: '网页版无需检查更新' });
+      return;
+    }
     setIsCheckingUpdate(true);
     addToast({ type: 'info', message: '正在检查更新...' });
 
     try {
       if (window.electron) {
-        const info = await window.electron.getVersion() as AppVersionInfo;
+        const info = await window.electron.getVersion() as VersionInfo;
         setVersionInfo(info);
-        
+
         if (info.newVersion !== '未知' && info.newVersion !== APP_VERSION) {
           setHasUpdate(true);
           addToast({ type: 'success', message: `发现新版本: ${info.newVersion}` });
@@ -57,6 +72,10 @@ const About: React.FC = () => {
     }
   };
 
+  const displayVersion = versionInfo?.version || APP_VERSION;
+  const displayElectron = versionInfo?.electron || '41.2.0';
+  const displayChrome = versionInfo?.chrome || '127.0.6533.120';
+
   return (
     <div className="p-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
@@ -73,7 +92,7 @@ const About: React.FC = () => {
           <div className="flex justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">版本</span>
             <div className="flex items-center gap-2">
-              <span className="text-sm">{versionInfo?.version || APP_VERSION}</span>
+              <span className="text-sm">{displayVersion}</span>
               {hasUpdate && (
                 <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full">
                   有更新
@@ -83,11 +102,11 @@ const About: React.FC = () => {
           </div>
           <div className="flex justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">Electron 版本</span>
-            <span className="text-sm">{versionInfo?.electron || '41.2.0'}</span>
+            <span className="text-sm">{displayElectron}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">Chrome 版本</span>
-            <span className="text-sm">{versionInfo?.chrome || '127.0.6533.120'}</span>
+            <span className="text-sm">{displayChrome}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">React 版本</span>
@@ -97,10 +116,16 @@ const About: React.FC = () => {
             <span className="text-xs text-gray-500 dark:text-gray-400">TypeScript 版本</span>
             <span className="text-sm">6.0.2</span>
           </div>
+          {!isElectron && (
+            <div className="flex justify-between">
+              <span className="text-xs text-gray-500 dark:text-gray-400">运行环境</span>
+              <span className="text-sm text-green-600 dark:text-green-400">网页版</span>
+            </div>
+          )}
         </div>
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-center gap-3">
-            <UpdateButton 
+            <UpdateButton
               isChecking={isCheckingUpdate}
               hasUpdate={hasUpdate}
               onCheck={checkForUpdates}
