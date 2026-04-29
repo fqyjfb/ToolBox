@@ -18,7 +18,7 @@ const About: React.FC = () => {
   const loadVersionInfo = async () => {
     try {
       if (window.electron) {
-        const info = await window.electron.getVersion();
+        const info = await window.electron.getVersion() as AppVersionInfo;
         setVersionInfo(info);
       }
     } catch (error) {
@@ -32,7 +32,7 @@ const About: React.FC = () => {
 
     try {
       if (window.electron) {
-        const info = await window.electron.getVersion();
+        const info = await window.electron.getVersion() as AppVersionInfo;
         setVersionInfo(info);
         
         if (info.newVersion !== '未知' && info.newVersion !== APP_VERSION) {
