@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { RefreshCw, CheckCircle, Download } from 'lucide-react';
-import { useToastStore } from '../store/toastStore';
+import { useToastStore } from '../../store/toastStore';
 
 interface UpdateButtonProps {
   isChecking: boolean;

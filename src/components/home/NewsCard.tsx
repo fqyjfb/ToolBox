@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import LoadingSpinner from '../LoadingSpinner';
+import LoadingSpinner from '../ui/LoadingSpinner';
 import { openUrl } from '../../services/browserService';
 import type { TodayInHistoryItem } from '../../types/hotNews';
 

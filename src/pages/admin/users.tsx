@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Edit, Lock, Search, ArrowUpDown, X } from 'lucide-react'
 import { userService } from '../../services/UserService'
-import LoadingSpinner from '../../components/LoadingSpinner'
-import Pagination from '../../components/Pagination'
+import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import Pagination from '../../components/ui/Pagination'
 import { useToastStore } from '../../store/toastStore'
-import ContextMenu from '../../components/ContextMenu'
+import ContextMenu from '../../components/ui/ContextMenu'
 import { useContextMenu } from '../../hooks/useContextMenu'
 
 interface UserItem {

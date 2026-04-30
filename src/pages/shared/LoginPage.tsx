@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../store/AuthStore'
+import { useAuth } from '../../store/AuthStore'
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
-import { authService } from '../services/AuthService'
+import { authService } from '../../services/AuthService'
 import './LoginPage.css'
 
 const LoginPage: React.FC = () => {

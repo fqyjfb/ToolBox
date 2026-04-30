@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { hotNewsApi } from '../services/hotNews';
-import type { UnifiedHotItem, HotNewsPlatform } from '../types/hotNews';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { openUrl } from '../services/browserService';
-import { debounce, formatHotValue } from '../utils';
+import { hotNewsApi } from '../../services/hotNews';
+import type { UnifiedHotItem, HotNewsPlatform } from '../../types/hotNews';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { openUrl } from '../../services/browserService';
+import { debounce, formatHotValue } from '../../utils';
 import { AlertCircle, Inbox } from 'lucide-react';
 import './HotNewsPage.css';
 

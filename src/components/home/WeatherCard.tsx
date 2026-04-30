@@ -5,7 +5,7 @@ import { apiService } from '../../services/api';
 import { isWeb } from '../../utils/environment';
 import { getWeatherCity } from '../../utils/weatherLocation';
 import type { WeatherInfo, DailyForecast } from '../../types/weather';
-import LoadingSpinner from '../LoadingSpinner';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 const getWeatherIcon = (condition: string, size: 'sm' | 'md' | 'lg' = 'md', color?: string) => {
   const lowerCondition = condition.toLowerCase();

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Coffee, Calendar, TrendingUp, Clock, Moon, Sun, Star } from 'lucide-react';
 import { hotNewsApi } from '../../services/hotNews';
 import type { MoyuData } from '../../types/hotNews';
-import LoadingSpinner from '../LoadingSpinner';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 interface MoyuCardProps {
   className?: string;

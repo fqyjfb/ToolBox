@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Copy, Check, Phone, Globe } from 'lucide-react';
-import { useNavSearch } from '../contexts/NavSearchContext';
-import { countryCodes, regions, CountryCode } from '../data/countryCodes';
+import { useNavSearch } from '../../contexts/NavSearchContext';
+import { countryCodes, regions, CountryCode } from '../../data/countryCodes';
 
 const CountryCodeSearch: React.FC = () => {
   const { searchQuery, clearSearch } = useNavSearch();

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, X } from 'lucide-react'
 import { userService } from '../../services/UserService'
-import LoadingSpinner from '../../components/LoadingSpinner'
+import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { useToastStore } from '../../store/toastStore'
 
 const UserEditPage: React.FC = () => {

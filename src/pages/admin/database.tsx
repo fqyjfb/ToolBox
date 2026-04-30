@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { Download, Upload, Database, AlertTriangle } from 'lucide-react'
 import { databaseBackupService } from '../../services/DatabaseBackupService'
-import Modal from '../../components/Modal'
+import Modal from '../../components/ui/Modal'
 import { useToastStore } from '../../store/toastStore'
 
 interface SettingsState {

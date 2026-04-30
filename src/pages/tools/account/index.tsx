@@ -6,11 +6,11 @@ import { Password, PasswordCategory, PasswordRequest, PasswordCategoryRequest } 
 import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
-import LoadingSpinner from '../../../components/LoadingSpinner';
-import Modal from '../../../components/Modal';
-import ConfirmDialog from '../../../components/ConfirmDialog';
-import Pagination from '../../../components/Pagination';
-import ContextMenu, { ContextMenuItem } from '../../../components/ContextMenu';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Pagination from '../../../components/ui/Pagination';
+import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import { decrypt } from '../../../utils/crypto';
 
 const AccountManagerPage: React.FC = () => {

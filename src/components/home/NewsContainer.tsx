@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import LoadingSpinner from '../LoadingSpinner';
+import LoadingSpinner from '../ui/LoadingSpinner';
 import { openUrl } from '../../services/browserService';
 import type { TodayInHistoryItem, ItNewsItem, AiNewsItem } from '../../types/hotNews';
 

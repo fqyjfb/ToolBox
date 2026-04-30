@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { RefreshCw, Copy, ArrowRight, Check } from 'lucide-react';
 import { apiService } from '../../../services/api';
-import LoadingSpinner from '../../../components/LoadingSpinner';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 interface Language {
   code: string;

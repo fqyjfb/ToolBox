@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useToastStore } from '../store/toastStore';
+import { useToastStore } from '../../store/toastStore';
 import styled from 'styled-components';
 
 const StyledWrapper = styled.div`

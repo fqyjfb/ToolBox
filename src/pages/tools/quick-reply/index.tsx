@@ -6,11 +6,11 @@ import { QuickReplyCategory, QuickReply } from '../../../types/quickReply';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
-import LoadingSpinner from '../../../components/LoadingSpinner';
-import ContextMenu, { ContextMenuItem } from '../../../components/ContextMenu';
-import Modal from '../../../components/Modal';
-import ConfirmDialog from '../../../components/ConfirmDialog';
-import Pagination from '../../../components/Pagination';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Pagination from '../../../components/ui/Pagination';
 
 const QuickReplyPage: React.FC = () => {
   const navigate = useNavigate();

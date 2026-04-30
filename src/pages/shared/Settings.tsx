@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Monitor, Bell, Keyboard, Circle } from 'lucide-react';
-import { useToastStore } from '../store/toastStore';
-import { useSidebarStore } from '../store/sidebarStore';
-import { loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps, QuickLaunchItem } from '../utils/quickLaunch';
+import { useToastStore } from '../../store/toastStore';
+import { useSidebarStore } from '../../store/sidebarStore';
+import { loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps, QuickLaunchItem } from '../../utils/quickLaunch';
 import {
   ShortcutItem,
   FloatConfigItem,
   NotificationSettings,
   WindowSize,
   SettingsTab
-} from '../types/settings';
-import { DEFAULT_SHORTCUTS, DEFAULT_WINDOW_SIZE } from '../constants/settings';
+} from '../../types/settings';
+import { DEFAULT_SHORTCUTS, DEFAULT_WINDOW_SIZE } from '../../constants/settings';
 import {
   GeneralTab,
   QuickLaunchTab,
   NotificationsTab,
   ShortcutsTab,
   FloatWindowTab
-} from '../components/settings';
+} from '../../components/settings';
 import './Settings.css';
 
 const Settings: React.FC = () => {

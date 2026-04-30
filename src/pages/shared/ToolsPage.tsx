@@ -6,8 +6,8 @@ import {
   Table, Link, Map, QrCode, Code, AtSign, Tag, AlignLeft, 
   Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud
 } from 'lucide-react';
-import ContextMenu, { ContextMenuItem } from '../components/ContextMenu';
-import { HomeToolItem, loadHomeTools, replaceHomeTool } from '../utils/homeTools';
+import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
+import { HomeToolItem, loadHomeTools, replaceHomeTool } from '../../utils/homeTools';
 import './ToolsPage.css';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {

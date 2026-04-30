@@ -3,10 +3,10 @@ import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home } from 'luci
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { QuickLaunchCategory, QuickLaunchItem, addHomeQuickLaunchApp, isAppInHomeQuickLaunch } from '../utils/quickLaunch';
-import { useNavSearch } from '../contexts/NavSearchContext';
-import Modal from '../components/Modal';
-import ContextMenu, { ContextMenuItem } from '../components/ContextMenu';
+import { QuickLaunchCategory, QuickLaunchItem, addHomeQuickLaunchApp, isAppInHomeQuickLaunch } from '../../utils/quickLaunch';
+import { useNavSearch } from '../../contexts/NavSearchContext';
+import Modal from '../../components/ui/Modal';
+import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import './QuickLaunch.css';
 
 const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'medium'; onLaunch: (path: string) => void; onContextMenu: (e: React.MouseEvent) => void; }> = ({ app, iconSize, onLaunch, onContextMenu }) => {

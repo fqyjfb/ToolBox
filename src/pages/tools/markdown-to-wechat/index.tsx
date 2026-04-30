@@ -3,7 +3,7 @@ import { FileCode, Copy, Trash2, FileText, Download, Upload, Eye, Edit3, Save, F
 import { useToastStore } from '../../../store/toastStore';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import ContextMenu, { ContextMenuItem } from '../../../components/ContextMenu';
+import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 
 const MarkdownToWechatPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);

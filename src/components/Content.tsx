@@ -5,8 +5,8 @@ import { Minus, Maximize2, X, Search, X as XIcon, Menu, Settings, Info, LogIn, L
 import { useNavSearch } from '../contexts/NavSearchContext';
 import { useTodoNotification } from '../contexts/TodoNotificationContext';
 import { isElectron } from '../utils/environment';
-import PopupMenu from './PopupMenu';
-import Tooltip from './Tooltip';
+import PopupMenu from './ui/PopupMenu';
+import Tooltip from './ui/Tooltip';
 import './Content.css';
 
 interface ContentProps {

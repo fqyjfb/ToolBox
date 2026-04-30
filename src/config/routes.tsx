@@ -7,14 +7,16 @@ export interface RouteConfig {
   requiresAdmin?: boolean;
 }
 
-const Home = React.lazy(() => import('../pages/Home'));
-const QuickLaunch = React.lazy(() => import('../pages/QuickLaunch'));
-const HotNewsPage = React.lazy(() => import('../pages/HotNewsPage'));
-const NavPage = React.lazy(() => import('../pages/NavPage'));
-const LoginPage = React.lazy(() => import('../pages/LoginPage'));
-const Settings = React.lazy(() => import('../pages/Settings'));
-const About = React.lazy(() => import('../pages/About'));
-const ToolsPage = React.lazy(() => import('../pages/ToolsPage'));
+const Home = React.lazy(() => import('../pages/desktop/Home'));
+const WebHome = React.lazy(() => import('../pages/web/WebHome'));
+const MobileHome = React.lazy(() => import('../pages/mobile/MobileHome'));
+const QuickLaunch = React.lazy(() => import('../pages/desktop/QuickLaunch'));
+const HotNewsPage = React.lazy(() => import('../pages/shared/HotNewsPage'));
+const NavPage = React.lazy(() => import('../pages/shared/NavPage'));
+const LoginPage = React.lazy(() => import('../pages/shared/LoginPage'));
+const Settings = React.lazy(() => import('../pages/shared/Settings'));
+const About = React.lazy(() => import('../pages/shared/About'));
+const ToolsPage = React.lazy(() => import('../pages/shared/ToolsPage'));
 
 const CountryCodePage = React.lazy(() => import('../pages/tools/country-code'));
 const ExchangePage = React.lazy(() => import('../pages/tools/exchange'));
@@ -53,7 +55,7 @@ const AdminUserEditPage = React.lazy(() => import('../pages/admin/user-edit'));
 const AdminToolsPage = React.lazy(() => import('../pages/admin/tools'));
 const AdminDatabasePage = React.lazy(() => import('../pages/admin/database'));
 
-export const publicRoutes: RouteConfig[] = [
+export const desktopRoutes: RouteConfig[] = [
   { path: '/', element: <Home /> },
   { path: '/launch', element: <QuickLaunch /> },
   { path: '/news', element: <HotNewsPage /> },
@@ -63,6 +65,28 @@ export const publicRoutes: RouteConfig[] = [
   { path: '/about', element: <About /> },
   { path: '/tools/weather', element: <WeatherPage /> },
 ];
+
+export const webRoutes: RouteConfig[] = [
+  { path: '/', element: <WebHome /> },
+  { path: '/news', element: <HotNewsPage /> },
+  { path: '/nav', element: <NavPage /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/settings', element: <Settings /> },
+  { path: '/about', element: <About /> },
+  { path: '/tools/weather', element: <WeatherPage /> },
+];
+
+export const mobileRoutes: RouteConfig[] = [
+  { path: '/', element: <MobileHome /> },
+  { path: '/news', element: <HotNewsPage /> },
+  { path: '/nav', element: <NavPage /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/settings', element: <Settings /> },
+  { path: '/about', element: <About /> },
+  { path: '/tools/weather', element: <WeatherPage /> },
+];
+
+export const publicRoutes: RouteConfig[] = desktopRoutes;
 
 export const protectedRoutes: RouteConfig[] = [
   { path: '/tools', element: <ToolsPage />, requiresAuth: true },

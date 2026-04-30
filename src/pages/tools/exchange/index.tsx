@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, RefreshCw, ArrowRightLeft, Search } from 'lucide-react';
 import { apiService } from '../../../services/api';
-import LoadingSpinner from '../../../components/LoadingSpinner';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 interface RateItem {
   currency: string;

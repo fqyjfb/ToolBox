@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { hotNewsApi } from '../services/hotNews';
-import { supabase } from '../services/supabase';
-import { websiteService } from '../services/WebsiteService';
-import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps } from '../utils/quickLaunch';
-import { loadHomeTools } from '../utils/homeTools';
-import { isElectron } from '../utils/environment';
-import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../types/hotNews';
-import SearchBar from '../components/home/SearchBar';
-import FavoritesBar, { Bookmark } from '../components/home/FavoritesBar';
-import ToolGrid from '../components/home/ToolGrid';
-import NewsContainer from '../components/home/NewsContainer';
-import QuickLaunchBar from '../components/home/QuickLaunchBar';
-import MoyuCard from '../components/home/MoyuCard';
+import { hotNewsApi } from '../../services/hotNews';
+import { supabase } from '../../services/supabase';
+import { websiteService } from '../../services/WebsiteService';
+import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps } from '../../utils/quickLaunch';
+import { loadHomeTools } from '../../utils/homeTools';
+import { isElectron } from '../../utils/environment';
+import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../../types/hotNews';
+import SearchBar from '../../components/home/SearchBar';
+import FavoritesBar, { Bookmark } from '../../components/home/FavoritesBar';
+import ToolGrid from '../../components/home/ToolGrid';
+import NewsContainer from '../../components/home/NewsContainer';
+import QuickLaunchBar from '../../components/home/QuickLaunchBar';
+import MoyuCard from '../../components/home/MoyuCard';
 import './Home.css';
 
 const Home: React.FC = () => {

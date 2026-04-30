@@ -5,11 +5,11 @@ import { useAuthStore } from '../../store/AuthStore';
 import { useToastStore } from '../../store/toastStore';
 import { Category, Bookmark } from '../../types/website';
 import { openUrl } from '../../services/browserService';
-import Modal from '../../components/Modal';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import Pagination from '../../components/Pagination';
-import ContextMenu from '../../components/ContextMenu';
-import Switch from '../../components/Switch';
+import Modal from '../../components/ui/Modal';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import Pagination from '../../components/ui/Pagination';
+import ContextMenu from '../../components/ui/ContextMenu';
+import Switch from '../../components/ui/Switch';
 import CategoryManager, { CategoryItem } from '../../components/CategoryManager';
 import linkIcon from '../../assets/react.svg';
 

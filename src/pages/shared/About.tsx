@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { APP_VERSION } from '../utils/version';
-import { useToastStore } from '../store/toastStore';
+import { APP_VERSION } from '../../utils/version';
+import { useToastStore } from '../../store/toastStore';
 import { ExternalLink } from 'lucide-react';
-import GitHubButton from '../components/GitHubButton';
-import UpdateButton from '../components/UpdateButton';
+import GitHubButton from '../../components/ui/GitHubButton';
+import UpdateButton from '../../components/ui/UpdateButton';
 
 const About: React.FC = () => {
   const { addToast } = useToastStore();

@@ -5,11 +5,11 @@ import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
 import { useTodoNotification } from '../../../contexts/TodoNotificationContext';
-import ContextMenu, { ContextMenuItem } from '../../../components/ContextMenu';
-import Modal from '../../../components/Modal';
-import ConfirmDialog from '../../../components/ConfirmDialog';
-import Pagination from '../../../components/Pagination';
-import SwitchFilter from '../../../components/SwitchFilter';
+import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Pagination from '../../../components/ui/Pagination';
+import SwitchFilter from '../../../components/forms/SwitchFilter';
 
 const TodoManagerPage: React.FC = () => {
   const admin = useAuthStore((state) => state.admin);

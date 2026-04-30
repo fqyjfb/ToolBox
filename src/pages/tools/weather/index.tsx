@@ -5,7 +5,7 @@ import { apiService } from '../../../services/api';
 import { isWeb } from '../../../utils/environment';
 import { getWeatherCity } from '../../../utils/weatherLocation';
 import type { WeatherInfo, DailyForecast, HourlyForecast } from '../../../types/weather';
-import LoadingSpinner from '../../../components/LoadingSpinner';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 const WeatherPage: React.FC = () => {
   const navigate = useNavigate();

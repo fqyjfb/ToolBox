@@ -1,17 +1,19 @@
 import { useEffect, useState, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate as useRouterNavigate } from 'react-router-dom';
-import Layout from './components/Layout';
-import Toast from './components/Toast';
-import LoadingSpinner from './components/LoadingSpinner';
+import Layout from './components/layout/Layout';
+import WebLayout from './components/layout/WebLayout';
+import MobileLayout from './components/layout/MobileLayout';
+import Toast from './components/ui/Toast';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/AuthStore';
 import { useSidebarStore } from './store/sidebarStore';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
-import { publicRoutes, protectedRoutes, adminRoutes } from './config/routes';
+import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes } from './config/routes';
 import { isElectron } from './utils/environment';
 
-const TrayNavigationHandler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const TrayNavigationHandler: React.FC = () => {
   const navigate = useRouterNavigate();
 
   useEffect(() => {
@@ -26,7 +28,14 @@ const TrayNavigationHandler: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [navigate]);
 
-  return <>{children}</>;
+  return null;
+};
+
+const isMobile = (): boolean => {
+  if (typeof window !== 'undefined') {
+    return window.innerWidth < 768;
+  }
+  return false;
 };
 
 function App() {
@@ -35,8 +44,19 @@ function App() {
   const admin = useAuthStore((state) => state.admin);
   const isLoading = useAuthStore((state) => state.isLoading);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const isAdmin = admin && (admin.role === 'super' || admin.role === 'normal');
   const { setVisible, setPosition } = useSidebarStore();
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileDevice(isMobile());
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (isDark) {
@@ -86,37 +106,32 @@ function App() {
     );
   }
 
+  const isDesktopApp = isElectron();
+  const isWebApp = !isDesktopApp && !isMobileDevice;
+
+  const currentRoutes = isDesktopApp ? desktopRoutes : isWebApp ? webRoutes : mobileRoutes;
+
   return (
     <TodoNotificationProvider>
       <NavSearchProvider>
         <Router>
-          <TrayNavigationHandler>
-            <Routes>
-              <Route 
-                path="/*" 
-                element={
-                <div>
+          {isDesktopApp && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
+          <Routes>
+            <Route 
+              path="/*" 
+              element={
+                <>
+                  {isDesktopApp ? (
                     <Layout>
                       <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
                         <Routes>
-                          {publicRoutes.map((route) => {
-                            if (route.path === '/launch' && !isElectron()) {
-                              return (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={<Navigate to="/" replace />} 
-                                />
-                              );
-                            }
-                            return (
-                              <Route 
-                                key={route.path} 
-                                path={route.path} 
-                                element={route.element} 
-                              />
-                            );
-                          })}
+                          {currentRoutes.map((route) => (
+                            <Route 
+                              key={route.path} 
+                              path={route.path} 
+                              element={route.element} 
+                            />
+                          ))}
 
                           {isAuthenticated ? (
                             <>
@@ -158,12 +173,116 @@ function App() {
                         </Routes>
                       </Suspense>
                     </Layout>
-                    <Toast />
-                  </div>
+                  ) : isWebApp ? (
+                    <WebLayout>
+                      <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
+                        <Routes>
+                          {currentRoutes.map((route) => (
+                            <Route 
+                              key={route.path} 
+                              path={route.path} 
+                              element={route.element} 
+                            />
+                          ))}
+
+                          {isAuthenticated ? (
+                            <>
+                              {protectedRoutes.map((route) => (
+                                <Route 
+                                  key={route.path} 
+                                  path={route.path} 
+                                  element={route.element} 
+                                />
+                              ))}
+                              {isAdmin && adminRoutes.map((route) => (
+                                <Route 
+                                  key={route.path} 
+                                  path={route.path} 
+                                  element={route.element} 
+                                />
+                              ))}
+                              <Route path="*" element={<Navigate to="/" replace />} />
+                            </>
+                          ) : (
+                            <>
+                              {protectedRoutes.map((route) => (
+                                <Route 
+                                  key={route.path} 
+                                  path={route.path} 
+                                  element={<Navigate to="/login" replace />} 
+                                />
+                              ))}
+                              {adminRoutes.map((route) => (
+                                <Route 
+                                  key={route.path} 
+                                  path={route.path} 
+                                  element={<Navigate to="/login" replace />} 
+                                />
+                              ))}
+                              <Route path="*" element={<Navigate to="/" replace />} />
+                            </>
+                          )}
+                        </Routes>
+                      </Suspense>
+                    </WebLayout>
+                  ) : (
+                    <MobileLayout>
+                      <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
+                        <Routes>
+                          {currentRoutes.map((route) => (
+                            <Route 
+                              key={route.path} 
+                              path={route.path} 
+                              element={route.element} 
+                            />
+                          ))}
+
+                          {isAuthenticated ? (
+                            <>
+                              {protectedRoutes.map((route) => (
+                                <Route 
+                                  key={route.path} 
+                                  path={route.path} 
+                                  element={route.element} 
+                                />
+                              ))}
+                              {isAdmin && adminRoutes.map((route) => (
+                                <Route 
+                                  key={route.path} 
+                                  path={route.path} 
+                                  element={route.element} 
+                                />
+                              ))}
+                              <Route path="*" element={<Navigate to="/" replace />} />
+                            </>
+                          ) : (
+                            <>
+                              {protectedRoutes.map((route) => (
+                                <Route 
+                                  key={route.path} 
+                                  path={route.path} 
+                                  element={<Navigate to="/login" replace />} 
+                                />
+                              ))}
+                              {adminRoutes.map((route) => (
+                                <Route 
+                                  key={route.path} 
+                                  path={route.path} 
+                                  element={<Navigate to="/login" replace />} 
+                                />
+                              ))}
+                              <Route path="*" element={<Navigate to="/" replace />} />
+                            </>
+                          )}
+                        </Routes>
+                      </Suspense>
+                    </MobileLayout>
+                  )}
+                  <Toast />
+                </>
               } 
             />
           </Routes>
-        </TrayNavigationHandler>
         </Router>
       </NavSearchProvider>
     </TodoNotificationProvider>

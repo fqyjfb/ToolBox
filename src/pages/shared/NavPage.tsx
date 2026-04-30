@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Star, StarOff, Menu, Globe, ChevronDown } from 'lucide-react'
-import LoadingSpinner from '../components/LoadingSpinner'
-import { websiteService } from '../services/WebsiteService'
-import { supabase } from '../services/supabase'
-import { useNavSearch } from '../contexts/NavSearchContext'
-import { openUrl } from '../services/browserService'
+import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { websiteService } from '../../services/WebsiteService'
+import { supabase } from '../../services/supabase'
+import { useNavSearch } from '../../contexts/NavSearchContext'
+import { openUrl } from '../../services/browserService'
 import './NavPage.css'
 
 // 检测是否为国外域名
