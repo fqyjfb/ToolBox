@@ -65,7 +65,14 @@ const UpdateButton: React.FC<UpdateButtonProps> = ({ isChecking, hasUpdate, onCh
       }
     } catch (error) {
       console.error('Update download failed:', error);
-      const errorMsg = error instanceof Error ? error.message : String(error);
+      let errorMsg = '未知错误';
+      if (error instanceof Error) {
+        errorMsg = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMsg = error.msg || JSON.stringify(error);
+      } else if (typeof error === 'string') {
+        errorMsg = error;
+      }
       addToast({ type: 'error', message: `下载失败: ${errorMsg}` });
     } finally {
       setIsDownloading(false);
