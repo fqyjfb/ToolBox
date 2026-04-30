@@ -55,7 +55,7 @@ const ToolGrid: React.FC<ToolGridProps> = ({ tools, onToolClick }) => {
   };
 
   return (
-    <div className="flex-shrink-0 h-[var(--card-height)] overflow-visible">
+    <div className="flex-shrink-0 h-[var(--card-height)] overflow-visible relative z-0">
       <div className="tools-grid">
         {/* 第一行第一列 - 天气卡片（占2行） */}
         <div 

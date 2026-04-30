@@ -162,7 +162,7 @@ const WeatherCard: React.FC = () => {
 
       {/* 悬浮详细信息 */}
       {showDetail && (
-        <div className="absolute top-0 left-full ml-2 z-[100]">
+        <div className="absolute top-0 left-full ml-2 z-[300]">
           <div className="w-52 rounded-lg overflow-hidden shadow-xl transition-all duration-300">
             <div className="bg-gradient-to-br from-sky-500 to-indigo-500 text-white">
               <div className="p-2.5">

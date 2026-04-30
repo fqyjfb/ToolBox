@@ -82,7 +82,7 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full relative z-10">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

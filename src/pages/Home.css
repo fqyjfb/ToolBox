@@ -383,7 +383,7 @@
   font-weight: bold;
   color: white;
   white-space: nowrap;
-  z-index: 20;
+  z-index: 200;
 }
 
 .quicklaunch-item > .quicklaunch-title::after {
@@ -403,7 +403,7 @@
 }
 
 .quicklaunch-item:hover {
-  z-index: 100;
+  z-index: 150;
 }
 
 .quicklaunch-remove {
