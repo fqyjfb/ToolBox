@@ -71,7 +71,6 @@ export const webRoutes: RouteConfig[] = [
   { path: '/news', element: <HotNewsPage /> },
   { path: '/nav', element: <NavPage /> },
   { path: '/login', element: <LoginPage /> },
-  { path: '/settings', element: <Settings /> },
   { path: '/about', element: <About /> },
   { path: '/tools/weather', element: <WeatherPage /> },
 ];
@@ -81,7 +80,6 @@ export const mobileRoutes: RouteConfig[] = [
   { path: '/news', element: <HotNewsPage /> },
   { path: '/nav', element: <NavPage /> },
   { path: '/login', element: <LoginPage /> },
-  { path: '/settings', element: <Settings /> },
   { path: '/about', element: <About /> },
   { path: '/tools/weather', element: <WeatherPage /> },
 ];
