@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { RefreshCw, Droplets, Gauge, Sun, Cloud, CloudSun, CloudRain, CloudSnow, Wind } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { isWeb } from '../../utils/environment';
@@ -32,7 +33,9 @@ const WeatherCard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showDetail, setShowDetail] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const cityRef = useRef(localStorage.getItem('weatherCity') || '南京');
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const fetchWeather = useCallback(async () => {
     setLoading(true);
@@ -84,6 +87,13 @@ const WeatherCard: React.FC = () => {
     }
   }, [isInitialized, fetchWeather]);
 
+  useEffect(() => {
+    if (showDetail && cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      setPopupPosition({ x: rect.right + 8, y: rect.top });
+    }
+  }, [showDetail]);
+
   const getDayName = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
@@ -132,138 +142,147 @@ const WeatherCard: React.FC = () => {
     background: `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`,
   };
 
-  return (
-    <div className="relative w-full h-full">
-      {/* 主天气卡片 */}
-      <div
-        className="w-full h-full rounded-lg overflow-hidden shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg"
-        style={bgStyle}
-        onMouseEnter={() => setShowDetail(true)}
-        onMouseLeave={() => setShowDetail(false)}
+  const WeatherDetailPopup = () => {
+    if (!showDetail) return null;
+    
+    return createPortal(
+      <div 
+        className="fixed z-[1000] pointer-events-none"
+        style={{ 
+          left: popupPosition.x, 
+          top: popupPosition.y,
+          maxWidth: '208px'
+        }}
       >
-        <div className="h-full flex flex-col items-center justify-center gap-2 p-3">
-          <div className="text-center">
-            <h2 className="text-sm font-semibold text-white">
-              {weatherData?.location?.city || cityRef.current}
-            </h2>
-            <p className="text-xs text-white/70">{formatDate(currentTime)}</p>
-          </div>
-          
-          {getWeatherIcon(weatherData?.weather?.condition || '', 'lg', 'text-white')}
-          
-          <div className="text-2xl font-semibold text-white">
-            {weatherData?.weather?.temperature || '--'}°
-          </div>
-          <p className="text-xs text-white/70">
-            {weatherData?.weather?.condition || '未知'}
-          </p>
-        </div>
-      </div>
+        <div className="w-52 rounded-lg overflow-hidden shadow-xl transition-all duration-300 pointer-events-auto">
+          <div className="bg-gradient-to-br from-sky-500 to-indigo-500 text-white">
+            <div className="p-2.5">
+              <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/10 p-1.5 backdrop-blur-sm mb-2">
+                <div className="flex flex-col items-center gap-0.5">
+                  <Droplets size={12} className="text-white/80" />
+                  <span className="text-[9px] opacity-80">湿度</span>
+                  <span className="text-xs font-semibold">
+                    {weatherData?.weather?.humidity ?? '--'}%
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <Wind size={12} className="text-white/80" />
+                  <span className="text-[9px] opacity-80">风向</span>
+                  <span className="text-xs font-semibold">
+                    {weatherData?.weather?.wind_direction ?? '--'}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <Gauge size={12} className="text-white/80" />
+                  <span className="text-[9px] opacity-80">气压</span>
+                  <span className="text-xs font-semibold">
+                    {weatherData?.weather?.pressure ?? '--'}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <Cloud size={12} className="text-white/80" />
+                  <span className="text-[9px] opacity-80">降水</span>
+                  <span className="text-xs font-semibold">
+                    {weatherData?.weather?.precipitation ?? '--'}mm
+                  </span>
+                </div>
+              </div>
 
-      {/* 悬浮详细信息 */}
-      {showDetail && (
-        <div className="absolute top-0 left-full ml-2 z-[300]">
-          <div className="w-52 rounded-lg overflow-hidden shadow-xl transition-all duration-300">
-            <div className="bg-gradient-to-br from-sky-500 to-indigo-500 text-white">
-              <div className="p-2.5">
-                {/* 核心天气指标 */}
-                <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/10 p-1.5 backdrop-blur-sm mb-2">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <Droplets size={12} className="text-white/80" />
-                    <span className="text-[9px] opacity-80">湿度</span>
-                    <span className="text-xs font-semibold">
-                      {weatherData?.weather?.humidity ?? '--'}%
-                    </span>
+              {weatherData?.air_quality && (
+                <div className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1 mb-1.5">
+                  <div className="flex items-center gap-1">
+                    <Sun size={12} className="text-white/80" />
+                    <span className="text-[9px]">空气质量</span>
                   </div>
-                  <div className="flex flex-col items-center gap-0.5">
-                    <Wind size={12} className="text-white/80" />
-                    <span className="text-[9px] opacity-80">风向</span>
-                    <span className="text-xs font-semibold">
-                      {weatherData?.weather?.wind_direction ?? '--'}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-semibold">
+                      {weatherData.air_quality.quality}
                     </span>
-                  </div>
-                  <div className="flex flex-col items-center gap-0.5">
-                    <Gauge size={12} className="text-white/80" />
-                    <span className="text-[9px] opacity-80">气压</span>
-                    <span className="text-xs font-semibold">
-                      {weatherData?.weather?.pressure ?? '--'}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center gap-0.5">
-                    <Cloud size={12} className="text-white/80" />
-                    <span className="text-[9px] opacity-80">降水</span>
-                    <span className="text-xs font-semibold">
-                      {weatherData?.weather?.precipitation ?? '--'}mm
+                    <span className="text-[9px] opacity-80">
+                      AQI {weatherData.air_quality.aqi}
                     </span>
                   </div>
                 </div>
+              )}
 
-                {/* 空气质量 */}
-                {weatherData?.air_quality && (
-                  <div className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1 mb-1.5">
-                    <div className="flex items-center gap-1">
-                      <Sun size={12} className="text-white/80" />
-                      <span className="text-[9px]">空气质量</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-semibold">
-                        {weatherData.air_quality.quality}
-                      </span>
-                      <span className="text-[9px] opacity-80">
-                        AQI {weatherData.air_quality.aqi}
-                      </span>
-                    </div>
+              {weatherData?.sunrise && (
+                <div className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1 mb-1.5">
+                  <div className="flex items-center gap-1">
+                    <Sun size={12} className="text-yellow-300" />
+                    <span className="text-[9px]">日出</span>
+                    <span className="text-[10px] font-semibold">
+                      {weatherData.sunrise.sunrise_desc}
+                    </span>
                   </div>
-                )}
-
-                {/* 日出日落 */}
-                {weatherData?.sunrise && (
-                  <div className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1 mb-1.5">
-                    <div className="flex items-center gap-1">
-                      <Sun size={12} className="text-yellow-300" />
-                      <span className="text-[9px]">日出</span>
-                      <span className="text-[10px] font-semibold">
-                        {weatherData.sunrise.sunrise_desc}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[9px]">日落</span>
-                      <span className="text-[10px] font-semibold">
-                        {weatherData.sunrise.sunset_desc}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px]">日落</span>
+                    <span className="text-[10px] font-semibold">
+                      {weatherData.sunrise.sunset_desc}
+                    </span>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* 未来预报 */}
-                {forecast.length > 0 && (
-                  <div>
-                    <h4 className="mb-1.5 text-[9px] font-medium text-white/80">未来2天</h4>
-                    <div className="space-y-1">
-                      {forecast.slice(0, 2).map((day, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1"
-                        >
-                          <span className="text-[10px] font-medium">{getDayName(day.date)}</span>
-                          <div className="flex items-center gap-2">
-                            {getWeatherIcon(day.day_condition || '', 'sm', 'text-white')}
-                            <div className="flex gap-1.5">
-                              <span className="text-[10px] font-semibold">{day.min_temperature}°</span>
-                              <span className="text-[10px] text-white/80">{day.max_temperature}°</span>
-                            </div>
+              {forecast.length > 0 && (
+                <div>
+                  <h4 className="mb-1.5 text-[9px] font-medium text-white/80">未来2天</h4>
+                  <div className="space-y-1">
+                    {forecast.slice(0, 2).map((day, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1"
+                      >
+                        <span className="text-[10px] font-medium">{getDayName(day.date)}</span>
+                        <div className="flex items-center gap-2">
+                          {getWeatherIcon(day.day_condition || '', 'sm', 'text-white')}
+                          <div className="flex gap-1.5">
+                            <span className="text-[10px] font-semibold">{day.min_temperature}°</span>
+                            <span className="text-[10px] text-white/80">{day.max_temperature}°</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
-    </div>
+      </div>,
+      document.body
+    );
+  };
+
+  return (
+    <>
+      <div className="relative w-full h-full" ref={cardRef}>
+        <div
+          className="w-full h-full rounded-lg overflow-hidden shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg"
+          style={bgStyle}
+          onMouseEnter={() => setShowDetail(true)}
+          onMouseLeave={() => setShowDetail(false)}
+        >
+          <div className="h-full flex flex-col items-center justify-center gap-2 p-3">
+            <div className="text-center">
+              <h2 className="text-sm font-semibold text-white">
+                {weatherData?.location?.city || cityRef.current}
+              </h2>
+              <p className="text-xs text-white/70">{formatDate(currentTime)}</p>
+            </div>
+            
+            {getWeatherIcon(weatherData?.weather?.condition || '', 'lg', 'text-white')}
+            
+            <div className="text-2xl font-semibold text-white">
+              {weatherData?.weather?.temperature || '--'}°
+            </div>
+            <p className="text-xs text-white/70">
+              {weatherData?.weather?.condition || '未知'}
+            </p>
+          </div>
+        </div>
+      </div>
+      <WeatherDetailPopup />
+    </>
   );
 };
 
