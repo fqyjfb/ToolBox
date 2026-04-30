@@ -12,6 +12,7 @@ import FavoritesBar, { Bookmark } from '../components/home/FavoritesBar';
 import ToolGrid from '../components/home/ToolGrid';
 import NewsContainer from '../components/home/NewsContainer';
 import QuickLaunchBar from '../components/home/QuickLaunchBar';
+import MoyuCard from '../components/home/MoyuCard';
 import './Home.css';
 
 const Home: React.FC = () => {
@@ -248,17 +249,29 @@ const Home: React.FC = () => {
   }, [refreshHomeTools]);
 
   return (
-    <div className="p-6 h-full">
-      {/* 搜索区域 - 完全居中 */}
-      <div className="flex flex-col items-center gap-2 mb-6">
+    <div className="p-6 h-full flex flex-col">
+      <div className="flex flex-col items-center gap-2 mb-6 flex-shrink-0">
         <SearchBar searchTypes={searchTypes} />
         <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />
       </div>
-      
-      <div className="flex gap-6 items-stretch">
+
+      <div className="flex gap-2 flex-1 items-stretch min-h-0">
+        <div className="flex flex-col gap-1 w-[280px] flex-shrink-0">
           <ToolGrid tools={homeTools} onToolClick={navigateToTool} />
-          
-          <NewsContainer 
+          {isDesktop && (
+            <div className="flex-1 min-h-0">
+              <QuickLaunchBar
+                apps={homeQuickLaunchApps}
+                onLaunch={handleLaunchApp}
+                onRemove={handleRemoveHomeQuickLaunch}
+                onReorder={handleQuickLaunchReorder}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0 flex flex-col">
+          <NewsContainer
             sixtySecondsLoading={sixtySecondsLoading}
             sixtySecondsError={sixtySecondsError}
             sixtySecondsData={sixtySecondsData}
@@ -276,16 +289,12 @@ const Home: React.FC = () => {
             onRetryItNews={fetchItNews}
             onRetryAiNews={fetchAiNews}
           />
-      </div>
+        </div>
 
-      {isDesktop && (
-        <QuickLaunchBar 
-          apps={homeQuickLaunchApps} 
-          onLaunch={handleLaunchApp} 
-          onRemove={handleRemoveHomeQuickLaunch}
-          onReorder={handleQuickLaunchReorder}
-        />
-      )}
+        <div className="w-72 flex-shrink-0">
+          <MoyuCard className="h-full" />
+        </div>
+      </div>
     </div>
   );
 };

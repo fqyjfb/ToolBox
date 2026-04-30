@@ -1,31 +1,37 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Droplets, Gauge, Sun, Cloud, CloudSun, CloudRain, CloudSnow, Wind, Clock, MapPin, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RefreshCw, Droplets, Gauge, Sun, Cloud, CloudSun, CloudRain, CloudSnow, Wind, Clock, MapPin, AlertTriangle, Search } from 'lucide-react';
 import { apiService } from '../../../services/api';
+import { isWeb } from '../../../utils/environment';
+import { getWeatherCity } from '../../../utils/weatherLocation';
 import type { WeatherInfo, DailyForecast, HourlyForecast } from '../../../types/weather';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 
 const WeatherPage: React.FC = () => {
+  const navigate = useNavigate();
   const [weatherData, setWeatherData] = useState<WeatherInfo | null>(null);
   const [dailyForecast, setDailyForecast] = useState<DailyForecast[]>([]);
   const [hourlyForecast, setHourlyForecast] = useState<HourlyForecast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const city = localStorage.getItem('weatherCity') || '南京';
+  const [searchCity, setSearchCity] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
+  const cityRef = useRef(localStorage.getItem('weatherCity') || '南京');
 
   const fetchWeather = useCallback(async () => {
     setLoading(true);
     setError('');
 
     try {
-      const data = await apiService.getWeather(city);
+      const currentCity = cityRef.current;
+      const data = await apiService.getWeather(currentCity);
       if (data?.data) {
         setWeatherData(data.data);
       } else {
         setError('获取天气失败');
       }
 
-      const forecastData = await apiService.getWeatherForecast(city, 7);
+      const forecastData = await apiService.getWeatherForecast(currentCity, 7);
       if (forecastData?.data?.daily_forecast) {
         setDailyForecast(forecastData.data.daily_forecast);
       }
@@ -38,11 +44,49 @@ const WeatherPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [city]);
+  }, []);
+
+  const handleSearchCity = () => {
+    if (searchCity.trim()) {
+      cityRef.current = searchCity.trim();
+      setSearchCity('');
+      fetchWeather();
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearchCity();
+    }
+  };
+
+  const handleLocationClick = () => {
+    navigate('/settings');
+  };
 
   useEffect(() => {
-    fetchWeather();
-  }, [fetchWeather]);
+    const initializeCity = async () => {
+      let detectedCity = localStorage.getItem('weatherCity');
+      
+      if (!detectedCity && isWeb()) {
+        detectedCity = await getWeatherCity();
+      }
+      
+      if (detectedCity) {
+        cityRef.current = detectedCity;
+      }
+      
+      setIsInitialized(true);
+    };
+    
+    initializeCity();
+  }, []);
+
+  useEffect(() => {
+    if (isInitialized) {
+      fetchWeather();
+    }
+  }, [isInitialized, fetchWeather]);
 
   const getDayName = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -228,11 +272,26 @@ const WeatherPage: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-4 text-white">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+            <button
+              onClick={handleLocationClick}
+              className="flex items-center gap-2 hover:bg-white/10 rounded-md px-1 py-0.5 transition-colors"
+              title="点击进入设置页面修改城市"
+            >
               <MapPin className="w-4 h-4 opacity-80" />
-              <span className="text-sm opacity-80">{weatherData.location?.city || city}</span>
-            </div>
+              <span className="text-sm opacity-80">{weatherData.location?.city || cityRef.current}</span>
+            </button>
             <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-60" />
+                <input
+                  type="text"
+                  value={searchCity}
+                  onChange={(e) => setSearchCity(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="搜索城市"
+                  className="pl-7 pr-2 py-1.5 text-xs bg-white/20 border border-white/30 rounded-md focus:outline-none focus:border-white/60 placeholder:text-white/50 w-28"
+                />
+              </div>
               <span className="text-xs opacity-70">{weatherData.weather?.updated || '-'}</span>
               <button
                 onClick={fetchWeather}

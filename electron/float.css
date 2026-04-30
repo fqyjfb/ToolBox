@@ -1,0 +1,130 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 300px;
+  height: 300px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  overflow: visible;
+  cursor: default;
+}
+
+.float-ball {
+  background: rgb(3, 169, 244);
+  background: linear-gradient(
+    138deg,
+    rgba(3, 169, 244, 1) 15%,
+    rgba(63, 180, 233, 1) 65%
+  );
+  position: relative;
+  cursor: pointer;
+  font-size: 17px;
+  padding: 0.7em 0.7em;
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: background 0.3s ease, transform 0.15s ease;
+}
+
+.float-ball.dragging {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+
+.float-ball.expanded {
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.float-ball .main-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  fill: #fff;
+  transition: fill 0.3s ease;
+}
+
+.float-ball.expanded .main-icon {
+  fill: rgb(3, 169, 244);
+}
+
+.float-ball .tooltip-item {
+  position: absolute;
+  opacity: 0;
+  visibility: hidden;
+  background: #fff;
+  padding: 10px;
+  border-radius: 50px;
+  transition: opacity 0.3s ease, visibility 0.3s ease, top 0.3s ease, background 0.3s ease, transform 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.float-ball .tooltip-item svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.float-ball.expanded .tooltip-item {
+  opacity: 1;
+  visibility: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tooltip-item:hover {
+  transform: scale(1.1);
+  z-index: 20;
+}
+
+.tooltip-item .tooltip-label {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip-item:hover .tooltip-label {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip-item .app-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.float-ball.drop-active {
+  transform: scale(1.2);
+  box-shadow: 0 0 24px rgba(100, 180, 255, 0.8), 0 0 48px rgba(100, 180, 255, 0.4);
+  animation: drop-pulse 1s ease-in-out infinite;
+}
+
+@keyframes drop-pulse {
+  0%, 100% { box-shadow: 0 0 24px rgba(100, 180, 255, 0.8), 0 0 48px rgba(100, 180, 255, 0.4); }
+  50% { box-shadow: 0 0 32px rgba(100, 180, 255, 1), 0 0 64px rgba(100, 180, 255, 0.6); }
+}

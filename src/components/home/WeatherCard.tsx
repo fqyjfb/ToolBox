@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, Droplets, Gauge, Sun, Cloud, CloudSun, CloudRain, CloudSnow, Wind } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { isWeb } from '../../utils/environment';
+import { getWeatherCity } from '../../utils/weatherLocation';
 import type { WeatherInfo, DailyForecast } from '../../types/weather';
 import LoadingSpinner from '../LoadingSpinner';
 
@@ -29,37 +31,58 @@ const WeatherCard: React.FC = () => {
   const [error, setError] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showDetail, setShowDetail] = useState(false);
-
-  const city = localStorage.getItem('weatherCity') || '南京';
+  const [isInitialized, setIsInitialized] = useState(false);
+  const cityRef = useRef(localStorage.getItem('weatherCity') || '南京');
 
   const fetchWeather = useCallback(async () => {
     setLoading(true);
     setError('');
 
     try {
-      const data = await apiService.getWeather(city);
+      const currentCity = cityRef.current;
+      const data = await apiService.getWeather(currentCity);
       if (data?.data) {
         setWeatherData(data.data);
       } else {
         setError('获取天气失败');
       }
 
-      const forecastData = await apiService.getWeatherForecast(city, 4);
+      const forecastData = await apiService.getWeatherForecast(currentCity, 4);
       if (forecastData?.data?.daily_forecast) {
         setForecast(forecastData.data.daily_forecast.slice(1));
       }
-    } catch (err) {
+    } catch {
       setError('网络错误');
     } finally {
       setLoading(false);
     }
-  }, [city]);
+  }, []);
 
   useEffect(() => {
-    fetchWeather();
+    const initializeCity = async () => {
+      let detectedCity = localStorage.getItem('weatherCity');
+      
+      if (!detectedCity && isWeb()) {
+        detectedCity = await getWeatherCity();
+      }
+      
+      if (detectedCity) {
+        cityRef.current = detectedCity;
+      }
+      
+      setIsInitialized(true);
+    };
+    
+    initializeCity();
     const interval = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(interval);
-  }, [fetchWeather]);
+  }, []);
+
+  useEffect(() => {
+    if (isInitialized) {
+      fetchWeather();
+    }
+  }, [isInitialized, fetchWeather]);
 
   const getDayName = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -82,14 +105,15 @@ const WeatherCard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="w-full h-full rounded-lg bg-gradient-to-br from-gray-400 to-gray-500 flex flex-col items-center justify-center text-white gap-2 shadow-md">
-        <p className="text-xs opacity-80">{error}</p>
+      <div className="w-full h-full rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex flex-col items-center justify-center text-white gap-3 shadow-md">
+        <Cloud className="w-8 h-8 text-white/60" />
+        <p className="text-xs text-white/80">{error}</p>
         <button
           onClick={fetchWeather}
-          className="flex items-center gap-1 px-2 py-1 bg-white/20 hover:bg-white/30 rounded-full text-xs transition-colors"
+          className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
+          title="重试"
         >
-          <RefreshCw size={12} />
-          重试
+          <RefreshCw size={16} />
         </button>
       </div>
     );
@@ -120,7 +144,7 @@ const WeatherCard: React.FC = () => {
         <div className="h-full flex flex-col items-center justify-center gap-2 p-3">
           <div className="text-center">
             <h2 className="text-sm font-semibold text-white">
-              {weatherData?.location?.city || city}
+              {weatherData?.location?.city || cityRef.current}
             </h2>
             <p className="text-xs text-white/70">{formatDate(currentTime)}</p>
           </div>

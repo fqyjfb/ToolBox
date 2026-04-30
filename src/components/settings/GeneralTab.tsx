@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings as SettingsIcon, Trash2 } from 'lucide-react';
+import { Settings as SettingsIcon, Trash2, MapPin, Loader2 } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
 import { WindowSize } from '../../types/settings';
@@ -47,6 +47,28 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   btnText
 }) => {
   const addToast = useToastStore(state => state.addToast);
+  const [locationLoading, setLocationLoading] = React.useState(false);
+
+  const handleLocationClick = async () => {
+    setLocationLoading(true);
+    try {
+      const response = await fetch('http://demo.ip-api.com/json/?lang=zh-CN');
+      const data = await response.json();
+      if (data.status === 'success') {
+        const input = document.getElementById('weatherCityInput') as HTMLInputElement;
+        if (input) {
+          input.value = data.city;
+        }
+        addToast({ type: 'success', message: `已定位到 ${data.city}` });
+      } else {
+        addToast({ type: 'error', message: '定位失败，请重试' });
+      }
+    } catch {
+      addToast({ type: 'error', message: '网络错误，无法定位' });
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   const handleThemeChange = (value: string) => {
     if (value === 'dark') {
@@ -156,6 +178,14 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
                 placeholder="请输入城市名称"
                 className="w-28 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               />
+              <button
+                onClick={handleLocationClick}
+                disabled={locationLoading}
+                className="p-1.5 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-md transition-colors disabled:opacity-50"
+                title="获取当前位置"
+              >
+                {locationLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+              </button>
               <button
                 onClick={handleWeatherCitySave}
                 className="px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"

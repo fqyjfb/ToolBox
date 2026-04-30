@@ -96,8 +96,18 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
     }
   };
 
-  const isBase64Icon = (icon: string) => {
-    return icon && icon.startsWith('data:image/');
+  const isPredefinedIcon = (icon: string) => {
+    return icon && AVAILABLE_ICONS.some(i => i.name === icon);
+  };
+
+  const formatIconSrc = (icon: string) => {
+    if (icon.startsWith('data:image/')) {
+      return icon;
+    }
+    if (icon && icon.length > 100 && !icon.includes(' ')) {
+      return `data:image/png;base64,${icon}`;
+    }
+    return null;
   };
 
   return (
@@ -111,11 +121,31 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
             className="w-10 h-10 rounded-full flex items-center justify-center"
             style={{ backgroundColor: localConfig.color }}
           >
-            {isBase64Icon(localConfig.icon) ? (
-              <img src={localConfig.icon} alt="" className="w-8 h-8 object-contain rounded-full" />
-            ) : (
-              <IconComponent name={localConfig.icon} color="#fff" size={18} />
-            )}
+            {(() => {
+              const isPredefined = isPredefinedIcon(localConfig.icon);
+              const iconSrc = formatIconSrc(localConfig.icon);
+              
+              if (!isPredefined && iconSrc) {
+                return (
+                  <img 
+                    src={iconSrc} 
+                    alt="" 
+                    className="w-8 h-8 object-contain rounded-full"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                );
+              }
+              
+              return (
+                <IconComponent 
+                  name={isPredefined ? localConfig.icon : 'HelpCircle'} 
+                  color="#fff" 
+                  size={18} 
+                />
+              );
+            })()}
           </div>
           <div className="text-left">
             <div className="font-medium text-gray-800 dark:text-gray-200">{localConfig.name}</div>
@@ -241,14 +271,38 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
             <div>
               <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">图标</label>
               <div className="flex items-center gap-2">
-                {isBase64Icon(localConfig.icon) ? (
-                  <div className="w-8 h-8 rounded flex items-center justify-center">
-                    <img src={localConfig.icon} alt="" className="w-full h-full object-contain rounded" />
-                  </div>
-                ) : (
-                  <IconComponent name={localConfig.icon} color={localConfig.color} size={24} />
-                )}
-                {!isBase64Icon(localConfig.icon) && (
+                {(() => {
+                  const isPredefined = isPredefinedIcon(localConfig.icon);
+                  const iconSrc = formatIconSrc(localConfig.icon);
+                  
+                  if (localConfig.type === 'app' || (!isPredefined && iconSrc)) {
+                    return (
+                      <div className="w-8 h-8 rounded flex items-center justify-center">
+                        <img 
+                          src={iconSrc || ''} 
+                          alt="" 
+                          className="w-full h-full object-contain rounded"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        {!iconSrc && (
+                          <IconComponent name="Folder" color={localConfig.color} size={20} />
+                        )}
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <IconComponent 
+                      name={isPredefined ? localConfig.icon : 'HelpCircle'} 
+                      color={localConfig.color} 
+                      size={24} 
+                    />
+                  );
+                })()}
+                
+                {localConfig.type !== 'app' && !(!isPredefinedIcon(localConfig.icon) && formatIconSrc(localConfig.icon)) && (
                   <select
                     value={localConfig.icon}
                     onChange={(e) => handleIconChange(e.target.value)}
@@ -259,7 +313,8 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                     ))}
                   </select>
                 )}
-                {isBase64Icon(localConfig.icon) && (
+                
+                {(localConfig.type === 'app' || (!isPredefinedIcon(localConfig.icon) && formatIconSrc(localConfig.icon))) && (
                   <span className="flex-1 text-xs text-gray-500 dark:text-gray-400">
                     使用应用图标
                   </span>

@@ -296,3 +296,85 @@ export interface AiNewsResponse {
 
 // 热点平台类型
 export type HotNewsPlatform = 'douyin' | 'rednote' | 'bilibili' | 'quark' | 'weibo' | 'baidu' | 'toutiao' | 'zhihu' | 'dongchedi' | 'maoyan'
+
+// 摸鱼日报数据类型
+export interface MoyuResponse {
+  code: number;
+  data: MoyuData;
+  message: string;
+}
+
+export interface MoyuData {
+  countdown: MoyuCountdown;
+  currentHoliday: null;
+  date: MoyuDate;
+  moyuQuote: string;
+  nextHoliday: MoyuNextHoliday;
+  nextWeekend: MoyuNextWeekend;
+  progress: MoyuProgress;
+  today: MoyuToday;
+}
+
+export interface MoyuCountdown {
+  toFriday: number;
+  toMonthEnd: number;
+  toWeekEnd: number;
+  toYearEnd: number;
+}
+
+export interface MoyuDate {
+  dayOfWeek: number;
+  gregorian: string;
+  lunar: MoyuLunar;
+  weekday: string;
+}
+
+export interface MoyuLunar {
+  day: number;
+  dayCN: string;
+  dayGanZhi: string;
+  isLeapMonth: boolean;
+  month: number;
+  monthCN: string;
+  monthGanZhi: string;
+  year: number;
+  yearCN: string;
+  yearGanZhi: string;
+  zodiac: string;
+}
+
+export interface MoyuNextHoliday {
+  date: string;
+  duration: number;
+  name: string;
+  until: number;
+  workdays: string[];
+}
+
+export interface MoyuNextWeekend {
+  date: string;
+  daysUntil: number;
+  weekday: string;
+}
+
+export interface MoyuProgress {
+  month: MoyuProgressDetail;
+  week: MoyuProgressDetail;
+  year: MoyuProgressDetail;
+}
+
+export interface MoyuProgressDetail {
+  passed: number;
+  percentage: number;
+  remaining: number;
+  total: number;
+}
+
+export interface MoyuToday {
+  holidayName: null;
+  isHoliday: boolean;
+  isWeekend: boolean;
+  isWorkday: boolean;
+  lunarFestivals: string[];
+  solarTerm: null;
+}

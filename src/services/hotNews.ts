@@ -17,7 +17,8 @@ import type {
   SixtySecondsResponse,
   TodayInHistoryResponse,
   ItNewsResponse,
-  AiNewsResponse
+  AiNewsResponse,
+  MoyuResponse
 } from '../types/hotNews';
 
 const PLATFORM_NAMES: Record<HotNewsPlatform, string> = {
@@ -363,5 +364,10 @@ export const hotNewsApi = {
   // 获取AI资讯快报
   async getAiNews(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
     return await fetchData<AiNewsResponse>('/ai-news', options);
+  },
+
+  // 获取摸鱼日报
+  async getMoyuData(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
+    return await fetchData<MoyuResponse>('/moyu', options);
   }
 };

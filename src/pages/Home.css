@@ -1,6 +1,6 @@
 .card {
   width: 100%;
-  height: var(--card-height);
+  min-height: var(--card-height);
   margin: 0 auto;
   background-color: var(--color-card);
   border-radius: var(--card-radius);
@@ -13,7 +13,6 @@
 
 .card:hover {
   box-shadow: var(--shadow-lg);
-  transform: translateY(-5px);
 }
 
 .tools {
@@ -81,12 +80,14 @@
 }
 
 .daily-news-list::-webkit-scrollbar,
-.daily-history-list::-webkit-scrollbar {
+.daily-history-list::-webkit-scrollbar,
+.news-list::-webkit-scrollbar {
   display: none;
 }
 
 .daily-news-list,
-.daily-history-list {
+.daily-history-list,
+.news-list {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }

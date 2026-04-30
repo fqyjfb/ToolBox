@@ -57,10 +57,10 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('news');
 
   const tabs = [
-    { id: 'news' as TabType, label: '今日热点' },
-    { id: 'history' as TabType, label: '历史上的今天' },
-    { id: 'it' as TabType, label: '实时IT资讯' },
-    { id: 'ai' as TabType, label: 'AI资讯快报' }
+    { id: 'news' as TabType, label: '热点' },
+    { id: 'history' as TabType, label: '历史今天' },
+    { id: 'it' as TabType, label: 'IT资讯' },
+    { id: 'ai' as TabType, label: 'AI快报' }
   ];
 
   const getTabData = (): {
@@ -123,7 +123,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
   };
 
   return (
-    <div className="card flex-1 h-auto">
+    <div className="card flex-1 h-full flex flex-col">
       <div className="tools">
         <div className="flex space-x-2">
           <div className="circle">
@@ -181,7 +181,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
             {data.map((item, index) => (
               <li
                 key={index}
-                className={`news-item text-sm ${item.link ? 'cursor-pointer hover:text-blue-500' : ''}`}
+                className={`news-item text-xs ${item.link ? 'cursor-pointer hover:text-blue-500' : ''}`}
                 onClick={() => item.link && openUrl(item.link)}
               >
                 <span className="news-title" title={item.description}>
