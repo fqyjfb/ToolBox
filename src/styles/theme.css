@@ -413,3 +413,37 @@ body {
 .dark .scrollbar-visible::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.7);
 }
+
+.tooltip {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-tooltip);
+  color: var(--color-tooltip-text);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--transition-fast);
+  z-index: 1000;
+  box-shadow: var(--shadow-md);
+}
+
+.tooltip::after {
+  content: "";
+  position: absolute;
+  border-top: 6px solid var(--color-tooltip);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip-visible {
+  opacity: 1;
+}
