@@ -347,11 +347,14 @@
 
 .quicklaunch-bar {
   display: flex;
-  height: 68px;
+  flex-wrap: wrap;
+  gap: 12px;
   padding-inline: 15px;
+  padding-block: 10px;
   position: relative;
-  justify-content: space-around;
+  justify-content: flex-start;
   align-items: center;
+  max-width: 250px;
 }
 
 .quicklaunch-item {
@@ -361,8 +364,8 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
 }
 
 .quicklaunch-item > .quicklaunch-title {
@@ -400,12 +403,7 @@
 }
 
 .quicklaunch-item:hover {
-  z-index: 15;
-}
-
-.quicklaunch-bar:hover > .quicklaunch-item:not(:hover) {
-  filter: blur(3px);
-  transform: scale(0.8);
+  z-index: 100;
 }
 
 .quicklaunch-remove {

@@ -12,6 +12,10 @@ const floatConfigPath = path.join(app.getPath('userData'), 'floatConfig.json');
 let dragOffset = { x: 0, y: 0 };
 let pollIgnoring = true;
 
+let settingsCache = null;
+let shortcutsCache = null;
+let floatConfigCache = null;
+
 const defaultSettings = {
   isWindowEdgeAdsorption: 0,
   isMemoryOptimizationEnabled: 0,
@@ -51,19 +55,24 @@ const defaultShortcuts = [
 ];
 
 const loadSettings = () => {
+  if (settingsCache) return settingsCache;
+
   try {
     if (fs.existsSync(settingsPath)) {
       const data = fs.readFileSync(settingsPath, 'utf-8');
-      return { ...defaultSettings, ...JSON.parse(data) };
+      settingsCache = { ...defaultSettings, ...JSON.parse(data) };
+      return settingsCache;
     }
   } catch (error) {
     console.error('Failed to load settings:', error);
   }
-  return { ...defaultSettings };
+  settingsCache = { ...defaultSettings };
+  return settingsCache;
 };
 
 const saveSettings = (settings) => {
   try {
+    settingsCache = settings;
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
   } catch (error) {
     console.error('Failed to save settings:', error);
@@ -71,20 +80,25 @@ const saveSettings = (settings) => {
 };
 
 const loadShortcuts = () => {
+  if (shortcutsCache) return shortcutsCache;
+
   try {
     if (fs.existsSync(shortcutsPath)) {
       const data = fs.readFileSync(shortcutsPath, 'utf-8');
       const shortcuts = JSON.parse(data);
-      return shortcuts.map(s => ({ ...defaultShortcuts.find(ds => ds.id === s.id), ...s }));
+      shortcutsCache = shortcuts.map(s => ({ ...defaultShortcuts.find(ds => ds.id === s.id), ...s }));
+      return shortcutsCache;
     }
   } catch (error) {
     console.error('Failed to load shortcuts:', error);
   }
-  return [...defaultShortcuts];
+  shortcutsCache = [...defaultShortcuts];
+  return shortcutsCache;
 };
 
 const saveShortcuts = (shortcuts) => {
   try {
+    shortcutsCache = shortcuts;
     fs.writeFileSync(shortcutsPath, JSON.stringify(shortcuts, null, 2));
   } catch (error) {
     console.error('Failed to save shortcuts:', error);
@@ -92,24 +106,29 @@ const saveShortcuts = (shortcuts) => {
 };
 
 const loadFloatConfig = () => {
+  if (floatConfigCache) return floatConfigCache;
+
   try {
     if (fs.existsSync(floatConfigPath)) {
       const data = fs.readFileSync(floatConfigPath, 'utf-8');
       const config = JSON.parse(data);
-      const mergedConfig = defaultFloatConfig.map((defaultItem, index) => {
+      const mergedConfig = defaultFloatConfig.map((defaultItem) => {
         const savedItem = config.find(c => c.id === defaultItem.id);
         return savedItem ? { ...defaultItem, ...savedItem } : defaultItem;
       });
+      floatConfigCache = mergedConfig;
       return mergedConfig;
     }
   } catch (error) {
     console.error('Failed to load float config:', error);
   }
-  return [...defaultFloatConfig];
+  floatConfigCache = [...defaultFloatConfig];
+  return floatConfigCache;
 };
 
 const saveFloatConfig = (config) => {
   try {
+    floatConfigCache = config;
     fs.writeFileSync(floatConfigPath, JSON.stringify(config, null, 2));
   } catch (error) {
     console.error('Failed to save float config:', error);
@@ -422,22 +441,23 @@ const isDisableShortcuts = (shortcut) => {
 
 const createWindow = () => {
   console.log('Creating main window...');
+
   let iconPath = null;
-  const iconPaths = [
-    path.join(__dirname, '../public/favicon.ico'),
-    path.join(__dirname, '../public/favicon.png'),
-    path.join(process.resourcesPath, 'app', 'public', 'favicon.ico'),
-    path.join(process.resourcesPath, 'app', 'public', 'favicon.png'),
-    path.join(process.resourcesPath, 'public', 'favicon.ico'),
-    path.join(process.resourcesPath, 'public', 'favicon.png')
-  ];
-  
-  console.log('Checking icon paths:');
+  const iconPaths = app.isPackaged
+    ? [
+        path.join(process.resourcesPath, 'app', 'public', 'favicon.ico'),
+        path.join(process.resourcesPath, 'app', 'public', 'favicon.png'),
+        path.join(process.resourcesPath, 'public', 'favicon.ico'),
+        path.join(process.resourcesPath, 'public', 'favicon.png')
+      ]
+    : [
+        path.join(__dirname, '../public/favicon.ico'),
+        path.join(__dirname, '../public/favicon.png')
+      ];
+
   for (const p of iconPaths) {
-    console.log('Checking icon path:', p);
     if (fs.existsSync(p)) {
       iconPath = p;
-      console.log('Found icon at:', p);
       break;
     }
   }
@@ -448,10 +468,12 @@ const createWindow = () => {
     frame: false,
     titleBarStyle: 'hidden',
     icon: iconPath,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
     },
   });
 
@@ -492,7 +514,16 @@ const createWindow = () => {
   
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('Page loaded successfully');
+    mainWindow.show();
     initShortcuts();
+    registerIpcHandlers();
+    setTimeout(() => createTray(), 500);
+    setTimeout(() => {
+      const settings = loadSettings();
+      if (settings.isFloatWindowEnabled === 1) {
+        createFloatWindow();
+      }
+    }, 1000);
   });
   
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
@@ -553,8 +584,8 @@ const createWindow = () => {
     }
   });
 
-  const { ipcMain } = require('electron');
-  
+  const registerIpcHandlers = () => {
+
   ipcMain.on('window-minimize', () => {
     console.log('Minimize window requested');
     mainWindow.minimize();
@@ -1413,6 +1444,8 @@ Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
     });
   });
   
+  };
+
 };
 
 const createFloatWindow = () => {
@@ -1656,19 +1689,17 @@ const createTray = () => {
     path.join(process.resourcesPath, 'app', 'public', 'favicon.png'),
     path.join(process.resourcesPath, 'app', 'dist', 'favicon.png'),
     path.join(process.resourcesPath, 'public', 'favicon.png'),
-    path.join(process.resourcesPath, 'dist', 'favicon.png')
+    path.join(process.resourcesPath, 'dist', 'favicon.png'),
+    path.join(process.resourcesPath, 'favicon.png')
   ];
-  
-  console.log('Checking icon paths:');
+
   for (const p of iconPaths) {
-    console.log('Checking icon path:', p);
     if (fs.existsSync(p)) {
       iconPath = p;
-      console.log('Found icon at:', p);
       break;
     }
   }
-  
+
   let icon;
   if (iconPath) {
     try {
@@ -1706,12 +1737,6 @@ const createTray = () => {
 
 app.whenReady().then(() => {
   createWindow();
-  createTray();
-  
-  const settings = loadSettings();
-  if (settings.isFloatWindowEnabled === 1) {
-    createFloatWindow();
-  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

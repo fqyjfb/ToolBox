@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rocket, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -32,16 +32,14 @@ const SortableQuickLaunchItem: React.FC<{ app: QuickLaunchItem; onLaunch: (path:
       className={`quicklaunch-item cursor-grab active:cursor-grabbing ${isDragging ? 'shadow-lg' : ''}`}
       onClick={() => onLaunch(app.path)}
     >
-      <span className="quicklaunch-title">{app.name}</span>
       {app.icon ? (
         <img
           src={`data:image/png;base64,${app.icon}`}
           alt={app.name}
-          className="w-12 h-12 object-contain"
+          className="w-10 h-10 object-contain"
         />
-      ) : (
-        <Rocket className="w-12 h-12 text-gray-500 dark:text-gray-400" />
-      )}
+      ) : null}
+      <span className="quicklaunch-title">{app.name}</span>
       <button
         className="quicklaunch-remove"
         onClick={(e) => {
@@ -84,11 +82,7 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
   };
 
   return (
-    <div className="mt-6 max-w-2xl w-full mx-auto">
-      <div className="flex items-center gap-2 mb-4">
-        <Rocket className="w-5 h-5 text-green-500" />
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">快启动</h3>
-      </div>
+    <div className="w-full">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
