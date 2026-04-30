@@ -369,36 +369,36 @@
 }
 
 .quicklaunch-item > .quicklaunch-title {
+  --var: -0%;
   position: absolute;
-  top: -100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--color-tooltip);
-  color: var(--color-tooltip-text);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: var(--text-xs);
-  font-weight: 500;
-  white-space: nowrap;
+  top: var(--var);
+  transition: all var(--transition-slow);
+  background-color: dodgerblue;
+  border-radius: 7px;
   opacity: 0;
-  pointer-events: none;
-  transition: all var(--transition-fast);
+  padding-inline: 7px;
+  padding-block: 3px;
+  width: max-content;
+  font-size: small;
+  font-weight: bold;
+  color: white;
+  white-space: nowrap;
   z-index: 200;
-  box-shadow: var(--shadow-md);
 }
 
 .quicklaunch-item > .quicklaunch-title::after {
   content: "";
   position: absolute;
-  border-top: 6px solid var(--color-tooltip);
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
+  border-top: 10px solid dodgerblue;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
   top: 100%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%);
 }
 
 .quicklaunch-item:hover > .quicklaunch-title {
+  --var: -100%;
   opacity: 1;
 }
 

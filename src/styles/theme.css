@@ -92,6 +92,7 @@
   --color-tooltip: rgba(255, 255, 255, 0.95);
   --color-tooltip-text: #111827;
   --color-tooltip-border: rgba(255, 255, 255, 0.95);
+  --color-tooltip-bg: dodgerblue;
   
   --color-google-blue: #4285f4;
   --color-google-green: #34a853;
@@ -186,6 +187,7 @@
   --color-tooltip: rgba(31, 41, 55, 0.95);
   --color-tooltip-text: #f9fafb;
   --color-tooltip-border: rgba(31, 41, 55, 0.95);
+  --color-tooltip-bg: #3b82f6;
   
   --color-favorites: rgba(0, 159, 155, 0.3);
   --color-favorites-hover: rgba(0, 159, 155, 0.4);
@@ -412,38 +414,4 @@ body {
 
 .dark .scrollbar-visible::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.7);
-}
-
-.tooltip {
-  position: absolute;
-  top: -100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--color-tooltip);
-  color: var(--color-tooltip-text);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: var(--text-xs);
-  font-weight: 500;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: all var(--transition-fast);
-  z-index: 1000;
-  box-shadow: var(--shadow-md);
-}
-
-.tooltip::after {
-  content: "";
-  position: absolute;
-  border-top: 6px solid var(--color-tooltip);
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.tooltip-visible {
-  opacity: 1;
 }
