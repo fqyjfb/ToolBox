@@ -72,7 +72,7 @@ const Tooltip: React.FC<TooltipProps> = ({ children, title, position = 'top' }) 
           className={`absolute z-[1000] rounded-lg whitespace-nowrap transition-all duration-200 opacity-100 pointer-events-none ${positionClasses[actualPosition]}`}
           style={{
             backgroundColor: 'var(--color-tooltip-bg, dodgerblue)',
-            color: 'var(--color-tooltip-text, white)',
+            color: 'white',
             fontSize: 'small',
             fontWeight: 'bold',
             paddingInline: '7px',
