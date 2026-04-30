@@ -102,6 +102,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
                   <button
                     onClick={clearSearch}
                     className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out"
+                    title="清除搜索"
                   >
                     <XIcon size={14} />
                   </button>
@@ -109,6 +110,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
                 <button
                   onClick={performSearch}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out"
+                  title="搜索"
                 >
                   <Search size={16} />
                 </button>
@@ -129,6 +131,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
               trigger={
                 <button 
                   className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
+                  title={isAuthenticated ? '用户菜单' : '登录'}
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" height={18} width={18} xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 2c2.757 0 5 2.243 5 5.001 0 2.756-2.243 5-5 5s-5-2.244-5-5c0-2.758 2.243-5.001 5-5.001zm0-2c-3.866 0-7 3.134-7 7.001 0 3.865 3.134 7 7 7s7-3.135 7-7c0-3.867-3.134-7.001-7-7.001zm6.369 13.353c-.497.498-1.057.931-1.658 1.302 2.872 1.874 4.378 5.083 4.972 7.346h-19.387c.572-2.29 2.058-5.503 4.973-7.358-.603-.374-1.162-.811-1.658-1.312-4.258 3.072-5.611 8.506-5.611 10.669h24c0-2.142-1.44-7.557-5.631-10.647z" />
@@ -154,6 +157,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
             <button 
               className="relative p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
               onClick={() => navigate('/tools/todo')}
+              title="待办事项"
             >
               <Bell className="w-5 h-5" />
               {pendingCount > 0 && (
@@ -167,6 +171,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
                 trigger={
                   <button 
                     className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
+                    title="菜单"
                   >
                     <Menu className="w-5 h-5" />
                   </button>
@@ -192,18 +197,21 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
                 <button 
                   className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
                   onClick={() => window.electron?.minimize()}
+                  title="最小化"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
                 <button 
                   className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
                   onClick={() => window.electron?.maximize()}
+                  title="最大化"
                 >
                   <Maximize2 className="w-4 h-4" />
                 </button>
                 <button 
                   className="p-1.5 rounded-lg hover:bg-red-200 dark:hover:bg-red-900 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 hover:-translate-y-0.5"
                   onClick={() => window.electron?.close()}
+                  title="关闭"
                 >
                   <X className="w-4 h-4" />
                 </button>
