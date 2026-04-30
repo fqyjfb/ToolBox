@@ -69,7 +69,7 @@ const UpdateButton: React.FC<UpdateButtonProps> = ({ isChecking, hasUpdate, onCh
       if (error instanceof Error) {
         errorMsg = error.message;
       } else if (typeof error === 'object' && error !== null) {
-        errorMsg = error.msg || JSON.stringify(error);
+        errorMsg = (error as { msg?: string }).msg || JSON.stringify(error);
       } else if (typeof error === 'string') {
         errorMsg = error;
       }
