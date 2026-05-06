@@ -109,14 +109,12 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
                     </button>
                   </Tooltip>
                 )}
-                <Tooltip title="搜索">
-                  <button
-                    onClick={performSearch}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out"
-                  >
-                    <Search size={16} />
-                  </button>
-                </Tooltip>
+                <button
+                  onClick={performSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out"
+                >
+                  <Search size={16} />
+                </button>
               </div>
             )}
             <label className="switch">

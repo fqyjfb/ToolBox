@@ -5,6 +5,26 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { exec } = require('child_process');
 
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  dialog.showMessageBox({
+    type: 'info',
+    title: '提示',
+    message: 'ToolBox 已在运行中',
+    buttons: ['确定']
+  }).then(() => {
+    app.quit();
+  });
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 const shortcutsPath = path.join(app.getPath('userData'), 'shortcuts.json');
 const floatConfigPath = path.join(app.getPath('userData'), 'floatConfig.json');
