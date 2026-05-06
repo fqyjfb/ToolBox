@@ -4,6 +4,7 @@ import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
 import { WindowSize } from '../../types/settings';
 import { useToastStore } from '../../store/toastStore';
+import { useThemeStore } from '../../store/themeStore';
 
 interface GeneralTabProps {
   autostartEnabled: boolean;
@@ -22,6 +23,7 @@ interface GeneralTabProps {
   onMenuPositionChange: (position: string) => void;
   onWindowSizeChange: (key: 'width' | 'height', value: string) => void;
   onClearCache: () => void;
+  onBrowserModeChange: (value: string) => void;
   btnLoading: boolean;
   btnText: string;
 }
@@ -43,10 +45,12 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   onMenuPositionChange,
   onWindowSizeChange,
   onClearCache,
+  onBrowserModeChange,
   btnLoading,
   btnText
 }) => {
   const addToast = useToastStore(state => state.addToast);
+  const { isDark, setTheme } = useThemeStore();
   const [locationLoading, setLocationLoading] = React.useState(false);
 
   const handleLocationClick = async () => {
@@ -71,19 +75,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   };
 
   const handleThemeChange = (value: string) => {
-    if (value === 'dark') {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
-    localStorage.setItem('toolbox_theme', value);
+    setTheme(value as 'light' | 'dark');
     addToast({ type: 'success', message: `主题已切换为${value === 'dark' ? '深色' : '浅色'}` });
-  };
-
-  const handleBrowserModeChange = (value: string) => {
-    const mode = value as 'internal' | 'external';
-    localStorage.setItem('toolbox_browser_mode', mode);
-    addToast({ type: 'success', message: `浏览器设置已更新为${mode === 'internal' ? '程序弹窗' : '默认浏览器'}` });
   };
 
   const handleWeatherCitySave = () => {
@@ -155,7 +148,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
           <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
             <span className="text-sm text-gray-700 dark:text-gray-300">主题切换</span>
             <RadioGroup 
-              value={document.body.classList.contains('dark') ? 'dark' : 'light'} 
+              value={isDark ? 'dark' : 'light'} 
               options={[{ label: '浅色', value: 'light' }, { label: '深色', value: 'dark' }]} 
               onChange={handleThemeChange} 
             />
@@ -165,7 +158,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
             <RadioGroup 
               value={browserMode} 
               options={[{ label: '程序弹窗', value: 'internal' }, { label: '默认浏览器', value: 'external' }]} 
-              onChange={handleBrowserModeChange} 
+              onChange={onBrowserModeChange} 
             />
           </div>
           <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">

@@ -337,6 +337,13 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleBrowserModeChange = (value: string) => {
+    const mode = value as 'internal' | 'external';
+    setBrowserMode(mode);
+    localStorage.setItem('toolbox_browser_mode', mode);
+    addToast({ type: 'success', message: `浏览器设置已更新为${mode === 'internal' ? '程序弹窗' : '默认浏览器'}` });
+  };
+
   // Tab config
   const tabs = [
     { id: 'general' as const, label: '通用设置', icon: SettingsIcon },
@@ -385,6 +392,7 @@ const Settings: React.FC = () => {
             onMenuPositionChange={handleMenuPositionChange}
             onWindowSizeChange={handleWindowSizeChange}
             onClearCache={handleClearCache}
+            onBrowserModeChange={handleBrowserModeChange}
             btnLoading={btnLoading}
             btnText={btnText}
           />
