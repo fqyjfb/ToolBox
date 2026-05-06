@@ -354,7 +354,7 @@
   position: relative;
   justify-content: flex-start;
   align-items: center;
-  max-width: 230px;
+  width: 100%;
 }
 
 .quicklaunch-item {

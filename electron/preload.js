@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('electron', {
   selectFile: () => ipcRenderer.invoke('select-file'),
   getFileIcon: (path) => ipcRenderer.invoke('get-file-icon', path),
   scanDesktopApps: () => ipcRenderer.invoke('scan-desktop-apps'),
+  getDroppedFiles: (fileDataList) => ipcRenderer.invoke('get-dropped-files', fileDataList),
   getAutostartStatus: () => ipcRenderer.invoke('get-autostart-status'),
   setAutostartStatus: (enable) => ipcRenderer.invoke('set-autostart-status', enable),
   getSettings: () => ipcRenderer.invoke('get-settings'),

@@ -671,6 +671,35 @@ const createWindow = () => {
     }
   });
 
+  ipcMain.handle('get-dropped-files', async (event, fileDataList) => {
+    console.log('[DROP] Processing dropped files:', fileDataList.length);
+    const result = [];
+    const searchPaths = [
+      app.getPath('desktop'),
+      app.getPath('downloads'),
+      app.getPath('documents'),
+      app.getPath('home')
+    ];
+    
+    for (const fileData of fileDataList) {
+      let found = false;
+      for (const searchPath of searchPaths) {
+        if (!fs.existsSync(searchPath)) continue;
+        const fullPath = path.join(searchPath, fileData.name);
+        if (fs.existsSync(fullPath) && isSupportedFileType(fullPath)) {
+          result.push(fullPath);
+          found = true;
+          break;
+        }
+      }
+      if (!found && fileData.path && fs.existsSync(fileData.path)) {
+        result.push(fileData.path);
+      }
+    }
+    console.log('[DROP] Valid dropped files:', result.length);
+    return result;
+  });
+
   ipcMain.handle('get-file-icon', async (event, filePath) => {
     console.log('[ICON] Get file icon requested for:', filePath);
     

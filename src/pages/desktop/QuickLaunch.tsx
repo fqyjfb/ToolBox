@@ -118,6 +118,7 @@ const QuickLaunch: React.FC = () => {
     const saved = localStorage.getItem('quickLaunchIconSize');
     return (saved === 'small' || saved === 'medium') ? saved : 'medium';
   });
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -222,6 +223,67 @@ const QuickLaunch: React.FC = () => {
       setCustomPath(result);
     }
   }, []);
+
+  const handleDropFiles = useCallback(async (paths: string[]) => {
+    const targetCategoryId = activeCategoryId === 'all' ? (categories[0]?.id || '') : activeCategoryId;
+    
+    for (const path of paths) {
+      const lowerPath = path.toLowerCase();
+      const exists = apps.some(app => app.path.toLowerCase() === lowerPath);
+      
+      if (exists) {
+        continue;
+      }
+      
+      const icon = await window.electron?.getFileIcon(path) || undefined;
+      const newApp: QuickLaunchItem = {
+        id: Date.now().toString(),
+        name: getAppName(path),
+        path,
+        icon,
+        categoryId: targetCategoryId,
+        addedAt: Date.now(),
+      };
+      setApps(prev => [...prev, newApp]);
+    }
+  }, [apps, activeCategoryId, categories, getAppName]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const fileDataList: { name: string; type: string; size: number; path?: string }[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i] as File & { path?: string };
+        fileDataList.push({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          path: file.path
+        });
+      }
+      
+      const validPaths = await window.electron?.getDroppedFiles(fileDataList);
+      if (validPaths && validPaths.length > 0) {
+        handleDropFiles(validPaths);
+      }
+    }
+  }, [handleDropFiles]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, type: 'app' | 'category' | 'empty', targetId?: string) => {
     e.preventDefault();
@@ -531,7 +593,14 @@ const QuickLaunch: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 p-6 overflow-auto">
+      <div 
+        className={`flex-1 p-6 overflow-auto transition-colors duration-200 ${
+          isDragOver ? 'bg-green-50 dark:bg-green-900/20' : ''
+        }`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {filteredApps.length > 0 ? (
           <DndContext
             sensors={sensors}
@@ -539,7 +608,9 @@ const QuickLaunch: React.FC = () => {
             onDragEnd={handleAppsDragEnd}
           >
             <SortableContext items={filteredApps.map(app => app.id)} strategy={verticalListSortingStrategy}>
-              <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-[15px] min-h-[300px]">
+              <div className={`grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-[15px] min-h-[300px] transition-all duration-200 ${
+                isDragOver ? 'border-2 border-dashed border-green-400 rounded-lg p-4' : ''
+              }`}>
                 {filteredApps.map((app) => (
                   <SortableAppItem
                     key={app.id}
@@ -553,10 +624,12 @@ const QuickLaunch: React.FC = () => {
             </SortableContext>
           </DndContext>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <Rocket size={64} className="mb-4 opacity-50" />
-            <p className="text-lg">暂无快启动应用</p>
-            <p className="text-sm">右键点击空白处添加应用</p>
+          <div className={`flex flex-col items-center justify-center h-full text-gray-400 transition-all duration-200 ${
+            isDragOver ? 'border-2 border-dashed border-green-400 rounded-lg p-8' : ''
+          }`}>
+            <Rocket size={64} className={`mb-4 transition-opacity duration-200 ${isDragOver ? 'opacity-100 text-green-500' : 'opacity-50'}`} />
+            <p className="text-lg">{isDragOver ? '松开鼠标添加应用' : '暂无快启动应用'}</p>
+            <p className="text-sm">{isDragOver ? '支持拖拽多个应用' : '右键点击空白处添加应用'}</p>
           </div>
         )}
       </div>

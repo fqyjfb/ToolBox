@@ -51,6 +51,13 @@ interface DownloadResult {
   path?: string;
 }
 
+interface FileData {
+  name: string;
+  type: string;
+  size: number;
+  path?: string;
+}
+
 declare interface Window {
   electron?: {
     minimize: () => void;
@@ -62,6 +69,7 @@ declare interface Window {
     selectFile: () => Promise<string | null>;
     getFileIcon: (path: string) => Promise<string | null>;
     scanDesktopApps: () => Promise<DesktopAppInfo[]>;
+    getDroppedFiles: (fileDataList: FileData[]) => Promise<string[]>;
     getAutostartStatus: () => Promise<boolean>;
     setAutostartStatus: (enable: boolean) => Promise<boolean>;
     getSettings: () => Promise<SettingItem[]>;
