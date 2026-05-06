@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, AlertCircle } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import { NotificationSettings } from '../../types/settings';
 
@@ -18,27 +18,21 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ notifications, onNo
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">通知设置</h2>
       </div>
       <div className="divide-y divide-gray-100 dark:divide-gray-700">
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">工具执行完成通知</span>
-          <ToggleSwitch
-            enabled={notifications.toolComplete}
-            onChange={() => onNotificationToggle('toolComplete')}
-          />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">系统更新通知</span>
-          <ToggleSwitch
-            enabled={notifications.updates}
-            onChange={() => onNotificationToggle('updates')}
-          />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">错误通知</span>
+        <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="text-red-500" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">错误通知</span>
+          </div>
           <ToggleSwitch
             enabled={notifications.errors}
             onChange={() => onNotificationToggle('errors')}
           />
         </div>
+      </div>
+      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/30">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          开启后，当应用发生错误时会在界面显示错误提示通知
+        </p>
       </div>
     </div>
   );

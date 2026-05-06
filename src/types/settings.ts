@@ -26,8 +26,6 @@ export interface FloatConfigItem {
 export type SettingsTab = 'general' | 'quickLaunch' | 'notifications' | 'shortcuts' | 'floatWindow';
 
 export interface NotificationSettings {
-  toolComplete: boolean;
-  updates: boolean;
   errors: boolean;
 }
 

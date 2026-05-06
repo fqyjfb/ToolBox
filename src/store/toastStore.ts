@@ -13,25 +13,40 @@ interface ToastStore {
   removeToast: (id: string) => void;
 }
 
+const isErrorNotificationsEnabled = (): boolean => {
+  try {
+    const stored = localStorage.getItem('toolbox_notification_errors');
+    return stored !== 'false';
+  } catch {
+    return true;
+  }
+};
+
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
-  addToast: (toast) => set((state) => {
-    const id = Date.now().toString();
-    const newToast = { ...toast, id };
-    
-    // 自动移除 toast
-    if (toast.duration !== 0) {
-      setTimeout(() => {
-        set((state) => ({
-          toasts: state.toasts.filter(t => t.id !== id)
-        }));
-      }, toast.duration || 3000);
+  addToast: (toast) => {
+    if (toast.type === 'error' && !isErrorNotificationsEnabled()) {
+      return;
     }
+
+    const id = Date.now().toString();
     
-    return {
-      toasts: [...state.toasts, newToast]
-    };
-  }),
+    set((state) => {
+      const newToast = { ...toast, id };
+      
+      if (toast.duration !== 0) {
+        setTimeout(() => {
+          set((state) => ({
+            toasts: state.toasts.filter(t => t.id !== id)
+          }));
+        }, toast.duration || 3000);
+      }
+      
+      return {
+        toasts: [...state.toasts, newToast]
+      };
+    });
+  },
   removeToast: (id) => set((state) => ({
     toasts: state.toasts.filter(toast => toast.id !== id)
   }))

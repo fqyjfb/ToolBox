@@ -29,10 +29,11 @@ const Settings: React.FC = () => {
   const [browserMode, setBrowserMode] = useState<'internal' | 'external'>('internal');
   const [isScanning, setIsScanning] = useState(false);
   const [autostartEnabled, setAutostartEnabled] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationSettings>({
-    toolComplete: true,
-    updates: true,
-    errors: true
+  const [notifications, setNotifications] = useState<NotificationSettings>(() => {
+    const saved = localStorage.getItem('toolbox_notification_errors');
+    return {
+      errors: saved !== 'false'
+    };
   });
   const [isEdgeAdsorption, setIsEdgeAdsorption] = useState(false);
   const [isMemoryOptimizationEnabled, setIsMemoryOptimizationEnabled] = useState(false);
@@ -158,7 +159,13 @@ const Settings: React.FC = () => {
   };
 
   const handleNotificationToggle = (key: keyof NotificationSettings) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+    setNotifications(prev => {
+      const newValue = !prev[key];
+      if (key === 'errors') {
+        localStorage.setItem('toolbox_notification_errors', String(newValue));
+      }
+      return { ...prev, [key]: newValue };
+    });
     addToast({ type: 'success', message: '通知设置已更新' });
   };
 
