@@ -348,13 +348,13 @@
 .quicklaunch-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  padding-inline: 15px;
-  padding-block: 10px;
+  gap: 6px;
+  padding-inline: 8px;
+  padding-block: 8px;
   position: relative;
   justify-content: flex-start;
   align-items: center;
-  max-width: 250px;
+  max-width: 230px;
 }
 
 .quicklaunch-item {
@@ -364,8 +364,8 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
 }
 
 .quicklaunch-item > .quicklaunch-title {

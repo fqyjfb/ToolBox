@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { APP_VERSION } from '../../utils/version';
+import { APP_VERSION, compareVersions } from '../../utils/version';
 import { useToastStore } from '../../store/toastStore';
 import { ExternalLink } from 'lucide-react';
 import GitHubButton from '../../components/ui/GitHubButton';
@@ -53,9 +53,13 @@ const About: React.FC = () => {
         setNewVersion(info.newVersion);
         setDownloadUrl(info.download);
 
-        if (info.newVersion !== '未知' && info.newVersion !== APP_VERSION) {
+        const currentVersion = APP_VERSION;
+        const latestVersion = info.newVersion;
+        const needsUpdate = latestVersion !== '未知' && compareVersions(currentVersion, latestVersion) < 0;
+
+        if (needsUpdate) {
           setHasUpdate(true);
-          addToast({ type: 'success', message: `发现新版本: ${info.newVersion}` });
+          addToast({ type: 'success', message: `发现新版本: ${latestVersion}` });
         } else {
           setHasUpdate(false);
           addToast({ type: 'success', message: '当前已是最新版本' });

@@ -1,7 +1,7 @@
 {
   "name": "ToolBox",
   "private": true,
-  "version": "1.2.7",
+  "version": "1.2.8",
   "type": "commonjs",
   "main": "electron/main.js",
   "scripts": {
