@@ -46,7 +46,7 @@ const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'med
         }`} />
       )}
       <span className={`font-medium text-gray-700 dark:text-gray-200 truncate w-full text-center ${
-        iconSize === 'small' ? 'text-[10px]' : 'text-xs'
+        iconSize === 'small' ? 'text-[8px]' : 'text-[10px]'
       }`}>
         {app.name}
       </span>
