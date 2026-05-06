@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.3.5';
+export const APP_VERSION = '1.3.6';
 
 export const getVersion = (): string => {
   return APP_VERSION;

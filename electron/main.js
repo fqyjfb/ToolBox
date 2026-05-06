@@ -8,14 +8,7 @@ const { exec } = require('child_process');
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
-  dialog.showMessageBox({
-    type: 'info',
-    title: '提示',
-    message: 'ToolBox 已在运行中',
-    buttons: ['确定']
-  }).then(() => {
-    app.quit();
-  });
+  app.quit();
 } else {
   app.on('second-instance', () => {
     if (mainWindow) {
