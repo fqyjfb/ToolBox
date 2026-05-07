@@ -406,29 +406,6 @@
   z-index: 150;
 }
 
-.quicklaunch-remove {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-  background: crimson;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 25;
-}
-
-.quicklaunch-item:hover > .quicklaunch-remove {
-  opacity: 1;
-}
-
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(3, var(--tools-grid-item-size));
