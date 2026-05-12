@@ -2,6 +2,32 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Copy, Download, FileText } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 
+const parseCSV = (text: string, hasHeader: boolean): { output: string; error: string } => {
+  if (!text.trim()) {
+    return { output: '', error: '' };
+  }
+
+  try {
+    const lines = text.trim().split('\n');
+    const headers = hasHeader ? lines[0].split(',').map(h => h.trim()) : lines[0].split(',').map((_, i) => `column${i}`);
+    const dataLines = hasHeader ? lines.slice(1) : lines;
+    
+    const result = dataLines.map((line) => {
+      const values = line.split(',');
+      const obj: Record<string, string> = {};
+      headers.forEach((header, i) => {
+        obj[header] = values[i] ? values[i].trim() : '';
+      });
+      return obj;
+    }).filter(row => Object.values(row).some(v => v));
+
+    return { output: JSON.stringify(result, null, 2), error: '' };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : '解析失败';
+    return { output: '', error: errorMsg };
+  }
+};
+
 const CsvToJsonPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
   const [input, setInput] = useState('');
@@ -9,39 +35,16 @@ const CsvToJsonPage: React.FC = () => {
   const [error, setError] = useState('');
   const [hasHeader, setHasHeader] = useState(true);
 
-  const parseCSV = useCallback(() => {
-    if (!input.trim()) {
-      setOutput('');
-      setError('');
-      return;
-    }
-
-    try {
-      const lines = input.trim().split('\n');
-      const headers = hasHeader ? lines[0].split(',').map(h => h.trim()) : lines[0].split(',').map((_, i) => `column${i}`);
-      const dataLines = hasHeader ? lines.slice(1) : lines;
-      
-      const result = dataLines.map((line) => {
-        const values = line.split(',');
-        const obj: Record<string, string> = {};
-        headers.forEach((header, i) => {
-          obj[header] = values[i] ? values[i].trim() : '';
-        });
-        return obj;
-      }).filter(row => Object.values(row).some(v => v));
-
-      setOutput(JSON.stringify(result, null, 2));
-      setError('');
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : '解析失败';
-      setError(errorMsg);
-      addToast({ message: errorMsg, type: 'error' });
-    }
-  }, [input, hasHeader, addToast]);
-
   useEffect(() => {
-    parseCSV();
-  }, [parseCSV]);
+    const result = parseCSV(input, hasHeader);
+    setTimeout(() => {
+      setOutput(result.output);
+      setError(result.error);
+      if (result.error) {
+        addToast({ message: result.error, type: 'error' });
+      }
+    }, 0);
+  }, [input, hasHeader, addToast]);
 
   const handleCopy = useCallback(() => {
     if (!output) {

@@ -3,10 +3,10 @@ export interface Category {
   id: string
   name: string
   parent_id: string | null
-  order: number
+  order?: number
   children: Category[]
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 // 书签类型定义

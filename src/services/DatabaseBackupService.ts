@@ -8,28 +8,28 @@ export interface BackupInfo {
 }
 
 export interface TableData {
-  profiles: any[]
-  users: any[]
-  announcements: any[]
-  blog_categories: any[]
-  blog_posts: any[]
-  blog_comments: any[]
-  clipboard_categories: any[]
-  clipboard_items: any[]
-  password_categories: any[]
-  passwords: any[]
-  tiktok_forms: any[]
-  tiktok_form_fields: any[]
-  tiktok_customers: any[]
-  tiktok_settings: any[]
-  tiktok_sync_configs: any[]
-  quick_reply_categories: any[]
-  quick_replies: any[]
-  categories: any[]
-  bookmarks: any[]
-  user_favorites: any[]
-  tool_categories: any[]
-  tools: any[]
+  profiles: Record<string, unknown>[]
+  users: Record<string, unknown>[]
+  announcements: Record<string, unknown>[]
+  blog_categories: Record<string, unknown>[]
+  blog_posts: Record<string, unknown>[]
+  blog_comments: Record<string, unknown>[]
+  clipboard_categories: Record<string, unknown>[]
+  clipboard_items: Record<string, unknown>[]
+  password_categories: Record<string, unknown>[]
+  passwords: Record<string, unknown>[]
+  tiktok_forms: Record<string, unknown>[]
+  tiktok_form_fields: Record<string, unknown>[]
+  tiktok_customers: Record<string, unknown>[]
+  tiktok_settings: Record<string, unknown>[]
+  tiktok_sync_configs: Record<string, unknown>[]
+  quick_reply_categories: Record<string, unknown>[]
+  quick_replies: Record<string, unknown>[]
+  categories: Record<string, unknown>[]
+  bookmarks: Record<string, unknown>[]
+  user_favorites: Record<string, unknown>[]
+  tool_categories: Record<string, unknown>[]
+  tools: Record<string, unknown>[]
 }
 
 export interface BackupData extends TableData {
@@ -59,13 +59,13 @@ class DatabaseBackupService {
       try {
         const { data, error } = await supabase.from(table).select('*')
         if (error) {
-          (backupData as any)[table] = []
+          backupData[table] = []
         } else {
-          (backupData as any)[table] = data || []
+          backupData[table] = data || []
           totalRecords += (data || []).length
         }
       } catch {
-        (backupData as any)[table] = []
+        backupData[table] = []
       }
     }
 
@@ -84,7 +84,7 @@ class DatabaseBackupService {
     let sql = '-- ToolBox 数据库备份\n-- 备份时间: ' + timestamp + '\n-- 版本: 1.0\n\nBEGIN TRANSACTION;\n\n'
 
     for (const table of this.tables) {
-      const records = (backupData as any)[table] || []
+      const records = backupData[table] || []
       
       if (records.length === 0) {
         sql += '-- 表 ' + table + ' 无数据\n\n'
@@ -107,7 +107,7 @@ class DatabaseBackupService {
     return sql
   }
 
-  private formatValue(value: any): string {
+  private formatValue(value: unknown): string {
     if (value === null || value === undefined) return 'NULL'
     if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE'
     if (typeof value === 'number') return value.toString()
@@ -127,7 +127,7 @@ class DatabaseBackupService {
   async importData(data: BackupData): Promise<{ success: boolean; message: string }> {
     try {
       for (const table of this.tables) {
-        const records = (data as any)[table] || []
+        const records = data[table] || []
         if (records.length === 0) continue
 
         await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000')

@@ -1,0 +1,576 @@
+import { useState, useEffect, useCallback } from 'react';
+import { logError } from '../services/loggerService';
+
+const LAST_OPENED_FILE_KEY = 'notes_last_opened_file';
+
+export interface FileTreeNode {
+  id: string;
+  name: string;
+  type: 'file' | 'folder';
+  path: string;
+  children?: FileTreeNode[];
+  expanded?: boolean;
+  active?: boolean;
+}
+
+export interface NotesState {
+  hasRootPath: boolean;
+  rootPath: string | null;
+  fileTree: FileTreeNode[];
+  selectedFile: FileTreeNode | null;
+  fileContent: string;
+  loading: boolean;
+  error: string | null;
+}
+
+export interface UseNotesReturn extends NotesState {
+  selectRootFolder: () => Promise<boolean>;
+  setRootPath: (path: string) => Promise<void>;
+  changeFolder: () => Promise<boolean>;
+  refreshFileTree: () => Promise<void>;
+  selectFile: (file: FileTreeNode) => Promise<void>;
+  updateFileContent: (content: string) => void;
+  saveFile: (content: string) => Promise<boolean>;
+  createFolder: (parentPath: string | null, name: string) => Promise<{ success: boolean; exists?: boolean }>;
+  createFolderForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy') => Promise<boolean>;
+  createNote: (parentPath: string | null, name: string, content?: string) => Promise<{ success: boolean; exists?: boolean }>;
+  createNoteForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy', content?: string) => Promise<boolean>;
+  renameItem: (oldPath: string, newName: string) => Promise<boolean>;
+  deleteItem: (itemPath: string) => Promise<boolean>;
+  toggleFolderExpand: (folderPath: string) => void;
+  rebuildIndex: () => Promise<void>;
+  clearError: () => void;
+}
+
+export function useNotes(): UseNotesReturn {
+  const [hasRootPath, setHasRootPath] = useState(false);
+  const [rootPath, setRootPathState] = useState<string | null>(null);
+  const [fileTree, setFileTree] = useState<FileTreeNode[]>([]);
+  const [selectedFile, setSelectedFile] = useState<FileTreeNode | null>(null);
+  const [fileContent, setFileContent] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [initialized, setInitialized] = useState(false);
+
+  const findFileInTree = useCallback(
+    (filePath: string, nodes: FileTreeNode[]): FileTreeNode | null => {
+      for (const node of nodes) {
+        if (node.path === filePath && node.type === 'file') {
+          return node;
+        }
+        if (node.children) {
+          const found = findFileInTree(filePath, node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    },
+    []
+  );
+
+  const getParentFolders = useCallback(
+    (filePath: string, rootPath: string): string[] => {
+      const parents: string[] = [];
+      let currentPath = filePath;
+
+      while (currentPath !== rootPath) {
+        const lastSep = Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\'));
+        if (lastSep === -1) break;
+
+        currentPath = currentPath.substring(0, lastSep);
+        if (currentPath && currentPath !== rootPath) {
+          parents.push(currentPath);
+        }
+      }
+
+      return parents;
+    },
+    []
+  );
+
+  useEffect(() => {
+    const initNotes = async () => {
+      if (initialized) return;
+      if (!window.electron?.notes) return;
+
+      try {
+        const hasRoot = await window.electron.notes.hasRootPath();
+        setHasRootPath(hasRoot);
+
+        if (hasRoot) {
+          const root = await window.electron.notes.getRootPath();
+          setRootPathState(root);
+
+          if (root) {
+            await window.electron.notes.scanFolder(root);
+            const tree = await window.electron.notes.getFileTree();
+            setFileTree(tree);
+
+            const lastOpenedFile = localStorage.getItem(LAST_OPENED_FILE_KEY);
+            if (lastOpenedFile) {
+              const fileNode = findFileInTree(lastOpenedFile, tree);
+              if (fileNode) {
+                const result = await window.electron.notes.readFile(fileNode.path);
+                if (result.success && result.content !== undefined) {
+                  setFileContent(result.content);
+                  setSelectedFile(fileNode);
+
+                  const parentFolders = getParentFolders(fileNode.path, root);
+                  if (parentFolders.length > 0) {
+                    setExpandedFolders((prev) => {
+                      const newSet = new Set(prev);
+                      parentFolders.forEach((folder) => newSet.add(folder));
+                      return newSet;
+                    });
+                  }
+                }
+              } else {
+                localStorage.removeItem(LAST_OPENED_FILE_KEY);
+              }
+            }
+          }
+        }
+        setInitialized(true);
+      } catch {
+        setError('初始化笔记模块失败');
+      }
+    };
+
+    initNotes();
+  }, []);
+
+  const selectRootFolder = useCallback(async (): Promise<boolean> => {
+    if (!window.electron?.notes) return false;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const result = await window.electron.notes.selectFolder();
+      if (result.canceled || result.filePaths.length === 0) {
+        setLoading(false);
+        return false;
+      }
+
+      const selectedPath = result.filePaths[0];
+      const validation = await window.electron.notes.validateFolder(selectedPath);
+      if (!validation.valid) {
+        setError(validation.error || '文件夹验证失败');
+        setLoading(false);
+        return false;
+      }
+
+      await window.electron.notes.setRootPath(selectedPath);
+      setRootPathState(selectedPath);
+      setHasRootPath(true);
+
+      const scanResult = await window.electron.notes.scanFolder(selectedPath);
+      if (!scanResult.success) {
+        setError(scanResult.error || '扫描文件夹失败');
+        setLoading(false);
+        return false;
+      }
+
+      const tree = await window.electron.notes.getFileTree();
+      setFileTree(tree);
+      setLoading(false);
+      return true;
+    } catch {
+      setError('选择根目录失败');
+      setLoading(false);
+      return false;
+    }
+  }, []);
+
+  const setRootPath = useCallback(async (path: string) => {
+    if (!window.electron) return;
+    await window.electron.notes.setRootPath(path);
+    setRootPathState(path);
+    setHasRootPath(true);
+
+    await window.electron.notes.scanFolder(path);
+    const tree = await window.electron.notes.getFileTree();
+    setFileTree(tree);
+  }, []);
+
+  const refreshFileTree = useCallback(async () => {
+    if (!rootPath || !window.electron) return;
+
+    try {
+      setLoading(true);
+      await window.electron.notes.scanFolder(rootPath);
+      const tree = await window.electron.notes.getFileTree();
+      setFileTree(tree);
+      setLoading(false);
+    } catch (err) {
+      logError('刷新文件树失败', 'useNotes', err as Error);
+      setError('刷新文件树失败');
+      setLoading(false);
+    }
+  }, [rootPath]);
+
+  const selectFile = useCallback(async (file: FileTreeNode) => {
+    if (file.type !== 'file' || !window.electron) return;
+
+    try {
+      setLoading(true);
+      const result = await window.electron.notes.readFile(file.path);
+
+      if (result.success && result.content !== undefined) {
+        setFileContent(result.content);
+        setSelectedFile(file);
+        localStorage.setItem(LAST_OPENED_FILE_KEY, file.path);
+      } else {
+        setError(result.error || '读取文件失败');
+      }
+
+      setLoading(false);
+    } catch (err) {
+      logError('读取文件失败', 'useNotes', err as Error);
+      setError('读取文件失败');
+      setLoading(false);
+    }
+  }, []);
+
+  const updateFileContent = useCallback((content: string) => {
+    setFileContent(content);
+  }, []);
+
+  const saveFile = useCallback(
+    async (content: string): Promise<boolean> => {
+      if (!selectedFile || !window.electron) return false;
+
+      try {
+        const result = await window.electron.notes.saveFile(selectedFile.path, content);
+
+        if (result.success) {
+          setFileContent(content);
+          return true;
+        } else {
+          setError(result.error || '保存文件失败');
+          return false;
+        }
+      } catch (err) {
+        logError('保存文件失败', 'useNotes', err as Error);
+        setError('保存文件失败');
+        return false;
+      }
+    },
+    [selectedFile]
+  );
+
+  const createFolder = useCallback(
+    async (parentPath: string | null, name: string): Promise<{ success: boolean; exists?: boolean }> => {
+      if (!window.electron) return { success: false };
+      try {
+        const result = await window.electron.notes.createFolder(parentPath, name);
+
+        if (result.success) {
+          await refreshFileTree();
+          return { success: true };
+        } else {
+          setError(result.error || '创建文件夹失败');
+          return { success: false, exists: result.exists };
+        }
+      } catch (err) {
+        logError('创建文件夹失败', 'useNotes', err as Error);
+        setError('创建文件夹失败');
+        return { success: false };
+      }
+    },
+    [refreshFileTree]
+  );
+
+  const createFolderForce = useCallback(
+    async (parentPath: string | null, name: string, mode: 'overwrite' | 'copy'): Promise<boolean> => {
+      if (!window.electron) return false;
+      try {
+        const result = await window.electron.notes.createFolderForce(parentPath, name, mode);
+
+        if (result.success) {
+          await refreshFileTree();
+          return true;
+        } else {
+          setError(result.error || '创建文件夹失败');
+          return false;
+        }
+      } catch (err) {
+        logError('强制创建文件夹失败', 'useNotes', err as Error);
+        setError('创建文件夹失败');
+        return false;
+      }
+    },
+    [refreshFileTree]
+  );
+
+  const createNote = useCallback(
+    async (parentPath: string | null, name: string, content?: string): Promise<{ success: boolean; exists?: boolean }> => {
+      if (!window.electron) return { success: false };
+      try {
+        const result = await window.electron.notes.createNote(parentPath, name, content);
+
+        if (result.success) {
+          await refreshFileTree();
+
+          if (result.path) {
+            const newNode: FileTreeNode = {
+              id: result.path,
+              name: name.endsWith('.md') ? name : `${name}.md`,
+              type: 'file',
+              path: result.path,
+            };
+            await selectFile(newNode);
+          }
+
+          return { success: true };
+        } else {
+          setError(result.error || '创建笔记失败');
+          return { success: false, exists: result.exists };
+        }
+      } catch (err) {
+        logError('创建笔记失败', 'useNotes', err as Error);
+        setError('创建笔记失败');
+        return { success: false };
+      }
+    },
+    [refreshFileTree, selectFile]
+  );
+
+  const createNoteForce = useCallback(
+    async (parentPath: string | null, name: string, mode: 'overwrite' | 'copy', content?: string): Promise<boolean> => {
+      if (!window.electron) return false;
+      try {
+        const result = await window.electron.notes.createNoteForce(parentPath, name, mode, content);
+
+        if (result.success) {
+          await refreshFileTree();
+
+          if (result.path) {
+            const finalName = name.endsWith('.md') ? name : `${name}.md`;
+            const newNode: FileTreeNode = {
+              id: result.path,
+              name: finalName,
+              type: 'file',
+              path: result.path,
+            };
+            await selectFile(newNode);
+          }
+
+          return true;
+        } else {
+          setError(result.error || '创建笔记失败');
+          return false;
+        }
+      } catch (err) {
+        logError('强制创建笔记失败', 'useNotes', err as Error);
+        setError('创建笔记失败');
+        return false;
+      }
+    },
+    [refreshFileTree, selectFile]
+  );
+
+  const renameItem = useCallback(
+    async (oldPath: string, newName: string): Promise<boolean> => {
+      if (!window.electron) return false;
+      try {
+        const result = await window.electron.notes.renameItem(oldPath, newName);
+
+        if (result.success) {
+          await refreshFileTree();
+
+          setExpandedFolders((prev) => {
+            const newSet = new Set<string>();
+            prev.forEach((folderPath) => {
+              if (folderPath === oldPath) {
+                newSet.add(result.newPath!);
+              } else if (folderPath.startsWith(oldPath + '/') || folderPath.startsWith(oldPath + '\\')) {
+                newSet.add(folderPath.replace(oldPath, result.newPath!));
+              } else {
+                newSet.add(folderPath);
+              }
+            });
+            return newSet;
+          });
+
+          if (selectedFile?.path === oldPath && result.newPath) {
+            setSelectedFile({
+              ...selectedFile,
+              id: result.newPath,
+              name: newName.endsWith('.md') ? newName : `${newName}.md`,
+              path: result.newPath,
+            });
+          } else if (selectedFile?.path && result.newPath) {
+            const sep = oldPath.includes('/') ? '/' : '\\';
+            if (selectedFile.path.startsWith(oldPath + sep)) {
+              const newFilePath = selectedFile.path.replace(oldPath, result.newPath);
+              setSelectedFile({
+                ...selectedFile,
+                id: newFilePath,
+                path: newFilePath,
+              });
+              localStorage.setItem(LAST_OPENED_FILE_KEY, newFilePath);
+            }
+          }
+
+          return true;
+        } else {
+          setError(result.error || '重命名失败');
+          return false;
+        }
+      } catch (err) {
+        logError('重命名失败', 'useNotes', err as Error);
+        setError('重命名失败');
+        return false;
+      }
+    },
+    [refreshFileTree, selectedFile]
+  );
+
+  const deleteItem = useCallback(
+    async (itemPath: string): Promise<boolean> => {
+      if (!window.electron) return false;
+      try {
+        const result = await window.electron.notes.deleteItem(itemPath);
+
+        if (result.success) {
+          await refreshFileTree();
+
+          if (selectedFile?.path === itemPath) {
+            setSelectedFile(null);
+            setFileContent('');
+            localStorage.removeItem(LAST_OPENED_FILE_KEY);
+          }
+
+          return true;
+        } else {
+          setError(result.error || '删除失败');
+          return false;
+        }
+      } catch (err) {
+        logError('删除失败', 'useNotes', err as Error);
+        setError('删除失败');
+        return false;
+      }
+    },
+    [refreshFileTree, selectedFile]
+  );
+
+  const toggleFolderExpand = useCallback((folderPath: string) => {
+    setExpandedFolders((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderPath)) {
+        newSet.delete(folderPath);
+      } else {
+        newSet.add(folderPath);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const rebuildIndex = useCallback(async () => {
+    if (!rootPath || !window.electron) return;
+    try {
+      setLoading(true);
+      await window.electron.notes.indexAll(rootPath);
+    } catch (err) {
+      logError('重建索引失败', 'useNotes', err as Error);
+      setError('重建索引失败');
+    } finally {
+      setLoading(false);
+    }
+  }, [rootPath]);
+
+  const changeFolder = useCallback(async (): Promise<boolean> => {
+    if (!window.electron) return false;
+    try {
+      setLoading(true);
+      setError(null);
+
+      setSelectedFile(null);
+      setFileContent('');
+      localStorage.removeItem(LAST_OPENED_FILE_KEY);
+
+      const result = await window.electron.notes.selectFolder();
+
+      if (result.canceled || result.filePaths.length === 0) {
+        setLoading(false);
+        return false;
+      }
+
+      const selectedPath = result.filePaths[0];
+
+      const validation = await window.electron.notes.validateFolder(selectedPath);
+      if (!validation.valid) {
+        setError(validation.error || '文件夹验证失败');
+        setLoading(false);
+        return false;
+      }
+
+      await window.electron.notes.setRootPath(selectedPath);
+      setRootPathState(selectedPath);
+      setHasRootPath(true);
+
+      const scanResult = await window.electron.notes.scanFolder(selectedPath);
+      if (!scanResult.success) {
+        setError(scanResult.error || '扫描文件夹失败');
+        setLoading(false);
+        return false;
+      }
+
+      const tree = await window.electron.notes.getFileTree();
+      setFileTree(tree);
+      setExpandedFolders(new Set());
+
+      setLoading(false);
+      return true;
+    } catch (err) {
+      logError('切换目录失败', 'useNotes', err as Error);
+      setError('切换目录失败');
+      setLoading(false);
+      return false;
+    }
+  }, []);
+
+  const updateTreeExpandState = useCallback(
+    (nodes: FileTreeNode[]): FileTreeNode[] => {
+      return nodes.map((node) => ({
+        ...node,
+        expanded: expandedFolders.has(node.path),
+        children: node.children ? updateTreeExpandState(node.children) : undefined,
+      }));
+    },
+    [expandedFolders]
+  );
+
+  return {
+    hasRootPath,
+    rootPath,
+    fileTree: updateTreeExpandState(fileTree),
+    selectedFile,
+    fileContent,
+    loading,
+    error,
+    selectRootFolder,
+    setRootPath,
+    changeFolder,
+    refreshFileTree,
+    selectFile,
+    updateFileContent,
+    saveFile,
+    createFolder,
+    createFolderForce,
+    createNote,
+    createNoteForce,
+    renameItem,
+    deleteItem,
+    toggleFolderExpand,
+    rebuildIndex,
+    clearError,
+  };
+}

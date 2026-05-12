@@ -328,10 +328,10 @@ console.log(theme);
     html = html.replace(/_(.+?)_/g, '<span style="font-style: italic; color: #0f4c81;">$1</span>');
     
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-    html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-    html = html.replace(/!\[([^\]]*)\]\(([^\)]+)\)/g, '<img src="$2" alt="$1">');
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
     
-    html = html.replace(/^[\*\-] (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/^[*-] (.+)$/gm, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
     html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => {

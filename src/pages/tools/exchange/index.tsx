@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, RefreshCw, ArrowRightLeft, Search } from 'lucide-react';
 import { apiService } from '../../../services/api';
+import { logError } from '../../../services/loggerService';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 interface RateItem {
@@ -8,8 +9,19 @@ interface RateItem {
   rate: number;
 }
 
+interface ExchangeRateData {
+  rates?: RateItem[];
+  updated?: string;
+  [key: string]: unknown;
+}
+
+interface ExchangeData {
+  rates: RateItem[];
+  updated: string;
+}
+
 const ExchangePage: React.FC = () => {
-  const [exchangeData, setExchangeData] = useState<any>(null);
+  const [exchangeData, setExchangeData] = useState<ExchangeData | null>(null);
   const [loading, setLoading] = useState(false);
   const [updateTime, setUpdateTime] = useState('');
   const [fromCurrency, setFromCurrency] = useState('CNY');
@@ -72,9 +84,9 @@ const ExchangePage: React.FC = () => {
   }, []);
 
   const getRatesBasedOnBase = (): Record<string, number> => {
-    if (!exchangeData?.data?.rates) return {};
-    
-    const ratesArray = exchangeData.data.rates;
+    if (!exchangeData?.rates) return {};
+
+    const ratesArray = exchangeData.rates;
     const rates: Record<string, number> = {};
     ratesArray.forEach((item: RateItem) => {
       rates[item.currency] = item.rate;
@@ -158,13 +170,18 @@ const ExchangePage: React.FC = () => {
   const fetchExchangeData = async () => {
     setLoading(true);
     try {
-      const data = await apiService.getExchangeRates();
-      if (data.code === 200) {
-        setExchangeData(data);
-        setUpdateTime(data.data.updated || new Date().toLocaleString('zh-CN'));
+      const result = await apiService.getExchangeRates();
+      if (result.code === 200 && result.data) {
+        const data = result.data as ExchangeRateData;
+        const exchangeData: ExchangeData = {
+          rates: data.rates || [],
+          updated: data.updated || new Date().toLocaleString('zh-CN')
+        };
+        setExchangeData(exchangeData);
+        setUpdateTime(exchangeData.updated);
       }
     } catch (error) {
-      console.error('获取汇率数据失败:', error);
+      logError('获取汇率数据失败', 'Exchange', error as Error);
     } finally {
       setLoading(false);
     }

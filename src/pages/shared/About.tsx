@@ -14,7 +14,7 @@ const About: React.FC = () => {
   const [downloadUrl, setDownloadUrl] = useState<string>('');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [hasUpdate, setHasUpdate] = useState(false);
-  const isElectron = typeof window !== 'undefined' && !!(window as any).electron;
+  const isElectron = typeof window !== 'undefined' && !!window.electron;
 
   useEffect(() => {
     if (isElectron) {
@@ -23,10 +23,10 @@ const About: React.FC = () => {
   }, [isElectron]);
 
   const loadVersionInfo = async () => {
-    const electron = (window as any).electron;
+    const electron = window.electron;
     if (!electron) return;
     try {
-      const info: any = await electron.getVersion();
+      const info = await electron.getVersion();
       setElectronVersion(info.electron);
       setChromeVersion(info.chrome);
       setNewVersion(info.newVersion);
@@ -45,9 +45,9 @@ const About: React.FC = () => {
     addToast({ type: 'info', message: '正在检查更新...' });
 
     try {
-      const electron = (window as any).electron;
+      const electron = window.electron;
       if (electron) {
-        const info: any = await electron.getVersion();
+        const info = await electron.getVersion();
         setElectronVersion(info.electron);
         setChromeVersion(info.chrome);
         setNewVersion(info.newVersion);
@@ -74,8 +74,8 @@ const About: React.FC = () => {
   };
 
   const openDownloadPage = () => {
-    if (downloadUrl && isElectron) {
-      (window as any).electron.openExternal(downloadUrl);
+    if (downloadUrl && isElectron && window.electron) {
+      window.electron.openExternal(downloadUrl);
     }
   };
 

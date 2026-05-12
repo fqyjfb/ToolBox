@@ -1,9 +1,10 @@
 import { supabase } from './supabase'
 import type { Category, Bookmark } from '../types/website'
+import { logError } from './loggerService'
 
 // 简单的缓存实现
 class CacheService {
-  private cache: Map<string, { data: any; timestamp: number }> = new Map()
+  private cache: Map<string, { data: unknown; timestamp: number }> = new Map()
   private defaultExpiry = 5 * 60 * 1000 // 5分钟
 
   get<T>(key: string): T | null {
@@ -19,7 +20,7 @@ class CacheService {
     return item.data as T
   }
 
-  set(key: string, data: any) {
+  set(key: string, data: unknown) {
     this.cache.set(key, {
       data,
       timestamp: Date.now()
@@ -78,22 +79,22 @@ export const websiteService = {
         .order('created_at', { ascending: false })
       
       if (error) {
-        console.error('获取分类失败:', error)
+        logError('获取分类失败', 'WebsiteService', error as Error)
         return []
       }
-      
+
       const categories = data as Category[] || []
-      
+
       // 设置缓存
       cacheService.set(cacheKey, categories)
-      
+
       return categories
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         console.warn('Get categories request aborted:', error.message)
         return []
       }
-      console.error('获取分类失败:', error)
+      logError('获取分类失败', 'WebsiteService', error as Error)
       return []
     }
   },
@@ -116,24 +117,24 @@ export const websiteService = {
         .single()
       
       if (error) {
-        console.error('获取分类失败:', error)
+        logError('获取分类失败', 'WebsiteService', error as Error)
         return null
       }
-      
+
       const category = data as Category || null
-      
+
       // 设置缓存
       if (category) {
         cacheService.set(cacheKey, category)
       }
-      
+
       return category
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         console.warn('Get category by id request aborted:', error.message)
         return null
       }
-      console.error('获取分类失败:', error)
+      logError('获取分类失败', 'WebsiteService', error as Error)
       return null
     }
   },
@@ -205,7 +206,7 @@ export const websiteService = {
         console.warn('Get public bookmarks request aborted:', error.message)
         return []
       }
-      console.error('Get public bookmarks error:', error)
+      logError('Get public bookmarks error', 'WebsiteService', error as Error)
       
       // 如果缓存存在，返回缓存数据
       const cachedData = cacheService.get<Bookmark[]>(cacheKey)
@@ -223,28 +224,28 @@ export const websiteService = {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        console.error('用户未登录')
+        logError('用户未登录', 'WebsiteService')
         return false
       }
-      
+
       const { error } = await supabase
         .from('user_favorites')
         .insert({
           user_id: user.id,
           bookmark_id: bookmarkId
         })
-      
+
       if (error) {
-        console.error('添加收藏失败:', error)
+        logError('添加收藏失败', 'WebsiteService', error as Error)
         return false
       }
-      
+
       // 清除收藏相关缓存
       cacheService.clearByPrefix(`favorites_user_${user.id}`)
-      
+
       return true
     } catch (error) {
-      console.error('添加收藏失败:', error)
+      logError('添加收藏失败', 'WebsiteService', error as Error)
       return false
     }
   },
@@ -282,11 +283,11 @@ export const websiteService = {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        console.error('用户未登录')
+        logError('用户未登录', 'WebsiteService')
         return []
       }
-      
-      const cacheKey = `favorites_user_${user.id}`
+
+      const cacheKey = `favorites_user_${user.id}`;
       
       // 检查缓存
       if (!options?.forceRefresh) {
@@ -338,7 +339,7 @@ export const websiteService = {
         console.warn('Get favorites request aborted:', error.message)
         return []
       }
-      console.error('Get favorites error:', error)
+      logError('Get favorites error', 'WebsiteService', error as Error)
       return []
     }
   },
@@ -347,28 +348,28 @@ export const websiteService = {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        console.error('用户未登录')
+        logError('用户未登录', 'WebsiteService')
         return false
       }
-      
+
       const { data, error } = await supabase
         .from('user_favorites')
         .select('id')
         .eq('bookmark_id', bookmarkId)
         .eq('user_id', user.id)
         .single()
-      
+
       if (error) {
-        if (error.code === 'PGRST116') { // 未找到记录
+        if (error.code === 'PGRST116') {
           return false
         }
-        console.error('检查收藏状态失败:', error)
+        logError('检查收藏状态失败', 'WebsiteService', error as Error)
         return false
       }
-      
+
       return !!data
     } catch (error) {
-      console.error('检查收藏状态失败:', error)
+      logError('检查收藏状态失败', 'WebsiteService', error as Error)
       return false
     }
   }

@@ -1,5 +1,6 @@
 import { AuthResponse, LoginRequest, Admin, RegisterRequest } from '../types/auth'
 import { supabase } from './supabase'
+import { logError } from './loggerService'
 
 export const authService = {
   // 登录
@@ -45,12 +46,12 @@ export const authService = {
       if (data.user) {
         // 尝试获取用户角色信息（从profiles表）
         try {
-          const { data: profiles, error: profileError } = await supabase
+          const { data: profiles, error } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', data.user.id)
           
-          if (profileError) {
+          if (error) {
             // 角色获取失败，拒绝登录
             return {
               success: false,
@@ -94,7 +95,7 @@ export const authService = {
               message: '您没有管理员权限'
             }
           }
-        } catch (profileError) {
+        } catch {
           // 角色获取失败，拒绝登录
           return {
             success: false,
@@ -138,7 +139,7 @@ export const authService = {
       if (storedAdmin) {
         try {
           parsedStoredAdmin = JSON.parse(storedAdmin)
-        } catch (parseError) {
+        } catch {
           localStorage.removeItem('admin')
           return { success: false }
         }
@@ -160,7 +161,7 @@ export const authService = {
           authUser = data.user
           isSessionValid = !!authUser
         }
-      } catch (authError) {
+      } catch {
         // 网络错误或其他非致命错误，不清除管理员数据
       }
 
@@ -176,7 +177,7 @@ export const authService = {
             localStorage.removeItem('admin')
             return { success: false }
           }
-        } catch (refreshError) {
+        } catch {
           // 刷新会话失败，清除管理员数据
           localStorage.removeItem('admin')
           return { success: false }
@@ -192,12 +193,12 @@ export const authService = {
       if (authUser) {
         // 尝试从数据库获取角色信息
         try {
-          const { data: profiles, error: profileError } = await supabase
+          const { data: profiles, error } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', authUser.id)
           
-          if (profileError) {
+          if (error) {
             // 角色获取失败，清除管理员数据
             localStorage.removeItem('admin')
             return { success: false }
@@ -229,14 +230,14 @@ export const authService = {
             localStorage.removeItem('admin')
             return { success: false }
           }
-        } catch (profileError) {
+        } catch {
           // 角色获取失败，清除管理员数据
           localStorage.removeItem('admin')
           return { success: false }
         }
       }
 
-      // 7. 会话无效但有存储的管理员数据，返回失败
+      // 6. 会话无效但有存储的管理员数据，返回失败
       if (parsedStoredAdmin) {
         // 会话无效，即使有存储的管理员数据也不能返回成功
         return { success: false }
@@ -264,10 +265,11 @@ export const authService = {
             return { success: false }
           }
         }
-      } catch (signOutError: any) {
+      } catch (signOutError: unknown) {
         // 处理AuthSessionMissingError或其他会话相关错误
-        if (signOutError.name === 'AuthSessionMissingError' || 
-            signOutError.message.includes('Auth session missing')) {
+        const error = signOutError as Error
+        if (error.name === 'AuthSessionMissingError' || 
+            error.message.includes('Auth session missing')) {
           // 会话已经不存在，忽略错误
         } else {
           // 其他错误，视为登出失败
@@ -278,7 +280,7 @@ export const authService = {
       // 无论signOut是否成功，都清除localStorage
       localStorage.removeItem('admin')
       return { success: true }
-    } catch (error) {
+    } catch {
       // 不返回失败，确保登出流程能够完成
       localStorage.removeItem('admin')
       return { success: true }
@@ -343,7 +345,7 @@ export const authService = {
             role = profileData.role
           }
         } catch (profileError) {
-          console.error('获取用户角色失败:', profileError)
+          logError('获取用户角色失败', 'AuthService', profileError as Error)
         }
 
         const admin: Admin = {
@@ -370,12 +372,12 @@ export const authService = {
               created_at: new Date(data.user.created_at).toISOString(),
               updated_at: new Date(data.user.created_at).toISOString()
             })
-          
+
           if (insertError) {
-            console.error('保存用户到users表失败:', insertError)
+            logError('保存用户到users表失败', 'AuthService', insertError as Error)
           }
         } catch (error) {
-          console.error('保存用户到users表失败:', error)
+          logError('保存用户到users表失败', 'AuthService', error as Error)
         }
 
         localStorage.setItem('admin', JSON.stringify(admin))
@@ -440,7 +442,7 @@ export const authService = {
         })
         
         if (error) {
-          console.error('更新密码失败:', error)
+          logError('更新密码失败', 'AuthService', error as Error)
           return { success: false, message: `更新密码失败: ${error.message}` }
         }
       }
@@ -450,9 +452,9 @@ export const authService = {
         const { error } = await supabase.auth.updateUser({
           email: data.email
         })
-        
+
         if (error) {
-          console.error('更新邮箱失败:', error)
+          logError('更新邮箱失败', 'AuthService', error as Error)
           return { success: false, message: `更新邮箱失败: ${error.message}` }
         }
       }
@@ -465,16 +467,16 @@ export const authService = {
             phone: data.phone
           }
         })
-        
+
         if (error) {
-          console.error('更新用户元数据失败:', error)
+          logError('更新用户元数据失败', 'AuthService', error as Error)
           return { success: false, message: `更新个人信息失败: ${error.message}` }
         }
       }
 
       return { success: true, message: '个人信息更新成功' }
     } catch (error) {
-      console.error('更新个人信息异常:', error)
+      logError('更新个人信息异常', 'AuthService', error as Error)
       return { success: false, message: '网络错误，请稍后重试' }
     }
   }

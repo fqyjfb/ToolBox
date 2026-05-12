@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Globe, Wrench, Zap, Key, Crown } from 'lucide-react';
+import { Home, Globe, Wrench, Zap, Key, Crown, FileText } from 'lucide-react';
 import { useAuthStore } from '../store/AuthStore';
 import { useSidebarStore } from '../store/sidebarStore';
 import { isElectron } from '../utils/environment';
@@ -26,6 +26,7 @@ const Sidebar: React.FC = () => {
     if (path === '/launch') return 'launch';
     if (path === '/news') return 'news';
     if (path === '/nav') return 'nav';
+    if (path.startsWith('/tools/notes')) return 'notes';
     if (path === '/tools') return 'tools';
     if (path.startsWith('/admin')) return 'admin';
     return 'home';
@@ -45,6 +46,12 @@ const Sidebar: React.FC = () => {
       title: '导航',
       icon: <Globe className="w-6 h-6" />,
       path: '/nav',
+    },
+    {
+      id: 'notes',
+      title: '记事本',
+      icon: <FileText className="w-6 h-6" />,
+      path: '/tools/notes',
     },
     {
       id: 'account',

@@ -2,6 +2,55 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Code2, Copy, Download, Trash2, FileText } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 
+type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
+interface JsonObject { [key: string]: JsonValue; }
+type JsonArray = JsonValue[];
+
+const sortObjectKeys = (obj: JsonValue): JsonValue => {
+  if (typeof obj !== 'object' || obj === null) return obj;
+  if (Array.isArray(obj)) return obj.map(sortObjectKeys);
+  
+  const sorted: JsonObject = {};
+  Object.keys(obj).sort().forEach(key => {
+    sorted[key] = sortObjectKeys(obj[key]);
+  });
+  return sorted;
+};
+
+const formatJSON = (text: string, indentStyle: '2' | '4' | 'tab', sortKeys: boolean): { output: string; error: string } => {
+  if (!text.trim()) {
+    return { output: '', error: '' };
+  }
+
+  try {
+    let jsonObj = JSON.parse(text);
+    
+    if (sortKeys) {
+      jsonObj = sortObjectKeys(jsonObj);
+    }
+
+    const indent = indentStyle === 'tab' ? '\t' : parseInt(indentStyle);
+    return { output: JSON.stringify(jsonObj, null, indent), error: '' };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'JSON 格式错误';
+    return { output: '', error: errorMsg };
+  }
+};
+
+const minifyJSON = (text: string): { output: string; error: string } => {
+  if (!text.trim()) {
+    return { output: '', error: '' };
+  }
+
+  try {
+    const jsonObj = JSON.parse(text);
+    return { output: JSON.stringify(jsonObj), error: '' };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'JSON 格式错误';
+    return { output: '', error: errorMsg };
+  }
+};
+
 const JsonFormatterPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
   const [input, setInput] = useState('');
@@ -9,59 +58,43 @@ const JsonFormatterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [indentStyle, setIndentStyle] = useState<'2' | '4' | 'tab'>('4');
   const [sortKeys, setSortKeys] = useState(false);
+  const [lastAction, setLastAction] = useState<'format' | 'minify' | null>(null);
 
-  const sortObjectKeys = (obj: any): any => {
-    if (typeof obj !== 'object' || obj === null) return obj;
-    if (Array.isArray(obj)) return obj.map(sortObjectKeys);
-    
-    const sorted: Record<string, any> = {};
-    Object.keys(obj).sort().forEach(key => {
-      sorted[key] = sortObjectKeys(obj[key]);
-    });
-    return sorted;
-  };
-
-  const formatJSON = useCallback(() => {
-    if (!input.trim()) {
-      setOutput('');
-      setError('');
-      return;
+  const handleFormat = useCallback(() => {
+    const result = formatJSON(input, indentStyle, sortKeys);
+    setOutput(result.output);
+    setError(result.error);
+    if (result.error) {
+      addToast({ message: result.error, type: 'error' });
     }
-
-    try {
-      let jsonObj = JSON.parse(input);
-      
-      if (sortKeys) {
-        jsonObj = sortObjectKeys(jsonObj);
-      }
-
-      const indent = indentStyle === 'tab' ? '\t' : parseInt(indentStyle);
-      setOutput(JSON.stringify(jsonObj, null, indent));
-      setError('');
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'JSON 格式错误';
-      setError(errorMsg);
-      addToast({ message: errorMsg, type: 'error' });
-    }
+    setLastAction('format');
   }, [input, indentStyle, sortKeys, addToast]);
 
-  const minifyJSON = useCallback(() => {
-    if (!input.trim()) {
-      setOutput('');
-      setError('');
-      return;
+  const handleMinify = useCallback(() => {
+    const result = minifyJSON(input);
+    setOutput(result.output);
+    setError(result.error);
+    if (result.error) {
+      addToast({ message: result.error, type: 'error' });
     }
-
-    try {
-      const jsonObj = JSON.parse(input);
-      setOutput(JSON.stringify(jsonObj));
-      setError('');
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'JSON 格式错误';
-      setError(errorMsg);
-      addToast({ message: errorMsg, type: 'error' });
-    }
+    setLastAction('minify');
   }, [input, addToast]);
+
+  useEffect(() => {
+    if (lastAction === 'format') {
+      const result = formatJSON(input, indentStyle, sortKeys);
+      setTimeout(() => {
+        setOutput(result.output);
+        setError(result.error);
+      }, 0);
+    } else if (lastAction === 'minify') {
+      const result = minifyJSON(input);
+      setTimeout(() => {
+        setOutput(result.output);
+        setError(result.error);
+      }, 0);
+    }
+  }, [input, indentStyle, sortKeys, lastAction]);
 
   const handleCopy = useCallback(() => {
     if (!output) {
@@ -112,11 +145,8 @@ const JsonFormatterPage: React.FC = () => {
   "isActive": true,
   "balance": 1234.56
 }`);
+    setLastAction('format');
   }, []);
-
-  useEffect(() => {
-    formatJSON();
-  }, [formatJSON]);
 
   const charCount = output.length;
   const lineCount = output.split('\n').length;
@@ -173,13 +203,13 @@ const JsonFormatterPage: React.FC = () => {
       <div className="flex items-center gap-4 mb-4">
         <div className="flex items-center gap-2">
           <button
-            onClick={formatJSON}
+            onClick={handleFormat}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
           >
             格式化
           </button>
           <button
-            onClick={minifyJSON}
+            onClick={handleMinify}
             className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
           >
             压缩

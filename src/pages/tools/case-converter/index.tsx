@@ -2,68 +2,67 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowUpDown, Copy } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 
+const toTitleCase = (str: string): string => {
+  return str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+};
+
+const toSentenceCase = (str: string): string => {
+  return str.toLowerCase().replace(/(^\w|\.\s+\w)/g, s => s.toUpperCase());
+};
+
+const toCamelCase = (str: string): string => {
+  return str
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9]+(.)/g, (_m, chr) => chr.toUpperCase())
+    .replace(/^[A-Z]/, s => s.toLowerCase());
+};
+
+const toPascalCase = (str: string): string => {
+  return str
+    .toLowerCase()
+    .replace(/(^|[^a-zA-Z0-9]+)(.)/g, (_m, _sep, chr) => chr.toUpperCase());
+};
+
+const toSnakeCase = (str: string): string => {
+  return str
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+};
+
+const toKebabCase = (str: string): string => {
+  return str
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+const convertText = (text: string): Record<string, string> => {
+  if (!text.trim()) {
+    return {};
+  }
+
+  return {
+    lowercase: text.toLowerCase(),
+    uppercase: text.toUpperCase(),
+    titlecase: toTitleCase(text),
+    sentencecase: toSentenceCase(text),
+    camelcase: toCamelCase(text),
+    pascalcase: toPascalCase(text),
+    snakecase: toSnakeCase(text),
+    constantcase: toSnakeCase(text).toUpperCase(),
+    kebabcase: toKebabCase(text),
+  };
+};
+
 const CaseConverterPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
   const [input, setInput] = useState('hello world');
-  const [results, setResults] = useState<Record<string, string>>({});
-
-  const toTitleCase = (str: string): string => {
-    return str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
-  };
-
-  const toSentenceCase = (str: string): string => {
-    return str.toLowerCase().replace(/(^\w|\.\s+\w)/g, s => s.toUpperCase());
-  };
-
-  const toCamelCase = (str: string): string => {
-    return str
-      .toLowerCase()
-      .replace(/[^a-zA-Z0-9]+(.)/g, (_m, chr) => chr.toUpperCase())
-      .replace(/^[A-Z]/, s => s.toLowerCase());
-  };
-
-  const toPascalCase = (str: string): string => {
-    return str
-      .toLowerCase()
-      .replace(/(^|[^a-zA-Z0-9]+)(.)/g, (_m, _sep, chr) => chr.toUpperCase());
-  };
-
-  const toSnakeCase = (str: string): string => {
-    return str
-      .toLowerCase()
-      .replace(/[^a-zA-Z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '');
-  };
-
-  const toKebabCase = (str: string): string => {
-    return str
-      .toLowerCase()
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  };
-
-  const convert = useCallback(() => {
-    if (!input.trim()) {
-      setResults({});
-      return;
-    }
-
-    setResults({
-      lowercase: input.toLowerCase(),
-      uppercase: input.toUpperCase(),
-      titlecase: toTitleCase(input),
-      sentencecase: toSentenceCase(input),
-      camelcase: toCamelCase(input),
-      pascalcase: toPascalCase(input),
-      snakecase: toSnakeCase(input),
-      constantcase: toSnakeCase(input).toUpperCase(),
-      kebabcase: toKebabCase(input),
-    });
-  }, [input]);
+  const [results, setResults] = useState<Record<string, string>>(() => convertText('hello world'));
 
   useEffect(() => {
-    convert();
-  }, [convert]);
+    setResults(convertText(input));
+  }, [input]);
 
   const handleCopy = useCallback((text: string) => {
     if (!text) {

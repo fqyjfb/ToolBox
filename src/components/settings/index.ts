@@ -1,4 +1,3 @@
-export { default as IconComponent } from './IconComponent';
 export { default as ToggleSwitch } from './ToggleSwitch';
 export { default as RadioGroup } from './RadioGroup';
 export { default as FloatConfigEditor } from './FloatConfigEditor';
@@ -8,3 +7,6 @@ export { default as QuickLaunchTab } from './QuickLaunchTab';
 export { default as NotificationsTab } from './NotificationsTab';
 export { default as ShortcutsTab } from './ShortcutsTab';
 export { default as FloatWindowTab } from './FloatWindowTab';
+export { default as StorageTab } from './StorageTab';
+export { default as OcrTab } from './OcrTab';
+export { default as LogMonitorTab } from './LogMonitorTab';

@@ -8,6 +8,7 @@ export interface ToolInfo {
 
 export const ALL_TOOLS: ToolInfo[] = [
   { id: 'todo', name: '待办事项', path: '/tools/todo', color: '#bc8acf', iconName: 'CheckSquare' },
+  { id: 'notes', name: '记事本', path: '/tools/notes', color: '#4caf50', iconName: 'FileText' },
   { id: 'quick-reply', name: '快捷回复', path: '/tools/quick-reply', color: '#e91e63', iconName: 'MessageSquare' },
   { id: 'cloud-clipboard', name: '云剪贴板', path: '/tools/cloud-clipboard', color: '#67aaf7', iconName: 'Clipboard' },
   { id: 'account', name: '账号管理', path: '/tools/account', color: '#00bcd4', iconName: 'Key' },
@@ -38,4 +39,6 @@ export const ALL_TOOLS: ToolInfo[] = [
   { id: 'sql-minifier', name: 'SQL压缩器', path: '/tools/sql-minifier', color: '#059669', iconName: 'Code2' },
   { id: 'hex-encode', name: 'HEX编码', path: '/tools/hex-encode', color: '#dc2626', iconName: 'Binary' },
   { id: 'hex-decode', name: 'HEX解码', path: '/tools/hex-decode', color: '#b91c1c', iconName: 'Binary' },
+  { id: 'ocr', name: 'OCR文字识别', path: '/tools/ocr', color: '#0d9488', iconName: 'Scan' },
+  { id: 'file-manager', name: '文件管理', path: '/tools/file-manager', color: '#059669', iconName: 'Folder' },
 ];

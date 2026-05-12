@@ -27,7 +27,10 @@ const TextDeduplicatorPage: React.FC = () => {
   }, [input, separator]);
 
   useEffect(() => {
-    deduplicate();
+    const timer = setTimeout(() => {
+      deduplicate();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [deduplicate]);
 
   const handleCopy = useCallback(() => {

@@ -34,12 +34,39 @@ const IPInfoPage: React.FC = () => {
     setError('');
     
     try {
-      const url = ip ? `https://ipapi.co/${ip}/json/` : 'https://ipapi.co/json/';
-      const response = await fetch(url);
+      let data;
       
-      if (!response.ok) throw new Error('查询失败');
-      
-      const data = await response.json();
+      if (window.electron) {
+        data = await window.electron.ipInfo.query(ip);
+      } else {
+        const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
+        const response = await fetch(url);
+        
+        if (!response.ok) throw new Error('查询失败');
+        
+        data = await response.json();
+        
+        if (!data.error) {
+          const [latitude, longitude] = data.loc ? data.loc.split(',').map(Number) : [0, 0];
+          data = {
+            ip: data.ip || '',
+            version: data.ip?.includes(':') ? 'IPv6' : 'IPv4',
+            city: data.city || '',
+            region: data.region || '',
+            country_name: data.country || '',
+            country_code: data.country || '',
+            timezone: data.timezone || '',
+            currency: '',
+            currency_name: '',
+            postal: data.postal || '',
+            latitude,
+            longitude,
+            org: data.org || '',
+            asn: data.asn || '',
+            languages: '',
+          };
+        }
+      }
       
       if (data.error) {
         throw new Error(data.reason || '查询失败');

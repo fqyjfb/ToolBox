@@ -2,6 +2,7 @@ export interface TodoCategory {
   id: string;
   user_id: string;
   name: string;
+  color: string;
   parent_id: string | null;
   order: number;
   created_at: string;
@@ -26,6 +27,7 @@ export interface Todo {
 
 export interface CreateTodoCategoryRequest {
   name: string;
+  color?: string;
   parent_id?: string | null;
 }
 

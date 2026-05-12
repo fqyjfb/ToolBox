@@ -77,8 +77,6 @@ const SortableFavoriteItem: React.FC<{ bookmark: Bookmark; onClick: () => void; 
 };
 
 const FavoritesBar: React.FC<FavoritesBarProps> = ({ favorites, onReorder }) => {
-  if (favorites.length === 0) return null;
-
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -89,6 +87,8 @@ const FavoritesBar: React.FC<FavoritesBarProps> = ({ favorites, onReorder }) => 
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  if (favorites.length === 0) return null;
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

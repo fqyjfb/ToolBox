@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Monitor, Bell, Keyboard, Circle } from 'lucide-react';
+import { Settings as SettingsIcon, Monitor, Bell, Keyboard, Circle, Database, Scan, FileText } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps, QuickLaunchItem } from '../../utils/quickLaunch';
@@ -11,12 +11,16 @@ import {
   SettingsTab
 } from '../../types/settings';
 import { DEFAULT_SHORTCUTS, DEFAULT_WINDOW_SIZE } from '../../constants/settings';
+import { logError } from '../../services/loggerService';
 import {
   GeneralTab,
   QuickLaunchTab,
   NotificationsTab,
   ShortcutsTab,
-  FloatWindowTab
+  FloatWindowTab,
+  StorageTab,
+  OcrTab,
+  LogMonitorTab
 } from '../../components/settings';
 import './Settings.css';
 
@@ -87,16 +91,17 @@ const Settings: React.FC = () => {
           return item.value;
         };
 
-        setIsEdgeAdsorption(getValue('isWindowEdgeAdsorption') || false);
-        setIsMemoryOptimizationEnabled(getValue('isMemoryOptimizationEnabled') || false);
-        setIsFloatWindowEnabled(getValue('isFloatWindowEnabled') || false);
+        setIsEdgeAdsorption(Boolean(getValue('isWindowEdgeAdsorption')));
+        setIsMemoryOptimizationEnabled(Boolean(getValue('isMemoryOptimizationEnabled')));
+        setIsFloatWindowEnabled(Boolean(getValue('isFloatWindowEnabled')));
         setVisible(getValue('isMenuVisible') !== false);
         setPosition(((getValue('leftMenuPosition') as string) || 'left') as 'left' | 'right');
-        setDefaultWindowSize((getValue('defaultWindowSize') as WindowSize) || DEFAULT_WINDOW_SIZE);
-        setAutostartEnabled(getValue('isAutoLaunch') || false);
+        const windowSize = getValue('defaultWindowSize');
+        setDefaultWindowSize(typeof windowSize === 'object' ? (windowSize as WindowSize) : DEFAULT_WINDOW_SIZE);
+        setAutostartEnabled(Boolean(getValue('isAutoLaunch')));
       }
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      logError('Failed to load settings', 'Settings', error as Error);
     }
   };
 
@@ -109,7 +114,7 @@ const Settings: React.FC = () => {
         setShortcuts(DEFAULT_SHORTCUTS);
       }
     } catch (error) {
-      console.error('Failed to load shortcuts:', error);
+      logError('Failed to load shortcuts', 'Settings', error as Error);
       setShortcuts(DEFAULT_SHORTCUTS);
     }
   };
@@ -123,7 +128,7 @@ const Settings: React.FC = () => {
         addToast({ type: 'success', message: '设置已更新，请重新启动' });
       }
     } catch (error) {
-      console.error('Failed to set autostart status:', error);
+      logError('Failed to set autostart status', 'Settings', error as Error);
       addToast({ type: 'error', message: '设置失败，请重试' });
     }
   };
@@ -152,7 +157,7 @@ const Settings: React.FC = () => {
       }
     } catch (error) {
       addToast({ type: 'error', message: '扫描桌面应用失败，请重试' });
-      console.error('Error scanning desktop apps:', error);
+      console.error('Error scanning desktop:', error);
     } finally {
       setIsScanning(false);
     }
@@ -169,14 +174,14 @@ const Settings: React.FC = () => {
     addToast({ type: 'success', message: '通知设置已更新' });
   };
 
-  const handleSettingUpdate = async (name: string, value: any) => {
+  const handleSettingUpdate = async (name: string, value: string | number | boolean) => {
     try {
       if (window.electron) {
         await window.electron.updateSetting({ name, value });
         addToast({ type: 'success', message: '设置已更新，请重新启动' });
       }
     } catch (error) {
-      console.error('Failed to update setting:', error);
+      logError('Failed to update setting', 'Settings', error as Error);
       addToast({ type: 'error', message: '设置失败，请重试' });
     }
   };
@@ -197,7 +202,7 @@ const Settings: React.FC = () => {
       await window.electron?.toggleFloatWindow();
       addToast({ type: 'success', message: val ? '悬浮窗已开启' : '悬浮窗已关闭' });
     } catch (error) {
-      console.error('Failed to toggle float window:', error);
+      logError('Failed to toggle float window', 'Settings', error as Error);
       setIsFloatWindowEnabled(!val);
       addToast({ type: 'error', message: '操作失败，请重试' });
     }
@@ -242,7 +247,7 @@ const Settings: React.FC = () => {
 
     const newSize = { ...defaultWindowSize, [key]: numValue };
     setDefaultWindowSize(newSize);
-    handleSettingUpdate('defaultWindowSize', newSize);
+    handleSettingUpdate('defaultWindowSize', JSON.stringify(newSize));
   };
 
   const handleClearCache = async () => {
@@ -300,7 +305,7 @@ const Settings: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to update shortcut:', error);
+      logError('Failed to update shortcut', 'Settings', error as Error);
       addToast({ type: 'error', message: '更新快捷键失败' });
     }
   };
@@ -322,7 +327,7 @@ const Settings: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to save float config:', error);
+      logError('Failed to save float config', 'Settings', error as Error);
       addToast({ type: 'error', message: '保存失败，请重试' });
     }
   };
@@ -339,7 +344,7 @@ const Settings: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to reset float config:', error);
+      logError('Failed to reset float config', 'Settings', error as Error);
       addToast({ type: 'error', message: '重置失败，请重试' });
     }
   };
@@ -354,10 +359,13 @@ const Settings: React.FC = () => {
   // Tab config
   const tabs = [
     { id: 'general' as const, label: '通用设置', icon: SettingsIcon },
+    { id: 'storage' as const, label: '存储管理', icon: Database },
     { id: 'quickLaunch' as const, label: '快启动设置', icon: Monitor },
     { id: 'notifications' as const, label: '通知设置', icon: Bell },
     { id: 'shortcuts' as const, label: '快捷键设置', icon: Keyboard },
-    { id: 'floatWindow' as const, label: '悬浮窗设置', icon: Circle }
+    { id: 'floatWindow' as const, label: '悬浮窗设置', icon: Circle },
+    { id: 'ocr' as const, label: 'OCR设置', icon: Scan },
+    { id: 'logMonitor' as const, label: '日志监控', icon: FileText }
   ];
 
   return (
@@ -398,8 +406,13 @@ const Settings: React.FC = () => {
             onMenuVisibleChange={handleMenuVisibleChange}
             onMenuPositionChange={handleMenuPositionChange}
             onWindowSizeChange={handleWindowSizeChange}
-            onClearCache={handleClearCache}
             onBrowserModeChange={handleBrowserModeChange}
+          />
+        )}
+
+        {activeTab === 'storage' && (
+          <StorageTab
+            onClearCache={handleClearCache}
             btnLoading={btnLoading}
             btnText={btnText}
           />
@@ -435,6 +448,10 @@ const Settings: React.FC = () => {
             onResetFloatConfig={handleResetFloatConfig}
           />
         )}
+
+        {activeTab === 'ocr' && <OcrTab />}
+
+        {activeTab === 'logMonitor' && <LogMonitorTab />}
       </div>
     </div>
   );

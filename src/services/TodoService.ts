@@ -33,6 +33,7 @@ const categoryService = {
         .insert({
           user_id: userId,
           name: request.name,
+          color: request.color || '#3B82F6',
           parent_id: request.parent_id || null
         })
         .select()
@@ -54,6 +55,7 @@ const categoryService = {
         .from('todo_categories')
         .update({
           name: request.name,
+          color: request.color,
           parent_id: request.parent_id || null
         })
         .eq('id', categoryId)

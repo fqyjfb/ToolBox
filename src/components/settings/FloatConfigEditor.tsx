@@ -10,7 +10,7 @@ import {
   FLOAT_TYPE_OPTIONS
 } from '../../constants/settings';
 import { ALL_TOOLS } from '../../constants/tools';
-import IconComponent from './IconComponent';
+import { iconMap, InfoIcon } from '../icons/CustomIcons';
 
 interface FloatConfigEditorProps {
   config: FloatConfigItem;
@@ -33,7 +33,20 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
   };
 
   const handleActionChange = (action: string) => {
-    const newConfig: FloatConfigItem = { ...localConfig, action };
+    let newConfig: FloatConfigItem = { ...localConfig, action };
+    
+    if (localConfig.type === 'system') {
+      const systemAction = SYSTEM_ACTIONS.find(a => a.action === action);
+      if (systemAction) {
+        newConfig = { ...newConfig, name: systemAction.label };
+      }
+    } else if (localConfig.type === 'nav') {
+      const navAction = NAV_ACTIONS.find(a => a.action === action);
+      if (navAction) {
+        newConfig = { ...newConfig, name: navAction.label };
+      }
+    }
+    
     setLocalConfig(newConfig);
     onUpdate(newConfig);
   };
@@ -138,13 +151,8 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                 );
               }
               
-              return (
-                <IconComponent 
-                  name={isPredefined ? localConfig.icon : 'HelpCircle'} 
-                  color="#fff" 
-                  size={18} 
-                />
-              );
+              const Icon = iconMap[isPredefined ? localConfig.icon : 'HelpCircle'] || InfoIcon;
+              return <Icon size={18} />;
             })()}
           </div>
           <div className="text-left">
@@ -286,20 +294,12 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                             e.currentTarget.style.display = 'none';
                           }}
                         />
-                        {!iconSrc && (
-                          <IconComponent name="Folder" color={localConfig.color} size={20} />
-                        )}
+                        {!iconSrc && React.createElement(iconMap['Folder'] || InfoIcon, { size: 20 })}
                       </div>
                     );
                   }
                   
-                  return (
-                    <IconComponent 
-                      name={isPredefined ? localConfig.icon : 'HelpCircle'} 
-                      color={localConfig.color} 
-                      size={24} 
-                    />
-                  );
+                  React.createElement(iconMap[isPredefined ? localConfig.icon : 'HelpCircle'] || InfoIcon, { size: 24 })
                 })()}
                 
                 {localConfig.type !== 'app' && !(!isPredefinedIcon(localConfig.icon) && formatIconSrc(localConfig.icon)) && (

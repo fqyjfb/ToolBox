@@ -27,7 +27,10 @@ const UrlParserPage: React.FC = () => {
   }, [input]);
 
   useEffect(() => {
-    parseURL();
+    const timer = setTimeout(() => {
+      parseURL();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [parseURL]);
 
   const handleCopy = useCallback((text: string) => {

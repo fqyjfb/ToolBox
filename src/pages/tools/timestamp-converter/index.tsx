@@ -4,7 +4,7 @@ import { useToastStore } from '../../../store/toastStore';
 
 const TimestampConverterPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
-  const [currentTimestamp, setCurrentTimestamp] = useState(Math.floor(Date.now() / 1000));
+  const [currentTimestamp, setCurrentTimestamp] = useState<number>(() => Math.floor(Date.now() / 1000));
   const [timestampInput, setTimestampInput] = useState('');
   const [datetimeInput, setDatetimeInput] = useState('');
   const [dateResult, setDateResult] = useState<Array<{ label: string; value: string }>>([]);

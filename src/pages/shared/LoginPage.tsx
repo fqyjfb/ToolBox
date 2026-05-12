@@ -51,12 +51,12 @@ const LoginPage: React.FC = () => {
     const now = Date.now()
     
     if (savedUsername) {
-      setLoginForm(prev => ({ ...prev, email: savedUsername }))
+      setTimeout(() => setLoginForm(prev => ({ ...prev, email: savedUsername })), 0);
       
       if (savedPassword && lastLoginTime) {
         const lastLogin = parseInt(lastLoginTime, 10)
         if (now - lastLogin <= TWO_DAYS_IN_MS) {
-          setLoginForm(prev => ({ ...prev, password: savedPassword, rememberMe: true }))
+          setTimeout(() => setLoginForm(prev => ({ ...prev, password: savedPassword, rememberMe: true })), 0);
         } else {
           localStorage.removeItem('toolbox_password')
           localStorage.removeItem('toolbox_last_login_time')

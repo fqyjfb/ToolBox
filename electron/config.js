@@ -27,13 +27,13 @@ const defaultSettings = {
 
 const defaultFloatConfig = [
   { id: 1, type: 'nav', action: 'home', name: '主页', icon: 'Home', color: '#03a9f4' },
-  { id: 2, type: 'nav', action: 'tools', name: '工具', icon: 'Wrench', color: '#0462df' },
+  { id: 2, type: 'nav', action: 'tools', name: '工具', icon: 'Tool', color: '#0462df' },
   { id: 3, type: 'nav', action: 'quick', name: '快捷启动', icon: 'Zap', color: '#1db954' },
-  { id: 4, type: 'nav', action: 'bookmark', name: '收藏', icon: 'Bookmark', color: '#8c9eff' },
-  { id: 5, type: 'nav', action: 'todo', name: '待办', icon: 'CheckCircle', color: '#bd081c' },
+  { id: 4, type: 'nav', action: 'bookmark', name: '收藏', icon: 'Star', color: '#8c9eff' },
+  { id: 5, type: 'nav', action: 'todo', name: '待办', icon: 'Check', color: '#bd081c' },
   { id: 6, type: 'nav', action: 'search', name: '搜索', icon: 'Search', color: '#ea4c89' },
   { id: 7, type: 'nav', action: 'news', name: '热点', icon: 'Flame', color: '#333' },
-  { id: 8, type: 'nav', action: 'settings', name: '设置', icon: 'Settings', color: '#ff4500' }
+  { id: 8, type: 'nav', action: 'settings', name: '设置', icon: 'Edit', color: '#ff4500' }
 ];
 
 const defaultShortcuts = [

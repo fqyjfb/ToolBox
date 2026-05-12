@@ -50,20 +50,20 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
             />
           ))}
         </div>
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-center gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onResetFloatConfig}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
             <RotateCcw size={14} />
-            重置默认
+            重置
           </button>
           <button
             onClick={onSaveFloatConfig}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-primary rounded-md hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-primary rounded-md hover:bg-primary/90 transition-colors"
           >
             <Save size={14} />
-            保存配置
+            保存
           </button>
         </div>
       </div>

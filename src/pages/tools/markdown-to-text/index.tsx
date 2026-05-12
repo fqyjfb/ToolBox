@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AlignLeft, Copy, FileText } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 
@@ -7,41 +7,41 @@ const MarkdownToTextPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
 
-  const convertMarkdown = useCallback(() => {
-    if (!input) {
-      setOutput('');
-      return;
+  const convertMarkdown = useCallback((text: string) => {
+    if (!text) {
+      return '';
     }
 
-    let text = input;
+    let result = text;
     
-    text = text.replace(/```[\s\S]*?```/g, '');
-    text = text.replace(/`([^`]+)`/g, '$1');
-    text = text.replace(/^\#{1,6}\s+/gm, '');
-    text = text.replace(/\*\*\*(.+?)\*\*\*/g, '$1');
-    text = text.replace(/\*\*(.+?)\*\*/g, '$1');
-    text = text.replace(/\*(.+?)\*/g, '$1');
-    text = text.replace(/___(.+?)___/g, '$1');
-    text = text.replace(/__(.+?)__/g, '$1');
-    text = text.replace(/_(.+?)_/g, '$1');
-    text = text.replace(/~~(.+?)~~/g, '$1');
-    text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '$1');
-    text = text.replace(/!\[([^\]]*)\]\(([^\)]+)\)/g, '$1');
-    text = text.replace(/^\s*[-*+]\s+/gm, '');
-    text = text.replace(/^\s*\d+\.\s+/gm, '');
-    text = text.replace(/^>\s+/gm, '');
-    text = text.replace(/^-{3,}$/gm, '');
-    text = text.replace(/^\*{3,}$/gm, '');
-    text = text.replace(/^\={3,}$/gm, '');
-    text = text.replace(/\|/g, ' ');
-    text = text.replace(/\n{3,}/g, '\n\n');
-    text = text.trim();
+    result = result.replace(/```[\s\S]*?```/g, '');
+    result = result.replace(/`([^`]+)`/g, '$1');
+    result = result.replace(/^#{1,6}\s+/gm, '');
+    result = result.replace(/\*\*\*(.+?)\*\*\*/g, '$1');
+    result = result.replace(/\*\*(.+?)\*\*/g, '$1');
+    result = result.replace(/\*(.+?)\*/g, '$1');
+    result = result.replace(/___(.+?)___/g, '$1');
+    result = result.replace(/__(.+?)__/g, '$1');
+    result = result.replace(/_(.+?)_/g, '$1');
+    result = result.replace(/~~(.+?)~~/g, '$1');
+    result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
+    result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '$1');
+    result = result.replace(/^\s*[-*+]\s+/gm, '');
+    result = result.replace(/^\s*\d+\.\s+/gm, '');
+    result = result.replace(/^>\s+/gm, '');
+    result = result.replace(/^-{3,}$/gm, '');
+    result = result.replace(/^\*{3,}$/gm, '');
+    result = result.replace(/^={3,}$/gm, '');
+    result = result.replace(/\|/g, ' ');
+    result = result.replace(/\n{3,}/g, '\n\n');
+    result = result.trim();
     
-    setOutput(text);
-  }, [input]);
+    return result;
+  }, []);
 
-  useEffect(() => {
-    convertMarkdown();
+  const handleInputChange = useCallback((value: string) => {
+    setInput(value);
+    setOutput(convertMarkdown(value));
   }, [convertMarkdown]);
 
   const handleCopy = useCallback(() => {
@@ -58,7 +58,7 @@ const MarkdownToTextPage: React.FC = () => {
   }, [output, addToast]);
 
   const loadSample = useCallback(() => {
-    setInput(`# 标题
+    handleInputChange(`# 标题
 
 ## 副标题
 
@@ -74,7 +74,7 @@ const code = '示例代码';
 \`\`\`
 
 [链接](https://example.com)`);
-  }, []);
+  }, [handleInputChange]);
 
   return (
     <div className="h-full flex flex-col p-4">
@@ -109,7 +109,7 @@ const code = '示例代码';
           </div>
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => handleInputChange(e.target.value)}
             className="flex-1 w-full p-4 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-mono text-sm resize-none outline-none"
             placeholder="在此输入 Markdown 文本..."
           />

@@ -1,5 +1,6 @@
 import React from 'react';
 
+/* eslint-disable react-refresh/only-export-components */
 export interface RouteConfig {
   path: string;
   element: React.ReactNode;
@@ -24,6 +25,7 @@ const TranslatePage = React.lazy(() => import('../pages/tools/translate'));
 const CloudClipboardPage = React.lazy(() => import('../pages/tools/cloud-clipboard'));
 const QuickReplyPage = React.lazy(() => import('../pages/tools/quick-reply'));
 const TodoManagerPage = React.lazy(() => import('../pages/tools/todo'));
+const NotesPage = React.lazy(() => import('../pages/tools/notes'));
 const AccountManagerPage = React.lazy(() => import('../pages/tools/account'));
 const MarkdownToWechatPage = React.lazy(() => import('../pages/tools/markdown-to-wechat'));
 const IPInfoPage = React.lazy(() => import('../pages/tools/ip-info'));
@@ -47,6 +49,8 @@ const SqlMinifierPage = React.lazy(() => import('../pages/tools/sql-minifier'));
 const HexEncodePage = React.lazy(() => import('../pages/tools/hex-encode'));
 const HexDecodePage = React.lazy(() => import('../pages/tools/hex-decode'));
 const WeatherPage = React.lazy(() => import('../pages/tools/weather'));
+const OcrPage = React.lazy(() => import('../pages/tools/ocr'));
+const FileManagerPage = React.lazy(() => import('../pages/tools/file-manager'));
 
 const AdminDashboardPage = React.lazy(() => import('../pages/admin'));
 const AdminWebsitesPage = React.lazy(() => import('../pages/admin/websites'));
@@ -93,6 +97,7 @@ export const protectedRoutes: RouteConfig[] = [
   { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
   { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
   { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
+  { path: '/tools/notes', element: <NotesPage />, requiresAuth: true },
   { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
   { path: '/tools/country-code', element: <CountryCodePage />, requiresAuth: true },
   { path: '/tools/markdown-to-wechat', element: <MarkdownToWechatPage />, requiresAuth: true },
@@ -116,6 +121,8 @@ export const protectedRoutes: RouteConfig[] = [
   { path: '/tools/sql-minifier', element: <SqlMinifierPage />, requiresAuth: true },
   { path: '/tools/hex-encode', element: <HexEncodePage />, requiresAuth: true },
   { path: '/tools/hex-decode', element: <HexDecodePage />, requiresAuth: true },
+  { path: '/tools/ocr', element: <OcrPage />, requiresAuth: true },
+  { path: '/tools/file-manager', element: <FileManagerPage />, requiresAuth: true },
 ];
 
 export const adminRoutes: RouteConfig[] = [

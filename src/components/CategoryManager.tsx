@@ -7,6 +7,9 @@ export interface CategoryItem {
   name: string;
   parent_id: string | null;
   children?: CategoryItem[];
+  order?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface CategoryManagerProps {

@@ -20,9 +20,15 @@ export interface TranslateResult {
   };
 }
 
+export interface ExchangeRateResult {
+  code: number;
+  message: string;
+  data?: Record<string, unknown>;
+}
+
 export const apiService = {
-  async getExchangeRates(): Promise<any> {
-    const data = await baseApi.fetch<any>('/exchange-rate');
+  async getExchangeRates(): Promise<ExchangeRateResult> {
+    const data = await baseApi.fetch<ExchangeRateResult>('/exchange-rate');
 
     if (!data) {
       throw new Error('获取汇率数据失败');

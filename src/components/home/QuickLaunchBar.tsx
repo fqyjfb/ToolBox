@@ -51,8 +51,6 @@ const SortableQuickLaunchItem: React.FC<{
 };
 
 const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemove, onReorder }) => {
-  if (apps.length === 0) return null;
-
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
     x: number;
@@ -135,6 +133,8 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
       }
     ];
   }, [contextMenu.targetAppId, handleMoveForward, handleMoveBackward, onRemove, handleCloseContextMenu]);
+
+  if (apps.length === 0) return null;
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

@@ -2,39 +2,38 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AlignLeft, Copy, FileText } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 
+const convertHtml = (html: string): string => {
+  if (!html) {
+    return '';
+  }
+
+  let text = html;
+  
+  text = text.replace(/<script[\s\S]*?<\/script>/gi, '');
+  text = text.replace(/<style[\s\S]*?<\/style>/gi, '');
+  text = text.replace(/<!--[\s\S]*?-->/g, '');
+  text = text.replace(/<[^>]+>/g, '');
+  text = text.replace(/&nbsp;/g, ' ');
+  text = text.replace(/&amp;/g, '&');
+  text = text.replace(/&lt;/g, '<');
+  text = text.replace(/&gt;/g, '>');
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&#39;/g, "'");
+  text = text.replace(/\n{3,}/g, '\n\n');
+  text = text.replace(/\s{2,}/g, ' ');
+  text = text.trim();
+  
+  return text;
+};
+
 const HtmlToTextPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
 
-  const convertHtml = useCallback(() => {
-    if (!input) {
-      setOutput('');
-      return;
-    }
-
-    let text = input;
-    
-    text = text.replace(/<script[\s\S]*?<\/script>/gi, '');
-    text = text.replace(/<style[\s\S]*?<\/style>/gi, '');
-    text = text.replace(/<!--[\s\S]*?-->/g, '');
-    text = text.replace(/<[^>]+>/g, '');
-    text = text.replace(/&nbsp;/g, ' ');
-    text = text.replace(/&amp;/g, '&');
-    text = text.replace(/&lt;/g, '<');
-    text = text.replace(/&gt;/g, '>');
-    text = text.replace(/&quot;/g, '"');
-    text = text.replace(/&#39;/g, "'");
-    text = text.replace(/\n{3,}/g, '\n\n');
-    text = text.replace(/\s{2,}/g, ' ');
-    text = text.trim();
-    
-    setOutput(text);
-  }, [input]);
-
   useEffect(() => {
-    convertHtml();
-  }, [convertHtml]);
+    setOutput(convertHtml(input));
+  }, [input]);
 
   const handleCopy = useCallback(() => {
     if (!output) {

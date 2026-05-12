@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { Admin, LoginRequest, RegisterRequest } from '../types/auth'
 import { authService } from '../services/AuthService'
+import { logError } from '../services/loggerService'
 
 interface AuthState {
   admin: Admin | null
@@ -36,7 +37,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         } else {
           set({ error: response.message || '登录失败', isLoading: false })
         }
-      } catch (error) {
+      } catch {
         set({ error: '登录失败，请检查网络连接', isLoading: false })
       }
     },
@@ -54,7 +55,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         } else {
           set({ error: response.message || '注册失败', isLoading: false })
         }
-      } catch (error) {
+      } catch {
         set({ error: '注册失败，请检查网络连接', isLoading: false })
       }
     },
@@ -68,9 +69,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
           admin: null,
           isAuthenticated: false
         })
-      } catch (error) {
-        console.error('登出失败:', error)
-        // 即使失败也清除状态和localStorage，但保留账号和密码信息（如果用户选择了记住密码）
+      } catch (err) {
+        logError('登出失败', 'AuthStore', err as Error);
         localStorage.removeItem('admin')
         set({
           admin: null,
@@ -99,7 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             isLoading: false
           })
         }
-      } catch (error) {
+      } catch {
         set({
           admin: null,
           isAuthenticated: false,
@@ -125,7 +125,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
           return true
         }
         return false
-      } catch (error) {
+      } catch {
         return false
       }
     }

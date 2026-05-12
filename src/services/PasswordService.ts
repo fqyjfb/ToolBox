@@ -77,7 +77,6 @@ export const passwordService = {
   async getPasswords(
     userId: string,
     categoryId?: string | string[],
-    status?: string,
     page: number = 1,
     pageSize: number = 10
   ): Promise<{ list: Password[]; total: number }> {
@@ -95,10 +94,6 @@ export const passwordService = {
       }
     }
 
-    if (status) {
-      query = query.eq('status', status);
-    }
-
     const { data, error, count } = await query
       .range((page - 1) * pageSize, page * pageSize - 1);
 
@@ -106,7 +101,7 @@ export const passwordService = {
       throw error;
     }
 
-    const passwords = (data || []).map((item: any) => ({
+    const passwords = (data || []).map((item) => ({
       id: item.id,
       user_id: item.user_id,
       category_id: item.category_id,
@@ -248,7 +243,7 @@ export const passwordService = {
       throw error;
     }
 
-    const passwords = (data || []).map((item: any) => ({
+    const passwords = (data || []).map((item) => ({
       id: item.id,
       user_id: item.user_id,
       category_id: item.category_id,

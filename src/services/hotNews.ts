@@ -114,7 +114,7 @@ const getMaoyanMovieNews = async (options?: { signal?: AbortSignal; forceRefresh
 };
 
 // 数据格式化：将各个平台的数据转换为统一格式
-const formatHotNews = (data: any[], platform: HotNewsPlatform): UnifiedHotItem[] => {
+const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotItem[] => {
   const platformName = PLATFORM_NAMES[platform];
   
   return data.map((item, index) => {
@@ -128,139 +128,149 @@ const formatHotNews = (data: any[], platform: HotNewsPlatform): UnifiedHotItem[]
     };
     
     switch (platform) {
-      case 'douyin':
-        const douyinItem = item as DouyinHotItem;
+      case 'douyin': {
+        const itemData = item as unknown as DouyinHotItem;
         return {
           ...baseItem,
-          title: douyinItem.title,
-          link: douyinItem.link,
-          hotValue: douyinItem.hot_value,
-          cover: douyinItem.cover,
-          activeTimeAt: douyinItem.active_time_at,
-          eventTimeAt: douyinItem.event_time_at
+          title: itemData.title,
+          link: itemData.link,
+          hotValue: itemData.hot_value,
+          cover: itemData.cover,
+          activeTimeAt: itemData.active_time_at,
+          eventTimeAt: itemData.event_time_at
         };
+      }
       
-      case 'rednote':
-        const rednoteItem = item as RednoteHotItem;
+      case 'rednote': {
+        const itemData = item as unknown as RednoteHotItem;
         return {
           ...baseItem,
-          title: rednoteItem.title,
-          link: rednoteItem.link,
-          hotValue: rednoteItem.score,
-          rank: rednoteItem.rank,
-          wordType: rednoteItem.word_type,
-          workTypeIcon: rednoteItem.work_type_icon
+          title: itemData.title,
+          link: itemData.link,
+          hotValue: itemData.score,
+          rank: itemData.rank,
+          wordType: itemData.word_type,
+          workTypeIcon: itemData.work_type_icon
         };
+      }
       
-      case 'bilibili':
-        const bilibiliItem = item as BilibiliHotItem;
+      case 'bilibili': {
+        const itemData = item as unknown as BilibiliHotItem;
         return {
           ...baseItem,
-          title: bilibiliItem.title,
-          link: bilibiliItem.link,
-          hotValue: bilibiliItem.score,
-          rank: bilibiliItem.rank,
-          wordType: bilibiliItem.word_type,
-          workTypeIcon: bilibiliItem.work_type_icon
+          title: itemData.title,
+          link: itemData.link,
+          hotValue: itemData.score,
+          rank: itemData.rank,
+          wordType: itemData.word_type,
+          workTypeIcon: itemData.work_type_icon
         };
+      }
       
-      case 'quark':
-        const quarkItem = item as QuarkHotItem;
+      case 'quark': {
+        const itemData = item as unknown as QuarkHotItem;
         return {
           ...baseItem,
-          title: quarkItem.title,
-          link: quarkItem.link,
-          hotValue: Math.max(quarkItem.comment_count, quarkItem.like_count, quarkItem.share_count),
-          cover: quarkItem.cover,
-          source: quarkItem.source,
-          publishedAt: quarkItem.published_at,
-          desc: quarkItem.summary,
-          content: quarkItem.content,
-          category: quarkItem.category?.[0],
-          commentCount: quarkItem.comment_count,
-          likeCount: quarkItem.like_count,
-          shareCount: quarkItem.share_count,
-          tags: quarkItem.tags,
-          images: quarkItem.images
+          title: itemData.title,
+          link: itemData.link,
+          hotValue: Math.max(itemData.comment_count, itemData.like_count, itemData.share_count),
+          cover: itemData.cover,
+          source: itemData.source,
+          publishedAt: itemData.published_at,
+          desc: itemData.summary,
+          content: itemData.content,
+          category: itemData.category?.[0],
+          commentCount: itemData.comment_count,
+          likeCount: itemData.like_count,
+          shareCount: itemData.share_count,
+          tags: itemData.tags,
+          images: itemData.images
         };
+      }
       
-      case 'weibo':
-        const weiboItem = item as WeiboHotItem;
+      case 'weibo': {
+        const itemData = item as unknown as WeiboHotItem;
         return {
           ...baseItem,
-          title: weiboItem.title,
-          link: weiboItem.link,
-          hotValue: weiboItem.hot_value
+          title: itemData.title,
+          link: itemData.link,
+          hotValue: itemData.hot_value
         };
+      }
       
-      case 'baidu':
-        const baiduItem = item as BaiduHotItem;
+      case 'baidu': {
+        const itemData = item as unknown as BaiduHotItem;
         return {
           ...baseItem,
-          title: baiduItem.title,
-          link: baiduItem.url,
-          hotValue: baiduItem.score_desc,
-          cover: baiduItem.cover,
-          rank: baiduItem.rank,
-          desc: baiduItem.desc,
-          scoreDesc: baiduItem.score_desc,
-          typeDesc: baiduItem.type_desc || undefined,
-          typeIcon: baiduItem.type_icon || undefined
+          title: itemData.title,
+          link: itemData.url,
+          hotValue: itemData.score_desc,
+          cover: itemData.cover,
+          rank: itemData.rank,
+          desc: itemData.desc,
+          scoreDesc: itemData.score_desc,
+          typeDesc: itemData.type_desc || undefined,
+          typeIcon: itemData.type_icon || undefined
         };
+      }
       
-      case 'toutiao':
-        const toutiaoItem = item as ToutiaoHotItem;
+      case 'toutiao': {
+        const itemData = item as unknown as ToutiaoHotItem;
         return {
           ...baseItem,
-          title: toutiaoItem.title,
-          link: toutiaoItem.link,
-          hotValue: toutiaoItem.hot_value,
-          cover: toutiaoItem.cover
+          title: itemData.title,
+          link: itemData.link,
+          hotValue: itemData.hot_value,
+          cover: itemData.cover
         };
+      }
       
-      case 'zhihu':
-        const zhihuItem = item as ZhihuHotItem;
+      case 'zhihu': {
+        const itemData = item as unknown as ZhihuHotItem;
         return {
           ...baseItem,
-          title: zhihuItem.title,
-          link: zhihuItem.link,
-          hotValue: zhihuItem.hot_value_desc,
-          cover: zhihuItem.cover,
-          createdAt: zhihuItem.created_at,
-          publishedAt: zhihuItem.created_at, // 复用created_at作为publishedAt
-          detail: zhihuItem.detail,
-          answerCount: zhihuItem.answer_cnt,
-          commentCount: zhihuItem.comment_cnt,
-          followerCount: zhihuItem.follower_cnt
+          title: itemData.title,
+          link: itemData.link,
+          hotValue: itemData.hot_value_desc,
+          cover: itemData.cover,
+          createdAt: itemData.created_at,
+          publishedAt: itemData.created_at,
+          detail: itemData.detail,
+          answerCount: itemData.answer_cnt,
+          commentCount: itemData.comment_cnt,
+          followerCount: itemData.follower_cnt
         };
+      }
       
-      case 'dongchedi':
-        const dongchediItem = item as DongchediHotItem;
+      case 'dongchedi': {
+        const itemData = item as unknown as DongchediHotItem;
         return {
           ...baseItem,
-          title: dongchediItem.title,
-          link: dongchediItem.url,
-          hotValue: dongchediItem.score_desc,
-          rank: dongchediItem.rank,
-          scoreDesc: dongchediItem.score_desc
+          title: itemData.title,
+          link: itemData.url,
+          hotValue: itemData.score_desc,
+          rank: itemData.rank,
+          scoreDesc: itemData.score_desc
         };
+      }
       
-      case 'maoyan':
-        // 猫眼电影数据结构特殊，这里处理单个电影项
-        const movieItem = item as any;
+      case 'maoyan': {
+        const maoyanItem = item as unknown as { movie_name?: string; title?: string; movie_id?: string; box_office_desc?: string; score?: number; avg_seat_view?: string; avg_show_view?: string; release_info?: string; sum_box_desc?: string; split_box_desc?: string };
+        const boxOfficeDesc = maoyanItem.box_office_desc;
         return {
           ...baseItem,
-          title: movieItem.movie_name || movieItem.title,
-          link: `https://maoyan.com/films/${movieItem.movie_id}`,
-          hotValue: movieItem.box_office_desc || movieItem.score || 0,
+          title: maoyanItem.movie_name || maoyanItem.title || '',
+          link: `https://maoyan.com/films/${maoyanItem.movie_id}`,
+          hotValue: boxOfficeDesc ? parseInt(boxOfficeDesc.replace(/[^0-9]/g, '')) || 0 : maoyanItem.score || 0,
           rank: index + 1,
-          avgSeatView: movieItem.avg_seat_view,
-          avgShowView: movieItem.avg_show_view,
-          releaseInfo: movieItem.release_info,
-          boxOfficeDesc: movieItem.box_office_desc,
-          sumBoxDesc: movieItem.sum_box_desc,
-          splitBoxDesc: movieItem.split_box_desc
+          avgSeatView: maoyanItem.avg_seat_view,
+          avgShowView: maoyanItem.avg_show_view,
+          releaseInfo: maoyanItem.release_info,
+          boxOfficeDesc: maoyanItem.box_office_desc,
+          sumBoxDesc: maoyanItem.sum_box_desc,
+          splitBoxDesc: maoyanItem.split_box_desc
         };
+      }
       
       default:
         return baseItem;

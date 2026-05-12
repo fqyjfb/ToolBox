@@ -79,10 +79,10 @@ export interface Category {
   id: string
   name: string
   parent_id: string | null
-  order: number
+  order?: number
   children: Category[]
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Bookmark {
@@ -139,7 +139,7 @@ const NavPage: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       return !!user
-    } catch (error) {
+    } catch {
       return false
     }
   }
@@ -154,7 +154,7 @@ const NavPage: React.FC = () => {
     try {
       const favorites = await websiteService.getFavorites({ cachedCategories })
       return favorites
-    } catch (error) {
+    } catch {
       return []
     }
   }
@@ -234,9 +234,9 @@ const NavPage: React.FC = () => {
         }
         return prev
       })
-    } catch (error: any) {
+    } catch (err) {
       setHasError(true)
-      setErrorMessage('数据加载过程中遇到问题，部分内容可能无法显示: ' + (error.message || ''))
+      setErrorMessage('数据加载过程中遇到问题，部分内容可能无法显示: ' + ((err as Error).message || ''))
     } finally {
       setIsLoading(false)
     }
@@ -424,7 +424,7 @@ const NavPage: React.FC = () => {
         // 使用已有的分类数据，避免重复请求
         const userFavorites = await loadUserFavorites(categoriesTree.flatMap(cat => [cat, ...cat.children]))
         setFavorites(userFavorites)
-      } catch (error) {
+      } catch {
         setFavorites([])
       } finally {
         setIsLoadingFavorites(false)
@@ -466,7 +466,7 @@ const NavPage: React.FC = () => {
         } else {
           await websiteService.removeFavorite(bookmarkId)
         }
-      } catch (error) {
+      } catch {
         // 失败时回滚本地状态
         const rolledBackBookmarks = bookmarks.map(bookmark => 
           bookmark.id === bookmarkId ? { ...bookmark, is_favorite: !isFavorite } : bookmark
@@ -508,9 +508,9 @@ const NavPage: React.FC = () => {
   }
 
   // 节流函数
-  const throttle = (func: Function, delay: number) => {
+  const throttle = <T extends (...args: unknown[]) => void>(func: T, delay: number) => {
     let inThrottle: boolean
-    return function(this: any, ...args: any[]) {
+    return function(this: unknown, ...args: Parameters<T>) {
       if (!inThrottle) {
         func.apply(this, args)
         inThrottle = true

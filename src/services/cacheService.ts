@@ -6,7 +6,7 @@ export interface CacheItem<T> {
 }
 
 class CacheService {
-  private cache: Map<string, CacheItem<any>> = new Map();
+  private cache: Map<string, CacheItem<unknown>> = new Map();
   private cleanupInterval: ReturnType<typeof setInterval>;
 
   constructor() {
@@ -42,7 +42,7 @@ class CacheService {
       return null;
     }
 
-    return item.data;
+    return item.data as T;
   }
 
   /**

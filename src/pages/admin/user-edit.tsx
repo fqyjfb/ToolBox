@@ -5,12 +5,24 @@ import { userService } from '../../services/UserService'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { useToastStore } from '../../store/toastStore'
 
+interface UserItem {
+  id: string
+  username: string
+  name: string
+  email: string
+  phone: string
+  memberLevel: string
+  vipExpireAt: string | null
+  isBanned: boolean
+  createdAt: string
+}
+
 const UserEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { addToast } = useToastStore()
   const [isLoading, setIsLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<UserItem | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',

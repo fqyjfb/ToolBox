@@ -1,4 +1,5 @@
 ignoredBuiltDependencies:
+  - better-sqlite3
   - core-js
   - electron
   - electron-winstaller

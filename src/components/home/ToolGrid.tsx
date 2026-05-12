@@ -36,6 +36,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Navigation: React.lazy(() => import('lucide-react').then(m => ({ default: m.Navigation }))),
   Newspaper: React.lazy(() => import('lucide-react').then(m => ({ default: m.Newspaper }))),
   Languages: React.lazy(() => import('lucide-react').then(m => ({ default: m.Languages }))),
+  FileText: React.lazy(() => import('lucide-react').then(m => ({ default: m.FileText }))),
 };
 
 const ToolGrid: React.FC<ToolGridProps> = ({ tools, onToolClick }) => {

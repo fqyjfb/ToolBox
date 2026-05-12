@@ -1,6 +1,6 @@
 export interface SettingItem {
   name: string;
-  value: any;
+  value: string | number | boolean;
 }
 
 export interface ShortcutItem {
@@ -23,7 +23,7 @@ export interface FloatConfigItem {
   path?: string;
 }
 
-export type SettingsTab = 'general' | 'quickLaunch' | 'notifications' | 'shortcuts' | 'floatWindow';
+export type SettingsTab = 'general' | 'storage' | 'quickLaunch' | 'notifications' | 'shortcuts' | 'floatWindow' | 'ocr' | 'logMonitor';
 
 export interface NotificationSettings {
   errors: boolean;

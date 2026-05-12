@@ -8,6 +8,7 @@ import LoadingSpinner from './components/ui/LoadingSpinner';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/AuthStore';
 import { useSidebarStore } from './store/sidebarStore';
+import { logError } from './services/loggerService';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes } from './config/routes';
@@ -69,7 +70,7 @@ function App() {
   }, [isDark]);
 
   useEffect(() => {
-    const handleSettingChanged = (setting: { name: string; value: any }) => {
+    const handleSettingChanged = (setting: { name: string; value: unknown }) => {
       if (setting.name === 'isMenuVisible') {
         setVisible(setting.value !== 0);
       } else if (setting.name === 'leftMenuPosition') {
@@ -91,7 +92,7 @@ function App() {
       try {
         await useAuthStore.getState().getCurrentAdmin();
       } catch (error) {
-        console.error('初始化认证状态失败:', error);
+        logError('初始化认证状态失败', 'App', error as Error);
       } finally {
         setIsInitialized(true);
       }

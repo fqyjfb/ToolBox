@@ -47,7 +47,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ searchTypes }) => {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && performSearch()}
             placeholder={searchTypes.find(type => type.id === activeSearchType)?.placeholder || '搜索...'}
-            className="w-full px-4 py-1.5 pl-10 border border-gray-300/50 dark:border-gray-600/50 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/80 bg-white/50 dark:bg-gray-800/50 dark:text-white backdrop-blur-sm transition-all duration-300 ease-in-out focus:shadow-lg focus:border-blue-400/50 text-sm"
+            className="w-full px-4 py-1.5 pl-10 border border-gray-300/50 dark:border-gray-600/50 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/80 bg-white/50 dark:bg-gray-800/50 dark:text-white backdrop-blur-sm transition-all duration-300 ease-in-out focus:border-blue-400/50 text-sm"
           />
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 transition-all duration-300 ease-in-out" size={18} />
           {searchQuery && (

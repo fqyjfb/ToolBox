@@ -108,10 +108,12 @@ const MobileHome: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchSixtySeconds();
-    fetchItNews();
-    fetchAiNews();
-    fetchWeather();
+    setTimeout(() => {
+      fetchSixtySeconds();
+      fetchItNews();
+      fetchAiNews();
+      fetchWeather();
+    }, 0);
   }, [fetchSixtySeconds, fetchItNews, fetchAiNews, fetchWeather]);
 
   const performSearch = () => {

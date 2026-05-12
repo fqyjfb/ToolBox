@@ -31,7 +31,7 @@ const Tooltip: React.FC<TooltipProps> = ({ children, title, position = 'top' }) 
         newPosition = 'left';
       }
 
-      setActualPosition(newPosition);
+      setTimeout(() => setActualPosition(newPosition), 0);
     }
   }, [isVisible, position]);
 

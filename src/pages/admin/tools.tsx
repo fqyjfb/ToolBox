@@ -333,17 +333,15 @@ const ToolsPage: React.FC = () => {
     if (name === 'title') {
       setErrors(prev => ({ ...prev, title: value.length > 255 ? '标题长度不能超过255个字符' : '' }))
     } else if (name === 'download_url') {
-      const urlRegex = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/
+      const urlRegex = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/
       setErrors(prev => ({ ...prev, download_url: value && !urlRegex.test(value) ? '请输入有效的URL地址' : '' }))
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const handleSubmit = async () => {
     const newErrors = {
       title: formData.title.trim() ? (formData.title.length > 255 ? '标题长度不能超过255个字符' : '') : '请输入标题',
-      download_url: formData.download_url.trim() ? (/^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/.test(formData.download_url) ? '' : '请输入有效的URL地址') : '请输入下载地址'
+      download_url: formData.download_url.trim() ? (/^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/.test(formData.download_url) ? '' : '请输入有效的URL地址') : '请输入下载地址'
     }
 
     setErrors(newErrors)

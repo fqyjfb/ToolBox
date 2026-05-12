@@ -24,7 +24,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
   const { logout } = useAuth();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
-  const showSearch = ['/launch', '/nav', '/tools', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/account'].includes(location.pathname);
+  const showSearch = ['/launch', '/nav', '/tools', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/account', '/tools/ocr', '/tools/file-manager'].includes(location.pathname);
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
@@ -74,6 +74,8 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
             {location.pathname === '/tools/sql-minifier' && 'SQL压缩'}
             {location.pathname === '/tools/hex-encode' && '十六进制编码'}
             {location.pathname === '/tools/hex-decode' && '十六进制解码'}
+            {location.pathname === '/tools/ocr' && 'OCR文字识别'}
+            {location.pathname === '/tools/file-manager' && '文件管理'}
             {location.pathname === '/admin' && '管理控制台'}
             {location.pathname === '/admin/websites' && '网址管理'}
             {location.pathname === '/admin/users' && '用户管理'}
@@ -91,7 +93,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
               <div className="relative">
                 <input
                   placeholder="搜索..."
-                  className="shadow-lg border-2 border-transparent focus:border-gray-300 px-4 py-1.5 rounded-xl w-56 transition-[width] duration-300 focus:w-64 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
+                  className="border-2 border-transparent focus:border-gray-300 px-4 py-1.5 rounded-xl w-56 transition-[width] duration-300 focus:w-64 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
                   name="search"
                   type="search"
                   value={searchQuery}
@@ -100,14 +102,12 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
                   style={{ height: '32px' } as React.CSSProperties}
                 />
                 {searchQuery && (
-                  <Tooltip title="清除搜索">
                     <button
                       onClick={clearSearch}
                       className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out"
                     >
                       <XIcon size={14} />
                     </button>
-                  </Tooltip>
                 )}
                 <button
                   onClick={performSearch}

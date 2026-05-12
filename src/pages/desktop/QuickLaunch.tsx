@@ -135,18 +135,18 @@ const QuickLaunch: React.FC = () => {
     const savedApps = localStorage.getItem('quickLaunchApps');
     if (savedApps) {
       try {
-        setApps(JSON.parse(savedApps));
+        setTimeout(() => setApps(JSON.parse(savedApps)), 0);
       } catch {
-        setApps([]);
+        setTimeout(() => setApps([]), 0);
       }
     }
 
     const savedCategories = localStorage.getItem('quickLaunchCategories');
     if (savedCategories) {
       try {
-        setCategories(JSON.parse(savedCategories));
+        setTimeout(() => setCategories(JSON.parse(savedCategories)), 0);
       } catch {
-        setCategories([]);
+        setTimeout(() => setCategories([]), 0);
       }
     } else {
       const defaultCategories: QuickLaunchCategory[] = [
@@ -154,7 +154,7 @@ const QuickLaunch: React.FC = () => {
         { id: '2', name: '开发', color: 'var(--color-category-2)' },
         { id: '3', name: '设计', color: 'var(--color-category-3)' },
       ];
-      setCategories(defaultCategories);
+      setTimeout(() => setCategories(defaultCategories), 0);
       localStorage.setItem('quickLaunchCategories', JSON.stringify(defaultCategories));
     }
   }, []);

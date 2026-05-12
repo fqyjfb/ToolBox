@@ -71,7 +71,10 @@ const RegexTesterPage: React.FC = () => {
   }, [pattern, flags, testString]);
 
   useEffect(() => {
-    testRegex();
+    const timer = setTimeout(() => {
+      testRegex();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [testRegex]);
 
   const toggleFlag = useCallback((flag: string) => {

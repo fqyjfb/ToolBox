@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
+import { X } from 'lucide-react';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -7,7 +8,7 @@ export interface ModalProps {
   children: React.ReactNode;
   confirmText?: string;
   cancelText?: string;
-  onConfirm?: (...args: any[]) => void;
+  onConfirm?: (...args: unknown[]) => void;
   confirmDisabled?: boolean;
   showCancel?: boolean;
   showConfirm?: boolean;
@@ -60,7 +61,7 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3"
       onClick={(e) => {
         if (clickOutsideToClose && e.target === e.currentTarget) {
           onClose();
@@ -68,26 +69,26 @@ const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full ${sizeClasses[size]} animate-fade-in`}
+        className={`bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full ${sizeClasses[size]} animate-modal-in`}
       >
-        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
             {title}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <span className="text-xl">&times;</span>
+            <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="p-4 space-y-2.5">{children}</div>
         {(showCancel || showConfirm) && (
-          <div className="flex justify-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-center gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
             {showCancel && (
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                className="px-3.5 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 {cancelText}
               </button>
@@ -96,7 +97,7 @@ const Modal: React.FC<ModalProps> = ({
               <button
                 onClick={onConfirm || onClose}
                 disabled={confirmDisabled}
-                className="modal-confirm-btn px-4 py-2 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-md transition-colors"
+                className="px-3.5 py-1.5 text-sm font-medium text-white bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
                 {confirmText}
               </button>
@@ -105,24 +106,18 @@ const Modal: React.FC<ModalProps> = ({
         )}
       </div>
       <style>{`
-        @keyframes fade-in {
+        @keyframes modal-in {
           from {
             opacity: 0;
-            transform: scale(0.95);
+            transform: scale(0.96) translateY(4px);
           }
           to {
             opacity: 1;
-            transform: scale(1);
+            transform: scale(1) translateY(0);
           }
         }
-        .animate-fade-in {
-          animation: fade-in 0.15s ease-out;
-        }
-        .modal-confirm-btn:not(:disabled) {
-          background-color: var(--color-primary);
-        }
-        .modal-confirm-btn:not(:disabled):hover {
-          background-color: var(--color-primary-hover, #0085a0);
+        .animate-modal-in {
+          animation: modal-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
         }
       `}</style>
     </div>

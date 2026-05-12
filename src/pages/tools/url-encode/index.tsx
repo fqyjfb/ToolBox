@@ -21,7 +21,7 @@ const UrlEncodePage: React.FC = () => {
       const result = encodeURIComponent(input);
       setEncoded(result);
       setEncodeError('');
-    } catch (err) {
+    } catch {
       setEncodeError('编码失败');
       addToast({ message: '编码失败', type: 'error' });
     }
@@ -38,16 +38,21 @@ const UrlEncodePage: React.FC = () => {
       const result = decodeURIComponent(input);
       setDecoded(result);
       setDecodeError('');
-    } catch (err) {
+    } catch {
       setDecodeError('解码失败 - 无效的编码格式');
       addToast({ message: '解码失败', type: 'error' });
     }
   }, [input, addToast]);
 
   useEffect(() => {
-    encodeUrl();
-    decodeUrl();
-  }, [encodeUrl, decodeUrl]);
+    if (input) {
+      const timer = setTimeout(() => {
+        encodeUrl();
+        decodeUrl();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [input, addToast, encodeUrl, decodeUrl]);
 
   const handleCopy = useCallback((text: string) => {
     if (!text) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Edit, Lock, Search, ArrowUpDown, X } from 'lucide-react'
 import { userService } from '../../services/UserService'
@@ -62,8 +62,8 @@ const UserListPage: React.FC = () => {
     },
   ]
 
-  const fetchUsers = async (
-    pageNum = currentPage, 
+  const fetchUsers = useCallback(async (
+    pageNum = currentPage,
     pageSizeNum = pageSize,
     filters: { memberLevel?: string; status?: string; search?: string } = {}
   ) => {
@@ -78,18 +78,20 @@ const UserListPage: React.FC = () => {
       filters.status ?? statusFilter
     )
     if (result.success) {
-      setUsers(result.data.list)
-      setTotal(result.data.total)
-      setCurrentPage(result.data.page)
+      setTimeout(() => {
+        setUsers(result.data.list)
+        setTotal(result.data.total)
+        setCurrentPage(result.data.page)
+      }, 0)
     } else {
       addToast({ type: 'error', message: result.message || '获取用户列表失败' })
     }
     setIsLoading(false)
-  }
+  }, [currentPage, pageSize, searchQuery, sortBy, sortOrder, memberLevelFilter, statusFilter, addToast]);
 
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    setTimeout(() => fetchUsers(), 0)
+  }, [fetchUsers])
 
   const handleSearchSubmit = () => {
     setCurrentPage(1)

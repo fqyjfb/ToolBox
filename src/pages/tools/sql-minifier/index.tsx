@@ -63,7 +63,10 @@ const SqlMinifierPage: React.FC = () => {
   }, [input]);
 
   useEffect(() => {
-    minifySql();
+    const timer = setTimeout(() => {
+      minifySql();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [minifySql]);
 
   const handleCopy = useCallback(() => {

@@ -2,30 +2,28 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Binary, Copy, FileText } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 
+const encodeHex = (text: string): string => {
+  if (!text) {
+    return '';
+  }
+
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(text);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 const HexEncodePage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
 
-  const encodeHex = useCallback(() => {
-    if (!input) {
-      setOutput('');
-      return;
-    }
-
+  useEffect(() => {
     try {
-      const encoder = new TextEncoder();
-      const bytes = encoder.encode(input);
-      const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-      setOutput(hex);
+      setTimeout(() => setOutput(encodeHex(input)), 0);
     } catch {
       addToast({ message: '编码失败', type: 'error' });
     }
   }, [input, addToast]);
-
-  useEffect(() => {
-    encodeHex();
-  }, [encodeHex]);
 
   const handleCopy = useCallback(() => {
     if (!output) {

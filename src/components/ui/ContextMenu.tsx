@@ -14,6 +14,7 @@ export interface ContextMenuItem {
   onClick?: () => void;
   divider?: boolean;
   subMenu?: SubMenuItem[];
+  className?: string;
 }
 
 export interface ContextMenuProps {
@@ -63,29 +64,21 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
       const estimatedHeight = items.length * itemHeight + dividerCount * dividerHeight + menuWindowPadding;
       const estimatedWidth = 160;
       
-      let newX = x + 8;
-      let newY: number;
+      let newX = x;
+      let newY = y;
       
-      const viewportCenterY = maxHeight / 2;
-      
-      if (y < viewportCenterY) {
-        newY = y + 8;
-      } else {
-        newY = y - estimatedHeight - 8;
-      }
-      
-      if (newX + estimatedWidth > maxWidth) {
-        newX = x - estimatedWidth - 8;
+      if (newX + estimatedWidth > maxWidth - padding) {
+        newX = maxWidth - estimatedWidth - padding;
       }
       if (newX < padding) {
         newX = padding;
       }
       
+      if (newY + estimatedHeight > maxHeight - padding) {
+        newY = maxHeight - estimatedHeight - padding;
+      }
       if (newY < padding) {
         newY = padding;
-      }
-      if (newY + estimatedHeight > maxHeight) {
-        newY = maxHeight - estimatedHeight;
       }
       
       menu.style.left = `${newX}px`;
@@ -113,7 +106,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
               ) : (
                 <li className={`relative ${item.subMenu ? 'has-submenu' : ''}`}>
                   <button 
-                    className="popup-menu-item w-full" 
+                    className={`popup-menu-item w-full ${item.className || ''}`} 
                     onClick={() => {
                       if (item.subMenu) {
                         setActiveSubMenu(activeSubMenu === item.id ? null : item.id);

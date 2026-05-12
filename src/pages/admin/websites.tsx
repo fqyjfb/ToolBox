@@ -64,7 +64,7 @@ const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, orig
   }
 };
 
-const buildCategoryTree = (categories: any[]): Category[] => {
+const buildCategoryTree = (categories: CategoryItem[]): Category[] => {
   const categoryMap = new Map<string, Category>();
   
   categories.forEach(category => {
@@ -189,8 +189,8 @@ const AdminWebsitesPage: React.FC = () => {
           }));
         }
       }
-    } catch (err: any) {
-      addToast({ message: err.message || '加载分类失败', type: 'error' });
+    } catch (err) {
+      addToast({ message: (err as Error).message || '加载分类失败', type: 'error' });
     }
   }, [selectedCategory]);
 
@@ -254,9 +254,9 @@ const AdminWebsitesPage: React.FC = () => {
       setFilteredBookmarks(bookmarksData || []);
       setPage(currentPage);
       setPageSize(currentPageSize);
-    } catch (err: any) {
-      setBookmarkError(err.message || '加载数据失败');
-      addToast({ message: err.message || '加载数据失败', type: 'error' });
+    } catch (err) {
+      setBookmarkError((err as Error).message || '加载数据失败');
+      addToast({ message: (err as Error).message || '加载数据失败', type: 'error' });
     } finally {
       if (showLoading) {
         setIsLoading(false);
@@ -443,8 +443,8 @@ const AdminWebsitesPage: React.FC = () => {
       } else {
         loadData(page, pageSize, searchQuery, selectedCategory);
       }
-    } catch (err: any) {
-      addToast({ message: err.message || '删除失败', type: 'error' });
+    } catch (err) {
+      addToast({ message: (err as Error).message || '删除失败', type: 'error' });
     }
     
     setIsDeleteConfirmOpen(false);
@@ -467,14 +467,15 @@ const AdminWebsitesPage: React.FC = () => {
       ));
       
       addToast({ message: `书签已${currentState ? '设为私有' : '设为公开'}`, type: 'success' });
-    } catch (err: any) {
-      addToast({ message: err.message || '更新失败', type: 'error' });
+    } catch (err) {
+      addToast({ message: (err as Error).message || '更新失败', type: 'error' });
     }
   };
 
   const handleBookmarkInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target as any;
-    const newValue = type === 'checkbox' ? checked : value;
+    const target = e.target as HTMLInputElement;
+    const { name, value, type } = target;
+    const newValue = type === 'checkbox' ? (target as HTMLInputElement).checked : value;
     
     setBookmarkFormData(prev => ({
       ...prev,
@@ -540,9 +541,9 @@ const AdminWebsitesPage: React.FC = () => {
       setIsAddBookmarkModalOpen(false);
       setIsEditBookmarkModalOpen(false);
       setBookmarkError('');
-    } catch (err: any) {
-      setBookmarkError(err.message || '保存书签失败');
-      addToast({ message: err.message || '保存失败', type: 'error' });
+    } catch (err) {
+      setBookmarkError((err as Error).message || '保存书签失败');
+      addToast({ message: (err as Error).message || '保存失败', type: 'error' });
     }
   };
 
@@ -562,8 +563,8 @@ const AdminWebsitesPage: React.FC = () => {
       
       await loadCategories();
       addToast({ message: '添加成功', type: 'success' });
-    } catch (err: any) {
-      addToast({ message: err.message || '添加失败', type: 'error' });
+    } catch (err) {
+      addToast({ message: (err as Error).message || '添加失败', type: 'error' });
     }
   };
 
@@ -580,8 +581,8 @@ const AdminWebsitesPage: React.FC = () => {
       
       await loadCategories();
       addToast({ message: '更新成功', type: 'success' });
-    } catch (err: any) {
-      addToast({ message: err.message || '更新失败', type: 'error' });
+    } catch (err) {
+      addToast({ message: (err as Error).message || '更新失败', type: 'error' });
     }
   };
 
@@ -615,17 +616,6 @@ const AdminWebsitesPage: React.FC = () => {
     
     const category = findCategory(categories);
     return category ? category.name : '未知分类';
-  };
-
-  const renderCategories = (cats: Category[], level: number = 0) => {
-    return cats.map((category) => (
-      <React.Fragment key={category.id}>
-        <option value={category.id}>
-          {'└─'.repeat(level)}{category.name}
-        </option>
-        {category.children && category.children.length > 0 && renderCategories(category.children, level + 1)}
-      </React.Fragment>
-    ));
   };
 
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'categories'>('bookmarks');
@@ -1124,7 +1114,9 @@ const AdminWebsitesPage: React.FC = () => {
               label: '编辑',
               icon: <Edit size={16} />,
               onClick: () => {
-                contextMenu?.targetData && handleEditBookmark(contextMenu.targetData as Bookmark);
+                if (contextMenu?.targetData) {
+                  handleEditBookmark(contextMenu.targetData as Bookmark);
+                }
                 setContextMenu(null);
               }
             },
@@ -1145,7 +1137,9 @@ const AdminWebsitesPage: React.FC = () => {
               label: '删除',
               icon: <Trash2 size={16} />,
               onClick: () => {
-                contextMenu?.targetId && contextMenu?.targetData && handleDeleteBookmark(contextMenu.targetId, (contextMenu.targetData as Bookmark).title);
+                if (contextMenu?.targetId && contextMenu?.targetData) {
+                  handleDeleteBookmark(contextMenu.targetId, (contextMenu.targetData as Bookmark).title);
+                }
                 setContextMenu(null);
               }
             }
