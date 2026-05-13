@@ -4,7 +4,6 @@ import { FloatConfigItem } from '../../types/settings';
 import { QuickLaunchItem } from '../../utils/quickLaunch';
 import {
   AVAILABLE_ICONS,
-  AVAILABLE_COLORS,
   NAV_ACTIONS,
   SYSTEM_ACTIONS,
   FLOAT_TYPE_OPTIONS
@@ -27,7 +26,14 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
   const [localConfig, setLocalConfig] = useState<FloatConfigItem>(config);
 
   const handleTypeChange = (type: FloatConfigItem['type']) => {
-    const newConfig: FloatConfigItem = { ...localConfig, type, action: '', path: undefined };
+    const isPredefined = isPredefinedIcon(localConfig.icon);
+    const newConfig: FloatConfigItem = { 
+      ...localConfig, 
+      type, 
+      action: '', 
+      path: undefined,
+      icon: type !== 'app' && !isPredefined ? 'HelpCircle' : localConfig.icon
+    };
     setLocalConfig(newConfig);
     onUpdate(newConfig);
   };
@@ -83,12 +89,6 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
 
   const handleIconChange = (icon: string) => {
     const newConfig: FloatConfigItem = { ...localConfig, icon };
-    setLocalConfig(newConfig);
-    onUpdate(newConfig);
-  };
-
-  const handleColorChange = (color: string) => {
-    const newConfig: FloatConfigItem = { ...localConfig, color };
     setLocalConfig(newConfig);
     onUpdate(newConfig);
   };
@@ -322,29 +322,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">颜色</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localConfig.color}
-                  onChange={(e) => handleColorChange(e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer border-0"
-                />
-                <div className="flex flex-wrap gap-1 flex-1">
-                  {AVAILABLE_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => handleColorChange(color)}
-                      className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${
-                        localConfig.color === color ? 'ring-2 ring-offset-1 ring-primary' : ''
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
+
           </div>
         </div>
       )}

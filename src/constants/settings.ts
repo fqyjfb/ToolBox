@@ -50,7 +50,6 @@ export const NAV_ACTIONS = [
   { action: 'quick', label: '快捷启动' },
   { action: 'bookmark', label: '收藏' },
   { action: 'todo', label: '待办' },
-  { action: 'search', label: '搜索' },
   { action: 'news', label: '热点' },
   { action: 'settings', label: '设置' },
 ];

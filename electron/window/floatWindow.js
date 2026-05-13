@@ -155,22 +155,12 @@ const registerFloatIpcHandlers = () => {
       require('electron').shell.openPath(appPath).catch(err => {});
       return;
     }
-    if (action.startsWith('nav:')) {
-      const navPath = action.replace('nav:', '');
-      if (mainWindow) {
-        mainWindow.show();
-        mainWindow.focus();
-        mainWindow.webContents.send('navigate-to', navPath);
-      }
-      return;
-    }
     const actions = {
       home: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/'); } },
       tools: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/tools'); } },
       quick: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/launch'); } },
       bookmark: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/nav'); } },
       todo: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/tools/todo'); } },
-      search: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } },
       news: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/news'); } },
       settings: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/settings'); } },
       'clear-recycle-bin': () => {
@@ -183,6 +173,22 @@ const registerFloatIpcHandlers = () => {
       restart: () => { exec('shutdown /r /t 0'); },
       'restart-app': () => { require('electron').app.relaunch(); require('electron').app.quit(); }
     };
+    
+    const navAction = action.replace('nav:', '');
+     if (typeof actions[navAction] === 'function') {
+       actions[navAction]();
+       return;
+     }
+     
+     if (action.startsWith('nav:')) {
+       const navPath = action.replace('nav:', '');
+       if (mainWindow && navPath) {
+         mainWindow.show();
+         mainWindow.focus();
+         mainWindow.webContents.send('navigate-to', navPath);
+       }
+       return;
+     }
     if (typeof actions[action] === 'function') {
       actions[action]();
     }
