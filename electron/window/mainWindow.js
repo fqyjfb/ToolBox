@@ -282,7 +282,12 @@ const createWindow = (onReadyCallback) => {
   });
 };
 
+let ipcHandlersRegistered = false;
+
 const registerIpcHandlers = () => {
+  if (ipcHandlersRegistered) return;
+  ipcHandlersRegistered = true;
+  
   const { ipcMain } = require('electron');
   const { loadShortcuts, saveShortcuts, loadFloatConfig, saveFloatConfig, defaultFloatConfig } = require('../config');
 
@@ -347,6 +352,32 @@ const registerIpcHandlers = () => {
     }
   });
 
+  const getShortcutTarget = (shortcutPath) => {
+    return new Promise((resolve) => {
+      const psScript = `
+        $Shell = New-Object -ComObject WScript.Shell
+        try {
+          $Shortcut = $Shell.CreateShortcut("${shortcutPath}")
+          $TargetPath = $Shortcut.TargetPath
+          if ($TargetPath -and (Test-Path -Path $TargetPath -PathType Leaf)) {
+            Write-Output $TargetPath
+          } else {
+            Write-Output "${shortcutPath}"
+          }
+        } catch {
+          Write-Output "${shortcutPath}"
+        }
+      `;
+      execFile('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-Command', psScript], { timeout: 5000 }, (error, stdout) => {
+        if (stdout?.trim()) {
+          resolve(stdout.trim());
+        } else {
+          resolve(shortcutPath);
+        }
+      });
+    });
+  };
+
   ipcMain.handle('get-dropped-files', async (event, fileDataList) => {
     const result = [];
     const searchPaths = [
@@ -357,17 +388,29 @@ const registerIpcHandlers = () => {
     ];
     for (const fileData of fileDataList) {
       let found = false;
+      let filePath = null;
+      
       for (const searchPath of searchPaths) {
         if (!fs.existsSync(searchPath)) continue;
         const fullPath = path.join(searchPath, fileData.name);
         if (fs.existsSync(fullPath) && isSupportedFileType(fullPath)) {
-          result.push(fullPath);
+          filePath = fullPath;
           found = true;
           break;
         }
       }
-      if (!found && fileData.path && fs.existsSync(fileData.path)) {
-        result.push(fileData.path);
+      
+      if (!found && fileData.path && fs.existsSync(fileData.path) && isSupportedFileType(fileData.path)) {
+        filePath = fileData.path;
+      }
+      
+      if (filePath) {
+        if (filePath.toLowerCase().endsWith('.lnk')) {
+          const targetPath = await getShortcutTarget(filePath);
+          result.push(targetPath);
+        } else {
+          result.push(filePath);
+        }
       }
     }
     return result;

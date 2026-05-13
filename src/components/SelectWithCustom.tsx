@@ -64,7 +64,7 @@ const SelectWithCustom: React.FC<SelectWithCustomProps> = ({
         disabled={disabled}
         className="w-full px-3 py-2 text-left border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
       >
-        <span className={value ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
+        <span className={`truncate ${value ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
           {value || placeholder}
         </span>
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -91,7 +91,7 @@ const SelectWithCustom: React.FC<SelectWithCustomProps> = ({
                   <button
                     key={option.id}
                     onClick={() => handleOptionClick(option.label)}
-                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                    className={`w-full px-3 py-2 text-left text-sm transition-colors truncate ${
                       option.label === value
                         ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'

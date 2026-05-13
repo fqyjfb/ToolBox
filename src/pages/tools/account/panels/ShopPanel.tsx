@@ -23,12 +23,12 @@ interface ShopPanelRef {
 }
 
 const platformIconMap: Record<string, string> = {
-  '淘宝': '/imgs/淘宝.png',
-  '天猫': '/imgs/天猫.png',
-  '拼多多': '/imgs/拼多多.png',
-  '抖音': '/imgs/抖音.png',
-  '京东': '/imgs/京东.png',
-  '其他': '/imgs/其他.png'
+  '淘宝': './imgs/淘宝.png',
+  '天猫': './imgs/天猫.png',
+  '拼多多': './imgs/拼多多.png',
+  '抖音': './imgs/抖音.png',
+  '京东': './imgs/京东.png',
+  '其他': './imgs/其他.png'
 };
 
 const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => {
@@ -308,12 +308,11 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">店铺名称</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">店铺名称</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">联系人</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">手机</th>
-                  
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -326,14 +325,14 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
                       onClick={() => handleRowClick(shop)}
                       onContextMenu={(e) => handleContextMenu(e, 'item', shop.id)}
                     >
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-sm text-gray-900 dark:text-white">{shop.shop_name}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-1.5 px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-600">
-                          {platformIcon && <img src={platformIcon} alt={shop.platform} className="w-3 h-3" />}
+                      <td className="px-4 py-3 w-24">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-600 whitespace-nowrap">
+                          {platformIcon && <img src={platformIcon} alt={shop.platform} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                           {shop.platform}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-sm text-gray-900 dark:text-white">{shop.shop_name}</div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -369,8 +368,9 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑店铺' : '添加店铺'} confirmText="保存" onConfirm={saveItem}>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={shopForm.shop_name} onChange={(e) => setShopForm(prev => ({ ...prev, shop_name: e.target.value }))} placeholder="店铺名称" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+            <input type="text" value={shopForm.shop_name} onChange={(e) => setShopForm(prev => ({ ...prev, shop_name: e.target.value }))} placeholder="店铺名称*" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
             <select value={shopForm.platform} onChange={(e) => setShopForm(prev => ({ ...prev, platform: e.target.value as Shop['platform'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+              <option value="">平台*</option>
               <option value="淘宝">淘宝</option>
               <option value="天猫">天猫</option>
               <option value="拼多多">拼多多</option>
@@ -380,7 +380,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={shopForm.account} onChange={(e) => setShopForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+            <input type="text" value={shopForm.account} onChange={(e) => setShopForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号*" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
             <PasswordInput
               value={shopForm.password}
               onChange={(value) => setShopForm(prev => ({ ...prev, password: value }))}

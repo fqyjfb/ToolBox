@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Plus, Edit, Trash2, Copy, Share2, Tag, ChevronDown, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, Copy, Share2, Tag, ChevronDown, RefreshCw, ExternalLink } from 'lucide-react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { passwordService } from '../../../../services/PasswordService';
 import { accountService } from '../../../../services/AccountService';
 import { Password, PasswordCategory, PasswordRequest } from '../../../../types/password';
 import { Email, Phone } from '../../../../types/account';
 import { useToastStore } from '../../../../store/toastStore';
+import { useNavSearch } from '../../../../contexts/NavSearchContext';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import Modal from '../../../../components/ui/Modal';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
@@ -14,17 +18,64 @@ import SelectWithCustom from '../../../../components/SelectWithCustom';
 import PasswordInput from '../../../../components/PasswordInput';
 import { decrypt } from '../../../../utils/crypto';
 import { logError } from '../../../../services/loggerService';
+import { openUrl } from '../../../../services/browserService';
 
-interface PasswordPanelProps {
+interface WebsitePanelProps {
   userId: string;
 }
 
-interface PasswordPanelRef {
+interface WebsitePanelRef {
   openModal: () => void;
 }
 
-const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId }, ref) => {
+const SortableCategoryItem: React.FC<{ 
+  category: PasswordCategory; 
+  isActive: boolean; 
+  isExpanded: boolean;
+  onClick: (e: React.MouseEvent) => void; 
+  onContextMenu: (e: React.MouseEvent) => void;
+  getCategoryColor: (name: string) => { bg: string; text: string; dot: string };
+}> = ({ category, isActive, isExpanded, onClick, onContextMenu, getCategoryColor }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+    scale: isDragging ? 1.05 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="relative z-10 cursor-grab active:cursor-grabbing"
+    >
+      <button
+        onClick={onClick}
+        onContextMenu={onContextMenu}
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+          isActive
+            ? 'bg-gray-800 text-white dark:bg-gray-600 shadow-sm'
+            : 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'
+        }`}
+      >
+        <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(category.name).dot}`}></div>
+        <span>{category.name}</span>
+        {category.children && category.children.length > 0 && (
+          <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        )}
+      </button>
+    </div>
+  );
+};
+
+const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId }, ref) => {
   const addToast = useToastStore((state) => state.addToast);
+  const { searchQuery, isSearchActive } = useNavSearch();
 
   const [categories, setCategories] = useState<PasswordCategory[]>([]);
   const [passwords, setPasswords] = useState<Password[]>([]);
@@ -65,6 +116,35 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleCategoriesDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setCategories(prev => {
+        const newCategories = arrayMove(prev, prev.findIndex(cat => cat.id === active.id), prev.findIndex(cat => cat.id === over.id));
+        
+        const mainCategoryIds = newCategories
+          .filter(cat => cat.parent_id === null)
+          .map(cat => cat.id);
+        
+        localStorage.setItem(`passwordCategoryOrder_${userId}`, JSON.stringify(mainCategoryIds));
+        
+        return newCategories;
+      });
+    }
+  }, [userId]);
 
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean; x: number; y: number; type: 'item' | 'category' | 'empty'; targetId?: string;
@@ -127,17 +207,45 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
     }
   }, [currentPage]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+    loadPasswords(1);
+  }, [searchQuery, isSearchActive]);
+
   const loadCategories = async () => {
     try {
       setLoading(true);
       const response = await passwordService.getCategories(userId);
-      setCategories(response);
-      const firstMainCategory = response.find(c => !c.parent_id);
+      
+      const savedOrder = localStorage.getItem(`passwordCategoryOrder_${userId}`);
+      let sortedCategories = response;
+      
+      if (savedOrder) {
+        try {
+          const order = JSON.parse(savedOrder);
+          const sortedMainCategories: PasswordCategory[] = [];
+          const remainingMainCategories: PasswordCategory[] = [...response];
+          
+          for (const id of order) {
+            const index = remainingMainCategories.findIndex(c => c.id === id);
+            if (index !== -1) {
+              sortedMainCategories.push(remainingMainCategories.splice(index, 1)[0]);
+            }
+          }
+          
+          sortedCategories = [...sortedMainCategories, ...remainingMainCategories];
+        } catch {
+          console.error('Failed to parse saved category order');
+        }
+      }
+      
+      setCategories(sortedCategories);
+      const firstMainCategory = sortedCategories.find(c => !c.parent_id);
       if (firstMainCategory && !selectedCategory) {
         setSelectedCategory(firstMainCategory.id);
-        await loadPasswords(1, firstMainCategory.id, response);
+        await loadPasswords(1, firstMainCategory.id, sortedCategories);
       } else if (selectedCategory) {
-        await loadPasswords(1, selectedCategory, response);
+        await loadPasswords(1, selectedCategory, sortedCategories);
       } else {
         await loadPasswords(1);
       }
@@ -152,26 +260,31 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
   const loadPasswords = async (pageNum: number = 1, categoryId?: string | null, categoriesList?: PasswordCategory[]) => {
     try {
       setLoading(true);
-      const currentCategories = categoriesList || categories;
-      const currentCategoryId = categoryId !== undefined ? categoryId : selectedCategory;
       let result;
 
-      if (currentCategoryId) {
-        const collectCategoryIds = (category: PasswordCategory): string[] => {
-          const ids: string[] = [category.id];
-          if (category.children && category.children.length > 0) {
-            for (const child of category.children) {
-              ids.push(...collectCategoryIds(child));
-            }
-          }
-          return ids;
-        };
-
-        const category = findCategoryById(currentCategories, currentCategoryId);
-        const categoryFilter = category ? collectCategoryIds(category) : undefined;
-        result = await passwordService.getPasswords(userId, categoryFilter, pageNum, pageSize);
+      if (isSearchActive && searchQuery.trim()) {
+        result = await passwordService.searchPasswords(userId, searchQuery.trim(), pageNum, pageSize);
       } else {
-        result = await passwordService.getPasswords(userId, undefined, pageNum, pageSize);
+        const currentCategories = categoriesList || categories;
+        const currentCategoryId = categoryId !== undefined ? categoryId : selectedCategory;
+
+        if (currentCategoryId) {
+          const collectCategoryIds = (category: PasswordCategory): string[] => {
+            const ids: string[] = [category.id];
+            if (category.children && category.children.length > 0) {
+              for (const child of category.children) {
+                ids.push(...collectCategoryIds(child));
+              }
+            }
+            return ids;
+          };
+
+          const category = findCategoryById(currentCategories, currentCategoryId);
+          const categoryFilter = category ? collectCategoryIds(category) : undefined;
+          result = await passwordService.getPasswords(userId, categoryFilter, pageNum, pageSize);
+        } else {
+          result = await passwordService.getPasswords(userId, undefined, pageNum, pageSize);
+        }
       }
 
       setPasswords(result.list);
@@ -191,10 +304,13 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
     loadPasswords(1, categoryId);
   };
 
-  const openCategoryModal = (category: PasswordCategory | null = null) => {
+  const openCategoryModal = (category: PasswordCategory | null = null, parentCategory: PasswordCategory | null = null) => {
     if (category) {
       setEditingCategory(category);
       setCategoryForm({ name: category.name, parent_id: category.parent_id });
+    } else if (parentCategory) {
+      setEditingCategory(null);
+      setCategoryForm({ name: '', parent_id: parentCategory.id });
     } else {
       setEditingCategory(null);
       setCategoryForm({ name: '', parent_id: null });
@@ -233,7 +349,7 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
       }
       addToast({ message: '分类删除成功', type: 'success' });
     } catch (error) {
-      logError('删除分类失败', 'PasswordPanel', error as Error);
+      logError('删除分类失败', 'WebsitePanel', error as Error);
       addToast({ message: '删除分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -307,7 +423,7 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
       addToast({ message: '删除成功', type: 'success' });
       await loadPasswords(currentPage);
     } catch (error) {
-      logError('删除失败', 'PasswordPanel', error as Error);
+      logError('删除失败', 'WebsitePanel', error as Error);
       addToast({ message: '删除失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -349,7 +465,7 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
       await navigator.clipboard.writeText(shareContent.trim());
       addToast({ message: '账号信息已复制到剪贴板', type: 'success' });
     } catch (error) {
-      logError('分享账号失败', 'PasswordPanel', error as Error);
+      logError('分享账号失败', 'WebsitePanel', error as Error);
       addToast({ message: '分享账号失败', type: 'error' });
     }
   };
@@ -424,6 +540,7 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
 
       return [
         { id: 'edit', label: '编辑', icon: <Edit className="w-4 h-4" />, onClick: () => { openCategoryModal(category); handleCloseContextMenu(); } },
+        { id: 'add-subcategory', label: '添加子分类', icon: <Plus className="w-4 h-4" />, onClick: () => { openCategoryModal(null, category); handleCloseContextMenu(); } },
         { id: 'divider1', label: '', divider: true },
         { id: 'delete', label: '删除', icon: <Trash2 className="w-4 h-4" />, onClick: () => handleOpenConfirmDialog('删除确认', '确定要删除这个分类吗？', () => handleDeleteCategory(category.id)) }
       ];
@@ -438,61 +555,6 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
 
     return [];
   }, [contextMenu.type, contextMenu.targetId, passwords, categories, handleCloseContextMenu, handleOpenConfirmDialog]);
-
-  const renderCategoryNavbar = (cats: PasswordCategory[]) => {
-    return cats.map(category => (
-      <div key={category.id} className="relative z-10">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (category.children && category.children.length > 0) {
-              const isExpanded = expandedCategories.has(category.id);
-              const newExpanded = new Set<string>();
-              if (!isExpanded) {
-                newExpanded.add(category.id);
-              }
-              setExpandedCategories(newExpanded);
-            }
-            handleCategorySelect(category.id);
-          }}
-          onContextMenu={(e) => handleContextMenu(e, 'category', category.id)}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-            selectedCategory === category.id
-              ? 'bg-gray-800 text-white dark:bg-gray-600 shadow-sm'
-              : 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'
-          }`}
-        >
-          <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(category.name).dot}`}></div>
-          <span>{category.name}</span>
-          {category.children && category.children.length > 0 && (
-            <ChevronDown className={`w-3 h-3 transition-transform ${expandedCategories.has(category.id) ? 'rotate-180' : ''}`} />
-          )}
-        </button>
-        {category.children && category.children.length > 0 && expandedCategories.has(category.id) && (
-          <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 min-w-[120px] py-1">
-            {category.children.map(child => (
-              <button
-                key={child.id}
-                onClick={() => {
-                  handleCategorySelect(child.id);
-                  setExpandedCategories(new Set());
-                }}
-                onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
-                className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
-                  selectedCategory === child.id
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(child.name).dot}`}></div>
-                <span>{child.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    ));
-  };
 
   const renderPasswordItem = (password: Password) => (
     <div key={password.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3" onContextMenu={(e) => handleContextMenu(e, 'item', password.id)}>
@@ -509,7 +571,16 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-              {password.url ? <a href={password.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-600 dark:text-blue-400 hover:underline transition-colors">{password.name}</a> : password.name}
+              {password.url ? (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); openUrl(password.url); }}
+                  className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate"
+                  title="点击打开网站"
+                >
+                  <span className="truncate">{password.name}</span>
+                  <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                </button>
+              ) : password.name}
             </h3>
             <span className={`flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded-full ${password.status === 'active' ? 'bg-green-50 text-green-600' : password.status === 'inactive' ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600'}`}>
               {password.status === 'active' ? '活跃' : password.status === 'inactive' ? '非活跃' : '已过期'}
@@ -551,9 +622,61 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
                   {categories.length === 0 ? (
                     <div className="text-xs text-gray-400">暂无分类</div>
                   ) : (
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {renderCategoryNavbar(categories)}
-                    </div>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleCategoriesDragEnd}
+                    >
+                      <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {categories.map(category => (
+                            <div key={category.id} className="relative">
+                              <SortableCategoryItem
+                                category={category}
+                                isActive={selectedCategory === category.id}
+                                isExpanded={expandedCategories.has(category.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (category.children && category.children.length > 0) {
+                                    const isExpanded = expandedCategories.has(category.id);
+                                    const newExpanded = new Set<string>();
+                                    if (!isExpanded) {
+                                      newExpanded.add(category.id);
+                                    }
+                                    setExpandedCategories(newExpanded);
+                                  }
+                                  handleCategorySelect(category.id);
+                                }}
+                                onContextMenu={(e) => handleContextMenu(e, 'category', category.id)}
+                                getCategoryColor={getCategoryColor}
+                              />
+                              {category.children && category.children.length > 0 && expandedCategories.has(category.id) && (
+                                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 min-w-[120px] py-1">
+                                  {category.children.map(child => (
+                                    <button
+                                      key={child.id}
+                                      onClick={() => {
+                                        handleCategorySelect(child.id);
+                                        setExpandedCategories(new Set());
+                                      }}
+                                      onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
+                                      className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
+                                        selectedCategory === child.id
+                                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                      }`}
+                                    >
+                                      <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(child.name).dot}`}></div>
+                                      <span>{child.name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   )}
                 </div>
               </div>
@@ -692,4 +815,4 @@ const PasswordPanel = forwardRef<PasswordPanelRef, PasswordPanelProps>(({ userId
   );
 });
 
-export default PasswordPanel;
+export default WebsitePanel;

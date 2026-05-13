@@ -37,17 +37,17 @@ const platformOptions = [
 ];
 
 const platformIconMap: Record<string, string> = {
-  'tiktok': '/imgs/tiktok.png',
-  'youtube': '/imgs/youtube.png',
-  'facebook': '/imgs/facebook.png',
-  'twitter': '/imgs/twitter.png',
-  'linkedin': '/imgs/linkedin.png',
-  'whatsapp': '/imgs/whatsapp.png',
-  'instagram': '/imgs/instagram.png',
-  'wechat': '/imgs/微信.png',
-  'weibo': '/imgs/微博.png',
-  'douyin': '/imgs/抖音.png',
-  'other': '/imgs/other.png'
+  'tiktok': './imgs/tiktok.png',
+  'youtube': './imgs/youtube.png',
+  'facebook': './imgs/facebook.png',
+  'twitter': './imgs/twitter.png',
+  'linkedin': './imgs/linkedin.png',
+  'whatsapp': './imgs/whatsapp.png',
+  'instagram': './imgs/instagram.png',
+  'wechat': './imgs/微信.png',
+  'weibo': './imgs/微博.png',
+  'douyin': './imgs/抖音.png',
+  'other': './imgs/other.png'
 };
 
 const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, ref) => {
@@ -320,17 +320,17 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">用户名</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">用户名</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>
-                  
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {socialAccounts.map((social) => {
                   const iconPath = platformIconMap[social.platform];
+                  const platformLabel = platformOptions.find(p => p.value === social.platform)?.label || social.platform;
                   return (
                     <tr
                       key={social.id}
@@ -338,14 +338,14 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
                       onClick={() => handleRowClick(social)}
                       onContextMenu={(e) => handleContextMenu(e, 'item', social.id)}
                     >
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-sm text-gray-900 dark:text-white">{social.user_name || social.account}</div>
+                      <td className="px-4 py-3 w-24">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-purple-50 text-purple-600 whitespace-nowrap">
+                          {iconPath && <img src={iconPath} alt={platformLabel} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                          {platformLabel}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="flex items-center gap-1.5 px-2 py-0.5 text-xs rounded-full bg-purple-50 text-purple-600">
-                          {iconPath && <img src={iconPath} alt={social.platform} className="w-3 h-3" />}
-                          {social.platform}
-                        </span>
+                        <div className="font-medium text-sm text-gray-900 dark:text-white">{social.user_name || social.account}</div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -388,11 +388,12 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <select value={socialForm.platform} onChange={(e) => setSocialForm(prev => ({ ...prev, platform: e.target.value as SocialAccount['platform'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+              <option value="">平台*</option>
               {platformOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
-            <input type="text" value={socialForm.account} onChange={(e) => setSocialForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+            <input type="text" value={socialForm.account} onChange={(e) => setSocialForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号*" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <input type="text" value={socialForm.user_name} onChange={(e) => setSocialForm(prev => ({ ...prev, user_name: e.target.value }))} placeholder="用户名" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />

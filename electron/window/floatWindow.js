@@ -141,7 +141,12 @@ const toggleFloatWindow = () => {
   return settings.isFloatWindowEnabled;
 };
 
+let floatIpcHandlersRegistered = false;
+
 const registerFloatIpcHandlers = () => {
+  if (floatIpcHandlersRegistered) return;
+  floatIpcHandlersRegistered = true;
+  
   ipcMain.on('float-window-action', (event, action) => {
     const mainWindow = require('./mainWindow').getMainWindow();
     

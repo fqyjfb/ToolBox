@@ -23,26 +23,26 @@ interface EmailPanelRef {
 }
 
 const emailPlatformMap: Record<string, { label: string; icon: string }> = {
-  '163.com': { label: '163邮箱', icon: '/imgs/email/163邮箱.png' },
-  '126.com': { label: '126邮箱', icon: '/imgs/email/126邮箱.png' },
-  'qq.com': { label: 'QQ邮箱', icon: '/imgs/email/QQ邮箱.png' },
-  'gmail.com': { label: 'Google', icon: '/imgs/email/google.png' },
-  'outlook.com': { label: 'Outlook', icon: '/imgs/email/outlook.png' },
-  'hotmail.com': { label: 'Outlook', icon: '/imgs/email/outlook.png' },
-  'live.com': { label: 'Outlook', icon: '/imgs/email/outlook.png' },
-  'aliyun.com': { label: '阿里邮箱', icon: '/imgs/email/阿里邮箱.png' },
-  'alibaba.com': { label: '阿里邮箱', icon: '/imgs/email/阿里邮箱.png' },
-  'taobao.com': { label: '阿里邮箱', icon: '/imgs/email/阿里邮箱.png' },
+  '163.com': { label: '163邮箱', icon: './imgs/email/163邮箱.png' },
+  '126.com': { label: '126邮箱', icon: './imgs/email/126邮箱.png' },
+  'qq.com': { label: 'QQ邮箱', icon: './imgs/email/QQ邮箱.png' },
+  'gmail.com': { label: 'Google', icon: './imgs/email/google.png' },
+  'outlook.com': { label: 'Outlook', icon: './imgs/email/outlook.png' },
+  'hotmail.com': { label: 'Outlook', icon: './imgs/email/outlook.png' },
+  'live.com': { label: 'Outlook', icon: './imgs/email/outlook.png' },
+  'aliyun.com': { label: '阿里邮箱', icon: './imgs/email/阿里邮箱.png' },
+  'alibaba.com': { label: '阿里邮箱', icon: './imgs/email/阿里邮箱.png' },
+  'taobao.com': { label: '阿里邮箱', icon: './imgs/email/阿里邮箱.png' },
 };
 
 const getEmailPlatform = (email: string): { label: string; icon: string } => {
   if (!email) {
-    return { label: '其他邮箱', icon: '/imgs/email/其他邮箱.png' };
+    return { label: '其他邮箱', icon: './imgs/email/其他邮箱.png' };
   }
   
   const domain = email.split('@')[1]?.toLowerCase();
   if (!domain) {
-    return { label: '其他邮箱', icon: '/imgs/email/其他邮箱.png' };
+    return { label: '其他邮箱', icon: './imgs/email/其他邮箱.png' };
   }
 
   for (const [key, value] of Object.entries(emailPlatformMap)) {
@@ -52,10 +52,10 @@ const getEmailPlatform = (email: string): { label: string; icon: string } => {
   }
 
   if (domain.includes('company') || domain.includes('enterprise') || domain.includes('corp')) {
-    return { label: '企业邮箱', icon: '/imgs/email/企业邮箱.png' };
+    return { label: '企业邮箱', icon: './imgs/email/企业邮箱.png' };
   }
 
-  return { label: '其他邮箱', icon: '/imgs/email/其他邮箱.png' };
+  return { label: '其他邮箱', icon: './imgs/email/其他邮箱.png' };
 };
 
 const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) => {
@@ -310,9 +310,9 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
                       onClick={() => handleRowClick(email)}
                       onContextMenu={(e) => handleContextMenu(e, 'item', email.id)}
                     >
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-1.5 px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-600">
-                          <img src={platform.icon} alt={platform.label} className="w-3 h-3" />
+                      <td className="px-4 py-3 w-24">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-600 whitespace-nowrap">
+                          <img src={platform.icon} alt={platform.label} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                           {platform.label}
                         </span>
                       </td>
@@ -360,7 +360,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑邮箱' : '添加邮箱'} confirmText="保存" onConfirm={saveItem}>
         <div className="space-y-3">
-          <input type="email" value={emailForm.email} onChange={(e) => setEmailForm(prev => ({ ...prev, email: e.target.value }))} placeholder="邮箱地址" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <input type="email" value={emailForm.email} onChange={(e) => setEmailForm(prev => ({ ...prev, email: e.target.value }))} placeholder="邮箱地址*" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
           <PasswordInput
               value={emailForm.password}
               onChange={(value) => setEmailForm(prev => ({ ...prev, password: value }))}

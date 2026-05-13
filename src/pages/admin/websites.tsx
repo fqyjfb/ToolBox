@@ -735,6 +735,9 @@ const AdminWebsitesPage: React.FC = () => {
                         标题
                       </th>
                       <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        网址
+                      </th>
+                      <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         分类
                       </th>
                       <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -758,6 +761,16 @@ const AdminWebsitesPage: React.FC = () => {
                             {bookmark.description}
                           </div>
                         </td>
+                        <td className="px-4 py-3 sm:px-6">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openBookmarkUrl(bookmark.url); }}
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline flex items-center gap-1 truncate max-w-[200px]"
+                            title="点击打开网站"
+                          >
+                            <span className="truncate">{bookmark.url}</span>
+                            <ExternalLink size={12} className="flex-shrink-0" />
+                          </button>
+                        </td>
                         <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
                           <div className="text-sm text-gray-500 dark:text-gray-400">
                             {getCategoryName(bookmark.category_id)}
@@ -773,7 +786,7 @@ const AdminWebsitesPage: React.FC = () => {
                     ))}
                     {!isLoading && filteredBookmarks.length === 0 && (
                       <tr>
-                        <td colSpan={3} className="py-8 text-center">
+                        <td colSpan={4} className="py-8 text-center">
                           <List className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                           <span className="text-gray-600 dark:text-gray-400">暂无数据</span>
                         </td>

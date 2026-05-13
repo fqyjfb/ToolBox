@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Plus, Edit, Trash2, Copy, Share2, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Copy, Share2, Eye, ExternalLink } from 'lucide-react';
 import { useNavSearch } from '../../../../contexts/NavSearchContext';
 import { accountService } from '../../../../services/AccountService';
 import { GeneralAccount, GeneralAccountRequest, Email, Phone } from '../../../../types/account';
@@ -13,6 +13,7 @@ import PasswordInput from '../../../../components/PasswordInput';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import { openUrl } from '../../../../services/browserService';
 
 interface GeneralPanelProps {
   userId: string;
@@ -281,6 +282,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台名称</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">网站地址</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>
                   
@@ -308,6 +310,20 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                           <Copy className="w-3 h-3" />
                         </button>
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {general.website ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openUrl(general.website); }}
+                          className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors truncate max-w-[180px]"
+                          title="点击打开网站"
+                        >
+                          <span className="truncate">{general.website}</span>
+                          <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                        </button>
+                      ) : (
+                        <span className="text-sm text-gray-500 dark:text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{general.email || '-'}</span>

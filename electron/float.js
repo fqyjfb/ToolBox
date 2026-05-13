@@ -95,9 +95,31 @@ function attachItemEvents() {
 function handleItemClick(e) {
   e.stopPropagation();
   const index = parseInt(e.currentTarget.dataset.index);
-  const action = floatConfig[index]?.action;
-  if (action) {
-    window.electronAPI.floatAction(action);
+  const configItem = floatConfig[index];
+  
+  if (!configItem) {
+    toggleExpand();
+    return;
+  }
+  
+  let actionToSend = '';
+  
+  if (configItem.type === 'tool' || configItem.type === 'nav') {
+    const path = configItem.path || configItem.action;
+    if (path) {
+      actionToSend = 'nav:' + path;
+    }
+  } else if (configItem.type === 'app') {
+    const appPath = configItem.path || '';
+    if (appPath) {
+      actionToSend = 'open-app:' + appPath;
+    }
+  } else {
+    actionToSend = configItem.action || '';
+  }
+  
+  if (actionToSend) {
+    window.electronAPI.floatAction(actionToSend);
   }
   toggleExpand();
 }

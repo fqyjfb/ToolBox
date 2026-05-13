@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home } from 'lucide-react';
+import path from 'path';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -266,8 +267,26 @@ const QuickLaunch: React.FC = () => {
     setIsDragOver(false);
 
     const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const fileDataList: { name: string; type: string; size: number; path?: string }[] = [];
+    const items = e.dataTransfer.items;
+    const fileDataList: { name: string; type: string; size: number; path?: string }[] = [];
+
+    if (items && items.length > 0) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            const path = (file as unknown as { path?: string }).path;
+            fileDataList.push({
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              path: path
+            });
+          }
+        }
+      }
+    } else if (files.length > 0) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i] as File & { path?: string };
         fileDataList.push({
@@ -277,11 +296,33 @@ const QuickLaunch: React.FC = () => {
           path: file.path
         });
       }
-      
-      const validPaths = await window.electron?.getDroppedFiles(fileDataList);
-      if (validPaths && validPaths.length > 0) {
-        handleDropFiles(validPaths);
+    }
+
+    const uriList = e.dataTransfer.getData('text/uri-list');
+    if (uriList) {
+      const uris = uriList.split('\n').filter(u => u.trim());
+      for (const uri of uris) {
+        if (uri.startsWith('file:///')) {
+          try {
+            const decodedPath = decodeURIComponent(uri.replace('file:///', ''));
+            const windowsPath = decodedPath.replace(/\//g, '\\');
+            const existingEntry = fileDataList.find(f => f.path === windowsPath || f.name === path.basename(windowsPath));
+            if (!existingEntry) {
+              fileDataList.push({
+                name: path.basename(windowsPath),
+                type: '',
+                size: 0,
+                path: windowsPath
+              });
+            }
+          } catch {}
+        }
       }
+    }
+      
+    const validPaths = await window.electron?.getDroppedFiles(fileDataList);
+    if (validPaths && validPaths.length > 0) {
+      handleDropFiles(validPaths);
     }
   }, [handleDropFiles]);
 

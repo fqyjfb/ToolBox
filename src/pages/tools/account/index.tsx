@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Store, Globe, Mail, Phone, Building, FileText, Layers, Plus } from 'lucide-react';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
-import PasswordPanel from './panels/PasswordPanel';
+import WebsitePanel from './panels/WebsitePanel';
 import ShopPanel from './panels/ShopPanel';
 import SocialPanel from './panels/SocialPanel';
 import EmailPanel from './panels/EmailPanel';
@@ -26,7 +26,7 @@ const AccountManagerPage: React.FC = () => {
 
   const [activePlatform, setActivePlatform] = useState<PlatformType>('password');
 
-  const passwordPanelRef = useRef<PanelRef>(null);
+  const websitePanelRef = useRef<PanelRef>(null);
   const shopPanelRef = useRef<PanelRef>(null);
   const socialPanelRef = useRef<PanelRef>(null);
   const emailPanelRef = useRef<PanelRef>(null);
@@ -59,7 +59,7 @@ const AccountManagerPage: React.FC = () => {
 
     switch (activePlatform) {
       case 'password':
-        passwordPanelRef.current?.openModal?.();
+        websitePanelRef.current?.openModal?.();
         break;
       case 'shops':
         shopPanelRef.current?.openModal?.();
@@ -90,7 +90,7 @@ const AccountManagerPage: React.FC = () => {
     
     switch (activePlatform) {
       case 'password':
-        return <PasswordPanel userId={admin.id} ref={passwordPanelRef} />;
+        return <WebsitePanel userId={admin.id} ref={websitePanelRef} />;
       case 'shops':
         return <ShopPanel userId={admin.id} ref={shopPanelRef} />;
       case 'social':
