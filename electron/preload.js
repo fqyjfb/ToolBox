@@ -94,6 +94,16 @@ contextBridge.exposeInMainWorld('electron', {
     stop: () => ipcRenderer.invoke('python:stop'),
     status: () => ipcRenderer.invoke('python:status'),
   },
+  log: {
+    open: () => ipcRenderer.send('log:open'),
+    addLog: (level, message, context, stack) => ipcRenderer.invoke('log:addLog', { level, message, context, stack }),
+    getLogs: () => ipcRenderer.invoke('log:getLogs'),
+    getSettings: () => ipcRenderer.invoke('log:getSettings'),
+    updateSettings: (newSettings) => ipcRenderer.invoke('log:updateSettings', newSettings),
+    clearLogs: () => ipcRenderer.invoke('log:clearLogs'),
+    exportLogs: () => ipcRenderer.invoke('log:exportLogs'),
+    getStats: () => ipcRenderer.invoke('log:getStats'),
+  },
   notes: {
     hasRootPath: () => ipcRenderer.invoke('notes-has-root-path'),
     getRootPath: () => ipcRenderer.invoke('notes-get-root-path'),
@@ -124,5 +134,10 @@ contextBridge.exposeInMainWorld('electron', {
   },
   onOpenAddTodo: (callback) => {
     openAddTodoCallback = callback;
+  },
+  ipcRenderer: {
+    send: (channel, ...args) => ipcRenderer.send(channel, ...args),
+    on: (channel, listener) => ipcRenderer.on(channel, listener),
+    off: (channel, listener) => ipcRenderer.off(channel, listener),
   },
 });

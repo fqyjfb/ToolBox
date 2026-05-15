@@ -1,7 +1,7 @@
 {
   "name": "ToolBox",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "实用工具的多功能工具包应用程序",
   "author": "ToolBox Team",
   "type": "commonjs",
@@ -23,6 +23,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.103.0",
     "@types/styled-components": "^5.1.36",
+    "electron-log": "^5.4.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.8.0",

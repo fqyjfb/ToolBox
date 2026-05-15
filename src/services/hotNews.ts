@@ -1,5 +1,6 @@
 import { cacheService } from './cacheService';
 import { baseApi } from './baseApi';
+import { logError } from './loggerService';
 import type {
   HotNewsResponse,
   DouyinHotItem,
@@ -44,76 +45,70 @@ const fetchData = async <T>(url: string, options?: { signal?: AbortSignal; force
     }
   }
   
-  const data = await baseApi.fetch<T>(url, options);
-  
-  if (data) {
-    cacheService.set(cacheKey, data, 30 * 60 * 1000, 'hotNews');
+  try {
+    const data = await baseApi.fetch<T>(url, options);
+    
+    if (data) {
+      cacheService.set(cacheKey, data, 30 * 60 * 1000, 'hotNews');
+    }
+    
+    return data;
+  } catch (error) {
+    logError(`获取热点数据失败: ${url}`, 'hotNews', error as Error);
+    return null;
   }
-  
-  return data;
 };
 
-// 抖音热点
 const getDouyinHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<DouyinHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<DouyinHotItem>>('/douyin', options);
   return data?.data || null;
 };
 
-// 小红书热点
 const getRednoteHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<RednoteHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<RednoteHotItem>>('/rednote', options);
   return data?.data || null;
 };
 
-// 哔哩哔哩热点
 const getBilibiliHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<BilibiliHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<BilibiliHotItem>>('/bili', options);
   return data?.data || null;
 };
 
-// 夸克热点
 const getQuarkHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<QuarkHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<QuarkHotItem>>('/quark', options);
   return data?.data || null;
 };
 
-// 微博热点
 const getWeiboHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<WeiboHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<WeiboHotItem>>('/weibo', options);
   return data?.data || null;
 };
 
-// 百度实时热搜
 const getBaiduHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<BaiduHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<BaiduHotItem>>('/baidu/hot', options);
   return data?.data || null;
 };
 
-// 头条热搜榜
 const getToutiaoHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<ToutiaoHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<ToutiaoHotItem>>('/toutiao', options);
   return data?.data || null;
 };
 
-// 知乎话题榜
 const getZhihuHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<ZhihuHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<ZhihuHotItem>>('/zhihu', options);
   return data?.data || null;
 };
 
-// 懂车帝热搜
 const getDongchediHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<DongchediHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<DongchediHotItem>>('/dongchedi', options);
   return data?.data || null;
 };
 
-// 猫眼电影实时票房
 const getMaoyanMovieNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<MaoyanMovieResponse | null> => {
   const data = await fetchData<HotNewsResponse<MaoyanMovieResponse>>('/maoyan/realtime/movie', options);
   return data?.data[0] || null;
 };
 
-// 数据格式化：将各个平台的数据转换为统一格式
 const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotItem[] => {
   const platformName = PLATFORM_NAMES[platform];
   
@@ -278,9 +273,7 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
   });
 };
 
-// 获取所有热点新闻
 export const hotNewsApi = {
-  // 获取单个平台热点
   async getPlatformHotNews(platform: HotNewsPlatform, options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<UnifiedHotItem[] | null> {
     let data = null;
     
@@ -325,13 +318,11 @@ export const hotNewsApi = {
     return null;
   },
   
-  // 获取所有平台热点
   async getAllHotNews(options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<Record<HotNewsPlatform, UnifiedHotItem[]>> {
     const platforms: HotNewsPlatform[] = ['douyin', 'rednote', 'bilibili', 'quark', 'weibo', 'baidu', 'toutiao', 'zhihu', 'dongchedi', 'maoyan'];
     
     const results: Record<HotNewsPlatform, UnifiedHotItem[]> = {} as Record<HotNewsPlatform, UnifiedHotItem[]>;
     
-    // 并行请求所有平台数据
     const promises = platforms.map(async (platform) => {
       const data = await this.getPlatformHotNews(platform, options);
       if (data) {
@@ -346,37 +337,30 @@ export const hotNewsApi = {
     return results;
   },
   
-  // 刷新所有热点数据
   async refreshAllHotNews(): Promise<Record<HotNewsPlatform, UnifiedHotItem[]>> {
     return this.getAllHotNews({ forceRefresh: true });
   },
   
-  // 获取平台名称
   getPlatformName(platform: HotNewsPlatform): string {
     return PLATFORM_NAMES[platform];
   },
   
-  // 获取每天60秒读懂世界数据
   async getSixtySecondsData(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
     return await fetchData<SixtySecondsResponse>('/60s', options);
   },
   
-  // 获取历史上的今天数据
   async getTodayInHistory(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
     return await fetchData<TodayInHistoryResponse>('/today-in-history', options);
   },
   
-  // 获取实时IT资讯
   async getItNews(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
     return await fetchData<ItNewsResponse>('/it-news', options);
   },
   
-  // 获取AI资讯快报
   async getAiNews(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
     return await fetchData<AiNewsResponse>('/ai-news', options);
   },
 
-  // 获取摸鱼日报
   async getMoyuData(options?: { signal?: AbortSignal; forceRefresh?: boolean }) {
     return await fetchData<MoyuResponse>('/moyu', options);
   }

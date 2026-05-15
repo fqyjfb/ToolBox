@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, ClipboardList } from 'lucide-react';
+import { Menu, X, LogOut, ClipboardList, User } from 'lucide-react';
 import { useAuth } from '../../store/AuthStore';
 
 const navItems = [
@@ -13,14 +13,51 @@ const WebNavbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isAuthenticated, logout } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const { isAuthenticated, logout, admin } = useAuth();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logout();
     navigate('/');
+    setShowUserMenu(false);
     setIsMenuOpen(false);
+  }, [logout, navigate]);
+
+  const handleUserButtonClick = () => {
+    if (isAuthenticated) {
+      navigate('/tools/profile');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleUserButtonRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      setShowUserMenu(true);
+    }
+  };
+
+  const handleStatusDotClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isAuthenticated) {
+      handleLogout();
+    }
   };
 
   return (
@@ -151,6 +188,14 @@ const WebNavbar: React.FC = () => {
             transform: scale(1.05);
           }
         }
+
+        .user-menu-item:hover {
+          background-color: rgb(243 244 246);
+        }
+
+        .dark .user-menu-item:hover {
+          background-color: rgb(55 65 81);
+        }
       `}</style>
       
       <div className="max-w-7xl mx-auto px-4 py-2.5">
@@ -178,8 +223,9 @@ const WebNavbar: React.FC = () => {
                 {item.label}
               </button>
             ))}
+            
             {isAuthenticated ? (
-              <div className="flex items-center gap-1">
+              <>
                 <button
                   onClick={() => navigate('/tools/todo')}
                   className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors nav-item flex items-center gap-1"
@@ -187,20 +233,52 @@ const WebNavbar: React.FC = () => {
                   <ClipboardList className="w-4 h-4" />
                   待办
                 </button>
-                <button
-                  onClick={handleLogout}
-                  className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors nav-item flex items-center gap-1"
-                >
-                  <LogOut className="w-4 h-4" />
-                  退出
-                </button>
-              </div>
+                
+                <div className="relative ml-2">
+                  <button
+                    onClick={handleUserButtonClick}
+                    onContextMenu={handleUserButtonRightClick}
+                    className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors nav-item flex items-center gap-2 relative"
+                    title={isAuthenticated ? '点击进入个人信息，右键点击退出登录' : '点击进入登录页面'}
+                  >
+                    <User className="w-4 h-4" />
+                    <span>{admin?.name || admin?.username || '个人中心'}</span>
+                    <span
+                      className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer transition-transform hover:scale-110 ${
+                        isAuthenticated ? 'bg-green-500' : 'bg-gray-400'
+                      }`}
+                      onClick={handleStatusDotClick}
+                      title={isAuthenticated ? '点击退出登录' : '未登录'}
+                    />
+                  </button>
+                  
+                  {showUserMenu && (
+                    <div
+                      ref={menuRef}
+                      className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-36"
+                    >
+                      <button
+                        onClick={handleLogout}
+                        className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 user-menu-item flex items-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        退出登录
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
               <button
-                onClick={() => navigate('/login')}
-                className="nav-btn-gradient"
+                onClick={handleUserButtonClick}
+                onContextMenu={(e) => e.preventDefault()}
+                className="nav-btn-gradient relative"
               >
                 登录
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white bg-gray-400"
+                  title="未登录"
+                />
               </button>
             )}
           </nav>
@@ -238,11 +316,18 @@ const WebNavbar: React.FC = () => {
                   待办
                 </button>
                 <button
+                  onClick={() => { navigate('/tools/profile'); setIsMenuOpen(false); }}
+                  className="w-full px-3 py-1.5 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                >
+                  <User className="w-4 h-4" />
+                  个人信息
+                </button>
+                <button
                   onClick={() => { handleLogout(); }}
                   className="w-full px-3 py-1.5 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
                 >
                   <LogOut className="w-4 h-4" />
-                  退出
+                  退出登录
                 </button>
               </>
             ) : (

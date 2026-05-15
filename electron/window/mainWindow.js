@@ -4,8 +4,8 @@ const url = require('url');
 const fs = require('fs');
 const crypto = require('crypto');
 const { execFile } = require('child_process');
-const { loadSettings, saveSettings } = require('../config');
-const ShortcutManager = require('../shortcutManager');
+const { loadSettings, saveSettings } = require('../lib/config');
+const ShortcutManager = require('../lib/shortcutManager');
 const notesService = require('../services/notesService');
 const { getFloatWindow } = require('./floatWindow');
 
@@ -100,7 +100,7 @@ const isSupportedFileType = (filePath) => {
 };
 
 const initShortcuts = () => {
-  const { loadShortcuts } = require('../config');
+  const { loadShortcuts } = require('../lib/config');
   shortcutManager.unregisterAll();
   const shortcuts = loadShortcuts();
   shortcuts.forEach((shortcut) => {
@@ -289,7 +289,7 @@ const registerIpcHandlers = () => {
   ipcHandlersRegistered = true;
   
   const { ipcMain } = require('electron');
-  const { loadShortcuts, saveShortcuts, loadFloatConfig, saveFloatConfig, defaultFloatConfig } = require('../config');
+  const { loadShortcuts, saveShortcuts, loadFloatConfig, saveFloatConfig, defaultFloatConfig } = require('../lib/config');
 
   ipcMain.on('window-minimize', () => { mainWindow.minimize(); });
   ipcMain.on('window-maximize', () => {

@@ -8,7 +8,7 @@ import { useTodoNotification } from '../../../contexts/TodoNotificationContext';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
-import TodoCard from '../../../components/TodoCard';
+import TodoCard from '../../../components/ui/TodoCard';
 
 function formatDateTimeForInput(dateTimeStr: string): string {
   if (!dateTimeStr) return '';

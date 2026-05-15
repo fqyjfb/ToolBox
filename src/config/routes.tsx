@@ -18,6 +18,7 @@ const LoginPage = React.lazy(() => import('../pages/shared/LoginPage'));
 const Settings = React.lazy(() => import('../pages/shared/Settings'));
 const About = React.lazy(() => import('../pages/shared/About'));
 const ToolsPage = React.lazy(() => import('../pages/shared/ToolsPage'));
+const LogsPage = React.lazy(() => import('../pages/tools/logs'));
 
 const CountryCodePage = React.lazy(() => import('../pages/tools/country-code'));
 const ExchangePage = React.lazy(() => import('../pages/tools/exchange'));
@@ -26,6 +27,7 @@ const CloudClipboardPage = React.lazy(() => import('../pages/tools/cloud-clipboa
 const QuickReplyPage = React.lazy(() => import('../pages/tools/quick-reply'));
 const TodoManagerPage = React.lazy(() => import('../pages/tools/todo'));
 const NotesPage = React.lazy(() => import('../pages/tools/notes'));
+const ProfilePage = React.lazy(() => import('../pages/tools/profile'));
 const AccountManagerPage = React.lazy(() => import('../pages/tools/account'));
 const MarkdownToWechatPage = React.lazy(() => import('../pages/tools/markdown-to-wechat'));
 const IPInfoPage = React.lazy(() => import('../pages/tools/ip-info'));
@@ -68,6 +70,7 @@ export const desktopRoutes: RouteConfig[] = [
   { path: '/settings', element: <Settings /> },
   { path: '/about', element: <About /> },
   { path: '/tools/weather', element: <WeatherPage /> },
+  { path: '/logs', element: <LogsPage /> },
 ];
 
 export const webRoutes: RouteConfig[] = [
@@ -98,6 +101,7 @@ export const protectedRoutes: RouteConfig[] = [
   { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
   { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
   { path: '/tools/notes', element: <NotesPage />, requiresAuth: true },
+  { path: '/tools/profile', element: <ProfilePage />, requiresAuth: true },
   { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
   { path: '/tools/country-code', element: <CountryCodePage />, requiresAuth: true },
   { path: '/tools/markdown-to-wechat', element: <MarkdownToWechatPage />, requiresAuth: true },

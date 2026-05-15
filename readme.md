@@ -5,6 +5,7 @@
 ## ✨ 功能特性
 
 ### 🚀 快速启动
+
 - 快速访问常用应用程序和快捷方式
 - 支持应用分类管理和自定义排序
 - 智能搜索功能，快速定位应用
@@ -12,18 +13,21 @@
 - 浮动窗口悬浮球，一键快速启动
 
 ### 📰 热点新闻
-- 聚合各大平台热点资讯（微博、头条、抖音、知乎、B站等）
+
+- 聚合各大平台热点资讯
 - 实时更新新闻内容
 - 支持多种新闻分类浏览
 - 一键跳转原文查看详情
 
 ### 🔗 网址导航
+
 - 便捷的网页导航服务
 - 支持网址分类和收藏管理
 - 快速搜索和一键访问
 - 支持自定义网址添加
 
 ### 📝 记事本
+
 - 本地文件系统笔记管理
 - 支持文件夹和笔记的创建、重命名、删除
 - 文件树展示和导航
@@ -32,6 +36,7 @@
 - 右键上下文菜单操作
 
 ### 🎯 浮动窗口
+
 - 桌面悬浮球，可拖动定位
 - 快捷访问常用功能和工具
 - 支持系统命令（清空回收站、打开我的电脑、关机、重启等）
@@ -40,12 +45,14 @@
 
 ### 🛠️ 工具箱
 
-#### 实用工具（35+ 工具）
+#### 实用工具（33+ 工具）
+
 - **待办事项** - 任务管理和提醒功能
 - **记事本** - 本地文件系统笔记管理
 - **快捷回复** - 预设回复模板管理
 - **云剪贴板** - 跨设备剪贴板同步
 - **账号管理** - 密码和账号安全存储
+- **用户资料** - 用户信息管理
 - **天气预报** - 获取实时天气信息
 - **汇率换算** - 实时汇率查询和多币种换算
 - **在线翻译** - 多语言互译服务
@@ -75,6 +82,7 @@
 - **文件管理器** - 本地文件浏览和管理
 
 ### 📊 管理控制台（需登录）
+
 - 数据可视化与分析仪表盘
 - 用户管理功能
 - 网址管理功能
@@ -82,6 +90,7 @@
 - 数据库备份管理
 
 ### 🔧 系统设置
+
 - 个性化主题配置
 - 深色/浅色主题切换
 - 用户偏好设置
@@ -94,23 +103,23 @@
 
 ## 🛠️ 技术栈
 
-| 分类 | 技术 | 版本 |
-|------|------|------|
-| 框架 | React | 19.2.x |
-| 语言 | TypeScript | 6.x |
-| 构建工具 | Vite | 8.x |
-| 桌面框架 | Electron | 42.x |
-| 状态管理 | Zustand | 5.x |
-| 路由 | React Router DOM | 7.x |
-| UI 图标 | Lucide React | 1.x |
-| 样式 | TailwindCSS | 3.x |
-| 数据库 | Supabase / SQLite | - |
-| Markdown 编辑器 | Vditor | 3.x |
-| 二维码生成 | qrcode | 1.5.x |
-| 图表生成 | html2canvas / jspdf | - |
-| Python 服务 | FastAPI | - |
-| 拖拽排序 | @dnd-kit | - |
-| 样式处理 | styled-components | 6.x |
+| 分类           | 技术                  | 版本     |
+| ------------ | ------------------- | ------ |
+| 框架           | React               | 19.2.x |
+| 语言           | TypeScript          | 6.x    |
+| 构建工具         | Vite                | 8.x    |
+| 桌面框架         | Electron            | 42.x   |
+| 状态管理         | Zustand             | 5.x    |
+| 路由           | React Router DOM    | 7.x    |
+| UI 图标        | Lucide React        | 1.x    |
+| 样式           | TailwindCSS         | 3.x    |
+| 数据库          | Supabase / SQLite   | -      |
+| Markdown 编辑器 | Vditor              | 3.x    |
+| 二维码生成        | qrcode              | 1.5.x  |
+| 图表生成         | html2canvas / jspdf | -      |
+| Python 服务    | FastAPI             | -      |
+| 拖拽排序         | @dnd-kit            | -      |
+| 样式处理         | styled-components   | 6.x    |
 
 ## 🚀 快速开始
 
@@ -170,17 +179,17 @@ pnpm lint --fix
 
 ## 📖 可用命令
 
-| 命令 | 描述 |
-|------|------|
-| `pnpm dev` | 启动 Vite 开发服务器 |
-| `pnpm build` | 构建前端生产版本（含图标生成） |
-| `pnpm lint` | ESLint 代码检查 |
-| `pnpm lint --fix` | ESLint 自动修复 |
-| `pnpm preview` | 预览构建结果 |
-| `pnpm electron:dev` | 启动 Electron 开发模式 |
-| `pnpm electron:build` | 构建 Electron 安装包 |
-| `pnpm generate-icons` | 生成图标数据 |
-| `pnpm dev:electron` | 启动 Electron 模式开发服务器 |
+| 命令                    | 描述                  |
+| --------------------- | ------------------- |
+| `pnpm dev`            | 启动 Vite 开发服务器       |
+| `pnpm build`          | 构建前端生产版本（含图标生成）     |
+| `pnpm lint`           | ESLint 代码检查         |
+| `pnpm lint --fix`     | ESLint 自动修复         |
+| `pnpm preview`        | 预览构建结果              |
+| `pnpm electron:dev`   | 启动 Electron 开发模式    |
+| `pnpm electron:build` | 构建 Electron 安装包     |
+| `pnpm generate-icons` | 生成图标数据              |
+| `pnpm dev:electron`   | 启动 Electron 模式开发服务器 |
 
 ## ⚙️ 配置说明
 
@@ -244,23 +253,31 @@ Python 服务默认运行在 `http://127.0.0.1:8766`，可通过环境变量 `HT
 ToolBox/
 ├── electron/                 # Electron 主进程
 │   ├── window/              # 窗口管理
+│   │   ├── float/           # 悬浮窗组件
+│   │   │   ├── app.js
+│   │   │   ├── float.js
+│   │   │   ├── float.html
+│   │   │   ├── float.css
+│   │   │   ├── float-preload.js
+│   │   │   ├── preload.js
+│   │   │   └── styles.css
+│   │   ├── floatWindow.js   # 悬浮窗管理
 │   │   ├── mainWindow.js    # 主窗口
-│   │   ├── floatWindow.js   # 悬浮窗
 │   │   └── tray.js          # 系统托盘
 │   ├── services/            # 后端服务
 │   │   ├── notesService.js  # 记事本服务
+│   │   ├── pythonApiClient.js
 │   │   ├── pythonEnvService.js
 │   │   └── pythonProcessService.js
 │   ├── ipc/                 # IPC 通信
 │   │   ├── fileManagerIpc.js
 │   │   └── ocrIpc.js
-│   ├── config.js            # 配置管理
+│   ├── lib/                 # 工具库
+│   │   ├── config.js        # 配置管理
+│   │   ├── icon-data.js     # 图标数据
+│   │   └── shortcutManager.js
 │   ├── main.js              # 主进程入口
-│   ├── preload.js           # 预加载脚本
-│   ├── float.js             # 悬浮球逻辑
-│   ├── float.html           # 悬浮球页面
-│   ├── float.css            # 悬浮球样式
-│   └── float-preload.js     # 悬浮球预加载
+│   └── preload.js           # 预加载脚本
 ├── python-service/          # Python OCR 服务
 │   ├── api/                 # FastAPI 路由
 │   │   └── routers/ocr.py   # OCR 接口
@@ -287,6 +304,7 @@ ToolBox/
 │   ├── config/              # 配置文件
 │   ├── constants/           # 常量定义
 │   ├── contexts/            # React Context
+│   ├── data/                # 数据文件
 │   ├── hooks/               # 自定义 Hooks
 │   ├── pages/               # 页面组件
 │   │   ├── admin/           # 管理后台页面
@@ -334,6 +352,12 @@ ToolBox/
 
 ## 📝 更新日志
 
+### v2.1.1
+- 修复日志窗口功能，完善日志记录系统
+- 重构日志服务，使用文件系统存储代替 localStorage
+- 优化日志展示和更新机制
+- 增强日志监控功能，便于问题排查和操作追踪
+
 ### v2.0.0
 - 新增 OCR 文字识别功能（基于 Python FastAPI 服务）
 - 新增浮动窗口悬浮球功能
@@ -352,12 +376,14 @@ ToolBox/
 - 更新 Vite 至 8.x 版本
 
 ### v1.2.0
+
 - 优化天气预警功能展示
 - 修复天气工具类型定义问题
 - 改进代码质量和类型安全
 - 更新依赖包版本
 
 ### v1.0.0
+
 - 初始版本发布
 - 实现快速启动功能
 - 实现热点新闻功能
@@ -375,6 +401,6 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 如有问题或建议，欢迎提交 Issue 或 Pull Request。
 
----
+***
 
 **Built with ❤️ using Electron + React + TypeScript**

@@ -8,7 +8,7 @@ import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import Modal from '../../../../components/ui/Modal';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import Pagination from '../../../../components/ui/Pagination';
-import SelectWithCustom from '../../../../components/SelectWithCustom';
+import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';

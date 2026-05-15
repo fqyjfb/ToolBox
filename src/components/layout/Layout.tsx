@@ -1,6 +1,6 @@
 import React from 'react';
-import Sidebar from '../Sidebar';
-import Content from '../Content';
+import Sidebar from './Sidebar';
+import Content from './Content';
 import { useSidebarStore } from '../../store/sidebarStore';
 
 interface LayoutProps {

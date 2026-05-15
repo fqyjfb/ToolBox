@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Plus, Edit2, Trash2 } from 'lucide-react';
-import ConfirmDialog from './ui/ConfirmDialog';
+import ConfirmDialog from './ConfirmDialog';
 
 export interface CategoryItem {
   id: string;

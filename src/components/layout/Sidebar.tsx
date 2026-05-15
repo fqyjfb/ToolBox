@@ -1,9 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Globe, Wrench, Zap, Key, Crown, FileText } from 'lucide-react';
-import { useAuthStore } from '../store/AuthStore';
-import { useSidebarStore } from '../store/sidebarStore';
-import { isElectron } from '../utils/environment';
+import { useAuthStore } from '../../store/AuthStore';
+import { useSidebarStore } from '../../store/sidebarStore';
+import { isElectron } from '../../utils/environment';
 import './Sidebar.css';
 
 interface NavItem {

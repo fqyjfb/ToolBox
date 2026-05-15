@@ -8,7 +8,7 @@ import Modal from '../../components/ui/Modal'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import ContextMenu from '../../components/ui/ContextMenu'
 import Switch from '../../components/ui/Switch'
-import CategoryManager, { CategoryItem } from '../../components/CategoryManager'
+import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager';
 import { openUrl } from '../../services/browserService'
 
 const isForeignDomain = (url: string): boolean => {

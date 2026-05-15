@@ -1,4 +1,4 @@
-import { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate as useRouterNavigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import WebLayout from './components/layout/WebLayout';
@@ -12,6 +12,7 @@ import { logError } from './services/loggerService';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes } from './config/routes';
+const LogsPage = React.lazy(() => import('./pages/tools/logs'));
 import { isElectron } from './utils/environment';
 
 const TrayNavigationHandler: React.FC = () => {
@@ -114,17 +115,31 @@ function App() {
 
   const currentRoutes = isDesktopApp ? desktopRoutes : isWebApp ? webRoutes : mobileRoutes;
 
+  const isStandaloneLogWindow = () => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('standalone') === 'logs';
+    }
+    return false;
+  };
+
   return (
     <TodoNotificationProvider>
       <NavSearchProvider>
         <Router>
-          {isDesktopApp && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
+          {isDesktopApp && !isStandaloneLogWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
           <Routes>
             <Route 
               path="/*" 
               element={
                 <>
-                  {isDesktopApp ? (
+                  {isDesktopApp && isStandaloneLogWindow() ? (
+                    <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
+                      <Routes>
+                        <Route path="/logs" element={<LogsPage />} />
+                      </Routes>
+                    </Suspense>
+                  ) : isDesktopApp ? (
                     <Layout>
                       <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
                         <Routes>

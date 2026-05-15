@@ -5,7 +5,9 @@ const { registerFileManagerIpc } = require('./ipc/fileManagerIpc');
 const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization } = require('./window/mainWindow');
 const { createFloatWindow, registerFloatIpcHandlers } = require('./window/floatWindow');
 const { createTray } = require('./window/tray');
-const { loadSettings } = require('./config');
+const { registerLogIpcHandlers } = require('./logs/window');
+const { initLogger } = require('./logs/logger');
+const { loadSettings } = require('./lib/config');
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -36,9 +38,10 @@ function onWindowReady() {
   registerOcrIpc();
   registerFileManagerIpc();
   registerFloatIpcHandlers();
-  
+  registerLogIpcHandlers();
+
   setTimeout(() => createTray(), 500);
-  
+
   setTimeout(() => {
     const settings = loadSettings();
     if (settings.isFloatWindowEnabled === 1) {
@@ -48,6 +51,7 @@ function onWindowReady() {
 }
 
 app.whenReady().then(async () => {
+  initLogger();
   createWindow(onWindowReady);
 
   app.on('activate', () => {

@@ -2,7 +2,7 @@ const { BrowserWindow, Menu, screen, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
-const { loadSettings, saveSettings, loadFloatConfig } = require('../config');
+const { loadSettings, saveSettings, loadFloatConfig } = require('../lib/config');
 
 let floatWindow = null;
 let dragOffset = { x: 0, y: 0 };
@@ -57,7 +57,7 @@ const createFloatWindow = () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, '../float-preload.js'),
+      preload: path.join(__dirname, './float/float-preload.js'),
     },
   });
 
@@ -93,8 +93,8 @@ const createFloatWindow = () => {
     }
   }, POLL_INTERVAL);
 
-  const floatHtmlPath = path.join(__dirname, '../float.html');
-  const packagedPath = path.join(process.resourcesPath, 'app', 'electron', 'float.html');
+  const floatHtmlPath = path.join(__dirname, './float/float.html');
+  const packagedPath = path.join(process.resourcesPath, 'app', 'electron', 'window', 'float', 'float.html');
 
   if (app.isPackaged && fs.existsSync(packagedPath)) {
     floatWindow.loadFile(packagedPath);

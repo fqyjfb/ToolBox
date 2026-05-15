@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { TodoCategory, Todo, CreateTodoCategoryRequest, CreateTodoRequest } from '../types/todo';
+import { logError, logInfo } from './loggerService';
 
 interface ServiceResponse<T> {
   success: boolean;
@@ -22,6 +23,7 @@ const categoryService = {
       
       return { success: true, data: data || [] };
     } catch (error) {
+      logError('获取待办分类失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '获取分类失败' };
     }
   },
@@ -38,13 +40,15 @@ const categoryService = {
         })
         .select()
         .single();
-      
+
       if (error) {
         return { success: false, error: error.message };
       }
-      
+
+      logInfo(`创建待办分类成功: ${request.name}`, 'TodoService');
       return { success: true, data };
     } catch (error) {
+      logError('创建待办分类失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '创建分类失败' };
     }
   },
@@ -62,13 +66,15 @@ const categoryService = {
         .eq('user_id', userId)
         .select()
         .single();
-      
+
       if (error) {
         return { success: false, error: error.message };
       }
-      
+
+      logInfo(`更新待办分类成功: ${request.name}`, 'TodoService');
       return { success: true, data };
     } catch (error) {
+      logError('更新待办分类失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '更新分类失败' };
     }
   },
@@ -80,13 +86,15 @@ const categoryService = {
         .delete()
         .eq('id', categoryId)
         .eq('user_id', userId);
-      
+
       if (error) {
         return { success: false, error: error.message };
       }
-      
+
+      logInfo(`删除待办分类成功: ID=${categoryId}`, 'TodoService');
       return { success: true };
     } catch (error) {
+      logError('删除待办分类失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '删除分类失败' };
     }
   }
@@ -113,6 +121,7 @@ const todoService = {
       
       return { success: true, data: { data: data || [], total: count || 0 } };
     } catch (error) {
+      logError('获取待办任务失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '获取任务失败' };
     }
   },
@@ -133,13 +142,15 @@ const todoService = {
         })
         .select()
         .single();
-      
+
       if (error) {
         return { success: false, error: error.message };
       }
-      
+
+      logInfo(`创建待办任务成功: ${request.title}`, 'TodoService');
       return { success: true, data };
     } catch (error) {
+      logError('创建待办任务失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '创建任务失败' };
     }
   },
@@ -160,13 +171,15 @@ const todoService = {
         .eq('user_id', userId)
         .select()
         .single();
-      
+
       if (error) {
         return { success: false, error: error.message };
       }
-      
+
+      logInfo(`更新待办任务成功: ${request.title}`, 'TodoService');
       return { success: true, data };
     } catch (error) {
+      logError('更新待办任务失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '更新任务失败' };
     }
   },
@@ -184,13 +197,15 @@ const todoService = {
         .eq('user_id', userId)
         .select()
         .single();
-      
+
       if (error) {
         return { success: false, error: error.message };
       }
-      
+
+      logInfo(`更新待办任务状态成功: ID=${todoId}, 完成=${isCompleted}`, 'TodoService');
       return { success: true, data };
     } catch (error) {
+      logError('更新待办状态失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '更新任务状态失败' };
     }
   },
@@ -202,13 +217,15 @@ const todoService = {
         .delete()
         .eq('id', todoId)
         .eq('user_id', userId);
-      
+
       if (error) {
         return { success: false, error: error.message };
       }
-      
+
+      logInfo(`删除待办任务成功: ID=${todoId}`, 'TodoService');
       return { success: true };
     } catch (error) {
+      logError('删除待办任务失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '删除任务失败' };
     }
   },
@@ -222,13 +239,14 @@ const todoService = {
         .or(`title.ilike.%${keyword}%,description.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
-      
+
       if (error) {
         return { success: false, error: error.message };
       }
-      
+
       return { success: true, data: { data: data || [], total: count || 0 } };
     } catch (error) {
+      logError('搜索待办任务失败', 'TodoService', error instanceof Error ? error : undefined);
       return { success: false, error: error instanceof Error ? error.message : '搜索任务失败' };
     }
   }

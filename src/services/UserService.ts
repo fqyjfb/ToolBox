@@ -1,5 +1,6 @@
 import { User, UserListResponse, UserDetailResponse, UserUpdateRequest, GenericResponse } from '../types/user'
 import { supabase } from './supabase'
+import { logError, logInfo } from './loggerService'
 
 const camelToSnake = (str: string): string => {
   return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
@@ -21,7 +22,9 @@ const checkAndUpdateMemberStatus = async (user: User): Promise<User> => {
           })
           .eq('id', user.id)
 
-        if (!error) {
+        if (error) {
+          logError('更新会员等级失败', 'UserService', error as Error);
+        } else {
           return {
             ...user,
             memberLevel: '普通',
@@ -32,7 +35,8 @@ const checkAndUpdateMemberStatus = async (user: User): Promise<User> => {
       }
     }
     return user
-  } catch {
+  } catch (error) {
+    logError('检查并更新会员状态失败', 'UserService', error as Error);
     return user
   }
 }
@@ -49,8 +53,8 @@ const updateExpiredMembers = async (): Promise<void> => {
       })
       .lt('vip_expire_at', now)
       .neq('member_level', '普通')
-  } catch {
-    console.warn('更新过期会员等级失败')
+  } catch (error) {
+    logError('更新过期会员等级失败', 'UserService', error as Error);
   }
 }
 
@@ -97,6 +101,7 @@ export const userService = {
       const { data, error, count } = await query
 
       if (error) {
+        logError('获取用户列表失败', 'UserService', error as Error);
         return {
           success: false,
           data: { list: [], total: 0, page, pageSize },
@@ -123,7 +128,8 @@ export const userService = {
         success: true,
         data: { list: users, total: count || 0, page, pageSize }
       }
-    } catch {
+    } catch (error) {
+      logError('获取用户列表失败', 'UserService', error as Error);
       return { success: false, data: { list: [], total: 0, page, pageSize } }
     }
   },
@@ -137,6 +143,7 @@ export const userService = {
         .single()
 
       if (error) {
+        logError('获取用户详情失败', 'UserService', error as Error);
         return { success: false, data: {} as User, message: error.message || '获取用户详情失败' }
       }
 
@@ -161,7 +168,8 @@ export const userService = {
       } else {
         return { success: false, data: {} as User, message: '用户不存在' }
       }
-    } catch {
+    } catch (error) {
+      logError('获取用户详情失败', 'UserService', error as Error);
       return { success: false, data: {} as User, message: '网络错误，请稍后重试' }
     }
   },
@@ -184,11 +192,15 @@ export const userService = {
         .eq('id', id)
 
       if (error) {
+        logError('更新用户失败', 'UserService', error as Error);
         return { success: false, message: `更新失败: ${error.message || '未知错误'}` }
       }
 
+      logInfo(`更新用户成功: ID=${id}`, 'UserService');
+
       return { success: true, message: '更新成功' }
-    } catch {
+    } catch (error) {
+      logError('更新用户失败', 'UserService', error as Error);
       return { success: false, message: '网络错误，请稍后重试' }
     }
   },
@@ -202,6 +214,7 @@ export const userService = {
         .single()
 
       if (getUserError) {
+        logError('获取用户信息失败', 'UserService', getUserError as Error);
         return { success: false, message: '获取用户信息失败' }
       }
 
@@ -214,6 +227,7 @@ export const userService = {
       })
 
       if (error) {
+        logError('重置密码失败', 'UserService', error as Error);
         return { success: false, message: `重置失败: ${error.message || '未知错误'}` }
       }
 
@@ -222,8 +236,11 @@ export const userService = {
         .update({ updated_at: new Date().toISOString() })
         .eq('id', id)
 
+      logInfo(`重置用户密码成功: ID=${id}`, 'UserService');
+
       return { success: true, message: '密码重置邮件已发送，请检查邮箱' }
-    } catch {
+    } catch (error) {
+      logError('重置密码失败', 'UserService', error as Error);
       return { success: false, message: '网络错误，请稍后重试' }
     }
   },

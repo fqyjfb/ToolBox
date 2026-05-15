@@ -49,7 +49,7 @@ const jsContent = `// 自动生成的图标数据 - 请勿手动修改
 })(typeof window !== 'undefined' ? window : global);
 `;
 
-// 写入到 electron 目录
-fs.writeFileSync(path.join(__dirname, '../electron/icon-data.js'), jsContent);
-console.log('✓ 已生成 electron/icon-data.js');
+// 写入到 electron/lib 目录
+fs.writeFileSync(path.join(__dirname, '../electron/lib/icon-data.js'), jsContent);
+console.log('✓ 已生成 electron/lib/icon-data.js');
 

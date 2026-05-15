@@ -2,7 +2,7 @@ const { Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
-const { loadSettings } = require('../config');
+const { loadSettings } = require('../lib/config');
 
 let tray = null;
 
@@ -118,9 +118,15 @@ const refreshTrayMenu = () => {
       submenu: [
         {
           label: '设置',
-          click: () => { 
+          click: () => {
             const mainWindow = require('./mainWindow').getMainWindow();
-            if (mainWindow) { mainWindow.show(); mainWindow.webContents.send('navigate-to', '/settings'); } 
+            if (mainWindow) { mainWindow.show(); mainWindow.webContents.send('navigate-to', '/settings'); }
+          },
+        },
+        {
+          label: '日志',
+          click: () => {
+            require('../logs/window').openLogWindow();
           },
         },
         { label: '重启', click: () => { require('electron').app.relaunch(); require('electron').app.quit(); } },

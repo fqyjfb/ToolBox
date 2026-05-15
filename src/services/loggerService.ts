@@ -35,113 +35,72 @@ const DEFAULT_SETTINGS: LoggerSettings = {
   autoClean: true
 };
 
-const LOG_STORAGE_KEY = 'toolbox_logs';
-const SETTINGS_STORAGE_KEY = 'toolbox_logger_settings';
-
 class LoggerService {
   private logs: LogEntry[] = [];
   private listeners: Set<(logs: LogEntry[]) => void> = new Set();
-  private settings: LoggerSettings = this.loadSettings();
+  private settings: LoggerSettings = { ...DEFAULT_SETTINGS };
+  private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
-  private generateId(): string {
-    return `log_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  }
-
-  private loadSettings(): LoggerSettings {
-    try {
-      const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
-      if (saved) {
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+  private async initialize(): Promise<void> {
+    if (this.initialized) return;
+    if (this.initPromise) return this.initPromise;
+    
+    this.initPromise = (async () => {
+      try {
+        if (window.electron?.log) {
+          this.settings = await window.electron.log.getSettings();
+          this.logs = await window.electron.log.getLogs();
+        }
+      } catch {
+        this.settings = { ...DEFAULT_SETTINGS };
+        this.logs = [];
       }
-    } catch {
-      // Silent failure - use default settings
-    }
-    return { ...DEFAULT_SETTINGS };
-  }
-
-  private saveSettings(): void {
-    try {
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings));
-    } catch {
-      // Silent failure - settings will not persist
-    }
-  }
-
-  private persistLogs(): void {
-    if (!this.settings.enabled) return;
-    try {
-      const logsToSave = this.logs.slice(-this.settings.maxEntries);
-      localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logsToSave));
-    } catch {
-      // Silent failure - logs will not persist
-    }
-  }
-
-  private loadLogs(): void {
-    try {
-      const saved = localStorage.getItem(LOG_STORAGE_KEY);
-      if (saved) {
-        this.logs = JSON.parse(saved);
-      }
-    } catch {
-      this.logs = [];
-    }
-  }
-
-  private shouldLog(level: LogLevel): boolean {
-    if (!this.settings.enabled) return false;
-    return this.settings.levels[level] === true;
+      this.initialized = true;
+    })();
+    
+    return this.initPromise;
   }
 
   private notifyListeners(): void {
     this.listeners.forEach(listener => listener([...this.logs]));
   }
 
-  public getSettings(): LoggerSettings {
+  public async getSettings(): Promise<LoggerSettings> {
+    await this.initialize();
     return { ...this.settings };
   }
 
-  public updateSettings(newSettings: Partial<LoggerSettings>): void {
-    this.settings = { ...this.settings, ...newSettings };
-    this.saveSettings();
-    if (!this.settings.enabled) {
-      this.clearLogs();
+  public async updateSettings(newSettings: Partial<LoggerSettings>): Promise<void> {
+    await this.initialize();
+    if (window.electron?.log) {
+      this.settings = await window.electron.log.updateSettings(newSettings);
+      if (!this.settings.enabled) {
+        await this.clearLogs();
+      }
+    } else {
+      this.settings = { ...this.settings, ...newSettings };
     }
     this.notifyListeners();
   }
 
   public addLogEntry(level: LogLevel, message: string, context?: string, stack?: string): void {
-    if (!this.shouldLog(level)) {
-      if (level === 'error' && this.settings.enabled) {
-        console.error(`[${context || 'App'}]`, message, stack);
-      }
-      return;
-    }
-
-    const entry: LogEntry = {
-      id: this.generateId(),
-      timestamp: Date.now(),
-      level,
-      message,
-      context,
-      stack
-    };
-
-    this.logs.push(entry);
-
-    if (this.logs.length > this.settings.maxEntries) {
-      this.logs = this.logs.slice(-this.settings.maxEntries);
-    }
-
-    if (this.settings.autoClean && this.logs.length > this.settings.maxEntries * 0.8) {
-      this.persistLogs();
-    }
-
-    this.notifyListeners();
-    this.persistLogs();
-
-    if (level === 'error') {
-      console.error(`[${context || 'App'}]`, message, stack);
+    // 使用 fire-and-forget 模式，不等待初始化和 IPC 调用完成
+    this.initialize().catch(console.error);
+    
+    if (window.electron?.log) {
+      window.electron.log.addLog(level, message, context, stack).catch(console.error);
+      // 同时更新本地缓存，以便 UI 可以立即显示
+      const entry: LogEntry = {
+        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        timestamp: Date.now(),
+        level,
+        message,
+        context,
+        stack
+      };
+      this.logs.push(entry);
+      this.notifyListeners();
     }
   }
 
@@ -162,11 +121,13 @@ class LoggerService {
     this.addLogEntry('debug', message, context);
   }
 
-  public getLogs(): LogEntry[] {
+  public async getLogs(): Promise<LogEntry[]> {
+    await this.initialize();
     return [...this.logs];
   }
 
-  public getFilteredLogs(level?: LogLevel, context?: string): LogEntry[] {
+  public async getFilteredLogs(level?: LogLevel, context?: string): Promise<LogEntry[]> {
+    await this.initialize();
     return this.logs.filter(log => {
       if (level && log.level !== level) return false;
       if (context && log.context !== context) return false;
@@ -174,9 +135,12 @@ class LoggerService {
     });
   }
 
-  public clearLogs(): void {
+  public async clearLogs(): Promise<void> {
+    await this.initialize();
+    if (window.electron?.log) {
+      await window.electron.log.clearLogs();
+    }
     this.logs = [];
-    localStorage.removeItem(LOG_STORAGE_KEY);
     this.notifyListeners();
   }
 
@@ -187,45 +151,47 @@ class LoggerService {
     };
   }
 
-  public exportLogs(): string {
+  public async exportLogs(): Promise<string> {
+    await this.initialize();
+    if (window.electron?.log) {
+      return await window.electron.log.exportLogs();
+    }
     return JSON.stringify(this.logs, null, 2);
   }
 
-  public importLogs(jsonString: string): boolean {
-    try {
-      const imported = JSON.parse(jsonString);
-      if (Array.isArray(imported)) {
-        this.logs = imported;
-        this.persistLogs();
-        this.notifyListeners();
-        return true;
-      }
-    } catch {
-      // Silent failure - import failed
-    }
+  public importLogs(_jsonString: string): boolean {
+    // Note: Import functionality would need to be implemented on the main process side
     return false;
   }
 
-  public getStats(): { total: number; byLevel: Record<LogLevel, number> } {
+  public async getStats(): Promise<{ total: number; byLevel: Record<LogLevel, number> }> {
+    await this.initialize();
+    if (window.electron?.log) {
+      const stats = await window.electron.log.getStats();
+      return {
+        total: stats.total,
+        byLevel: {
+          error: stats.error,
+          warn: stats.warn,
+          info: stats.info,
+          debug: stats.debug
+        }
+      };
+    }
     const byLevel: Record<LogLevel, number> = {
       error: 0,
       warn: 0,
       info: 0,
       debug: 0
     };
-
     this.logs.forEach(log => {
       byLevel[log.level]++;
     });
-
-    return {
-      total: this.logs.length,
-      byLevel
-    };
+    return { total: this.logs.length, byLevel };
   }
 
   public init(): void {
-    this.loadLogs();
+    this.initialize().catch(console.error);
   }
 }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { FolderOpen, Folder, MoreVertical, CheckSquare, Clock, AlertCircle, Edit, Trash2, Plus } from 'lucide-react';
-import { Todo, TodoCategory } from '../services/TodoService';
+import { Todo, TodoCategory } from '../../services/TodoService';
 
 interface TodoCardProps {
   category: { id: string; name: string };

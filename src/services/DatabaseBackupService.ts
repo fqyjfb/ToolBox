@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { logError } from './loggerService';
 
 export interface BackupInfo {
   version: string
@@ -47,36 +48,48 @@ class DatabaseBackupService {
   ]
 
   async exportToSQL(): Promise<string> {
-    const backupData = await this.exportData()
-    return this.generateSQL(backupData)
+    try {
+      const backupData = await this.exportData()
+      return this.generateSQL(backupData)
+    } catch (error) {
+      logError('导出SQL失败', 'DatabaseBackupService', error as Error);
+      throw error;
+    }
   }
 
   async exportData(): Promise<BackupData> {
-    const backupData: Partial<TableData> = {} as Partial<TableData>
-    let totalRecords = 0
+    try {
+      const backupData: Partial<TableData> = {} as Partial<TableData>
+      let totalRecords = 0
 
-    for (const table of this.tables) {
-      try {
-        const { data, error } = await supabase.from(table).select('*')
-        if (error) {
+      for (const table of this.tables) {
+        try {
+          const { data, error } = await supabase.from(table).select('*')
+          if (error) {
+            logError(`导出表 ${table} 失败`, 'DatabaseBackupService', error as Error);
+            backupData[table] = []
+          } else {
+            backupData[table] = data || []
+            totalRecords += (data || []).length
+          }
+        } catch (error) {
+          logError(`导出表 ${table} 失败`, 'DatabaseBackupService', error as Error);
           backupData[table] = []
-        } else {
-          backupData[table] = data || []
-          totalRecords += (data || []).length
         }
-      } catch {
-        backupData[table] = []
       }
-    }
 
-    const info: BackupInfo = {
-      version: '1.0',
-      timestamp: new Date().toISOString(),
-      tables: this.tables as string[],
-      recordCount: totalRecords
-    }
+      const info: BackupInfo = {
+        version: '1.0',
+        timestamp: new Date().toISOString(),
+        tables: this.tables as string[],
+        recordCount: totalRecords
+      }
 
-    return { _info: info, ...backupData } as BackupData
+      return { _info: info, ...backupData } as BackupData
+    } catch (error) {
+      logError('导出数据失败', 'DatabaseBackupService', error as Error);
+      throw error;
+    }
   }
 
   private generateSQL(backupData: BackupData): string {
@@ -119,7 +132,8 @@ class DatabaseBackupService {
     try {
       const data = JSON.parse(jsonData) as BackupData
       return await this.importData(data)
-    } catch {
+    } catch (error) {
+      logError('导入JSON失败', 'DatabaseBackupService', error as Error);
       return { success: false, message: '无效的JSON格式' }
     }
   }
@@ -136,6 +150,7 @@ class DatabaseBackupService {
 
       return { success: true, message: '数据恢复成功' }
     } catch (error) {
+      logError('数据恢复失败', 'DatabaseBackupService', error as Error);
       return { success: false, message: '数据恢复失败: ' + (error as Error).message }
     }
   }

@@ -1,12 +1,12 @@
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useThemeStore } from '../store/themeStore';
-import { useAuth, useAuthStore } from '../store/AuthStore';
-import { Minus, Maximize2, X, Search, X as XIcon, Menu, Settings, Info, LogIn, LogOut, Bell } from 'lucide-react';
-import { useNavSearch } from '../contexts/NavSearchContext';
-import { useTodoNotification } from '../contexts/TodoNotificationContext';
-import { isElectron } from '../utils/environment';
-import PopupMenu from './ui/PopupMenu';
-import Tooltip from './ui/Tooltip';
+import { useThemeStore } from '../../store/themeStore';
+import { useAuth, useAuthStore } from '../../store/AuthStore';
+import { Minus, Maximize2, X, Search, X as XIcon, Menu, LogOut, Bell, User, Settings, Info } from 'lucide-react';
+import { useNavSearch } from '../../contexts/NavSearchContext';
+import { useTodoNotification } from '../../contexts/TodoNotificationContext';
+import { isElectron } from '../../utils/environment';
+import Tooltip from '../ui/Tooltip';
 import './Content.css';
 
 interface ContentProps {
@@ -24,15 +24,58 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
   const { logout } = useAuth();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
-  const showSearch = ['/launch', '/nav', '/tools', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/account', '/tools/ocr', '/tools/file-manager'].includes(location.pathname);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMainMenu, setShowMainMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const mainMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+      if (mainMenuRef.current && !mainMenuRef.current.contains(event.target as Node)) {
+        setShowMainMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const showSearch = ['/launch', '/nav', '/tools', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/account', '/tools/ocr', '/tools/file-manager', '/tools/profile'].includes(location.pathname);
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
     handleSearch(query);
   };
 
-  const handleMenuClick = (path: string) => {
-    navigate(path);
+  const handleUserButtonClick = () => {
+    if (isAuthenticated) {
+      navigate('/tools/profile');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleUserButtonRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      setShowUserMenu(true);
+    }
+  };
+
+  const handleStatusDotClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isAuthenticated) {
+      logout();
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setShowUserMenu(false);
   };
 
   return (
@@ -76,6 +119,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
             {location.pathname === '/tools/hex-decode' && '十六进制解码'}
             {location.pathname === '/tools/ocr' && 'OCR文字识别'}
             {location.pathname === '/tools/file-manager' && '文件管理'}
+            {location.pathname === '/tools/profile' && '个人信息'}
             {location.pathname === '/admin' && '管理控制台'}
             {location.pathname === '/admin/websites' && '网址管理'}
             {location.pathname === '/admin/users' && '用户管理'}
@@ -128,34 +172,52 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
               />
               <span className="slider"></span>
             </label>
-            <Tooltip title={isAuthenticated ? '用户菜单' : '登录'}>
-              <PopupMenu
-                trigger={
-                  <button
-                    className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
-                  >
+            <div className="relative">
+              <Tooltip title={isAuthenticated ? '个人信息' : '登录'}>
+                <button
+                  onClick={handleUserButtonClick}
+                  onContextMenu={handleUserButtonRightClick}
+                  className="relative p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
+                >
+                  {isAuthenticated ? (
+                    <User className="w-5 h-5" />
+                  ) : (
                     <svg viewBox="0 0 24 24" fill="currentColor" height={18} width={18} xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 2c2.757 0 5 2.243 5 5.001 0 2.756-2.243 5-5 5s-5-2.244-5-5c0-2.758 2.243-5.001 5-5.001zm0-2c-3.866 0-7 3.134-7 7.001 0 3.865 3.134 7 7 7s7-3.135 7-7c0-3.867-3.134-7.001-7-7.001zm6.369 13.353c-.497.498-1.057.931-1.658 1.302 2.872 1.874 4.378 5.083 4.972 7.346h-19.387c.572-2.29 2.058-5.503 4.973-7.358-.603-.374-1.162-.811-1.658-1.312-4.258 3.072-5.611 8.506-5.611 10.669h24c0-2.142-1.44-7.557-5.631-10.647z" />
                     </svg>
+                  )}
+                  <span
+                    className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer transition-transform hover:scale-110 ${
+                      isAuthenticated ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
+                    onClick={handleStatusDotClick}
+                    title={isAuthenticated ? '退出' : '登录'}
+                  />
+                </button>
+              </Tooltip>
+              
+              {showUserMenu && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-32"
+                >
+                  <button
+                    onClick={() => { navigate('/tools/profile'); setShowUserMenu(false); }}
+                    className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <User className="w-4 h-4" />
+                    个人信息
                   </button>
-                }
-                items={isAuthenticated ? [
-                  {
-                    id: 'logout',
-                    label: '登出',
-                    icon: <LogOut className="w-4 h-4" />,
-                    onClick: logout
-                  }
-                ] : [
-                  {
-                    id: 'login',
-                    label: '登录',
-                    icon: <LogIn className="w-4 h-4" />,
-                    onClick: () => navigate('/login')
-                  }
-                ]}
-              />
-            </Tooltip>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    退出登录
+                  </button>
+                </div>
+              )}
+            </div>
             <Tooltip title="待办事项">
               <button
                 className="relative p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
@@ -170,31 +232,32 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
               </button>
             </Tooltip>
             {isDesktop && (
-              <Tooltip title="菜单">
-                <PopupMenu
-                  trigger={
+              <div className="relative" ref={mainMenuRef}>
+                <button
+                  className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
+                  onClick={() => setShowMainMenu(!showMainMenu)}
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                {showMainMenu && (
+                  <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-32">
                     <button
-                      className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
+                      onClick={() => { navigate('/settings'); setShowMainMenu(false); }}
+                      className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                     >
-                      <Menu className="w-5 h-5" />
+                      <Settings className="w-4 h-4" />
+                      设置
                     </button>
-                  }
-                  items={[
-                    {
-                      id: 'settings',
-                      label: '设置',
-                      icon: <Settings className="w-4 h-4" />,
-                      onClick: () => handleMenuClick('/settings')
-                    },
-                    {
-                      id: 'about',
-                      label: '关于',
-                      icon: <Info className="w-4 h-4" />,
-                      onClick: () => handleMenuClick('/about')
-                    }
-                  ]}
-                />
-              </Tooltip>
+                    <button
+                      onClick={() => { navigate('/about'); setShowMainMenu(false); }}
+                      className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <Info className="w-4 h-4" />
+                      关于
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
             {isDesktop && (
               <>

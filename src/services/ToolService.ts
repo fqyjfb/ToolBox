@@ -1,4 +1,5 @@
-import { supabase } from './supabase'
+import { supabase } from './supabase';
+import { logError, logInfo } from './loggerService';
 
 export interface ToolCategory {
   id: string
@@ -25,182 +26,240 @@ export interface Tool {
 
 class ToolService {
   async getCategories(): Promise<ToolCategory[]> {
-    const { data, error } = await supabase
-      .from('tool_categories')
-      .select('*')
-      .order('order', { ascending: true })
+    try {
+      const { data, error } = await supabase
+        .from('tool_categories')
+        .select('*')
+        .order('order', { ascending: true });
 
-    if (error) {
-      console.error('获取工具分类失败:', error)
-      throw error
+      if (error) {
+        logError('获取工具分类失败', 'ToolService', error as Error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      logError('获取工具分类失败', 'ToolService', error as Error);
+      throw error;
     }
-
-    return data || []
   }
 
   async addCategory(name: string, parent_id: string | null = null): Promise<ToolCategory> {
-    const { data, error } = await supabase
-      .from('tool_categories')
-      .insert({ name, parent_id, order: 0 })
-      .select()
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('tool_categories')
+        .insert({ name, parent_id, order: 0 })
+        .select()
+        .single();
 
-    if (error) {
-      console.error('添加工具分类失败:', error)
-      throw error
+      if (error) {
+        logError('添加工具分类失败', 'ToolService', error as Error);
+        throw error;
+      }
+
+      logInfo(`添加工具分类成功: ${name}`, 'ToolService');
+      return data;
+    } catch (error) {
+      logError('添加工具分类失败', 'ToolService', error as Error);
+      throw error;
     }
-
-    return data
   }
 
   async updateCategory(id: string, name: string): Promise<ToolCategory> {
-    const { data, error } = await supabase
-      .from('tool_categories')
-      .update({ name })
-      .eq('id', id)
-      .select()
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('tool_categories')
+        .update({ name })
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) {
-      console.error('更新工具分类失败:', error)
-      throw error
+      if (error) {
+        logError('更新工具分类失败', 'ToolService', error as Error);
+        throw error;
+      }
+
+      logInfo(`更新工具分类成功: ${name}`, 'ToolService');
+      return data;
+    } catch (error) {
+      logError('更新工具分类失败', 'ToolService', error as Error);
+      throw error;
     }
-
-    return data
   }
 
   async deleteCategory(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('tool_categories')
-      .delete()
-      .eq('id', id)
+    try {
+      const { error } = await supabase
+        .from('tool_categories')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      console.error('删除工具分类失败:', error)
-      throw error
+      if (error) {
+        logError('删除工具分类失败', 'ToolService', error as Error);
+        throw error;
+      }
+
+      logInfo(`删除工具分类成功: ID=${id}`, 'ToolService');
+    } catch (error) {
+      logError('删除工具分类失败', 'ToolService', error as Error);
+      throw error;
     }
   }
 
   private async getAllCategoryIds(categoryId: string): Promise<string[]> {
-    const { data: categories, error } = await supabase
-      .from('tool_categories')
-      .select('*')
+    try {
+      const { data: categories, error } = await supabase
+        .from('tool_categories')
+        .select('*');
 
-    if (error) {
-      console.error('获取分类列表失败:', error)
-      throw error
+      if (error) {
+        logError('获取分类列表失败', 'ToolService', error as Error);
+        throw error;
+      }
+
+      const getAllChildIds = (id: string): string[] => {
+        const result = [id];
+        categories?.forEach(category => {
+          if (category.parent_id === id) {
+            result.push(...getAllChildIds(category.id));
+          }
+        });
+        return result;
+      };
+
+      return getAllChildIds(categoryId);
+    } catch (error) {
+      logError('获取分类列表失败', 'ToolService', error as Error);
+      throw error;
     }
-
-    const getAllChildIds = (id: string): string[] => {
-      const result = [id]
-      categories?.forEach(category => {
-        if (category.parent_id === id) {
-          result.push(...getAllChildIds(category.id))
-        }
-      })
-      return result
-    }
-
-    return getAllChildIds(categoryId)
   }
 
   async getTools(category_id?: string, searchTerm?: string, page: number = 1, pageSize: number = 10): Promise<{ data: Tool[], count: number }> {
-    let query = supabase
-      .from('tools')
-      .select(`
-        *,
-        tool_categories(name)
-      `, { count: 'exact' })
-      .order('created_at', { ascending: false })
+    try {
+      let query = supabase
+        .from('tools')
+        .select(`
+          *,
+          tool_categories(name)
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false });
 
-    if (category_id) {
-      const categoryIds = await this.getAllCategoryIds(category_id)
-      query = query.in('category_id', categoryIds)
+      if (category_id) {
+        const categoryIds = await this.getAllCategoryIds(category_id);
+        query = query.in('category_id', categoryIds);
+      }
+
+      if (searchTerm) {
+        query = query.ilike('title', `%${searchTerm}%`);
+      }
+
+      const offset = (page - 1) * pageSize;
+      query = query.range(offset, offset + pageSize - 1);
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        logError('获取工具列表失败', 'ToolService', error as Error);
+        throw error;
+      }
+
+      const tools = (data || []).map(tool => ({
+        ...tool,
+        category_name: tool.tool_categories?.name
+      }));
+
+      return { data: tools, count: count || 0 };
+    } catch (error) {
+      logError('获取工具列表失败', 'ToolService', error as Error);
+      throw error;
     }
-
-    if (searchTerm) {
-      query = query.ilike('title', `%${searchTerm}%`)
-    }
-
-    const offset = (page - 1) * pageSize
-    query = query.range(offset, offset + pageSize - 1)
-
-    const { data, error, count } = await query
-
-    if (error) {
-      console.error('获取工具列表失败:', error)
-      throw error
-    }
-
-    const tools = (data || []).map(tool => ({
-      ...tool,
-      category_name: tool.tool_categories?.name
-    }))
-
-    return { data: tools, count: count || 0 }
   }
 
   async addTool(tool: Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'category_name'>): Promise<Tool> {
-    const { data, error } = await supabase
-      .from('tools')
-      .insert({ ...tool })
-      .select()
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('tools')
+        .insert({ ...tool })
+        .select()
+        .single();
 
-    if (error) {
-      console.error('添加工具失败:', error)
-      throw error
+      if (error) {
+        logError('添加工具失败', 'ToolService', error as Error);
+        throw error;
+      }
+
+      logInfo(`添加工具成功: ${tool.title}`, 'ToolService');
+      return data;
+    } catch (error) {
+      logError('添加工具失败', 'ToolService', error as Error);
+      throw error;
     }
-
-    return data
   }
 
   async updateTool(id: string, tool: Partial<Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'category_name'>>): Promise<Tool> {
-    const { data, error } = await supabase
-      .from('tools')
-      .update(tool)
-      .eq('id', id)
-      .select()
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('tools')
+        .update(tool)
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) {
-      console.error('更新工具失败:', error)
-      throw error
+      if (error) {
+        logError('更新工具失败', 'ToolService', error as Error);
+        throw error;
+      }
+
+      logInfo(`更新工具成功: ID=${id}`, 'ToolService');
+      return data;
+    } catch (error) {
+      logError('更新工具失败', 'ToolService', error as Error);
+      throw error;
     }
-
-    return data
   }
 
   async deleteTool(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('tools')
-      .delete()
-      .eq('id', id)
+    try {
+      const { error } = await supabase
+        .from('tools')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      console.error('删除工具失败:', error)
-      throw error
+      if (error) {
+        logError('删除工具失败', 'ToolService', error as Error);
+        throw error;
+      }
+
+      logInfo(`删除工具成功: ID=${id}`, 'ToolService');
+    } catch (error) {
+      logError('删除工具失败', 'ToolService', error as Error);
+      throw error;
     }
   }
 
   async getToolById(id: string): Promise<Tool> {
-    const { data, error } = await supabase
-      .from('tools')
-      .select(`
-        *,
-        tool_categories(name)
-      `)
-      .eq('id', id)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('tools')
+        .select(`
+          *,
+          tool_categories(name)
+        `)
+        .eq('id', id)
+        .single();
 
-    if (error) {
-      console.error('获取工具详情失败:', error)
-      throw error
-    }
+      if (error) {
+        logError('获取工具详情失败', 'ToolService', error as Error);
+        throw error;
+      }
 
-    return {
-      ...data,
-      category_name: data.tool_categories?.name
+      return {
+        ...data,
+        category_name: data.tool_categories?.name
+      };
+    } catch (error) {
+      logError('获取工具详情失败', 'ToolService', error as Error);
+      throw error;
     }
   }
 }

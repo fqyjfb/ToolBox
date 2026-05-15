@@ -249,10 +249,65 @@ declare interface Window {
       indexAll: (rootPath: string) => Promise<{ success: boolean; error?: string }>;
       openFileInFolder: (filePath: string) => Promise<{ success: boolean; error?: string }>;
     };
+    log: {
+      open: () => void;
+      addLog: (level: 'error' | 'warn' | 'info' | 'debug', message: string, context?: string, stack?: string) => Promise<boolean>;
+      getLogs: () => Promise<Array<{
+        id: string;
+        timestamp: number;
+        level: 'error' | 'warn' | 'info' | 'debug';
+        message: string;
+        context?: string;
+        stack?: string;
+      }>>;
+      getSettings: () => Promise<{
+        enabled: boolean;
+        maxEntries: number;
+        levels: {
+          error: boolean;
+          warn: boolean;
+          info: boolean;
+          debug: boolean;
+        };
+        showTimestamp: boolean;
+        autoClean: boolean;
+      }>;
+      updateSettings: (newSettings: Partial<{
+        enabled: boolean;
+        maxEntries: number;
+        levels: {
+          error: boolean;
+          warn: boolean;
+          info: boolean;
+          debug: boolean;
+        };
+        showTimestamp: boolean;
+        autoClean: boolean;
+      }>) => Promise<{
+        enabled: boolean;
+        maxEntries: number;
+        levels: {
+          error: boolean;
+          warn: boolean;
+          info: boolean;
+          debug: boolean;
+        };
+        showTimestamp: boolean;
+        autoClean: boolean;
+      }>;
+      clearLogs: () => Promise<boolean>;
+      exportLogs: () => Promise<string>;
+      getStats: () => Promise<{ total: number; error: number; warn: number; info: number; debug: number }>;
+    };
     onDownloadProgress: (callback: (progress: number) => void) => void;
     onNavigate: (callback: (path: string) => void) => void;
     onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean }) => void) => void;
     onOpenAddTodo: (callback: () => void) => void;
+    ipcRenderer: {
+      send: <T extends unknown[]>(channel: string, ...args: T) => void;
+      on: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;
+      off: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;
+    };
     ipInfo: {
       query: (ip?: string) => Promise<{
         ip: string;

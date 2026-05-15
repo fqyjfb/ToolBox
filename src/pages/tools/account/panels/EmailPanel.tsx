@@ -9,8 +9,8 @@ import Modal from '../../../../components/ui/Modal';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import Pagination from '../../../../components/ui/Pagination';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
-import PasswordInput from '../../../../components/PasswordInput';
-import SelectWithCustom from '../../../../components/SelectWithCustom';
+import PasswordInput from '../../../../components/forms/PasswordInput';
+import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
 

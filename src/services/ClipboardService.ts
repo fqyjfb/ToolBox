@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { logError } from './loggerService';
 import {
   ClipboardCategory,
   ClipboardItem,
@@ -17,7 +18,7 @@ class ClipboardService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error getting categories:', error);
+      logError('获取剪贴板分类失败', 'ClipboardService', error);
       throw error;
     }
 
@@ -32,7 +33,7 @@ class ClipboardService {
       .single();
 
     if (error) {
-      console.error('Error creating category:', error);
+      logError('创建剪贴板分类失败', 'ClipboardService', error);
       throw error;
     }
 
@@ -48,7 +49,7 @@ class ClipboardService {
       .single();
 
     if (error) {
-      console.error('Error updating category:', error);
+      logError('更新剪贴板分类失败', 'ClipboardService', error);
       throw error;
     }
 
@@ -62,7 +63,7 @@ class ClipboardService {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting category:', error);
+      logError('删除剪贴板分类失败', 'ClipboardService', error);
       throw error;
     }
   }
@@ -84,7 +85,7 @@ class ClipboardService {
       .range((page - 1) * pageSize, page * pageSize - 1);
 
     if (error) {
-      console.error('Error getting items:', error);
+      logError('获取剪贴板项目失败', 'ClipboardService', error);
       throw error;
     }
 
@@ -112,7 +113,7 @@ class ClipboardService {
       .range((page - 1) * pageSize, page * pageSize - 1);
 
     if (error) {
-      console.error('Error searching items:', error);
+      logError('搜索剪贴板项目失败', 'ClipboardService', error);
       throw error;
     }
 
@@ -138,7 +139,7 @@ class ClipboardService {
       .single();
 
     if (error) {
-      console.error('Error creating item:', error);
+      logError('创建剪贴板项目失败', 'ClipboardService', error);
       throw error;
     }
 
@@ -154,7 +155,7 @@ class ClipboardService {
       .single();
 
     if (error) {
-      console.error('Error updating item:', error);
+      logError('更新剪贴板项目失败', 'ClipboardService', error);
       throw error;
     }
 
@@ -168,7 +169,7 @@ class ClipboardService {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting item:', error);
+      logError('删除剪贴板项目失败', 'ClipboardService', error);
       throw error;
     }
   }
@@ -180,7 +181,7 @@ class ClipboardService {
       .eq('category_id', categoryId);
 
     if (error) {
-      console.error('Error deleting items by category:', error);
+      logError('批量删除剪贴板项目失败', 'ClipboardService', error);
       throw error;
     }
   }

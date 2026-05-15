@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import type { Category, Bookmark } from '../types/website'
-import { logError } from './loggerService'
+import { logError, logInfo } from './loggerService'
 
 // 简单的缓存实现
 class CacheService {
@@ -243,6 +243,7 @@ export const websiteService = {
       // 清除收藏相关缓存
       cacheService.clearByPrefix(`favorites_user_${user.id}`)
 
+      logInfo(`添加收藏成功: 书签ID=${bookmarkId}`, 'WebsiteService')
       return true
     } catch (error) {
       logError('添加收藏失败', 'WebsiteService', error as Error)
@@ -272,6 +273,7 @@ export const websiteService = {
       // 清除收藏相关缓存
       cacheService.clearByPrefix(`favorites_user_${user.id}`)
       
+      logInfo(`移除收藏成功: 书签ID=${bookmarkId}`, 'WebsiteService')
       return true
     } catch (error) {
       console.error('移除收藏失败:', error)

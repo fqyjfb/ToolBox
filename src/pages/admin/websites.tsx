@@ -10,7 +10,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Pagination from '../../components/ui/Pagination';
 import ContextMenu from '../../components/ui/ContextMenu';
 import Switch from '../../components/ui/Switch';
-import CategoryManager, { CategoryItem } from '../../components/CategoryManager';
+import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager';
 import linkIcon from '../../assets/react.svg';
 
 const isForeignDomain = (url: string): boolean => {
