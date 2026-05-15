@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Star, StarOff, Menu, Globe, ChevronDown } from 'lucide-react'
+import { Star, StarOff, Menu, Globe, ChevronDown, Search } from 'lucide-react'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { websiteService } from '../../services/WebsiteService'
 import { supabase } from '../../services/supabase'
@@ -726,284 +726,303 @@ const NavPage: React.FC = () => {
       {/* 内容区域 */}
       <div className="content">
         <div>
-          {/* 我的收藏内容 */}
-          {activeFavorites && (
-            <div>
-              {isLoadingFavorites ? (
-                <div className="flex items-center justify-center py-8">
-                  <LoadingSpinner size="md" />
-                </div>
-              ) : favorites.length > 0 ? (
-                <div>
-                  <div className="subcategory-nav flex flex-wrap gap-2 mb-4">
-                    <button
-                      onClick={() => setShowFavorites(true)}
-                      className="px-3 py-1 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md backdrop-blur-sm"
-                    >
-                      全部收藏
-                    </button>
+          {/* 搜索结果 - 搜索激活时优先显示 */}
+          {isSearchActive && searchResults.length > 0 ? (
+            <div className="search-results-container">
+              <div className="search-section-header flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="search-icon-wrapper">
+                    <Search className="w-5 h-5 text-white" />
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                    {favorites.map((bookmark) => (
-                      <div
-                        key={bookmark.id}
-                        className="bookmark-card-wrapper"
-                        onMouseEnter={(e) => {
-                          if (bookmark.description) {
-                            const rect = e.currentTarget.getBoundingClientRect()
-                            setHoveredBookmark({ 
-                              id: bookmark.id, 
-                              x: rect.left + rect.width / 2, 
-                              y: rect.bottom + 8 
-                            })
-                          }
-                        }}
-                        onMouseLeave={() => setHoveredBookmark(null)}
-                      >
-                        <div
-                          className="bookmark-card"
-                          onClick={() => navigateToBookmark(bookmark.url)}
-                        >
-                          <div className="card-content">
-                            <div className="icon-category-container">
-                              {bookmark.ico_url ? (
-                                <img
-                                  src={proxyImageUrl(bookmark.ico_url)}
-                                  alt={bookmark.title}
-                                  className="bookmark-icon"
-                                  onError={(e) => handleImageError(e, bookmark.ico_url || '')}
-                                />
-                              ) : (
-                                <div className="bookmark-icon flex items-center justify-center">
-                                  <Globe className="w-4 h-4 text-gray-500" />
-                                </div>
-                              )}
-                              {bookmark.category && (
-                                <div className="bookmark-meta">
-                                  <span className="category-badge">{bookmark.category.name}</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="bookmark-info">
-                              <div className="title-row">
-                                <h4 className="bookmark-name">{bookmark.title}</h4>
-                                <button
-                                  className="favorite-btn active"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
-                                  }}
-                                >
-                                  <Star className="favorite-icon" />
-                                </button>
-                              </div>
-                              {bookmark.description && (
-                                <p className="bookmark-desc">{bookmark.description}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">搜索结果</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">找到了 {searchResults.length} 个与 "{searchQuery}" 相关的网址</p>
                   </div>
                 </div>
-              ) : (
-                <div className="text-center py-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg">
-                  <p className="text-gray-500 dark:text-gray-400">暂无收藏</p>
-                  <button
-                    onClick={() => setShowFavorites(false)}
-                    className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
-                  >
-                    去发现更多
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* 分类内容 */}
-          {!activeFavorites && activeMainCategoryId && (
-            <div>
-              {/* 子分类导航 */}
-              <div className="subcategory-nav flex flex-wrap gap-2 mb-4" ref={subCategoriesContainerRef}>
-                {getSubCategories(activeMainCategoryId).filter((subCategory) => !overflowSubCategories.some(c => c.id === subCategory.id)).map((subCategory) => (
-                  <button
-                    key={subCategory.id}
-                    onClick={() => switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
-                      getActiveSubCategoryId(activeMainCategoryId) === subCategory.id
-                        ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md backdrop-blur-sm'
-                        : 'bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm'
-                    }`}
-                  >
-                    {subCategory.name}
-                  </button>
-                ))}
-                
-                {/* 子分类下拉按钮 */}
-                {overflowSubCategories.length > 0 && (
-                  <button
-                    ref={subCategoryDropdownButtonRef}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setShowMoreSubCategories(!showMoreSubCategories)
-                    }}
-                    className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm transition-all duration-300 flex items-center gap-1"
-                  >
-                    <span>更多</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                )}
+
               </div>
               
-              {/* 网址卡片 */}
-              {getCategoryBookmarks(activeMainCategoryId).length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                  {getCategoryBookmarks(activeMainCategoryId).map((bookmark) => (
+              <div className="search-results-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                {searchResults.map((bookmark, index) => (
+                  <div
+                    key={bookmark.id}
+                    className="bookmark-card-wrapper search-result-card"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                    onMouseEnter={(e) => {
+                      if (bookmark.description) {
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        setHoveredBookmark({ 
+                          id: bookmark.id, 
+                          x: rect.left + rect.width / 2, 
+                          y: rect.bottom + 8 
+                        })
+                      }
+                    }}
+                    onMouseLeave={() => setHoveredBookmark(null)}
+                  >
                     <div
-                      key={bookmark.id}
-                      className="bookmark-card-wrapper"
-                      onMouseEnter={(e) => {
-                        if (bookmark.description) {
-                          const rect = e.currentTarget.getBoundingClientRect()
-                          setHoveredBookmark({ 
-                            id: bookmark.id, 
-                            x: rect.left + rect.width / 2, 
-                            y: rect.bottom + 8 
-                          })
-                        }
-                      }}
-                      onMouseLeave={() => setHoveredBookmark(null)}
+                      className="bookmark-card search-highlight"
+                      onClick={() => navigateToBookmark(bookmark.url)}
                     >
-                      <div
-                        className="bookmark-card"
-                        onClick={() => navigateToBookmark(bookmark.url)}
-                      >
-                        <div className="card-content">
-                          <div className="icon-category-container">
-                            {bookmark.ico_url ? (
-                              <img
-                                src={proxyImageUrl(bookmark.ico_url)}
-                                alt={bookmark.title}
-                                className="bookmark-icon"
-                                onError={(e) => handleImageError(e, bookmark.ico_url || '')}
-                              />
-                            ) : (
-                              <div className="bookmark-icon flex items-center justify-center">
-                                <Globe className="w-4 h-4 text-gray-500" />
-                              </div>
-                            )}
-                            {bookmark.category && (
-                              <div className="bookmark-meta">
-                                <span className="category-badge">{bookmark.category.name}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="bookmark-info">
-                            <div className="title-row">
-                              <h4 className="bookmark-name">{bookmark.title}</h4>
-                              <button
-                                className={`favorite-btn ${bookmark.is_favorite ? 'active' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
-                                }}
-                              >
-                                {bookmark.is_favorite ? <Star className="favorite-icon" /> : <StarOff className="favorite-icon" />}
-                              </button>
+                      <div className="card-content">
+                        <div className="icon-category-container">
+                          {bookmark.ico_url ? (
+                            <img
+                              src={proxyImageUrl(bookmark.ico_url)}
+                              alt={bookmark.title}
+                              className="bookmark-icon"
+                              onError={(e) => handleImageError(e, bookmark.ico_url || '')}
+                            />
+                          ) : (
+                            <div className="bookmark-icon flex items-center justify-center">
+                              <Globe className="w-4 h-4 text-gray-500" />
                             </div>
-                            {bookmark.description && (
-                              <p className="bookmark-desc">{bookmark.description}</p>
-                            )}
+                          )}
+                          {bookmark.category && (
+                            <div className="bookmark-meta">
+                              <span className="category-badge">{bookmark.category.name}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="bookmark-info">
+                          <div className="title-row">
+                            <h4 className="bookmark-name">{bookmark.title}</h4>
+                            <button
+                              className={`favorite-btn ${bookmark.is_favorite ? 'active' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
+                              }}
+                            >
+                              {bookmark.is_favorite ? <Star className="favorite-icon" /> : <StarOff className="favorite-icon" />}
+                            </button>
                           </div>
+                          {bookmark.description && (
+                            <p className="bookmark-desc">{bookmark.description}</p>
+                          )}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 bg-gray-50/80 dark:bg-gray-700/50 backdrop-blur-sm rounded-lg">
-                  <p className="text-gray-500">该分类下暂无网址</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : searchResults.length === 0 && isSearchActive ? (
+            <div className="search-empty-state">
+              <div className="empty-icon">
+                <Search className="w-12 h-12 text-gray-300 dark:text-gray-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">未找到相关结果</h3>
+              <p className="text-gray-500 dark:text-gray-400 mt-2">试试其他关键词或浏览分类发现更多网址</p>
+            </div>
+          ) : (
+            <>
+              {/* 我的收藏内容 */}
+              {activeFavorites && (
+                <div>
+                  {isLoadingFavorites ? (
+                    <div className="flex items-center justify-center py-8">
+                      <LoadingSpinner size="md" />
+                    </div>
+                  ) : favorites.length > 0 ? (
+                    <div>
+                      <div className="subcategory-nav flex flex-wrap gap-2 mb-4">
+                        <button
+                          onClick={() => setShowFavorites(true)}
+                          className="px-3 py-1 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md backdrop-blur-sm"
+                        >
+                          全部收藏
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                        {favorites.map((bookmark) => (
+                          <div
+                            key={bookmark.id}
+                            className="bookmark-card-wrapper"
+                            onMouseEnter={(e) => {
+                              if (bookmark.description) {
+                                const rect = e.currentTarget.getBoundingClientRect()
+                                setHoveredBookmark({ 
+                                  id: bookmark.id, 
+                                  x: rect.left + rect.width / 2, 
+                                  y: rect.bottom + 8 
+                                })
+                              }
+                            }}
+                            onMouseLeave={() => setHoveredBookmark(null)}
+                          >
+                            <div
+                              className="bookmark-card"
+                              onClick={() => navigateToBookmark(bookmark.url)}
+                            >
+                              <div className="card-content">
+                                <div className="icon-category-container">
+                                  {bookmark.ico_url ? (
+                                    <img
+                                      src={proxyImageUrl(bookmark.ico_url)}
+                                      alt={bookmark.title}
+                                      className="bookmark-icon"
+                                      onError={(e) => handleImageError(e, bookmark.ico_url || '')}
+                                    />
+                                  ) : (
+                                    <div className="bookmark-icon flex items-center justify-center">
+                                      <Globe className="w-4 h-4 text-gray-500" />
+                                    </div>
+                                  )}
+                                  {bookmark.category && (
+                                    <div className="bookmark-meta">
+                                      <span className="category-badge">{bookmark.category.name}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="bookmark-info">
+                                  <div className="title-row">
+                                    <h4 className="bookmark-name">{bookmark.title}</h4>
+                                    <button
+                                      className="favorite-btn active"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
+                                      }}
+                                    >
+                                      <Star className="favorite-icon" />
+                                    </button>
+                                  </div>
+                                  {bookmark.description && (
+                                    <p className="bookmark-desc">{bookmark.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg">
+                      <p className="text-gray-500 dark:text-gray-400">暂无收藏</p>
+                      <button
+                        onClick={() => setShowFavorites(false)}
+                        className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                      >
+                        去发现更多
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+              
+              {/* 分类内容 */}
+              {!activeFavorites && activeMainCategoryId && (
+                <div>
+                  {/* 子分类导航 */}
+                  <div className="subcategory-nav flex flex-wrap gap-2 mb-4" ref={subCategoriesContainerRef}>
+                    {getSubCategories(activeMainCategoryId).filter((subCategory) => !overflowSubCategories.some(c => c.id === subCategory.id)).map((subCategory) => (
+                      <button
+                        key={subCategory.id}
+                        onClick={() => switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
+                          getActiveSubCategoryId(activeMainCategoryId) === subCategory.id
+                            ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md backdrop-blur-sm'
+                            : 'bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm'
+                        }`}
+                      >
+                        {subCategory.name}
+                      </button>
+                    ))}
+                    
+                    {/* 子分类下拉按钮 */}
+                    {overflowSubCategories.length > 0 && (
+                      <button
+                        ref={subCategoryDropdownButtonRef}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowMoreSubCategories(!showMoreSubCategories)
+                        }}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm transition-all duration-300 flex items-center gap-1"
+                      >
+                        <span>更多</span>
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* 网址卡片 */}
+                  {getCategoryBookmarks(activeMainCategoryId).length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                      {getCategoryBookmarks(activeMainCategoryId).map((bookmark) => (
+                        <div
+                          key={bookmark.id}
+                          className="bookmark-card-wrapper"
+                          onMouseEnter={(e) => {
+                            if (bookmark.description) {
+                              const rect = e.currentTarget.getBoundingClientRect()
+                              setHoveredBookmark({ 
+                                id: bookmark.id, 
+                                x: rect.left + rect.width / 2, 
+                                y: rect.bottom + 8 
+                              })
+                            }
+                          }}
+                          onMouseLeave={() => setHoveredBookmark(null)}
+                        >
+                          <div
+                            className="bookmark-card"
+                            onClick={() => navigateToBookmark(bookmark.url)}
+                          >
+                            <div className="card-content">
+                              <div className="icon-category-container">
+                                {bookmark.ico_url ? (
+                                  <img
+                                    src={proxyImageUrl(bookmark.ico_url)}
+                                    alt={bookmark.title}
+                                    className="bookmark-icon"
+                                    onError={(e) => handleImageError(e, bookmark.ico_url || '')}
+                                  />
+                                ) : (
+                                  <div className="bookmark-icon flex items-center justify-center">
+                                    <Globe className="w-4 h-4 text-gray-500" />
+                                  </div>
+                                )}
+                                {bookmark.category && (
+                                  <div className="bookmark-meta">
+                                    <span className="category-badge">{bookmark.category.name}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="bookmark-info">
+                                <div className="title-row">
+                                  <h4 className="bookmark-name">{bookmark.title}</h4>
+                                  <button
+                                    className={`favorite-btn ${bookmark.is_favorite ? 'active' : ''}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
+                                    }}
+                                  >
+                                    {bookmark.is_favorite ? <Star className="favorite-icon" /> : <StarOff className="favorite-icon" />}
+                                  </button>
+                                </div>
+                                {bookmark.description && (
+                                  <p className="bookmark-desc">{bookmark.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-gray-50/80 dark:bg-gray-700/50 backdrop-blur-sm rounded-lg">
+                      <p className="text-gray-500">该分类下暂无网址</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
-      
-      {/* 搜索结果 */}
-      {searchResults.length > 0 && (
-        <div className="search-section">
-          <div className="section-header mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">搜索结果</h2>
-            <span className="text-gray-500 dark:text-gray-400">{searchResults.length} 个结果</span>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
-            {searchResults.map((bookmark) => (
-              <div
-                key={bookmark.id}
-                className="bookmark-card-wrapper"
-                onMouseEnter={(e) => {
-                  if (bookmark.description) {
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    setHoveredBookmark({ 
-                      id: bookmark.id, 
-                      x: rect.left + rect.width / 2, 
-                      y: rect.bottom + 8 
-                    })
-                  }
-                }}
-                onMouseLeave={() => setHoveredBookmark(null)}
-              >
-                <div
-                  className="bookmark-card"
-                  onClick={() => navigateToBookmark(bookmark.url)}
-                >
-                  <div className="card-content">
-                    <div className="icon-category-container">
-                      {bookmark.ico_url ? (
-                        <img
-                          src={proxyImageUrl(bookmark.ico_url)}
-                          alt={bookmark.title}
-                          className="bookmark-icon"
-                          onError={(e) => handleImageError(e, bookmark.ico_url || '')}
-                        />
-                      ) : (
-                        <div className="bookmark-icon flex items-center justify-center">
-                          <Globe className="w-4 h-4 text-gray-500" />
-                        </div>
-                      )}
-                      {bookmark.category && (
-                        <div className="bookmark-meta">
-                          <span className="category-badge">{bookmark.category.name}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="bookmark-info">
-                      <div className="title-row">
-                        <h4 className="bookmark-name">{bookmark.title}</h4>
-                        <button
-                          className={`favorite-btn ${bookmark.is_favorite ? 'active' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
-                          }}
-                        >
-                          {bookmark.is_favorite ? <Star className="favorite-icon" /> : <StarOff className="favorite-icon" />}
-                        </button>
-                      </div>
-                      {bookmark.description && (
-                        <p className="bookmark-desc">{bookmark.description}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       
       {/* 移动端分类导航按钮 */}
       <div className="md:hidden p-4 border-b border-gray-200/50 dark:border-gray-700/50">
