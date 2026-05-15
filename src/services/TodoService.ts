@@ -9,13 +9,17 @@ interface ServiceResponse<T> {
 }
 
 const categoryService = {
-  async getCategories(userId: string): Promise<ServiceResponse<TodoCategory[]>> {
+  async getCategories(userId: string, signal?: AbortSignal): Promise<ServiceResponse<TodoCategory[]>> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('todo_categories')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error } = await query;
       
       if (error) {
         return { success: false, error: error.message };
@@ -101,13 +105,15 @@ const categoryService = {
 };
 
 const todoService = {
-  async getTodos(userId: string, filter?: { category_id?: string }, page: number = 1, pageSize: number = 10): Promise<ServiceResponse<{ data: Todo[]; total: number }>> {
+  async getTodos(userId: string, filter?: { category_id?: string }, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ServiceResponse<{ data: Todo[]; total: number }>> {
     try {
       let query = supabase
         .from('todos')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
+      
+      if (signal) query = query.abortSignal(signal);
       
       if (filter?.category_id) {
         query = query.eq('category_id', filter.category_id);
@@ -230,15 +236,19 @@ const todoService = {
     }
   },
 
-  async searchTodos(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<ServiceResponse<{ data: Todo[]; total: number }>> {
+  async searchTodos(userId: string, keyword: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ServiceResponse<{ data: Todo[]; total: number }>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('todos')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .or(`title.ilike.%${keyword}%,description.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         return { success: false, error: error.message };

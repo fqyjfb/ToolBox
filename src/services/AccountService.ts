@@ -3,14 +3,20 @@ import { Shop, ShopRequest, SocialAccount, SocialAccountRequest, Email, EmailReq
 import { logError, logInfo } from './loggerService';
 
 export const accountService = {
-  async getShops(userId: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Shop>> {
+  async getShops(userId: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Shop>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('shops')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) {
+        query = query.abortSignal(signal);
+      }
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('获取店铺列表失败', 'AccountService', error as Error);
@@ -135,15 +141,19 @@ export const accountService = {
     }
   },
 
-  async searchShops(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Shop>> {
+  async searchShops(userId: string, keyword: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Shop>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('shops')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .or(`shop_name.ilike.%${keyword}%,platform.ilike.%${keyword}%,account.ilike.%${keyword}%,contact_person.ilike.%${keyword}%,email.ilike.%${keyword}%,phone.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('搜索店铺失败', 'AccountService', error as Error);
@@ -164,14 +174,18 @@ export const accountService = {
     }
   },
 
-  async getSocialAccounts(userId: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<SocialAccount>> {
+  async getSocialAccounts(userId: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<SocialAccount>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('social_accounts')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('获取社交账号列表失败', 'AccountService', error as Error);
@@ -281,15 +295,19 @@ export const accountService = {
     }
   },
 
-  async searchSocialAccounts(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<SocialAccount>> {
+  async searchSocialAccounts(userId: string, keyword: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<SocialAccount>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('social_accounts')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .or(`platform.ilike.%${keyword}%,account.ilike.%${keyword}%,user_name.ilike.%${keyword}%,email.ilike.%${keyword}%,phone.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('搜索社交账号失败', 'AccountService', error as Error);
@@ -309,14 +327,18 @@ export const accountService = {
     }
   },
 
-  async getEmails(userId: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Email>> {
+  async getEmails(userId: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Email>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('emails')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('获取邮箱列表失败', 'AccountService', error as Error);
@@ -404,15 +426,19 @@ export const accountService = {
     }
   },
 
-  async searchEmails(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Email>> {
+  async searchEmails(userId: string, keyword: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Email>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('emails')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .or(`email.ilike.%${keyword}%,phone.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('搜索邮箱失败', 'AccountService', error as Error);
@@ -426,14 +452,18 @@ export const accountService = {
     }
   },
 
-  async getPhones(userId: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Phone>> {
+  async getPhones(userId: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Phone>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('phones')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('获取电话列表失败', 'AccountService', error as Error);
@@ -523,15 +553,19 @@ export const accountService = {
     }
   },
 
-  async searchPhones(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Phone>> {
+  async searchPhones(userId: string, keyword: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Phone>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('phones')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .or(`phone_number.ilike.%${keyword}%,owner.ilike.%${keyword}%,phone_operator.ilike.%${keyword}%,phone_region.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('搜索电话失败', 'AccountService', error as Error);
@@ -545,14 +579,18 @@ export const accountService = {
     }
   },
 
-  async getCompanies(userId: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Company>> {
+  async getCompanies(userId: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Company>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('companies')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('获取公司列表失败', 'AccountService', error as Error);
@@ -656,15 +694,19 @@ export const accountService = {
     }
   },
 
-  async searchCompanies(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Company>> {
+  async searchCompanies(userId: string, keyword: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Company>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('companies')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .or(`name.ilike.%${keyword}%,unified_social_credit_code.ilike.%${keyword}%,legal_person.ilike.%${keyword}%,address.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('搜索公司失败', 'AccountService', error as Error);
@@ -684,14 +726,18 @@ export const accountService = {
     }
   },
 
-  async getCredentials(userId: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Credential>> {
+  async getCredentials(userId: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Credential>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('credentials')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('获取证件列表失败', 'AccountService', error as Error);
@@ -801,15 +847,19 @@ export const accountService = {
     }
   },
 
-  async searchCredentials(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<Credential>> {
+  async searchCredentials(userId: string, keyword: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<Credential>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('credentials')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .or(`certificate_name.ilike.%${keyword}%,id_card_number.ilike.%${keyword}%,bank_name.ilike.%${keyword}%,bank_account.ilike.%${keyword}%,phone.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('搜索证件失败', 'AccountService', error as Error);
@@ -829,14 +879,18 @@ export const accountService = {
     }
   },
 
-  async getGeneralAccounts(userId: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<GeneralAccount>> {
+  async getGeneralAccounts(userId: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<GeneralAccount>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('general_accounts')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('获取通用账号列表失败', 'AccountService', error as Error);
@@ -948,15 +1002,19 @@ export const accountService = {
     }
   },
 
-  async searchGeneralAccounts(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<ListResponse<GeneralAccount>> {
+  async searchGeneralAccounts(userId: string, keyword: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<ListResponse<GeneralAccount>> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('general_accounts')
         .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .or(`platform_name.ilike.%${keyword}%,website.ilike.%${keyword}%,account.ilike.%${keyword}%,email.ilike.%${keyword}%,phone.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('搜索通用账号失败', 'AccountService', error as Error);

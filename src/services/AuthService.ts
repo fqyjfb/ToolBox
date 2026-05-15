@@ -1,6 +1,6 @@
 import { AuthResponse, LoginRequest, Admin, RegisterRequest } from '../types/auth'
 import { supabase } from './supabase'
-import { logError } from './loggerService'
+import { logError, logInfo } from './loggerService'
 
 export const authService = {
   // 登录
@@ -80,6 +80,8 @@ export const authService = {
 
             // 保存到localStorage
             localStorage.setItem('admin', JSON.stringify(admin))
+
+            logInfo(`用户登录成功: ${data.user.email}`, 'AuthService')
 
             return {
               success: true,
@@ -279,6 +281,8 @@ export const authService = {
 
       // 无论signOut是否成功，都清除localStorage
       localStorage.removeItem('admin')
+      
+      logInfo('用户登出成功', 'AuthService')
       return { success: true }
     } catch {
       // 不返回失败，确保登出流程能够完成
@@ -381,6 +385,8 @@ export const authService = {
         }
 
         localStorage.setItem('admin', JSON.stringify(admin))
+
+        logInfo(`用户注册成功: ${userData.email}`, 'AuthService')
 
         return {
           success: true,

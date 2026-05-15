@@ -297,6 +297,7 @@ declare interface Window {
       }>;
       clearLogs: () => Promise<boolean>;
       exportLogs: () => Promise<string>;
+      importLogs: (jsonString: string) => Promise<boolean>;
       getStats: () => Promise<{ total: number; error: number; warn: number; info: number; debug: number }>;
     };
     onDownloadProgress: (callback: (progress: number) => void) => void;

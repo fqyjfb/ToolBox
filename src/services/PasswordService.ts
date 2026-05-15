@@ -1,16 +1,20 @@
 import { supabase } from './supabase';
 import { Password, PasswordCategory, PasswordCategoryRequest, PasswordRequest } from '../types/password';
 import { encrypt } from '../utils/crypto';
-import { logError } from './loggerService';
+import { logError, logInfo } from './loggerService';
 
 export const passwordService = {
-  async getCategories(userId: string): Promise<PasswordCategory[]> {
+  async getCategories(userId: string, signal?: AbortSignal): Promise<PasswordCategory[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('password_categories')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: true });
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error } = await query;
 
       if (error) {
         logError('获取密码分类失败', 'PasswordService', error as Error);
@@ -50,6 +54,7 @@ export const passwordService = {
         throw error;
       }
 
+      logInfo(`创建密码分类成功: ${request.name}`, 'PasswordService');
       return data;
     } catch (error) {
       logError('创建密码分类失败', 'PasswordService', error as Error);
@@ -75,6 +80,7 @@ export const passwordService = {
         throw error;
       }
 
+      logInfo(`更新密码分类成功: ID=${categoryId}`, 'PasswordService');
       return data;
     } catch (error) {
       logError('更新密码分类失败', 'PasswordService', error as Error);
@@ -93,6 +99,8 @@ export const passwordService = {
         logError('删除密码分类失败', 'PasswordService', error as Error);
         throw error;
       }
+
+      logInfo(`删除密码分类成功: ID=${categoryId}`, 'PasswordService');
     } catch (error) {
       logError('删除密码分类失败', 'PasswordService', error as Error);
       throw error;
@@ -103,7 +111,8 @@ export const passwordService = {
     userId: string,
     categoryId?: string | string[],
     page: number = 1,
-    pageSize: number = 10
+    pageSize: number = 10,
+    signal?: AbortSignal
   ): Promise<{ list: Password[]; total: number }> {
     try {
       let query = supabase
@@ -111,6 +120,8 @@ export const passwordService = {
         .select('*, password_categories(name)', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
+      
+      if (signal) query = query.abortSignal(signal);
 
       if (categoryId) {
         if (Array.isArray(categoryId)) {
@@ -185,6 +196,7 @@ export const passwordService = {
         throw error;
       }
 
+      logInfo(`创建密码成功: ${request.name}`, 'PasswordService');
       return {
         id: data.id,
         user_id: data.user_id,
@@ -238,6 +250,7 @@ export const passwordService = {
         throw error;
       }
 
+      logInfo(`更新密码成功: ID=${passwordId}`, 'PasswordService');
       return {
         id: data.id,
         user_id: data.user_id,
@@ -273,21 +286,27 @@ export const passwordService = {
         logError('删除密码失败', 'PasswordService', error as Error);
         throw error;
       }
+
+      logInfo(`删除密码成功: ID=${passwordId}`, 'PasswordService');
     } catch (error) {
       logError('删除密码失败', 'PasswordService', error as Error);
       throw error;
     }
   },
 
-  async searchPasswords(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<{ list: Password[]; total: number }> {
+  async searchPasswords(userId: string, keyword: string, page: number = 1, pageSize: number = 10, signal?: AbortSignal): Promise<{ list: Password[]; total: number }> {
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('passwords')
         .select('*, password_categories(name)', { count: 'exact' })
         .eq('user_id', userId)
         .or(`name.ilike.%${keyword}%,url.ilike.%${keyword}%,username.ilike.%${keyword}%,email.ilike.%${keyword}%,phone.ilike.%${keyword}%`)
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (signal) query = query.abortSignal(signal);
+      
+      const { data, error, count } = await query;
 
       if (error) {
         logError('搜索密码失败', 'PasswordService', error as Error);

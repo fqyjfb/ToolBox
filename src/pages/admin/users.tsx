@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Edit, Lock, Search, ArrowUpDown, X } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { userService } from '../../services/UserService'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import Pagination from '../../components/ui/Pagination'
@@ -23,11 +24,8 @@ interface UserItem {
 const UserListPage: React.FC = () => {
   const navigate = useNavigate()
   const { addToast } = useToastStore()
-  const [users, setUsers] = useState<UserItem[]>([])
-  const [total, setTotal] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [isLoading, setIsLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
@@ -36,6 +34,27 @@ const UserListPage: React.FC = () => {
   
   const { contextMenu, handleContextMenu, handleClose, handleItemClick } = useContextMenu<UserItem>()
   
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['admin-users', currentPage, pageSize, searchQuery, sortBy, sortOrder, memberLevelFilter, statusFilter],
+    queryFn: () => userService.getUserList(
+      currentPage,
+      pageSize,
+      searchQuery,
+      sortBy,
+      sortOrder,
+      memberLevelFilter,
+      statusFilter
+    ),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
+  if (error) {
+    addToast({ type: 'error', message: '获取用户列表失败' })
+  }
+
+  const users = data?.success ? data.data.list : []
+  const total = data?.success ? data.data.total : 0
+
   const menuItems = [
     {
       id: 'edit',
@@ -50,52 +69,19 @@ const UserListPage: React.FC = () => {
       label: '重置密码',
       icon: <Lock size={14} />,
       onClick: async (user: UserItem) => {
-        setIsLoading(true)
         const result = await userService.resetPassword(user.id)
         if (result.success) {
           addToast({ type: 'success', message: result.message })
         } else {
           addToast({ type: 'error', message: result.message })
         }
-        setIsLoading(false)
       },
     },
   ]
 
-  const fetchUsers = useCallback(async (
-    pageNum = currentPage,
-    pageSizeNum = pageSize,
-    filters: { memberLevel?: string; status?: string; search?: string } = {}
-  ) => {
-    setIsLoading(true)
-    const result = await userService.getUserList(
-      pageNum,
-      pageSizeNum,
-      filters.search ?? searchQuery,
-      sortBy,
-      sortOrder,
-      filters.memberLevel ?? memberLevelFilter,
-      filters.status ?? statusFilter
-    )
-    if (result.success) {
-      setTimeout(() => {
-        setUsers(result.data.list)
-        setTotal(result.data.total)
-        setCurrentPage(result.data.page)
-      }, 0)
-    } else {
-      addToast({ type: 'error', message: result.message || '获取用户列表失败' })
-    }
-    setIsLoading(false)
-  }, [currentPage, pageSize, searchQuery, sortBy, sortOrder, memberLevelFilter, statusFilter, addToast]);
-
-  useEffect(() => {
-    setTimeout(() => fetchUsers(), 0)
-  }, [fetchUsers])
-
   const handleSearchSubmit = () => {
     setCurrentPage(1)
-    fetchUsers(1, pageSize)
+    refetch()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -109,18 +95,15 @@ const UserListPage: React.FC = () => {
     setSortBy(field)
     setSortOrder(newSortOrder)
     setCurrentPage(1)
-    fetchUsers(1, pageSize)
   }
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage)
-    fetchUsers(newPage, pageSize)
   }
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize)
     setCurrentPage(1)
-    fetchUsers(1, newPageSize)
   }
 
   const handleResetFilters = () => {
@@ -128,16 +111,12 @@ const UserListPage: React.FC = () => {
     setMemberLevelFilter('')
     setStatusFilter('')
     setCurrentPage(1)
-    fetchUsers(1, pageSize)
   }
 
   const handleClearSearch = () => {
     setSearchQuery('')
     setCurrentPage(1)
-    fetchUsers(1, pageSize, { search: '' })
   }
-
-  
 
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-gray-400" />
@@ -169,7 +148,6 @@ const UserListPage: React.FC = () => {
                     const newValue = e.target.value
                     setMemberLevelFilter(newValue)
                     setCurrentPage(1)
-                    fetchUsers(1, pageSize, { memberLevel: newValue })
                   }}
                   className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
                 >
@@ -184,7 +162,6 @@ const UserListPage: React.FC = () => {
                     const newValue = e.target.value
                     setStatusFilter(newValue)
                     setCurrentPage(1)
-                    fetchUsers(1, pageSize, { status: newValue })
                   }}
                   className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
                 >

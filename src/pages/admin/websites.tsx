@@ -1,121 +1,59 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, Search, ExternalLink, X, List, Check } from 'lucide-react';
-import { supabase } from '../../services/supabase';
-import { useAuthStore } from '../../store/AuthStore';
-import { useToastStore } from '../../store/toastStore';
-import { Category, Bookmark } from '../../types/website';
-import { openUrl } from '../../services/browserService';
-import Modal from '../../components/ui/Modal';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import Pagination from '../../components/ui/Pagination';
-import ContextMenu from '../../components/ui/ContextMenu';
-import Switch from '../../components/ui/Switch';
-import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager';
-import linkIcon from '../../assets/react.svg';
+import React, { useState } from 'react'
+import { Plus, Edit, Trash2, Search, ExternalLink, X, List, Check } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '../../store/AuthStore'
+import { useToastStore } from '../../store/toastStore'
+import { Category, Bookmark } from '../../types/website'
+import { openUrl } from '../../services/browserService'
+import { websiteService, buildCategoryTreeFromData } from '../../services/WebsiteService'
+import Modal from '../../components/ui/Modal'
+import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import Pagination from '../../components/ui/Pagination'
+import ContextMenu from '../../components/ui/ContextMenu'
+import Switch from '../../components/ui/Switch'
+import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager'
+import CachedIcon from '../../components/ui/CachedIcon'
+import linkIcon from '../../assets/react.svg'
 
 const isForeignDomain = (url: string): boolean => {
   try {
-    const hostname = new URL(url).hostname.toLowerCase();
+    const hostname = new URL(url).hostname.toLowerCase()
     const domesticDomains = [
       '.cn', '.com.cn', '.net.cn', '.org.cn', '.gov.cn', '.edu.cn',
       '.hk', '.macau', '.tw'
-    ];
-    return !domesticDomains.some(suffix => hostname.endsWith(suffix));
+    ]
+    return !domesticDomains.some(suffix => hostname.endsWith(suffix))
   } catch {
-    return true;
+    return true
   }
-};
+}
 
 const proxyImageUrl = (url: string): string => {
-  const raw = (url || '').trim();
-  if (!raw) return linkIcon;
-  if (/^(data|blob):/i.test(raw)) return raw;
+  const raw = (url || '').trim()
+  if (!raw) return linkIcon
+  if (/^(data|blob):/i.test(raw)) return raw
   if (isForeignDomain(raw)) {
     try {
-      return `https://images.weserv.nl/?url=${encodeURIComponent(raw)}`;
+      return `https://images.weserv.nl/?url=${encodeURIComponent(raw)}`
     } catch {
-      return raw;
+      return raw
     }
   }
-  return raw;
-};
-
-const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, originalUrl: string) => {
-  const target = e.target as HTMLImageElement;
-  if (target.src === originalUrl) {
-    try {
-      const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(originalUrl)}`;
-      target.src = proxyUrl;
-    } catch {
-      try {
-        target.src = `https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(originalUrl)}`;
-      } catch {
-        target.src = linkIcon;
-      }
-    }
-  } else if (target.src.includes('images.weserv.nl')) {
-    try {
-      target.src = `https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(originalUrl)}`;
-    } catch {
-      target.src = linkIcon;
-    }
-  } else {
-    target.src = linkIcon;
-  }
-};
-
-const buildCategoryTree = (categories: CategoryItem[]): Category[] => {
-  const categoryMap = new Map<string, Category>();
-  
-  categories.forEach(category => {
-    categoryMap.set(category.id, {
-      id: category.id,
-      name: category.name,
-      parent_id: category.parent_id,
-      order: category.order,
-      children: [],
-      created_at: category.created_at,
-      updated_at: category.updated_at
-    });
-  });
-  
-  const rootCategories: Category[] = [];
-  categories.forEach(category => {
-    const categoryNode = categoryMap.get(category.id);
-    if (categoryNode) {
-      if (!category.parent_id) {
-        rootCategories.push(categoryNode);
-      } else {
-        const parent = categoryMap.get(category.parent_id);
-        if (parent) {
-          parent.children.push(categoryNode);
-        }
-      }
-    }
-  });
-  
-  const sortCategories = (cats: Category[]) => {
-    cats.sort((a, b) => (a.order || 0) - (b.order || 0));
-    cats.forEach(cat => sortCategories(cat.children));
-  };
-  
-  sortCategories(rootCategories);
-  return rootCategories;
-};
+  return raw
+}
 
 const AdminWebsitesPage: React.FC = () => {
-  const { isAuthenticated, getCurrentAdmin } = useAuthStore();
-  const addToast = useToastStore((state) => state.addToast);
-  const [filteredBookmarks, setFilteredBookmarks] = useState<Bookmark[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { isAuthenticated, getCurrentAdmin } = useAuthStore()
+  const addToast = useToastStore((state) => state.addToast)
+  const queryClient = useQueryClient()
+
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   
   // 网址相关状态
-  const [isAddBookmarkModalOpen, setIsAddBookmarkModalOpen] = useState(false);
-  const [isEditBookmarkModalOpen, setIsEditBookmarkModalOpen] = useState(false);
-  const [currentBookmark, setCurrentBookmark] = useState<Bookmark | null>(null);
+  const [isAddBookmarkModalOpen, setIsAddBookmarkModalOpen] = useState(false)
+  const [isEditBookmarkModalOpen, setIsEditBookmarkModalOpen] = useState(false)
+  const [currentBookmark, setCurrentBookmark] = useState<Bookmark | null>(null)
   const [bookmarkFormData, setBookmarkFormData] = useState({
     title: '',
     url: '',
@@ -124,21 +62,20 @@ const AdminWebsitesPage: React.FC = () => {
     is_public: true,
     order: 0,
     ico_url: ''
-  });
-  const [selectedMainCategory, setSelectedMainCategory] = useState('');
-  const [selectedSubCategory, setSelectedSubCategory] = useState('');
-  const [bookmarkError, setBookmarkError] = useState('');
+  })
+  const [selectedMainCategory, setSelectedMainCategory] = useState('')
+  const [selectedSubCategory, setSelectedSubCategory] = useState('')
+  const [bookmarkError, setBookmarkError] = useState('')
   
   // 删除确认对话框状态
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-  const [deleteType, setDeleteType] = useState<'bookmark' | 'category'>('bookmark');
-  const [deleteTargetName, setDeleteTargetName] = useState('');
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [deleteType, setDeleteType] = useState<'bookmark' | 'category'>('bookmark')
+  const [deleteTargetName, setDeleteTargetName] = useState('')
   
   // 分页相关状态
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   // 右键菜单状态
   const [contextMenu, setContextMenu] = useState<{ 
@@ -147,199 +84,215 @@ const AdminWebsitesPage: React.FC = () => {
     type: 'bookmark' | 'category'; 
     targetId?: string;
     targetData?: Bookmark | Category;
-  } | null>(null);
+  } | null>(null)
 
-  useEffect(() => {
-    const handleClick = () => setContextMenu(null);
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
+  const [activeTab, setActiveTab] = useState<'bookmarks' | 'categories'>('bookmarks')
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      if (!isAuthenticated) {
-        await getCurrentAdmin();
-      }
-    };
-    checkAuth();
-  }, [isAuthenticated, getCurrentAdmin]);
+  // 获取分类
+  const { data: categoriesData = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => websiteService.getCategories()
+  })
 
-  const loadCategories = useCallback(async () => {
-    try {
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('order', { ascending: true });
-      
-      if (categoriesError) {
-        throw new Error('加载分类失败: ' + categoriesError.message);
-      }
-      
-      const categoriesTree = buildCategoryTree(categoriesData || []);
-      setCategories(categoriesTree);
-      
-      if (categoriesTree.length > 0 && !selectedCategory) {
-        const firstMainCategory = categoriesTree[0];
-        if (firstMainCategory.children.length > 0) {
-          setSelectedMainCategory(firstMainCategory.id);
-          setSelectedSubCategory(firstMainCategory.children[0].id);
-          setBookmarkFormData(prev => ({
-            ...prev,
-            category_id: firstMainCategory.children[0].id
-          }));
-        }
-      }
-    } catch (err) {
-      addToast({ message: (err as Error).message || '加载分类失败', type: 'error' });
-    }
-  }, [selectedCategory]);
+  const categories = buildCategoryTreeFromData(categoriesData)
 
-  useEffect(() => {
-    loadCategories();
-  }, [loadCategories]);
-
+  // 收集所有子分类ID
   const getAllCategoryIds = (categoryId: string): string[] => {
-    const categoryIds: string[] = [categoryId];
-    const mainCategory = categories.find(cat => cat.id === categoryId);
+    const categoryIds: string[] = [categoryId]
+    const mainCategory = categories.find(cat => cat.id === categoryId)
     if (mainCategory && mainCategory.children) {
       mainCategory.children.forEach(child => {
-        categoryIds.push(child.id);
-      });
+        categoryIds.push(child.id)
+      })
     }
-    return categoryIds;
-  };
+    return categoryIds
+  }
 
-  const loadData = async (currentPage: number = 1, currentPageSize: number = 10, searchTerm: string = '', categoryId: string | null = null, showLoading: boolean = true) => {
-    if (showLoading) {
-      setIsLoading(true);
-    }
-    
-    try {
-      
-      let query = supabase.from('bookmarks').select('*');
-      
-      if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,url.ilike.%${searchTerm}%`);
-      }
-      
-      if (categoryId) {
-        const categoryIds = getAllCategoryIds(categoryId);
-        query = query.in('category_id', categoryIds);
-      }
-      
-      let countQuery = supabase.from('bookmarks').select('*', { count: 'exact', head: true });
-      if (searchTerm) {
-        countQuery = countQuery.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,url.ilike.%${searchTerm}%`);
-      }
-      if (categoryId) {
-        const categoryIds = getAllCategoryIds(categoryId);
-        countQuery = countQuery.in('category_id', categoryIds);
-      }
-      const { count, error: countError } = await countQuery;
-      
-      if (countError) {
-        throw new Error('获取书签总数失败: ' + countError.message);
-      }
-      
-      setTotal(count || 0);
-      
-      const { data: bookmarksData, error: bookmarksError } = await query
-        .order('created_at', { ascending: false })
-        .range((currentPage - 1) * currentPageSize, currentPage * currentPageSize - 1);
-      
-      if (bookmarksError) {
-        throw new Error('加载书签失败: ' + bookmarksError.message);
-      }
-      
-      setFilteredBookmarks(bookmarksData || []);
-      setPage(currentPage);
-      setPageSize(currentPageSize);
-    } catch (err) {
-      setBookmarkError((err as Error).message || '加载数据失败');
-      addToast({ message: (err as Error).message || '加载数据失败', type: 'error' });
-    } finally {
-      if (showLoading) {
-        setIsLoading(false);
+  // 获取书签列表
+  const { data: bookmarksData, isLoading: bookmarksLoading } = useQuery({
+    queryKey: ['admin_bookmarks', page, pageSize, searchQuery, selectedCategoryId],
+    queryFn: () => websiteService.getAdminBookmarks({
+      page,
+      pageSize,
+      search: searchQuery || undefined,
+      categoryIds: selectedCategoryId ? getAllCategoryIds(selectedCategoryId) : undefined
+    })
+  })
+
+  const filteredBookmarks = bookmarksData?.data || []
+  const total = bookmarksData?.total || 0
+
+  // 获取当前用户身份验证
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      if (!isAuthenticated) {
+        await getCurrentAdmin()
       }
     }
-  };
+    checkAuth()
+  }, [isAuthenticated, getCurrentAdmin])
 
-  useEffect(() => {
-    loadData(1, pageSize, '', null);
-  }, []);
+  // 书签 mutations
+  const addBookmarkMutation = useMutation({
+    mutationFn: (bookmark: Omit<Bookmark, 'id' | 'created_at' | 'updated_at'>) => 
+      websiteService.addBookmark(bookmark),
+    onSuccess: (data) => {
+      if (data) {
+        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+        addToast({ message: '添加成功', type: 'success' })
+        setIsAddBookmarkModalOpen(false)
+      }
+    },
+    onError: () => {
+      addToast({ message: '添加失败', type: 'error' })
+    }
+  })
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
+  const updateBookmarkMutation = useMutation({
+    mutationFn: ({ id, bookmark }: { id: string, bookmark: Partial<Bookmark> }) => 
+      websiteService.updateBookmark(id, bookmark),
+    onSuccess: (success) => {
+      if (success) {
+        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+        addToast({ message: '更新成功', type: 'success' })
+        setIsEditBookmarkModalOpen(false)
+      }
+    },
+    onError: () => {
+      addToast({ message: '更新失败', type: 'error' })
+    }
+  })
+
+  const deleteBookmarkMutation = useMutation({
+    mutationFn: (id: string) => websiteService.deleteBookmark(id),
+    onSuccess: (success) => {
+      if (success) {
+        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+        addToast({ message: '删除成功', type: 'success' })
+      }
+    },
+    onError: () => {
+      addToast({ message: '删除失败', type: 'error' })
+    }
+  })
+
+  const togglePublicMutation = useMutation({
+    mutationFn: ({ id, isPublic }: { id: string, isPublic: boolean }) => 
+      websiteService.updateBookmark(id, { is_public: isPublic }),
+    onSuccess: (success) => {
+      if (success) {
+        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+      }
+    }
+  })
+
+  // 分类 mutations
+  const addCategoryMutation = useMutation({
+    mutationFn: ({ name, parentId }: { name: string, parentId: string | null }) => 
+      websiteService.addCategory(name, parentId),
+    onSuccess: (data) => {
+      if (data) {
+        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        addToast({ message: '添加分类成功', type: 'success' })
+      }
+    },
+    onError: () => {
+      addToast({ message: '添加分类失败', type: 'error' })
+    }
+  })
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string, name: string }) => 
+      websiteService.updateCategory(id, name),
+    onSuccess: (success) => {
+      if (success) {
+        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        addToast({ message: '更新分类成功', type: 'success' })
+      }
+    },
+    onError: () => {
+      addToast({ message: '更新分类失败', type: 'error' })
+    }
+  })
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: string) => websiteService.deleteCategory(id),
+    onSuccess: (success) => {
+      if (success) {
+        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+        addToast({ message: '删除分类成功', type: 'success' })
+      }
+    },
+    onError: () => {
+      addToast({ message: '删除分类失败', type: 'error' })
+    }
+  })
 
   const handleSearchSubmit = () => {
-    setPage(1);
-    loadData(1, pageSize, searchQuery, selectedCategory);
-  };
+    setPage(1)
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      handleSearchSubmit();
+      handleSearchSubmit()
     }
-  };
+  }
 
   const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-    loadData(newPage, pageSize, searchQuery, selectedCategory);
-  };
+    setPage(newPage)
+  }
 
   const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setPage(1);
-    loadData(1, newPageSize, searchQuery, selectedCategory);
-  };
+    setPageSize(newPageSize)
+    setPage(1)
+  }
 
   const handleCategorySelect = (categoryId: string | null) => {
-    setSelectedCategory(categoryId);
-    setPage(1);
-    loadData(1, pageSize, searchQuery, categoryId, false);
-  };
+    setSelectedCategoryId(categoryId)
+    setPage(1)
+  }
 
   const getMainCategories = () => {
-    return categories.filter(category => !category.parent_id);
-  };
+    return categories.filter(category => !category.parent_id)
+  }
 
   const getSubCategories = (mainCategoryId: string) => {
-    const mainCategory = categories.find(category => category.id === mainCategoryId);
-    return mainCategory?.children || [];
-  };
+    const mainCategory = categories.find(category => category.id === mainCategoryId)
+    return mainCategory?.children || []
+  }
 
   const handleMainCategoryChange = (mainCategoryId: string) => {
-    setSelectedMainCategory(mainCategoryId);
-    const subCategories = getSubCategories(mainCategoryId);
-    const firstSubCategory = subCategories[0];
-    const subCategoryId = firstSubCategory?.id || '';
-    setSelectedSubCategory(subCategoryId);
+    setSelectedMainCategory(mainCategoryId)
+    const subCategories = getSubCategories(mainCategoryId)
+    const firstSubCategory = subCategories[0]
+    const subCategoryId = firstSubCategory?.id || ''
+    setSelectedSubCategory(subCategoryId)
     setBookmarkFormData(prev => ({
       ...prev,
       category_id: subCategoryId
-    }));
-  };
+    }))
+  }
 
   const handleSubCategoryChange = (subCategoryId: string) => {
-    setSelectedSubCategory(subCategoryId);
+    setSelectedSubCategory(subCategoryId)
     setBookmarkFormData(prev => ({
       ...prev,
       category_id: subCategoryId
-    }));
-  };
+    }))
+  }
 
   const handleAddBookmark = () => {
-    setCurrentBookmark(null);
-    const mainCategories = getMainCategories();
-    const firstMainCategory = mainCategories[0];
-    const mainCategoryId = firstMainCategory?.id || '';
-    const subCategories = getSubCategories(mainCategoryId);
-    const firstSubCategory = subCategories[0];
-    const subCategoryId = firstSubCategory?.id || '';
+    setCurrentBookmark(null)
+    const mainCategories = getMainCategories()
+    const firstMainCategory = mainCategories[0]
+    const mainCategoryId = firstMainCategory?.id || ''
+    const subCategories = getSubCategories(mainCategoryId)
+    const firstSubCategory = subCategories[0]
+    const subCategoryId = firstSubCategory?.id || ''
     
-    setSelectedMainCategory(mainCategoryId);
-    setSelectedSubCategory(subCategoryId);
+    setSelectedMainCategory(mainCategoryId)
+    setSelectedSubCategory(subCategoryId)
     setBookmarkFormData({
       title: '',
       url: '',
@@ -348,13 +301,13 @@ const AdminWebsitesPage: React.FC = () => {
       is_public: true,
       order: 0,
       ico_url: ''
-    });
-    setBookmarkError('');
-    setIsAddBookmarkModalOpen(true);
-  };
+    })
+    setBookmarkError('')
+    setIsAddBookmarkModalOpen(true)
+  }
 
   const handleEditBookmark = (bookmark: Bookmark) => {
-    setCurrentBookmark(bookmark);
+    setCurrentBookmark(bookmark)
     setBookmarkFormData({
       title: bookmark.title,
       url: bookmark.url,
@@ -363,269 +316,152 @@ const AdminWebsitesPage: React.FC = () => {
       is_public: bookmark.is_public,
       order: bookmark.order,
       ico_url: bookmark.ico_url || ''
-    });
+    })
     
-    let mainCategoryId = '';
-    let subCategoryId = '';
+    let mainCategoryId = ''
+    let subCategoryId = ''
     
-    const findCategory = (categories: Category[]): Category | undefined => {
-      for (const category of categories) {
+    const findCategory = (cats: Category[]): Category | undefined => {
+      for (const category of cats) {
         if (category.id === bookmark.category_id) {
-          return category;
+          return category
         }
         if (category.children && category.children.length > 0) {
-          const found = findCategory(category.children);
+          const found = findCategory(category.children)
           if (found) {
-            mainCategoryId = category.id;
-            subCategoryId = found.id;
-            return found;
+            mainCategoryId = category.id
+            subCategoryId = found.id
+            return found
           }
         }
       }
-      return undefined;
-    };
+      return undefined
+    }
     
-    findCategory(categories);
-    setSelectedMainCategory(mainCategoryId);
-    setSelectedSubCategory(subCategoryId);
-    setBookmarkError('');
-    setIsEditBookmarkModalOpen(true);
-  };
+    findCategory(categories)
+    setSelectedMainCategory(mainCategoryId)
+    setSelectedSubCategory(subCategoryId)
+    setBookmarkError('')
+    setIsEditBookmarkModalOpen(true)
+  }
 
   const handleDeleteBookmark = (bookmarkId: string, bookmarkName: string) => {
-    setDeleteTargetId(bookmarkId);
-    setDeleteType('bookmark');
-    setDeleteTargetName(bookmarkName);
-    setIsDeleteConfirmOpen(true);
-  };
+    setDeleteTargetId(bookmarkId)
+    setDeleteType('bookmark')
+    setDeleteTargetName(bookmarkName)
+    setIsDeleteConfirmOpen(true)
+  }
 
-  const handleConfirmDelete = async () => {
-    if (!deleteTargetId) return;
+  const handleConfirmDelete = () => {
+    if (!deleteTargetId) return
     
-    try {
-      if (deleteType === 'bookmark') {
-        const { error } = await supabase
-          .from('bookmarks')
-          .delete()
-          .eq('id', deleteTargetId);
-        
-        if (error) {
-          throw new Error('删除书签失败: ' + error.message);
-        }
-        addToast({ message: '删除成功', type: 'success' });
-      } else {
-        const { error: updateError } = await supabase
-          .from('bookmarks')
-          .update({ category_id: null })
-          .eq('category_id', deleteTargetId);
-        
-        if (updateError) {
-          throw new Error('更新书签分类失败: ' + updateError.message);
-        }
-        
-        const { error: deleteError } = await supabase
-          .from('categories')
-          .delete()
-          .eq('id', deleteTargetId);
-        
-        if (deleteError) {
-          throw new Error('删除分类失败: ' + deleteError.message);
-        }
-        
-        if (selectedCategory === deleteTargetId) {
-          setSelectedCategory(null);
-        }
-        addToast({ message: '删除成功', type: 'success' });
-      }
-      
-      if (deleteType === 'category') {
-        await loadCategories();
-      } else {
-        loadData(page, pageSize, searchQuery, selectedCategory);
-      }
-    } catch (err) {
-      addToast({ message: (err as Error).message || '删除失败', type: 'error' });
+    if (deleteType === 'bookmark') {
+      deleteBookmarkMutation.mutate(deleteTargetId)
+    } else {
+      deleteCategoryMutation.mutate(deleteTargetId)
     }
     
-    setIsDeleteConfirmOpen(false);
-    setDeleteTargetId(null);
-  };
+    setIsDeleteConfirmOpen(false)
+    setDeleteTargetId(null)
+  }
 
-  const handleBookmarkTogglePublic = async (bookmarkId: string, currentState: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('bookmarks')
-        .update({ is_public: !currentState })
-        .eq('id', bookmarkId);
-      
-      if (error) {
-        throw new Error('更新公开状态失败: ' + error.message);
-      }
-      
-      setFilteredBookmarks(prev => prev.map(bookmark => 
-        bookmark.id === bookmarkId ? { ...bookmark, is_public: !currentState } : bookmark
-      ));
-      
-      addToast({ message: `书签已${currentState ? '设为私有' : '设为公开'}`, type: 'success' });
-    } catch (err) {
-      addToast({ message: (err as Error).message || '更新失败', type: 'error' });
-    }
-  };
+  const handleBookmarkTogglePublic = (bookmarkId: string, currentState: boolean) => {
+    togglePublicMutation.mutate({
+      id: bookmarkId,
+      isPublic: !currentState
+    })
+    addToast({ 
+      message: `书签已${currentState ? '设为私有' : '设为公开'}`, 
+      type: 'success' 
+    })
+  }
 
   const handleBookmarkInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const target = e.target as HTMLInputElement;
-    const { name, value, type } = target;
-    const newValue = type === 'checkbox' ? (target as HTMLInputElement).checked : value;
+    const target = e.target as HTMLInputElement
+    const { name, value, type } = target
+    const newValue = type === 'checkbox' ? (target as HTMLInputElement).checked : value
     
     setBookmarkFormData(prev => ({
       ...prev,
       [name]: newValue
-    }));
-  };
+    }))
+  }
 
-  const handleBookmarkSubmit = async () => {
+  const handleBookmarkSubmit = () => {
     if (!bookmarkFormData.title.trim() || !bookmarkFormData.url.trim() || !bookmarkFormData.category_id) {
-      setBookmarkError('标题、网址和分类不能为空');
-      return;
+      setBookmarkError('标题、网址和分类不能为空')
+      return
     }
 
     try {
-      new URL(bookmarkFormData.url);
+      new URL(bookmarkFormData.url)
     } catch {
-      setBookmarkError('请输入有效的URL地址');
-      return;
+      setBookmarkError('请输入有效的URL地址')
+      return
     }
 
-    try {
-      if (isEditBookmarkModalOpen && currentBookmark) {
-        const { error } = await supabase
-          .from('bookmarks')
-          .update({
-            title: bookmarkFormData.title,
-            url: bookmarkFormData.url,
-            description: bookmarkFormData.description,
-            category_id: bookmarkFormData.category_id,
-            is_public: bookmarkFormData.is_public,
-            order: bookmarkFormData.order,
-            ico_url: bookmarkFormData.ico_url,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentBookmark.id);
-        
-        if (error) {
-          throw new Error('更新书签失败: ' + error.message);
-        }
-        addToast({ message: '更新成功', type: 'success' });
-      } else {
-        const { error } = await supabase
-          .from('bookmarks')
-          .insert({
-            title: bookmarkFormData.title,
-            url: bookmarkFormData.url,
-            description: bookmarkFormData.description,
-            category_id: bookmarkFormData.category_id,
-            is_public: bookmarkFormData.is_public,
-            order: bookmarkFormData.order,
-            ico_url: bookmarkFormData.ico_url,
-            user_id: null,
-            is_favorite: false
-          });
-        
-        if (error) {
-          throw new Error('添加书签失败: ' + error.message);
-        }
-        addToast({ message: '添加成功', type: 'success' });
-      }
-      
-      loadData(page, pageSize, searchQuery, selectedCategory);
-      setIsAddBookmarkModalOpen(false);
-      setIsEditBookmarkModalOpen(false);
-      setBookmarkError('');
-    } catch (err) {
-      setBookmarkError((err as Error).message || '保存书签失败');
-      addToast({ message: (err as Error).message || '保存失败', type: 'error' });
+    if (isEditBookmarkModalOpen && currentBookmark) {
+      updateBookmarkMutation.mutate({
+        id: currentBookmark.id,
+        bookmark: bookmarkFormData
+      })
+    } else {
+      addBookmarkMutation.mutate({
+        ...bookmarkFormData,
+        user_id: null,
+        is_favorite: false
+      })
     }
-  };
+  }
 
   const handleAddCategory = async (name: string, parentId: string | null) => {
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .insert({
-          name: name.trim(),
-          parent_id: parentId,
-          order: 0
-        });
-      
-      if (error) {
-        throw new Error('添加分类失败: ' + error.message);
-      }
-      
-      await loadCategories();
-      addToast({ message: '添加成功', type: 'success' });
-    } catch (err) {
-      addToast({ message: (err as Error).message || '添加失败', type: 'error' });
-    }
-  };
+    addCategoryMutation.mutate({ name, parentId })
+  }
 
   const handleUpdateCategory = async (categoryId: string, name: string) => {
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .update({ name: name.trim() })
-        .eq('id', categoryId);
-      
-      if (error) {
-        throw new Error('更新分类失败: ' + error.message);
-      }
-      
-      await loadCategories();
-      addToast({ message: '更新成功', type: 'success' });
-    } catch (err) {
-      addToast({ message: (err as Error).message || '更新失败', type: 'error' });
-    }
-  };
+    updateCategoryMutation.mutate({ id: categoryId, name })
+  }
 
   const openBookmarkUrl = (url: string) => {
-    openUrl(url);
-  };
+    openUrl(url)
+  }
 
-  const handleBookmarkContextMenu = useCallback((e: React.MouseEvent, bookmark: Bookmark) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleBookmarkContextMenu = (e: React.MouseEvent, bookmark: Bookmark) => {
+    e.preventDefault()
+    e.stopPropagation()
     setContextMenu({ 
       x: e.clientX, 
       y: e.clientY, 
       type: 'bookmark', 
       targetId: bookmark.id, 
       targetData: bookmark 
-    });
-  }, []);
+    })
+  }
 
   const getCategoryName = (categoryId: string) => {
-    const findCategory = (categories: Category[]): Category | undefined => {
-      for (const category of categories) {
-        if (category.id === categoryId) return category;
+    const findCategory = (cats: Category[]): Category | undefined => {
+      for (const category of cats) {
+        if (category.id === categoryId) return category
         if (category.children && category.children.length > 0) {
-          const found = findCategory(category.children);
-          if (found) return found;
+          const found = findCategory(category.children)
+          if (found) return found
         }
       }
-      return undefined;
-    };
+      return undefined
+    }
     
-    const category = findCategory(categories);
-    return category ? category.name : '未知分类';
-  };
+    const category = findCategory(categories)
+    return category ? category.name : '未知分类'
+  }
 
-  const [activeTab, setActiveTab] = useState<'bookmarks' | 'categories'>('bookmarks');
+  const isLoading = categoriesLoading || bookmarksLoading
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <LoadingSpinner size="lg" />
       </div>
-    );
+    )
   }
 
   return (
@@ -661,7 +497,7 @@ const AdminWebsitesPage: React.FC = () => {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={handleSearchChange}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="搜索网址..."
                     className="w-full px-3 py-1.5 pr-24 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
@@ -669,8 +505,8 @@ const AdminWebsitesPage: React.FC = () => {
                   {searchQuery && (
                     <button
                       onClick={() => {
-                        setSearchQuery('');
-                        loadData(1, pageSize, '', selectedCategory);
+                        setSearchQuery('')
+                        setPage(1)
                       }}
                       className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                       title="清空搜索"
@@ -705,7 +541,7 @@ const AdminWebsitesPage: React.FC = () => {
                 <button
                   onClick={() => handleCategorySelect(null)}
                   className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                    !selectedCategory
+                    !selectedCategoryId
                       ? 'bg-blue-500 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
@@ -717,7 +553,7 @@ const AdminWebsitesPage: React.FC = () => {
                     key={mainCategory.id}
                     onClick={() => handleCategorySelect(mainCategory.id)}
                     className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                      selectedCategory === mainCategory.id
+                      selectedCategoryId === mainCategory.id
                         ? 'bg-blue-500 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
@@ -763,7 +599,7 @@ const AdminWebsitesPage: React.FC = () => {
                         </td>
                         <td className="px-4 py-3 sm:px-6">
                           <button
-                            onClick={(e) => { e.stopPropagation(); openBookmarkUrl(bookmark.url); }}
+                            onClick={(e) => { e.stopPropagation(); openBookmarkUrl(bookmark.url) }}
                             className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline flex items-center gap-1 truncate max-w-[200px]"
                             title="点击打开网站"
                           >
@@ -814,9 +650,11 @@ const AdminWebsitesPage: React.FC = () => {
                 onSelectCategory={() => {}}
                 onAddCategory={handleAddCategory}
                 onDeleteCategory={async (categoryId: string) => {
-                  await supabase.from('categories').delete().eq('id', categoryId);
-                  await loadCategories();
-                  addToast({ message: '删除成功', type: 'success' });
+                  setDeleteTargetId(categoryId)
+                  const categoryToDelete = categories.find(c => c.id === categoryId)
+                  setDeleteType('category')
+                  setDeleteTargetName(categoryToDelete?.name || '')
+                  setIsDeleteConfirmOpen(true)
                 }}
                 onUpdateCategory={handleUpdateCategory}
               />
@@ -946,11 +784,11 @@ const AdminWebsitesPage: React.FC = () => {
                   placeholder="可选，网站图标 URL"
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
-                <img
-                  src={bookmarkFormData.ico_url ? proxyImageUrl(bookmarkFormData.ico_url) : linkIcon}
+                <CachedIcon
+                  src={bookmarkFormData.ico_url ? proxyImageUrl(bookmarkFormData.ico_url) : null}
                   alt="图标预览"
                   className="w-10 h-10 rounded-md object-cover border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex-shrink-0"
-                  onError={(e) => handleImageError(e, bookmarkFormData.ico_url || '')}
+                  defaultIcon={<img src={linkIcon} alt="图标" className="w-10 h-10" />}
                 />
               </div>
             </div>
@@ -1079,11 +917,11 @@ const AdminWebsitesPage: React.FC = () => {
                   placeholder="可选，网站图标 URL"
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
-                <img
-                  src={bookmarkFormData.ico_url ? proxyImageUrl(bookmarkFormData.ico_url) : linkIcon}
+                <CachedIcon
+                  src={bookmarkFormData.ico_url ? proxyImageUrl(bookmarkFormData.ico_url) : null}
                   alt="图标预览"
                   className="w-10 h-10 rounded-md object-cover border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex-shrink-0"
-                  onError={(e) => handleImageError(e, bookmarkFormData.ico_url || '')}
+                  defaultIcon={<img src={linkIcon} alt="图标" className="w-10 h-10" />}
                 />
               </div>
             </div>
@@ -1128,9 +966,9 @@ const AdminWebsitesPage: React.FC = () => {
               icon: <Edit size={16} />,
               onClick: () => {
                 if (contextMenu?.targetData) {
-                  handleEditBookmark(contextMenu.targetData as Bookmark);
+                  handleEditBookmark(contextMenu.targetData as Bookmark)
                 }
-                setContextMenu(null);
+                setContextMenu(null)
               }
             },
             {
@@ -1138,11 +976,11 @@ const AdminWebsitesPage: React.FC = () => {
               label: (contextMenu.targetData as Bookmark)?.is_public ? '设为私有' : '设为公开',
               icon: (contextMenu.targetData as Bookmark)?.is_public ? <Check size={16} /> : <X size={16} />,
               onClick: () => {
-                const bookmark = contextMenu?.targetData as Bookmark;
+                const bookmark = contextMenu?.targetData as Bookmark
                 if (bookmark) {
-                  handleBookmarkTogglePublic(bookmark.id, bookmark.is_public);
+                  handleBookmarkTogglePublic(bookmark.id, bookmark.is_public)
                 }
-                setContextMenu(null);
+                setContextMenu(null)
               }
             },
             {
@@ -1151,9 +989,9 @@ const AdminWebsitesPage: React.FC = () => {
               icon: <Trash2 size={16} />,
               onClick: () => {
                 if (contextMenu?.targetId && contextMenu?.targetData) {
-                  handleDeleteBookmark(contextMenu.targetId, (contextMenu.targetData as Bookmark).title);
+                  handleDeleteBookmark(contextMenu.targetId, (contextMenu.targetData as Bookmark).title)
                 }
-                setContextMenu(null);
+                setContextMenu(null)
               }
             }
           ] : []}
@@ -1161,7 +999,7 @@ const AdminWebsitesPage: React.FC = () => {
         />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default AdminWebsitesPage;
+export default AdminWebsitesPage

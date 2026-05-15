@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useMemo } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Edit, Trash2, X, Check, ExternalLink } from 'lucide-react'
 import toolService, { Tool, ToolCategory } from '../../services/ToolService'
 import { useToastStore } from '../../store/toastStore'
@@ -65,15 +66,46 @@ interface CategoryTree extends ToolCategory {
   children: CategoryTree[]
 }
 
+export const buildCategoryTreeFromData = (categories: ToolCategory[]): CategoryTree[] => {
+  const categoryMap = new Map<string, CategoryTree>()
+
+  categories.forEach(category => {
+    categoryMap.set(category.id, {
+      ...category,
+      children: []
+    })
+  })
+
+  const rootCategories: CategoryTree[] = []
+  categories.forEach(category => {
+    const categoryNode = categoryMap.get(category.id)
+    if (categoryNode) {
+      if (!category.parent_id) {
+        rootCategories.push(categoryNode)
+      } else {
+          const parent = categoryMap.get(category.parent_id)
+          if (parent) {
+            parent.children.push(categoryNode)
+          }
+        }
+    }
+  })
+
+  const sortCategories = (cats: CategoryTree[]) => {
+    cats.sort((a, b) => (a.order || 0) - (b.order || 0))
+    cats.forEach(cat => sortCategories(cat.children))
+  }
+
+  sortCategories(rootCategories)
+  return rootCategories
+}
+
 const ToolsPage: React.FC = () => {
-  const [tools, setTools] = useState<Tool[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
-  const [categories, setCategories] = useState<CategoryTree[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [totalItems, setTotalItems] = useState(0)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [currentTool, setCurrentTool] = useState<Tool | null>(null)
@@ -90,7 +122,6 @@ const ToolsPage: React.FC = () => {
   const [selectedMainCategory, setSelectedMainCategory] = useState('')
   const [selectedSubCategory, setSelectedSubCategory] = useState('')
   const [activeTab, setActiveTab] = useState<'tools' | 'categories'>('tools')
-  const [isCategoryChange, setIsCategoryChange] = useState(false)
   
   // 删除确认对话框状态
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -101,46 +132,99 @@ const ToolsPage: React.FC = () => {
 
   const { addToast } = useToastStore()
 
-  const buildCategoryTree = (categories: ToolCategory[]): CategoryTree[] => {
-    const categoryMap = new Map<string, CategoryTree>()
+  // 查询分类数据
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['toolCategories'],
+    queryFn: () => toolService.getCategories(),
+  })
 
-    categories.forEach(category => {
-      categoryMap.set(category.id, {
-        ...category,
-        children: []
-      })
-    })
+  const categoryTree = useMemo(() => 
+    buildCategoryTreeFromData(categories), [categories]
+  )
 
-    const rootCategories: CategoryTree[] = []
-    categories.forEach(category => {
-      const categoryNode = categoryMap.get(category.id)
-      if (categoryNode) {
-        if (!category.parent_id) {
-          rootCategories.push(categoryNode)
-        } else {
-          const parent = categoryMap.get(category.parent_id)
-          if (parent) {
-            parent.children.push(categoryNode)
-          }
-        }
-      }
-    })
-
-    const sortCategories = (cats: CategoryTree[]) => {
-      cats.sort((a, b) => (a.order || 0) - (b.order || 0))
-      cats.forEach(cat => sortCategories(cat.children))
-    }
-
-    sortCategories(rootCategories)
-    return rootCategories
-  }
-
-  const getMainCategories = () => categories.filter(category => !category.parent_id)
+  const getMainCategories = () => categoryTree.filter(category => !category.parent_id)
 
   const getSubCategories = (mainCategoryId: string) => {
-    const mainCategory = categories.find(category => category.id === mainCategoryId)
+    const mainCategory = categoryTree.find(category => category.id === mainCategoryId)
     return mainCategory?.children || []
   }
+
+  // 查询工具列表
+  const { data: toolsData, isLoading: toolsLoading } = useQuery({
+    queryKey: ['tools', filterCategory, searchTerm, currentPage, pageSize],
+    queryFn: () => toolService.getTools(filterCategory, searchTerm, currentPage, pageSize),
+  })
+
+  const tools = useMemo(() => toolsData?.data || [], [toolsData?.data])
+  const totalItems = useMemo(() => toolsData?.count || 0, [toolsData?.count])
+  const loading = categoriesLoading || toolsLoading
+
+  // 添加工具 mutation
+  const addToolMutation = useMutation({
+    mutationFn: (toolData: Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'category_name'>) => 
+      toolService.addTool(toolData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tools'] })
+      addToast({ message: '添加成功', type: 'success' })
+    },
+    onError: () => {
+      addToast({ message: '添加失败', type: 'error' })
+    },
+  })
+
+  // 更新工具 mutation
+  const updateToolMutation = useMutation({
+    mutationFn: ({ id, toolData }: { id: string; toolData: Partial<Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'category_name'>> }) =>
+      toolService.updateTool(id, toolData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tools'] })
+      addToast({ message: '更新成功', type: 'success' })
+    },
+    onError: () => {
+      addToast({ message: '更新失败', type: 'error' })
+    },
+  })
+
+  // 删除工具 mutation
+  const deleteToolMutation = useMutation({
+    mutationFn: (id: string) => toolService.deleteTool(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tools'] })
+      addToast({ message: '删除成功', type: 'success' })
+    },
+    onError: () => {
+      addToast({ message: '删除失败', type: 'error' })
+    },
+  })
+
+  // 添加分类 mutation
+  const addCategoryMutation = useMutation({
+    mutationFn: ({ name, parentId }: { name: string; parentId: string | null }) =>
+      toolService.addCategory(name, parentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['toolCategories'] })
+      addToast({ message: '添加成功', type: 'success' })
+    },
+  })
+
+  // 更新分类 mutation
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({ categoryId, name }: { categoryId: string; name: string }) =>
+      toolService.updateCategory(categoryId, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['toolCategories'] })
+      addToast({ message: '更新成功', type: 'success' })
+    },
+  })
+
+  // 删除分类 mutation
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (categoryId: string) => toolService.deleteCategory(categoryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['toolCategories'] })
+      addToast({ message: '删除成功', type: 'success' })
+    },
+  })
 
   const handleMainCategoryChange = (mainCategoryId: string) => {
     setSelectedMainCategory(mainCategoryId)
@@ -162,43 +246,6 @@ const ToolsPage: React.FC = () => {
     setCurrentPage(1)
   }
 
-  const loadCategories = useCallback(async () => {
-    try {
-      const categoriesData = await toolService.getCategories()
-      const categoriesTree = buildCategoryTree(categoriesData)
-      setCategories(categoriesTree)
-    } catch (error) {
-      console.error('加载分类失败:', error)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadCategories()
-  }, [loadCategories])
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!isCategoryChange) {
-        setLoading(true)
-      }
-      try {
-        const { data, count } = await toolService.getTools(filterCategory, searchTerm, currentPage, pageSize)
-        setTools(data)
-        setTotalItems(count)
-      } catch (error) {
-        console.error('获取数据失败:', error)
-        addToast({ message: '获取工具列表失败', type: 'error' })
-      } finally {
-        if (!isCategoryChange) {
-          setLoading(false)
-        }
-        setIsCategoryChange(false)
-      }
-    }
-
-    fetchData()
-  }, [filterCategory, searchTerm, currentPage, pageSize])
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
     setCurrentPage(1)
@@ -215,7 +262,6 @@ const ToolsPage: React.FC = () => {
   }
 
   const handleCategoryFilterChange = (categoryId: string) => {
-    setIsCategoryChange(true)
     setFilterCategory(categoryId)
     setCurrentPage(1)
   }
@@ -279,7 +325,7 @@ const ToolsPage: React.FC = () => {
         return undefined
       }
 
-      findCategory(categories)
+      findCategory(categoryTree)
       setSelectedMainCategory(mainCategoryId)
       setSelectedSubCategory(subCategoryId)
       setIsEditModalOpen(true)
@@ -296,35 +342,14 @@ const ToolsPage: React.FC = () => {
 
   const handleConfirmToolDelete = async () => {
     if (!toolToDelete) return
-
-    try {
-      await toolService.deleteTool(toolToDelete.id)
-      setTools(prev => prev.filter(t => t.id !== toolToDelete.id))
-      setTotalItems(prev => prev - 1)
-      addToast({ message: '删除成功', type: 'success' })
-    } catch (error) {
-      console.error('删除工具失败:', error)
-      addToast({ message: '删除失败', type: 'error' })
-    } finally {
-      setDeleteConfirmOpen(false)
-      setToolToDelete(null)
-    }
+    deleteToolMutation.mutate(toolToDelete.id)
+    setDeleteConfirmOpen(false)
+    setToolToDelete(null)
   }
 
   const handleToolToggleActive = async (toolId: string, currentState: boolean) => {
-    try {
-      await toolService.updateTool(toolId, { is_active: !currentState })
-      setTools(prev => prev.map(tool => 
-        tool.id === toolId ? { ...tool, is_active: !currentState } : tool
-      ))
-      addToast({ message: `工具已${currentState ? '禁用' : '启用'}`, type: 'success' })
-    } catch (error) {
-      console.error('更新工具状态失败:', error)
-      addToast({ message: '更新失败', type: 'error' })
-    }
+    updateToolMutation.mutate({ id: toolId, toolData: { is_active: !currentState } })
   }
-
-  
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -348,59 +373,40 @@ const ToolsPage: React.FC = () => {
 
     if (Object.values(newErrors).every(error => error === '')) {
       try {
-        if (isEditModalOpen && currentTool) {
-          await toolService.updateTool(currentTool.id, {
-            category_id: formData.category_id || null,
-            title: formData.title,
-            description: formData.description || null,
-            download_url: formData.download_url,
-            网盘类型: formData.网盘类型,
-            icon_url: formData.icon_url || null,
-            is_active: formData.is_active
-          })
-          addToast({ message: '更新成功', type: 'success' })
-        } else {
-          await toolService.addTool({
-            category_id: formData.category_id || null,
-            title: formData.title,
-            description: formData.description || null,
-            download_url: formData.download_url,
-            网盘类型: formData.网盘类型,
-            icon_url: formData.icon_url || null,
-            is_active: formData.is_active
-          })
-          addToast({ message: '添加成功', type: 'success' })
-        }
+        const toolPayload = {
+        category_id: formData.category_id || null,
+        title: formData.title,
+        description: formData.description || null,
+        download_url: formData.download_url,
+        网盘类型: formData.网盘类型,
+        icon_url: formData.icon_url || null,
+        is_active: formData.is_active
+      }
 
-        const { data, count } = await toolService.getTools(filterCategory, searchTerm, currentPage, pageSize)
-        setTools(data)
-        setTotalItems(count)
+        if (isEditModalOpen && currentTool) {
+          updateToolMutation.mutate({ id: currentTool.id, toolData: toolPayload })
+        } else {
+          addToolMutation.mutate(toolPayload)
+        }
 
         setIsAddModalOpen(false)
         setIsEditModalOpen(false)
       } catch (error) {
         console.error('保存工具失败:', error)
-        addToast({ message: '保存失败', type: 'error' })
       }
     }
   }
 
   const handleAddCategory = async (name: string, parentId: string | null) => {
-    await toolService.addCategory(name, parentId)
-    await loadCategories()
-    addToast({ message: '添加成功', type: 'success' })
+    await addCategoryMutation.mutateAsync({ name, parentId })
   }
 
   const handleUpdateCategory = async (categoryId: string, name: string) => {
-    await toolService.updateCategory(categoryId, name)
-    await loadCategories()
-    addToast({ message: '更新成功', type: 'success' })
+    await updateCategoryMutation.mutateAsync({ categoryId, name })
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
-    await toolService.deleteCategory(categoryId)
-    await loadCategories()
-    addToast({ message: '删除成功', type: 'success' })
+    await deleteCategoryMutation.mutateAsync(categoryId)
   }
 
   return (
@@ -492,7 +498,7 @@ const ToolsPage: React.FC = () => {
                 >
                   全部
                 </button>
-                {categories.map(mainCategory => (
+                {categoryTree.map(mainCategory => (
                   <div key={mainCategory.id} className="relative">
                     <button
                       onClick={() => handleCategoryFilterChange(mainCategory.id)}
@@ -589,7 +595,7 @@ const ToolsPage: React.FC = () => {
           ) : (
             <div className="p-4">
               <CategoryManager
-                categories={categories as CategoryItem[]}
+                categories={categoryTree as CategoryItem[]}
                 selectedCategory={null}
                 onSelectCategory={() => {}}
                 onAddCategory={handleAddCategory}

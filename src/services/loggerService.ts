@@ -41,6 +41,7 @@ class LoggerService {
   private settings: LoggerSettings = { ...DEFAULT_SETTINGS };
   private initialized = false;
   private initPromise: Promise<void> | null = null;
+  private pendingLogs: Array<{ level: LogLevel; message: string; context?: string; stack?: string }> = [];
 
   private async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -56,7 +57,13 @@ class LoggerService {
         this.settings = { ...DEFAULT_SETTINGS };
         this.logs = [];
       }
+      
       this.initialized = true;
+      
+      while (this.pendingLogs.length > 0) {
+        const { level, message, context, stack } = this.pendingLogs.shift()!;
+        this.addLogEntry(level, message, context, stack);
+      }
     })();
     
     return this.initPromise;
@@ -85,22 +92,34 @@ class LoggerService {
   }
 
   public addLogEntry(level: LogLevel, message: string, context?: string, stack?: string): void {
-    // 使用 fire-and-forget 模式，不等待初始化和 IPC 调用完成
-    this.initialize().catch(console.error);
+    if (!this.initialized) {
+      this.pendingLogs.push({ level, message, context, stack });
+      this.initialize().catch(console.error);
+      return;
+    }
+    
+    if (!this.settings.enabled) return;
+    if (!this.settings.levels[level]) return;
+    
+    const entry: LogEntry = {
+      id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      timestamp: Date.now(),
+      level,
+      message,
+      context,
+      stack
+    };
+    
+    this.logs.push(entry);
+    
+    if (this.settings.autoClean && this.logs.length > this.settings.maxEntries) {
+      this.logs = this.logs.slice(-this.settings.maxEntries);
+    }
+    
+    this.notifyListeners();
     
     if (window.electron?.log) {
       window.electron.log.addLog(level, message, context, stack).catch(console.error);
-      // 同时更新本地缓存，以便 UI 可以立即显示
-      const entry: LogEntry = {
-        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        timestamp: Date.now(),
-        level,
-        message,
-        context,
-        stack
-      };
-      this.logs.push(entry);
-      this.notifyListeners();
     }
   }
 
@@ -159,9 +178,33 @@ class LoggerService {
     return JSON.stringify(this.logs, null, 2);
   }
 
-  public importLogs(_jsonString: string): boolean {
-    // Note: Import functionality would need to be implemented on the main process side
-    return false;
+  public async importLogs(jsonString: string): Promise<boolean> {
+    await this.initialize();
+    
+    try {
+      const importedLogs: LogEntry[] = JSON.parse(jsonString);
+      
+      if (!Array.isArray(importedLogs)) {
+        return false;
+      }
+      
+      if (window.electron?.log) {
+        return await window.electron.log.importLogs(jsonString);
+      }
+      
+      importedLogs.forEach(entry => {
+        this.logs.push({ ...entry, id: `imported_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` });
+      });
+      
+      if (this.settings.autoClean && this.logs.length > this.settings.maxEntries) {
+        this.logs = this.logs.slice(-this.settings.maxEntries);
+      }
+      
+      this.notifyListeners();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   public async getStats(): Promise<{ total: number; byLevel: Record<LogLevel, number> }> {

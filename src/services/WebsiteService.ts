@@ -34,6 +34,10 @@ class CacheService {
       }
     }
   }
+
+  clear() {
+    this.cache.clear()
+  }
 }
 
 const cacheService = new CacheService()
@@ -55,6 +59,35 @@ async function attachCategoriesToBookmarks(bookmarks: Bookmark[], cachedCategori
       category
     }
   })
+}
+
+// 构建分类树结构（复用内部函数）
+export function buildCategoryTreeFromData(categories: Category[]): Category[] {
+  const categoryMap = new Map<string, Category>()
+  const rootCategories: Category[] = []
+  
+  // 初始化分类映射
+  categories.forEach(category => {
+    // 确保每个分类都有children属性
+    const categoryWithChildren = { ...category, children: [] }
+    categoryMap.set(category.id, categoryWithChildren)
+  })
+  
+  // 构建嵌套结构
+  categoryMap.forEach(category => {
+    if (!category.parent_id) {
+      // 根分类
+      rootCategories.push(category)
+    } else {
+      // 子分类，添加到父分类的children数组中
+      const parent = categoryMap.get(category.parent_id)
+      if (parent) {
+        parent.children?.push(category)
+      }
+    }
+  })
+  
+  return rootCategories
 }
 
 export const websiteService = {
@@ -372,6 +405,201 @@ export const websiteService = {
       return !!data
     } catch (error) {
       logError('检查收藏状态失败', 'WebsiteService', error as Error)
+      return false
+    }
+  },
+
+  // 管理功能：获取书签列表（带分页和搜索）
+  async getAdminBookmarks(options: { 
+    page?: number, 
+    pageSize?: number, 
+    search?: string, 
+    categoryIds?: string[],
+    signal?: AbortSignal 
+  }): Promise<{ data: Bookmark[], total: number }> {
+    const { page = 1, pageSize = 10, search, categoryIds } = options
+    
+    try {
+      // 构建查询
+      let query = supabase.from('bookmarks').select('*', { count: 'exact' })
+      
+      // 应用搜索
+      if (search) {
+        query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,url.ilike.%${search}%`)
+      }
+      
+      // 应用分类筛选
+      if (categoryIds && categoryIds.length > 0) {
+        query = query.in('category_id', categoryIds)
+      }
+      
+      // 应用分页
+      const from = (page - 1) * pageSize
+      const to = page * pageSize - 1
+      
+      // 执行查询
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to)
+      
+      if (error) throw error
+      
+      return {
+        data: data || [],
+        total: count || 0
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('Get admin bookmarks request aborted:', error.message)
+        return { data: [], total: 0 }
+      }
+      logError('Get admin bookmarks error', 'WebsiteService', error as Error)
+      return { data: [], total: 0 }
+    }
+  },
+
+  // 管理功能：添加书签
+  async addBookmark(bookmark: Omit<Bookmark, 'id' | 'created_at' | 'updated_at'>): Promise<Bookmark | null> {
+    try {
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .insert(bookmark)
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      // 清除缓存
+      cacheService.clearByPrefix('admin_bookmarks')
+      cacheService.clearByPrefix('bookmarks_public')
+      
+      return data as Bookmark
+    } catch (error) {
+      logError('Add bookmark error', 'WebsiteService', error as Error)
+      return null
+    }
+  },
+
+  // 管理功能：更新书签
+  async updateBookmark(id: string, bookmark: Partial<Bookmark>): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('bookmarks')
+        .update({
+          ...bookmark,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // 清除缓存
+      cacheService.clearByPrefix('admin_bookmarks')
+      cacheService.clearByPrefix('bookmarks_public')
+      
+      return true
+    } catch (error) {
+      logError('Update bookmark error', 'WebsiteService', error as Error)
+      return false
+    }
+  },
+
+  // 管理功能：删除书签
+  async deleteBookmark(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // 清除缓存
+      cacheService.clearByPrefix('admin_bookmarks')
+      cacheService.clearByPrefix('bookmarks_public')
+      cacheService.clearByPrefix('favorites_user')
+      
+      return true
+    } catch (error) {
+      logError('Delete bookmark error', 'WebsiteService', error as Error)
+      return false
+    }
+  },
+
+  // 管理功能：添加分类
+  async addCategory(name: string, parentId: string | null, order: number = 0): Promise<Category | null> {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .insert({
+          name,
+          parent_id: parentId,
+          order
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      // 清除缓存
+      cacheService.clearByPrefix('categories')
+      
+      return data as Category
+    } catch (error) {
+      logError('Add category error', 'WebsiteService', error as Error)
+      return null
+    }
+  },
+
+  // 管理功能：更新分类
+  async updateCategory(id: string, name: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // 清除缓存
+      cacheService.clearByPrefix('categories')
+      
+      return true
+    } catch (error) {
+      logError('Update category error', 'WebsiteService', error as Error)
+      return false
+    }
+  },
+
+  // 管理功能：删除分类
+  async deleteCategory(id: string): Promise<boolean> {
+    try {
+      // 先把该分类下的书签的分类设为 null
+      const { error: updateError } = await supabase
+        .from('bookmarks')
+        .update({ category_id: null })
+        .eq('category_id', id)
+      
+      if (updateError) throw updateError
+      
+      // 再删除分类
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // 清除缓存
+      cacheService.clearByPrefix('categories')
+      cacheService.clearByPrefix('admin_bookmarks')
+      
+      return true
+    } catch (error) {
+      logError('Delete category error', 'WebsiteService', error as Error)
       return false
     }
   }

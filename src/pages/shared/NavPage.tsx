@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Star, StarOff, Menu, Globe, ChevronDown, Search } from 'lucide-react'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import CachedIcon from '../../components/ui/CachedIcon'
 import { websiteService } from '../../services/WebsiteService'
 import { supabase } from '../../services/supabase'
 import { useNavSearch } from '../../contexts/NavSearchContext'
@@ -42,36 +43,6 @@ const proxyImageUrl = (url: string): string => {
   }
   // 国内域名的图片直接加载
   return raw
-}
-
-// 增强的图片错误处理函数
-const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, originalUrl: string) => {
-  const target = e.target as HTMLImageElement
-  // 如果当前是原始URL，则尝试通过代理服务加载
-  if (target.src === originalUrl) {
-    try {
-      // 尝试使用国内可用的图片代理服务
-      const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(originalUrl)}`
-      target.src = proxyUrl
-    } catch {
-      try {
-        // 备选：使用 duckduckgo 图片代理服务
-        target.src = `https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(originalUrl)}`
-      } catch {
-        target.src = defaultIconPath
-      }
-    }
-  } else if (target.src.includes('images.weserv.nl')) {
-    // 如果国内代理失败，尝试使用 duckduckgo 代理
-    try {
-      target.src = `https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(originalUrl)}`
-    } catch {
-      target.src = defaultIconPath
-    }
-  } else {
-    // 如果所有代理都失败，则使用默认图标
-    target.src = defaultIconPath
-  }
 }
 
 // 类型定义
@@ -767,11 +738,15 @@ const NavPage: React.FC = () => {
                       <div className="card-content">
                         <div className="icon-category-container">
                           {bookmark.ico_url ? (
-                            <img
+                            <CachedIcon
                               src={proxyImageUrl(bookmark.ico_url)}
                               alt={bookmark.title}
                               className="bookmark-icon"
-                              onError={(e) => handleImageError(e, bookmark.ico_url || '')}
+                              defaultIcon={
+                                <div className="bookmark-icon flex items-center justify-center">
+                                  <Globe className="w-4 h-4 text-gray-500" />
+                                </div>
+                              }
                             />
                           ) : (
                             <div className="bookmark-icon flex items-center justify-center">
@@ -858,11 +833,15 @@ const NavPage: React.FC = () => {
                               <div className="card-content">
                                 <div className="icon-category-container">
                                   {bookmark.ico_url ? (
-                                    <img
+                                    <CachedIcon
                                       src={proxyImageUrl(bookmark.ico_url)}
                                       alt={bookmark.title}
                                       className="bookmark-icon"
-                                      onError={(e) => handleImageError(e, bookmark.ico_url || '')}
+                                      defaultIcon={
+                                        <div className="bookmark-icon flex items-center justify-center">
+                                          <Globe className="w-4 h-4 text-gray-500" />
+                                        </div>
+                                      }
                                     />
                                   ) : (
                                     <div className="bookmark-icon flex items-center justify-center">
@@ -973,11 +952,15 @@ const NavPage: React.FC = () => {
                             <div className="card-content">
                               <div className="icon-category-container">
                                 {bookmark.ico_url ? (
-                                  <img
+                                  <CachedIcon
                                     src={proxyImageUrl(bookmark.ico_url)}
                                     alt={bookmark.title}
                                     className="bookmark-icon"
-                                    onError={(e) => handleImageError(e, bookmark.ico_url || '')}
+                                    defaultIcon={
+                                      <div className="bookmark-icon flex items-center justify-center">
+                                        <Globe className="w-4 h-4 text-gray-500" />
+                                      </div>
+                                    }
                                   />
                                 ) : (
                                   <div className="bookmark-icon flex items-center justify-center">
