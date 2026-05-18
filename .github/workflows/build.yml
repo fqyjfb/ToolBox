@@ -11,6 +11,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       PNPM_ENABLE_PRE_POST_SCRIPTS: true
+      PNPM_ENABLE_BUILD_SCRIPTS: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -23,8 +24,8 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Install dependencies with build scripts allowed
-        run: pnpm install --config.neverBuiltDependencies=
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Build frontend
         run: pnpm build
