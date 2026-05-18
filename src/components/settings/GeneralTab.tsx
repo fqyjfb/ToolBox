@@ -1,8 +1,8 @@
 import React from 'react';
-import { Settings as SettingsIcon, MapPin, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, MapPin, Loader2, Bell, AlertCircle } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
-import { WindowSize } from '../../types/settings';
+import { WindowSize, NotificationSettings } from '../../types/settings';
 import { useToastStore } from '../../store/toastStore';
 import { useThemeStore } from '../../store/themeStore';
 
@@ -15,6 +15,7 @@ interface GeneralTabProps {
   leftMenuPosition: string;
   defaultWindowSize: WindowSize;
   browserMode: string;
+  notifications: NotificationSettings;
   onAutostartToggle: (enabled: boolean) => void;
   onEdgeAdsorptionChange: (enabled: boolean) => void;
   onMemoryOptimizationChange: (enabled: boolean) => void;
@@ -23,6 +24,7 @@ interface GeneralTabProps {
   onMenuPositionChange: (position: string) => void;
   onWindowSizeChange: (key: 'width' | 'height', value: string) => void;
   onBrowserModeChange: (value: string) => void;
+  onNotificationToggle: (key: keyof NotificationSettings) => void;
 }
 
 const GeneralTab: React.FC<GeneralTabProps> = ({
@@ -34,6 +36,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   leftMenuPosition,
   defaultWindowSize,
   browserMode,
+  notifications,
   onAutostartToggle,
   onEdgeAdsorptionChange,
   onMemoryOptimizationChange,
@@ -42,6 +45,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   onMenuPositionChange,
   onWindowSizeChange,
   onBrowserModeChange,
+  onNotificationToggle,
 }) => {
   const addToast = useToastStore(state => state.addToast);
   const { isDark, setTheme } = useThemeStore();
@@ -179,6 +183,29 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               保存
             </button>
           </div>
+        </div>
+        <div className="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          <div className="w-5 h-5 flex items-center justify-center text-primary">
+            <Bell size={16} />
+          </div>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">通知设置</h3>
+        </div>
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={16} className="text-red-500" />
+              <span className="text-sm text-gray-700 dark:text-gray-300">错误通知</span>
+            </div>
+            <ToggleSwitch
+              enabled={notifications.errors}
+              onChange={() => onNotificationToggle('errors')}
+            />
+          </div>
+        </div>
+        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/30">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            开启后，当应用发生错误时会在界面显示错误提示通知
+          </p>
         </div>
       </div>
     </div>

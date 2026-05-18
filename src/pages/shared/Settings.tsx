@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Settings as SettingsIcon, Monitor, Bell, Keyboard, Circle, Database, Scan, FileText } from 'lucide-react';
+import { Settings as SettingsIcon, Monitor, Keyboard, Circle, Database, Scan, FileText } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps, QuickLaunchItem } from '../../utils/quickLaunch';
@@ -16,7 +16,6 @@ import { isElectron } from '../../utils/environment';
 import {
   GeneralTab,
   QuickLaunchTab,
-  NotificationsTab,
   ShortcutsTab,
   FloatWindowTab,
   StorageTab,
@@ -362,7 +361,6 @@ const Settings: React.FC = () => {
     { id: 'general' as const, label: '通用设置', icon: SettingsIcon },
     { id: 'storage' as const, label: '存储管理', icon: Database },
     { id: 'quickLaunch' as const, label: '快启动设置', icon: Monitor },
-    { id: 'notifications' as const, label: '通知设置', icon: Bell },
     { id: 'shortcuts' as const, label: '快捷键设置', icon: Keyboard },
     { id: 'floatWindow' as const, label: '悬浮窗设置', icon: Circle },
     ...(isElectron() ? [{ id: 'ocr' as const, label: 'OCR设置', icon: Scan }] : []),
@@ -400,6 +398,7 @@ const Settings: React.FC = () => {
             leftMenuPosition={leftMenuPosition}
             defaultWindowSize={defaultWindowSize}
             browserMode={browserMode}
+            notifications={notifications}
             onAutostartToggle={handleAutostartToggle}
             onEdgeAdsorptionChange={handleEdgeAdsorptionChange}
             onMemoryOptimizationChange={handleMemoryOptimizationChange}
@@ -408,6 +407,7 @@ const Settings: React.FC = () => {
             onMenuPositionChange={handleMenuPositionChange}
             onWindowSizeChange={handleWindowSizeChange}
             onBrowserModeChange={handleBrowserModeChange}
+            onNotificationToggle={handleNotificationToggle}
           />
         )}
 
@@ -426,12 +426,7 @@ const Settings: React.FC = () => {
           />
         )}
 
-        {activeTab === 'notifications' && (
-          <NotificationsTab
-            notifications={notifications}
-            onNotificationToggle={handleNotificationToggle}
-          />
-        )}
+
 
         {activeTab === 'shortcuts' && (
           <ShortcutsTab

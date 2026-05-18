@@ -7,6 +7,7 @@ import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useTodoNotification } from '../../contexts/TodoNotificationContext';
 import { isElectron } from '../../utils/environment';
 import Tooltip from '../ui/Tooltip';
+import Breadcrumb from '../ui/Breadcrumb';
 import './Content.css';
 
 interface ContentProps {
@@ -82,54 +83,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
     <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white ${className}`} style={{ overflowX: 'hidden' }}>
       <div className="px-6 py-2.5 flex items-center justify-between" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-            {location.pathname === '/' && '首页'}
-            {location.pathname === '/launch' && '快启动'}
-            {location.pathname === '/news' && '热点新闻'}
-            {location.pathname === '/nav' && '网址导航'}
-            {location.pathname === '/tools' && '工具中心'}
-            {location.pathname === '/tools/exchange' && '汇率换算'}
-            {location.pathname === '/tools/cloud-clipboard' && '云剪贴板'}
-            {location.pathname === '/tools/quick-reply' && '快捷回复'}
-            {location.pathname === '/tools/todo' && '待办事项'}
-            {location.pathname === '/tools/country-code' && '国家区号查询'}
-            {location.pathname === '/tools/account' && '账号管理'}
-            {location.pathname === '/tools/weather' && '天气预报'}
-            {location.pathname === '/tools/translate' && '在线翻译'}
-            {location.pathname === '/tools/markdown-to-wechat' && 'Markdown转微信'}
-            {location.pathname === '/tools/ip-info' && 'IP地址查询'}
-            {location.pathname === '/tools/emoji-remover' && 'Emoji清理器'}
-            {location.pathname === '/tools/json-formatter' && 'JSON格式化'}
-            {location.pathname === '/tools/timestamp-converter' && '时间戳转换'}
-            {location.pathname === '/tools/case-converter' && '大小写转换'}
-            {location.pathname === '/tools/hash-generator' && '哈希生成器'}
-            {location.pathname === '/tools/text-deduplicator' && '文本去重'}
-            {location.pathname === '/tools/csv-to-json' && 'CSV转JSON'}
-            {location.pathname === '/tools/json-to-csv' && 'JSON转CSV'}
-            {location.pathname === '/tools/url-parser' && 'URL解析'}
-            {location.pathname === '/tools/sitemap-generator' && '站点地图生成器'}
-            {location.pathname === '/tools/qr-generator' && '二维码生成器'}
-            {location.pathname === '/tools/regex-tester' && '正则表达式测试器'}
-            {location.pathname === '/tools/url-encode' && 'URL编码'}
-            {location.pathname === '/tools/meta-tags-generator' && '元标签生成器'}
-            {location.pathname === '/tools/markdown-to-text' && 'Markdown转文本'}
-            {location.pathname === '/tools/html-to-text' && 'HTML转文本'}
-            {location.pathname === '/tools/sql-minifier' && 'SQL压缩'}
-            {location.pathname === '/tools/hex-encode' && '十六进制编码'}
-            {location.pathname === '/tools/hex-decode' && '十六进制解码'}
-            {location.pathname === '/tools/ocr' && 'OCR文字识别'}
-            {location.pathname === '/tools/file-manager' && '文件管理'}
-            {location.pathname === '/tools/profile' && '个人信息'}
-            {location.pathname === '/admin' && '管理控制台'}
-            {location.pathname === '/admin/websites' && '网址管理'}
-            {location.pathname === '/admin/users' && '用户管理'}
-            {location.pathname.includes('/admin/users/edit') && '编辑用户'}
-            {location.pathname === '/admin/tools' && '工具管理'}
-            {location.pathname === '/admin/database' && '数据管理'}
-            {location.pathname === '/settings' && '设置'}
-            {location.pathname === '/about' && '关于'}
-            {location.pathname === '/login' && '登录'}
-          </span>
+          <Breadcrumb />
         </div>
         <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <div className="flex items-center space-x-3">
