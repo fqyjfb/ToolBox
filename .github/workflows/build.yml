@@ -10,6 +10,7 @@ jobs:
     runs-on: windows-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      PNPM_ENABLE_PRE_POST_SCRIPTS: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -23,7 +24,7 @@ jobs:
         run: npm install -g pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --unsafe-perm
 
       - name: Build frontend
         run: pnpm build
