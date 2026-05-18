@@ -23,11 +23,8 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Approve build scripts
-        run: pnpm approve-builds --all
+      - name: Install dependencies with build scripts allowed
+        run: pnpm install --config.neverBuiltDependencies=
 
       - name: Build frontend
         run: pnpm build
