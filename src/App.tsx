@@ -12,7 +12,7 @@ import { logError } from './services/loggerService';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes } from './config/routes';
-const LogsPage = React.lazy(() => import('./pages/tools/logs'));
+const LogsPage = React.lazy(() => import('./pages/tools/logs/index'));
 import { isElectron } from './utils/environment';
 
 const TrayNavigationHandler: React.FC = () => {
@@ -54,7 +54,7 @@ function App() {
     const checkMobile = () => {
       setIsMobileDevice(isMobile());
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -129,8 +129,8 @@ function App() {
         <Router>
           {isDesktopApp && !isStandaloneLogWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
           <Routes>
-            <Route 
-              path="/*" 
+            <Route
+              path="/*"
               element={
                 <>
                   {isDesktopApp && isStandaloneLogWindow() ? (
@@ -144,27 +144,27 @@ function App() {
                       <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
                         <Routes>
                           {currentRoutes.map((route) => (
-                            <Route 
-                              key={route.path} 
-                              path={route.path} 
-                              element={route.element} 
+                            <Route
+                              key={route.path}
+                              path={route.path}
+                              element={route.element}
                             />
                           ))}
 
                           {isAuthenticated ? (
                             <>
                               {protectedRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={route.element} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={route.element}
                                 />
                               ))}
                               {isAdmin && adminRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={route.element} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={route.element}
                                 />
                               ))}
                               <Route path="*" element={<Navigate to="/" replace />} />
@@ -172,17 +172,17 @@ function App() {
                           ) : (
                             <>
                               {protectedRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={<Navigate to="/login" replace />} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={<Navigate to="/login" replace />}
                                 />
                               ))}
                               {adminRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={<Navigate to="/login" replace />} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={<Navigate to="/login" replace />}
                                 />
                               ))}
                               <Route path="*" element={<Navigate to="/" replace />} />
@@ -196,27 +196,27 @@ function App() {
                       <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
                         <Routes>
                           {currentRoutes.map((route) => (
-                            <Route 
-                              key={route.path} 
-                              path={route.path} 
-                              element={route.element} 
+                            <Route
+                              key={route.path}
+                              path={route.path}
+                              element={route.element}
                             />
                           ))}
 
                           {isAuthenticated ? (
                             <>
                               {protectedRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={route.element} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={route.element}
                                 />
                               ))}
                               {isAdmin && adminRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={route.element} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={route.element}
                                 />
                               ))}
                               <Route path="*" element={<Navigate to="/" replace />} />
@@ -224,17 +224,17 @@ function App() {
                           ) : (
                             <>
                               {protectedRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={<Navigate to="/login" replace />} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={<Navigate to="/login" replace />}
                                 />
                               ))}
                               {adminRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={<Navigate to="/login" replace />} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={<Navigate to="/login" replace />}
                                 />
                               ))}
                               <Route path="*" element={<Navigate to="/" replace />} />
@@ -248,27 +248,27 @@ function App() {
                       <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
                         <Routes>
                           {currentRoutes.map((route) => (
-                            <Route 
-                              key={route.path} 
-                              path={route.path} 
-                              element={route.element} 
+                            <Route
+                              key={route.path}
+                              path={route.path}
+                              element={route.element}
                             />
                           ))}
 
                           {isAuthenticated ? (
                             <>
                               {protectedRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={route.element} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={route.element}
                                 />
                               ))}
                               {isAdmin && adminRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={route.element} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={route.element}
                                 />
                               ))}
                               <Route path="*" element={<Navigate to="/" replace />} />
@@ -276,17 +276,17 @@ function App() {
                           ) : (
                             <>
                               {protectedRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={<Navigate to="/login" replace />} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={<Navigate to="/login" replace />}
                                 />
                               ))}
                               {adminRoutes.map((route) => (
-                                <Route 
-                                  key={route.path} 
-                                  path={route.path} 
-                                  element={<Navigate to="/login" replace />} 
+                                <Route
+                                  key={route.path}
+                                  path={route.path}
+                                  element={<Navigate to="/login" replace />}
                                 />
                               ))}
                               <Route path="*" element={<Navigate to="/" replace />} />
@@ -298,7 +298,7 @@ function App() {
                   )}
                   <Toast />
                 </>
-              } 
+              }
             />
           </Routes>
         </Router>

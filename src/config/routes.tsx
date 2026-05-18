@@ -18,7 +18,7 @@ const LoginPage = React.lazy(() => import('../pages/shared/LoginPage'));
 const Settings = React.lazy(() => import('../pages/shared/Settings'));
 const About = React.lazy(() => import('../pages/shared/About'));
 const ToolsPage = React.lazy(() => import('../pages/shared/ToolsPage'));
-const LogsPage = React.lazy(() => import('../pages/tools/logs'));
+const LogsPage = React.lazy(() => import('../pages/tools/logs/index'));
 
 const CountryCodePage = React.lazy(() => import('../pages/tools/country-code'));
 const ExchangePage = React.lazy(() => import('../pages/tools/exchange'));
