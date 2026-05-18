@@ -1,3 +1,7 @@
+packages:
+  - "."
+  - "**"
+
 ignoredBuiltDependencies:
   - core-js
   - electron
