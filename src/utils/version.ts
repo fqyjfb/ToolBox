@@ -1,4 +1,6 @@
-export const APP_VERSION = '2.1.4';
+import pkg from '../../package.json';
+
+export const APP_VERSION = pkg.version;
 
 export const getVersion = (): string => {
   return APP_VERSION;
