@@ -1,7 +1,7 @@
 {
   "name": "ToolBox",
   "private": true,
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "实用工具的多功能工具包应用程序",
   "author": "ToolBox Team",
   "type": "commonjs",

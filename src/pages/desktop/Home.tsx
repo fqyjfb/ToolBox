@@ -256,7 +256,7 @@ const Home: React.FC = () => {
       </div>
 
       <div className="flex gap-2 flex-1 items-stretch min-h-0">
-        <div className="flex flex-col gap-1 w-[280px] flex-shrink-0">
+        <div className="flex flex-col gap-1 w-home-card flex-shrink-0">
           <ToolGrid tools={homeTools} onToolClick={navigateToTool} />
           {isDesktop && (
             <div className="flex-1 min-h-0">

@@ -636,7 +636,7 @@ const NavPage: React.FC = () => {
               onClick={() => setShowMoreCategories(false)}
             />
             <div 
-              className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-[150px]"
+              className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown-lg"
               style={{ left: `${left - 130}px`, top: `${top + 4}px` }}
             >
               {overflowCategories.map((category) => (
@@ -672,7 +672,7 @@ const NavPage: React.FC = () => {
               onClick={() => setShowMoreSubCategories(false)}
             />
             <div 
-              className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-[120px]"
+              className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown"
               style={{ left: `${left - 80}px`, top: `${top + 4}px` }}
             >
               {overflowSubCategories.map((subCategory) => (

@@ -493,7 +493,7 @@ const AdminWebsitesPage: React.FC = () => {
             </div>
             {activeTab === 'bookmarks' && (
               <div className="flex flex-col sm:flex-row sm:gap-2">
-                <div className="relative max-w-[200px] w-full">
+                <div className="relative max-w-truncate-xl w-full">
                   <input
                     type="text"
                     value={searchQuery}
@@ -600,7 +600,7 @@ const AdminWebsitesPage: React.FC = () => {
                         <td className="px-4 py-3 sm:px-6">
                           <button
                             onClick={(e) => { e.stopPropagation(); openBookmarkUrl(bookmark.url) }}
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline flex items-center gap-1 truncate max-w-[200px]"
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline flex items-center gap-1 truncate max-w-truncate-xl"
                             title="点击打开网站"
                           >
                             <span className="truncate">{bookmark.url}</span>

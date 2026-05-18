@@ -86,7 +86,7 @@ const CountryCodePage: React.FC = () => {
                     <td className="py-1.5 px-3">
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-900 dark:text-white">{item.country}</span>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${regionColors[item.region]}`}>
+                        <span className={`px-1.5 py-0.5 rounded-full text-2xs font-medium ${regionColors[item.region]}`}>
                           {item.region}
                         </span>
                       </div>
@@ -102,7 +102,7 @@ const CountryCodePage: React.FC = () => {
                 <tr>
                   <td colSpan={2} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     <p className="text-xs">未找到匹配的国家/地区</p>
-                    <p className="text-[10px] mt-1">请尝试其他搜索关键词或选择其他区域</p>
+                    <p className="text-2xs mt-1">请尝试其他搜索关键词或选择其他区域</p>
                   </td>
                 </tr>
               )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Settings as SettingsIcon, Monitor, Bell, Keyboard, Circle, Database, Scan, FileText } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -12,6 +12,7 @@ import {
 } from '../../types/settings';
 import { DEFAULT_SHORTCUTS, DEFAULT_WINDOW_SIZE } from '../../constants/settings';
 import { logError } from '../../services/loggerService';
+import { isElectron } from '../../utils/environment';
 import {
   GeneralTab,
   QuickLaunchTab,
@@ -19,9 +20,9 @@ import {
   ShortcutsTab,
   FloatWindowTab,
   StorageTab,
-  OcrTab,
   LogMonitorTab
 } from '../../components/settings';
+const OcrTab = isElectron() ? lazy(() => import('../../components/settings/OcrTab')) : null;
 import './Settings.css';
 
 const Settings: React.FC = () => {
@@ -364,7 +365,7 @@ const Settings: React.FC = () => {
     { id: 'notifications' as const, label: '通知设置', icon: Bell },
     { id: 'shortcuts' as const, label: '快捷键设置', icon: Keyboard },
     { id: 'floatWindow' as const, label: '悬浮窗设置', icon: Circle },
-    { id: 'ocr' as const, label: 'OCR设置', icon: Scan },
+    ...(isElectron() ? [{ id: 'ocr' as const, label: 'OCR设置', icon: Scan }] : []),
     { id: 'logMonitor' as const, label: '日志监控', icon: FileText }
   ];
 
@@ -449,7 +450,11 @@ const Settings: React.FC = () => {
           />
         )}
 
-        {activeTab === 'ocr' && <OcrTab />}
+        {activeTab === 'ocr' && OcrTab && (
+          <Suspense fallback={<div className="flex items-center justify-center py-8">加载中...</div>}>
+            <OcrTab />
+          </Suspense>
+        )}
 
         {activeTab === 'logMonitor' && <LogMonitorTab />}
       </div>

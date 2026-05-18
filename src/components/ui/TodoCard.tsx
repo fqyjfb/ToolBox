@@ -30,6 +30,8 @@ const getPriorityColor = (priority: string): string => {
   }
 };
 
+
+
 const formatTime = (dueDate?: string | null): { text: string; status: 'overdue' | 'today' | 'tomorrow' | 'later' } | null => {
   if (!dueDate) return null;
   
@@ -169,12 +171,12 @@ const TodoCard: React.FC<TodoCardProps> = ({
                 )}
 
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-[10px] font-medium ${getPriorityColor(todo.priority)}`}>
+                  <span className={`text-2xs font-medium ${getPriorityColor(todo.priority)}`}>
                     {todo.priority}
                   </span>
                   {timeInfo && (
                     <span
-                      className={`text-[10px] flex items-center gap-1 ${
+                      className={`text-2xs flex items-center gap-1 ${
                         timeInfo.status === 'overdue'
                           ? 'text-red-500'
                           : 'text-gray-400 dark:text-gray-500'

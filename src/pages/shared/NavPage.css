@@ -11,8 +11,8 @@
   gap: 0.25rem;
   padding: 0.75rem;
   background: var(--color-card);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -22,7 +22,7 @@
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   min-height: 90px;
-  border-left: 3px solid transparent;
+  border-left: var(--space-1) solid transparent;
   will-change: transform, box-shadow;
   user-select: none;
   backface-visibility: hidden;
@@ -707,8 +707,8 @@ main::-webkit-scrollbar-thumb:hover {
   line-height: 1.4;
   max-width: 200px;
   border: 1px solid var(--color-tooltip-border);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
 }
 
 .search-results-container {
@@ -742,16 +742,16 @@ main::-webkit-scrollbar-thumb:hover {
   justify-content: center;
   background: var(--color-primary);
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(39, 93, 126, 0.4);
+  box-shadow: var(--shadow-primary);
   animation: searchIconPulse 2s ease-in-out infinite;
 }
 
 @keyframes searchIconPulse {
   0%, 100% {
-    box-shadow: 0 4px 12px rgba(39, 93, 126, 0.4);
+    box-shadow: var(--shadow-primary);
   }
   50% {
-    box-shadow: 0 6px 20px rgba(39, 93, 126, 0.6);
+    box-shadow: var(--shadow-primary-hover);
   }
 }
 
@@ -777,7 +777,7 @@ main::-webkit-scrollbar-thumb:hover {
 
 .search-highlight:hover {
   border-left-color: var(--color-primary-hover);
-  box-shadow: 0 8px 25px rgba(39, 93, 126, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 .search-empty-state {

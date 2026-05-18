@@ -225,7 +225,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
               >
                 <Bell className="w-5 h-5" />
                 {pendingCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-2xs font-bold rounded-full flex items-center justify-center">
                     {pendingCount > 9 ? '9+' : pendingCount}
                   </span>
                 )}

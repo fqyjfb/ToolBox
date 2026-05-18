@@ -52,7 +52,7 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ className = '' }) => {
 
   if (loading) {
     return (
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-center h-full min-h-[300px] ${className}`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-center h-full min-h-moyu-card ${className}`}>
         <LoadingSpinner size="sm" />
       </div>
     );
@@ -60,7 +60,7 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ className = '' }) => {
 
   if (error || !moyuData) {
     return (
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 h-full min-h-[300px] ${className}`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 h-full min-h-moyu-card ${className}`}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Coffee className="w-4 h-4 text-orange-500" />

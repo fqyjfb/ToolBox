@@ -84,10 +84,9 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, onUpdate }) => {
         }`}
       >
         <span
-          className={`inline-block w-3 h-3 transform rounded-full transition-transform ${
+          className={`inline-block w-3 h-3 transform rounded-full transition-transform bg-white dark:bg-white ${
             shortcut.isOpen === 1 ? 'translate-x-5' : 'translate-x-1'
           }`}
-          style={{ backgroundColor: 'white' }}
         />
       </button>
     </div>

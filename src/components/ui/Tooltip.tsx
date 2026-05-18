@@ -69,16 +69,8 @@ const Tooltip: React.FC<TooltipProps> = ({ children, title, position = 'top' }) 
       {isVisible && (
         <div
           ref={tooltipRef}
-          className={`absolute z-[1000] rounded-lg whitespace-nowrap transition-all duration-200 opacity-100 pointer-events-none ${positionClasses[actualPosition]}`}
-          style={{
-            backgroundColor: 'var(--color-tooltip-bg, dodgerblue)',
-            color: 'white',
-            fontSize: 'small',
-            fontWeight: 'bold',
-            paddingInline: '7px',
-            paddingBlock: '3px',
-            boxShadow: 'var(--shadow-md)',
-          }}
+          className={`absolute z-[1000] rounded-lg whitespace-nowrap transition-all duration-200 opacity-100 pointer-events-none text-white text-sm font-bold px-[7px] py-[3px] shadow-md ${positionClasses[actualPosition]}`}
+          style={{ backgroundColor: 'var(--color-tooltip-bg, dodgerblue)' }}
         >
           {title}
         </div>

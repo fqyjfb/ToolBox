@@ -160,28 +160,28 @@ const WeatherCard: React.FC = () => {
               <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/10 p-1.5 backdrop-blur-sm mb-2">
                 <div className="flex flex-col items-center gap-0.5">
                   <Droplets size={12} className="text-white/80" />
-                  <span className="text-[9px] opacity-80">湿度</span>
+                  <span className="text-3xs opacity-80">湿度</span>
                   <span className="text-xs font-semibold">
                     {weatherData?.weather?.humidity ?? '--'}%
                   </span>
                 </div>
                 <div className="flex flex-col items-center gap-0.5">
                   <Wind size={12} className="text-white/80" />
-                  <span className="text-[9px] opacity-80">风向</span>
+                  <span className="text-3xs opacity-80">风向</span>
                   <span className="text-xs font-semibold">
                     {weatherData?.weather?.wind_direction ?? '--'}
                   </span>
                 </div>
                 <div className="flex flex-col items-center gap-0.5">
                   <Gauge size={12} className="text-white/80" />
-                  <span className="text-[9px] opacity-80">气压</span>
+                  <span className="text-3xs opacity-80">气压</span>
                   <span className="text-xs font-semibold">
                     {weatherData?.weather?.pressure ?? '--'}
                   </span>
                 </div>
                 <div className="flex flex-col items-center gap-0.5">
                   <Cloud size={12} className="text-white/80" />
-                  <span className="text-[9px] opacity-80">降水</span>
+                  <span className="text-3xs opacity-80">降水</span>
                   <span className="text-xs font-semibold">
                     {weatherData?.weather?.precipitation ?? '--'}mm
                   </span>
@@ -192,13 +192,13 @@ const WeatherCard: React.FC = () => {
                 <div className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1 mb-1.5">
                   <div className="flex items-center gap-1">
                     <Sun size={12} className="text-white/80" />
-                    <span className="text-[9px]">空气质量</span>
+                    <span className="text-3xs">空气质量</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-semibold">
+                    <span className="text-2xs font-semibold">
                       {weatherData.air_quality.quality}
                     </span>
-                    <span className="text-[9px] opacity-80">
+                    <span className="text-3xs opacity-80">
                       AQI {weatherData.air_quality.aqi}
                     </span>
                   </div>
@@ -209,14 +209,14 @@ const WeatherCard: React.FC = () => {
                 <div className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1 mb-1.5">
                   <div className="flex items-center gap-1">
                     <Sun size={12} className="text-yellow-300" />
-                    <span className="text-[9px]">日出</span>
-                    <span className="text-[10px] font-semibold">
+                    <span className="text-3xs">日出</span>
+                    <span className="text-2xs font-semibold">
                       {weatherData.sunrise.sunrise_desc}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[9px]">日落</span>
-                    <span className="text-[10px] font-semibold">
+                    <span className="text-3xs">日落</span>
+                    <span className="text-2xs font-semibold">
                       {weatherData.sunrise.sunset_desc}
                     </span>
                   </div>
@@ -225,19 +225,19 @@ const WeatherCard: React.FC = () => {
 
               {forecast.length > 0 && (
                 <div>
-                  <h4 className="mb-1.5 text-[9px] font-medium text-white/80">未来2天</h4>
+                  <h4 className="mb-1.5 text-3xs font-medium text-white/80">未来2天</h4>
                   <div className="space-y-1">
                     {forecast.slice(0, 2).map((day, index) => (
                       <div
                         key={index}
                         className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1"
                       >
-                        <span className="text-[10px] font-medium">{getDayName(day.date)}</span>
+                        <span className="text-2xs font-medium">{getDayName(day.date)}</span>
                         <div className="flex items-center gap-2">
                           {getWeatherIcon(day.day_condition || '', 'sm', 'text-white')}
                           <div className="flex gap-1.5">
-                            <span className="text-[10px] font-semibold">{day.min_temperature}°</span>
-                            <span className="text-[10px] text-white/80">{day.max_temperature}°</span>
+                            <span className="text-2xs font-semibold">{day.min_temperature}°</span>
+                            <span className="text-2xs text-white/80">{day.max_temperature}°</span>
                           </div>
                         </div>
                       </div>

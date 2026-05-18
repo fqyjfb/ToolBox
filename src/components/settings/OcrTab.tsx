@@ -471,7 +471,7 @@ const OcrTab: React.FC = () => {
             <button
               onClick={handleInstallDeps}
               disabled={isInstalling}
-              className="px-3 py-1.5 bg-success hover:bg-success/80 text-white text-xs rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              className="px-3 py-1.5 bg-primary hover:bg-primary/80 text-white text-xs rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               {isInstalling ? (
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -574,12 +574,12 @@ const OcrTab: React.FC = () => {
             <div className="p-4 max-h-96 overflow-auto">
               {isInstalling ? (
                 <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="w-6 h-6 animate-spin text-success mr-3" />
+                  <RefreshCw className="w-6 h-6 animate-spin text-primary mr-3" />
                   <span className="text-gray-600 dark:text-gray-400">正在安装依赖，这可能需要几分钟...</span>
                 </div>
               ) : installResult ? (
                 <div className="space-y-4">
-                  <div className={`p-3 rounded-lg text-sm ${installResult.success ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
+                  <div className={`p-3 rounded-lg text-sm ${installResult.success ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
                     {installResult.success ? '✓ 依赖安装成功！' : '✗ 依赖安装失败'}
                   </div>
                   {installResult.output && (

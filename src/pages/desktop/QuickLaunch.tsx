@@ -28,7 +28,7 @@ const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'med
       {...attributes}
       {...listeners}
       className={`flex flex-col items-center justify-center cursor-grab active:cursor-grabbing transition-all duration-200 ${
-        iconSize === 'small' ? 'w-[80px] h-[68px]' : 'w-[100px] h-[84px]'
+        iconSize === 'small' ? 'w-quick-launch-sm h-quick-launch-sm' : 'w-quick-launch-lg h-quick-launch-lg'
       } ${isDragging ? 'shadow-lg' : 'hover:-translate-y-1 hover:scale-105'}`}
       onClick={() => onLaunch(app.path)}
       onContextMenu={onContextMenu}
@@ -47,7 +47,7 @@ const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'med
         }`} />
       )}
       <span className={`font-medium text-gray-700 dark:text-gray-200 truncate w-full text-center ${
-        iconSize === 'small' ? 'text-[8px]' : 'text-[10px]'
+        iconSize === 'small' ? 'text-4xs' : 'text-2xs'
       }`}>
         {app.name}
       </span>
@@ -649,7 +649,7 @@ const QuickLaunch: React.FC = () => {
             onDragEnd={handleAppsDragEnd}
           >
             <SortableContext items={filteredApps.map(app => app.id)} strategy={verticalListSortingStrategy}>
-              <div className={`grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-[15px] min-h-[300px] transition-all duration-200 ${
+              <div className={`grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3.5 min-h-quick-launch transition-all duration-200 ${
                 isDragOver ? 'border-2 border-dashed border-green-400 rounded-lg p-4' : ''
               }`}>
                 {filteredApps.map((app) => (

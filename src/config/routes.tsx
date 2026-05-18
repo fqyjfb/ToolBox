@@ -51,7 +51,7 @@ const SqlMinifierPage = React.lazy(() => import('../pages/tools/sql-minifier'));
 const HexEncodePage = React.lazy(() => import('../pages/tools/hex-encode'));
 const HexDecodePage = React.lazy(() => import('../pages/tools/hex-decode'));
 const WeatherPage = React.lazy(() => import('../pages/tools/weather'));
-const OcrPage = React.lazy(() => import('../pages/tools/ocr'));
+const OcrPage = React.lazy(() => import('../pages/tools/ocr/OcrWrapper'));
 const FileManagerPage = React.lazy(() => import('../pages/tools/file-manager'));
 
 const AdminDashboardPage = React.lazy(() => import('../pages/admin'));

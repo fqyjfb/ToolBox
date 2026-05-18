@@ -341,11 +341,11 @@ const WeatherPage: React.FC = () => {
                   {weatherData.life_indices.map((index, idx) => (
                     <div
                       key={idx}
-                      className={`px-1.5 py-0.5 rounded text-[11px] whitespace-nowrap cursor-help transition-transform hover:scale-105 ${getLifeIndexLevelColor(index.level)}`}
+                      className={`px-1.5 py-0.5 rounded text-xs-plus whitespace-nowrap cursor-help transition-transform hover:scale-105 ${getLifeIndexLevelColor(index.level)}`}
                       title={index.description}
                     >
                       <span className="font-medium">{index.name}</span>
-                      <span className={`ml-1 px-1 py-0.25 rounded-full text-[9px] font-semibold ${getLifeIndexBadgeColor(index.level)}`}>
+                      <span className={`ml-1 px-1 py-0.25 rounded-full text-3xs font-semibold ${getLifeIndexBadgeColor(index.level)}`}>
                         {getLifeIndexBadgeText(index.level)}
                       </span>
                     </div>

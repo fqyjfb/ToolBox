@@ -189,7 +189,7 @@ const LoginPage: React.FC = () => {
           <p>
             {activeTab === 'login' ? '欢迎回来，请登录您的账号' : 
              activeTab === 'register' ? '创建新账号' : 
-             '请输入您的邮箱，我们将发送重置密码的链接'}
+             '发送重置密码的链接到邮箱'}
           </p>
         </div>
 
