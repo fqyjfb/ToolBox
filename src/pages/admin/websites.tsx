@@ -229,6 +229,11 @@ const AdminWebsitesPage: React.FC = () => {
     }
   })
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+    setPage(1)
+  }
+
   const handleSearchSubmit = () => {
     setPage(1)
   }
@@ -456,14 +461,6 @@ const AdminWebsitesPage: React.FC = () => {
 
   const isLoading = categoriesLoading || bookmarksLoading
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
-
   return (
     <div className="h-full flex flex-col p-6 overflow-hidden">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col h-full">
@@ -497,7 +494,7 @@ const AdminWebsitesPage: React.FC = () => {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={handleSearchChange}
                     onKeyDown={handleKeyDown}
                     placeholder="搜索网址..."
                     className="w-full px-3 py-1.5 pr-24 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
@@ -515,6 +512,7 @@ const AdminWebsitesPage: React.FC = () => {
                     </button>
                   )}
                   <button
+                    type="button"
                     onClick={handleSearchSubmit}
                     className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                     title="搜索"
@@ -564,7 +562,12 @@ const AdminWebsitesPage: React.FC = () => {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                {isLoading ? (
+                  <div className="flex items-center justify-center min-h-[60vh]">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                ) : (
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                     <tr>
                       <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -629,7 +632,8 @@ const AdminWebsitesPage: React.FC = () => {
                       </tr>
                     )}
                   </tbody>
-                </table>
+                  </table>
+                )}
               </div>
 
               <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">

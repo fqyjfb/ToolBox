@@ -197,20 +197,24 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
   };
 
   useEffect(() => {
-    setCurrentPage(1);
-    loadPasswords(1);
-  }, [selectedCategory]);
+    if (categories.length > 0) {
+      setCurrentPage(1);
+      loadPasswords(1);
+    }
+  }, [categories, selectedCategory]);
 
   useEffect(() => {
-    if (currentPage > 1) {
+    if (currentPage > 1 && categories.length > 0) {
       loadPasswords(currentPage);
     }
   }, [currentPage]);
 
   useEffect(() => {
-    setCurrentPage(1);
-    loadPasswords(1);
-  }, [searchQuery, isSearchActive]);
+    if (categories.length > 0) {
+      setCurrentPage(1);
+      loadPasswords(1);
+    }
+  }, [searchQuery, isSearchActive, categories]);
 
   const loadCategories = async () => {
     try {
@@ -240,15 +244,6 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       }
       
       setCategories(sortedCategories);
-      const firstMainCategory = sortedCategories.find(c => !c.parent_id);
-      if (firstMainCategory && !selectedCategory) {
-        setSelectedCategory(firstMainCategory.id);
-        await loadPasswords(1, firstMainCategory.id, sortedCategories);
-      } else if (selectedCategory) {
-        await loadPasswords(1, selectedCategory, sortedCategories);
-      } else {
-        await loadPasswords(1);
-      }
     } catch (error) {
       console.error('加载分类失败:', error);
       addToast({ message: '加载分类失败', type: 'error' });

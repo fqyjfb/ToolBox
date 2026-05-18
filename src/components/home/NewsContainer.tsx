@@ -124,29 +124,8 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
 
   return (
     <div className="card flex-1 h-full flex flex-col">
-      <div className="tools">
-        <div className="flex space-x-2">
-          <div className="circle">
-            <span className="red box"></span>
-          </div>
-          <div className="circle">
-            <span className="yellow box"></span>
-          </div>
-          <div className="circle">
-            <span className="green box"></span>
-          </div>
-        </div>
-        <button
-          onClick={handleRefresh}
-          className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-          title="刷新"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
-      
       <div className="card__content flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className="news-tabs flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-600 mb-2">
+        <div className="news-tabs flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-600 mb-2 items-center">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -160,6 +139,15 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
               {tab.label}
             </button>
           ))}
+          <div className="ml-auto">
+            <button
+              onClick={handleRefresh}
+              className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-1"
+              title="刷新"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {loading ? (

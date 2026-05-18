@@ -31,6 +31,15 @@ export interface TableData {
   user_favorites: Record<string, unknown>[]
   tool_categories: Record<string, unknown>[]
   tools: Record<string, unknown>[]
+  shops: Record<string, unknown>[]
+  social_accounts: Record<string, unknown>[]
+  emails: Record<string, unknown>[]
+  phones: Record<string, unknown>[]
+  companies: Record<string, unknown>[]
+  credentials: Record<string, unknown>[]
+  general_accounts: Record<string, unknown>[]
+  todo_categories: Record<string, unknown>[]
+  todos: Record<string, unknown>[]
 }
 
 export interface BackupData extends TableData {
@@ -39,13 +48,17 @@ export interface BackupData extends TableData {
 
 class DatabaseBackupService {
   private tables: (keyof TableData)[] = [
-    'profiles', 'users', 'announcements', 'blog_categories', 'blog_posts', 
-    'blog_comments', 'clipboard_categories', 'clipboard_items', 
-    'password_categories', 'passwords', 'tiktok_forms', 'tiktok_form_fields', 
-    'tiktok_customers', 'tiktok_settings', 'tiktok_sync_configs', 
-    'quick_reply_categories', 'quick_replies', 'categories', 'bookmarks', 
-    'user_favorites', 'tool_categories', 'tools'
+    'profiles', 'users', 'announcements', 'blog_categories', 'blog_posts',
+    'blog_comments', 'clipboard_categories', 'clipboard_items',
+    'password_categories', 'passwords', 'tiktok_forms', 'tiktok_form_fields',
+    'tiktok_customers', 'tiktok_settings', 'tiktok_sync_configs',
+    'quick_reply_categories', 'quick_replies', 'categories', 'bookmarks',
+    'user_favorites', 'tool_categories', 'tools', 'shops', 'social_accounts',
+    'emails', 'phones', 'companies', 'credentials', 'general_accounts',
+    'todo_categories', 'todos'
   ]
+
+  private readonly BATCH_SIZE = 1000
 
   async exportToSQL(): Promise<string> {
     try {
@@ -64,14 +77,34 @@ class DatabaseBackupService {
 
       for (const table of this.tables) {
         try {
-          const { data, error } = await supabase.from(table).select('*')
-          if (error) {
-            logError(`导出表 ${table} 失败`, 'DatabaseBackupService', error as Error);
-            backupData[table] = []
-          } else {
-            backupData[table] = data || []
-            totalRecords += (data || []).length
+          const allData: Record<string, unknown>[] = []
+          let hasMore = true
+          let offset = 0
+
+          while (hasMore) {
+            const { data, error } = await supabase
+              .from(table)
+              .select('*')
+              .range(offset, offset + this.BATCH_SIZE - 1)
+            
+            if (error) {
+              logError(`导出表 ${table} 失败 (偏移: ${offset})`, 'DatabaseBackupService', error as Error);
+              break
+            }
+
+            if (data && data.length > 0) {
+              allData.push(...data)
+              offset += this.BATCH_SIZE
+              if (data.length < this.BATCH_SIZE) {
+                hasMore = false
+              }
+            } else {
+              hasMore = false
+            }
           }
+
+          backupData[table] = allData
+          totalRecords += allData.length
         } catch (error) {
           logError(`导出表 ${table} 失败`, 'DatabaseBackupService', error as Error);
           backupData[table] = []
@@ -79,7 +112,7 @@ class DatabaseBackupService {
       }
 
       const info: BackupInfo = {
-        version: '1.0',
+        version: '1.1',
         timestamp: new Date().toISOString(),
         tables: this.tables as string[],
         recordCount: totalRecords
@@ -94,7 +127,7 @@ class DatabaseBackupService {
 
   private generateSQL(backupData: BackupData): string {
     const timestamp = new Date().toISOString()
-    let sql = '-- ToolBox 数据库备份\n-- 备份时间: ' + timestamp + '\n-- 版本: 1.0\n\nBEGIN TRANSACTION;\n\n'
+    let sql = '-- ToolBox 数据库备份\n-- 备份时间: ' + timestamp + '\n-- 版本: 1.1\n\nBEGIN TRANSACTION;\n\n'
 
     for (const table of this.tables) {
       const records = backupData[table] || []
@@ -145,7 +178,11 @@ class DatabaseBackupService {
         if (records.length === 0) continue
 
         await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000')
-        await supabase.from(table).insert(records)
+        
+        for (let i = 0; i < records.length; i += this.BATCH_SIZE) {
+          const batch = records.slice(i, i + this.BATCH_SIZE)
+          await supabase.from(table).insert(batch)
+        }
       }
 
       return { success: true, message: '数据恢复成功' }

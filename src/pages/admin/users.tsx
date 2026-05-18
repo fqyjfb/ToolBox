@@ -34,7 +34,7 @@ const UserListPage: React.FC = () => {
   
   const { contextMenu, handleContextMenu, handleClose, handleItemClick } = useContextMenu<UserItem>()
   
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['admin-users', currentPage, pageSize, searchQuery, sortBy, sortOrder, memberLevelFilter, statusFilter],
     queryFn: () => userService.getUserList(
       currentPage,
@@ -79,9 +79,13 @@ const UserListPage: React.FC = () => {
     },
   ]
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+    setCurrentPage(1)
+  }
+
   const handleSearchSubmit = () => {
     setCurrentPage(1)
-    refetch()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -124,14 +128,6 @@ const UserListPage: React.FC = () => {
       <ArrowUpDown className="w-3 h-3 text-blue-400 transform rotate-180" />
     ) : (
       <ArrowUpDown className="w-3 h-3 text-blue-400" />
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <LoadingSpinner size="lg" />
-      </div>
     )
   }
 
@@ -182,7 +178,7 @@ const UserListPage: React.FC = () => {
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchChange}
                   onKeyDown={handleKeyDown}
                   placeholder="搜索用户..."
                   className="w-full px-3 py-1.5 pr-24 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
@@ -197,6 +193,7 @@ const UserListPage: React.FC = () => {
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={handleSearchSubmit}
                   className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                   title="搜索"
@@ -209,7 +206,12 @@ const UserListPage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto flex-1">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          {isLoading ? (
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
               <tr>
                 <th 
@@ -324,7 +326,8 @@ const UserListPage: React.FC = () => {
                 </tr>
               )}
             </tbody>
-          </table>
+            </table>
+          )}
         </div>
 
         <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">

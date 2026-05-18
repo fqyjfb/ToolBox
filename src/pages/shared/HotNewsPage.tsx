@@ -115,42 +115,36 @@ const HotNewsPage: React.FC = () => {
         </defs>
       </svg>
       
-      {/* 控制栏：分类切换标签 + 刷新按钮 */}
+      {/* 控制栏：平台切换标签 + 刷新按钮 */}
       {!loading && !error && (
-          <div className="relative flex items-end justify-between p-2">
-            <div className="flex items-end gap-x-2">
-              {tabs.map((tab) => (
-                <div key={tab.value} className="relative">
-                  <div
-                    style={{ clipPath: 'url(#squircleClip)' }}
-                    className={`w-12 h-12 bg-gradient-to-br ${activeTab === tab.value ? 'from-gray-700 to-gray-900 border-gray-600/50 dark:from-gray-200 dark:to-gray-300 dark:border-gray-400/50' : 'from-gray-200 to-gray-300 border-gray-400/50 dark:from-gray-700 dark:to-gray-900 dark:border-gray-600/50'} rounded-xl flex items-center justify-center shadow-lg border cursor-pointer transform transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-2 hover:shadow-2xl`}
-                    onClick={() => setActiveTab(tab.value)}
-                    title={tab.label}
-                  >
-                    <img src={tab.icon} alt={tab.label} className="h-8 w-8" />
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="relative">
-              <div
-                style={{ clipPath: 'url(#squircleClip)' }}
-                className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-800 rounded-xl flex items-center justify-center shadow-lg border border-green-500/50 cursor-pointer transform transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-2 hover:shadow-2xl"
-                onClick={refreshHotNews}
-
-                title="刷新热点数据"
+        <div className="hot-platform-tabs">
+          <div className="flex items-center gap-2 flex-wrap">
+            {tabs.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={`platform-tab ${activeTab === tab.value ? 'active' : ''}`}
+                title={tab.label}
               >
-                {!loading ? (
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                ) : (
-                  <LoadingSpinner size="xs" />
-                )}
-              </div>
-            </div>
+                <img src={tab.icon} alt={tab.label} className="w-6 h-6" />
+                <span className="platform-tab-label">{tab.label}</span>
+              </button>
+            ))}
           </div>
+          <button
+            onClick={refreshHotNews}
+            className="refresh-tab"
+            title="刷新热点数据"
+          >
+            {!loading ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            ) : (
+              <LoadingSpinner size="xs" />
+            )}
+          </button>
+        </div>
       )}
       
       {loading && (

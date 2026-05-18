@@ -104,19 +104,26 @@ const NavPage: React.FC = () => {
   const dropdownButtonRef = useRef<HTMLButtonElement>(null)
   const subCategoriesContainerRef = useRef<HTMLDivElement>(null)
   const subCategoryDropdownButtonRef = useRef<HTMLButtonElement>(null)
+  
+  const isInitializedRef = useRef(false)
+  const cacheRef = useRef({
+    categories: null as Category[] | null,
+    bookmarks: null as Bookmark[] | null,
+    lastLoaded: 0
+  })
 
   // 检查用户是否登录
-  const isAuthenticated = async () => {
+  const isAuthenticated = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       return !!user
     } catch {
       return false
     }
-  }
+  }, [])
 
   // 加载用户收藏状态
-  const loadUserFavorites = async (cachedCategories?: Category[]) => {
+  const loadUserFavorites = useCallback(async (cachedCategories?: Category[]) => {
     const authenticated = await isAuthenticated()
     if (!authenticated) {
       return []
@@ -128,37 +135,24 @@ const NavPage: React.FC = () => {
     } catch {
       return []
     }
-  }
-
-  // 缓存数据
-  const [cache, setCache] = useState({
-    categories: null as Category[] | null,
-    bookmarks: null as Bookmark[] | null,
-    lastLoaded: 0
-  })
+  }, [isAuthenticated])
 
   // 加载数据
   const loadData = useCallback(async () => {
-    const now = Date.now()
-    const cacheExpiry = 5 * 60 * 1000 // 5分钟缓存
-    
-    // 检查缓存是否有效
-    if (cache.categories && cache.bookmarks && (now - cache.lastLoaded) < cacheExpiry) {
-      // 使用缓存数据
-      setCategoriesTree(websiteService.buildCategoryTree(cache.categories))
-      setBookmarks(cache.bookmarks)
-      
-      // 只在首次加载时设置默认分类
-      setActiveMainCategoryId(prev => {
-        if (!prev && cache.categories && cache.categories.length > 0) {
-          setActiveSubCategoryIds({
-            [cache.categories[0].id]: 'all'
-          })
-          return cache.categories[0].id
+    if (isInitializedRef.current && cacheRef.current.categories && cacheRef.current.bookmarks) {
+      const now = Date.now()
+      const cacheExpiry = 5 * 60 * 1000
+      if ((now - cacheRef.current.lastLoaded) < cacheExpiry) {
+        setCategoriesTree(websiteService.buildCategoryTree(cacheRef.current.categories!))
+        setBookmarks(cacheRef.current.bookmarks!)
+        
+        if (!activeMainCategoryId && cacheRef.current.categories!.length > 0) {
+          const firstCatId = cacheRef.current.categories![0].id
+          setActiveSubCategoryIds({ [firstCatId]: 'all' })
+          setActiveMainCategoryId(firstCatId)
         }
-        return prev
-      })
-      return
+        return
+      }
     }
     
     setIsLoading(true)
@@ -166,19 +160,14 @@ const NavPage: React.FC = () => {
     setErrorMessage('')
     
     try {
-      // 先获取分类数据
       const categories = await websiteService.getCategories()
       
-      // 并行获取其他数据，传递分类数据给收藏加载函数
       const [bookmarksData, userFavorites] = await Promise.all([
         websiteService.getPublicBookmarks(),
         loadUserFavorites(categories)
       ])
       
-      // 构建收藏ID集合
       const favoriteIds = userFavorites.map(f => f.id)
-      
-      // 应用收藏状态到书签数据
       const bookmarksWithFavorites = bookmarksData.map(bookmark => ({
         ...bookmark,
         is_favorite: favoriteIds.includes(bookmark.id)
@@ -188,34 +177,32 @@ const NavPage: React.FC = () => {
       setCategoriesTree(categoriesTreeData)
       setBookmarks(bookmarksWithFavorites)
       
-      // 更新缓存
-      setCache({
+      cacheRef.current = {
         categories,
         bookmarks: bookmarksWithFavorites,
-        lastLoaded: now
-      })
+        lastLoaded: Date.now()
+      }
+      isInitializedRef.current = true
       
-      // 只在首次加载时设置默认分类
-      setActiveMainCategoryId(prev => {
-        if (!prev && categoriesTreeData.length > 0) {
-          setActiveSubCategoryIds({
-            [categoriesTreeData[0].id]: 'all'
-          })
-          return categoriesTreeData[0].id
-        }
-        return prev
-      })
+      if (categoriesTreeData.length > 0) {
+        const firstCatId = categoriesTreeData[0].id
+        setActiveSubCategoryIds({ [firstCatId]: 'all' })
+        setActiveMainCategoryId(firstCatId)
+      }
     } catch (err) {
       setHasError(true)
       setErrorMessage('数据加载过程中遇到问题，部分内容可能无法显示: ' + ((err as Error).message || ''))
     } finally {
       setIsLoading(false)
     }
-  }, [cache])
+  }, [loadUserFavorites, activeMainCategoryId])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true
+      loadData()
+    }
+  }, [])
 
   // 检测分类导航是否超出可视宽度
   useEffect(() => {
