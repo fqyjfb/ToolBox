@@ -18,6 +18,7 @@ interface PhonePanelProps {
 
 interface PhonePanelRef {
   openModal: () => void;
+  setVisibleColumns: (columns: string[]) => void;
 }
 
 const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) => {
@@ -29,6 +30,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
   const [pageSize, setPageSize] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['phone_number', 'owner', 'phone_operator', 'phone_region', 'status']);
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<Phone | null>(null);
@@ -47,6 +49,31 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean; title: string; message: string; onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  useImperativeHandle(ref, () => ({
+    openModal: (phone?: Phone) => {
+      if (phone) {
+        setEditingItem(phone);
+        setPhoneForm({
+          phone_number: phone.phone_number,
+          owner: phone.owner,
+          phone_operator: phone.phone_operator,
+          phone_region: phone.phone_region,
+          status: phone.status,
+          remarks: phone.remarks
+        });
+      } else {
+        setEditingItem(null);
+        setPhoneForm({
+          phone_number: '', owner: '', phone_operator: '', phone_region: '', status: '正常', remarks: ''
+        });
+      }
+      setShowModal(true);
+    },
+    setVisibleColumns: (columns: string[]) => {
+      setVisibleColumns(columns);
+    }
+  }));
 
   useEffect(() => {
     loadData(1);
@@ -82,10 +109,6 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
       setLoading(false);
     }
   };
-
-  useImperativeHandle(ref, () => ({
-    openModal: () => openModal(null)
-  }));
 
   const openModal = (item: Phone | null = null) => {
     setEditingItem(item);
@@ -244,12 +267,12 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">手机号</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">机主</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">运营商</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">地区</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>
-                  
+                  {visibleColumns.includes('phone_number') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">手机号</th>}
+                  {visibleColumns.includes('owner') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">机主</th>}
+                  {visibleColumns.includes('phone_operator') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">运营商</th>}
+                  {visibleColumns.includes('phone_region') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">地区</th>}
+                  {visibleColumns.includes('status') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>}
+                  {visibleColumns.includes('remarks') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">备注</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -260,36 +283,51 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
                     onClick={() => handleRowClick(phone)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', phone.id)}
                   >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-gray-900 dark:text-white">{phone.phone_number}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleCopyText(phone.phone_number, '手机号已复制'); }}
-                          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                          title="复制手机号"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-900 dark:text-white">{phone.owner || '-'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">{phone.phone_operator || '-'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">{phone.phone_region || '-'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${
-                        phone.status === '正常' ? 'bg-green-50 text-green-600' :
-                        'bg-red-50 text-red-600'
-                      }`}>
-                        {phone.status}
-                      </span>
-                    </td>
-                    </tr>
+                    {visibleColumns.includes('phone_number') && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-gray-900 dark:text-white">{phone.phone_number}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleCopyText(phone.phone_number, '手机号已复制'); }}
+                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            title="复制手机号"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.includes('owner') && (
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-900 dark:text-white">{phone.owner || '-'}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('phone_operator') && (
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{phone.phone_operator || '-'}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('phone_region') && (
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{phone.phone_region || '-'}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('status') && (
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${
+                          phone.status === '正常' ? 'bg-green-50 text-green-600' :
+                          'bg-red-50 text-red-600'
+                        }`}>
+                          {phone.status}
+                        </span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('remarks') && (
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-w-[200px]">{phone.remarks || '-'}</span>
+                      </td>
+                    )}
+                  </tr>
                 ))}
               </tbody>
             </table>

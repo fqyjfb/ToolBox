@@ -315,7 +315,9 @@ const QuickLaunch: React.FC = () => {
                 path: windowsPath
               });
             }
-          } catch {}
+          } catch {
+            // Ignore parse errors
+          }
         }
       }
     }

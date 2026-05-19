@@ -18,6 +18,7 @@ interface CompanyPanelProps {
 
 interface CompanyPanelRef {
   openModal: () => void;
+  setVisibleColumns: (columns: string[]) => void;
 }
 
 const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId }, ref) => {
@@ -29,6 +30,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
   const [pageSize, setPageSize] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['name', 'unified_social_credit_code', 'legal_person']);
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<Company | null>(null);
@@ -48,6 +50,33 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean; title: string; message: string; onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  useImperativeHandle(ref, () => ({
+    openModal: (company?: Company) => {
+      if (company) {
+        setEditingItem(company);
+        setCompanyForm({
+          name: company.name,
+          unified_social_credit_code: company.unified_social_credit_code,
+          legal_person: company.legal_person,
+          establishment_date: company.establishment_date,
+          address: company.address,
+          registered_capital: company.registered_capital,
+          business_scope: company.business_scope
+        });
+      } else {
+        setEditingItem(null);
+        setCompanyForm({
+          name: '', unified_social_credit_code: '', legal_person: '', establishment_date: '',
+          address: '', registered_capital: '', business_scope: ''
+        });
+      }
+      setShowModal(true);
+    },
+    setVisibleColumns: (columns: string[]) => {
+      setVisibleColumns(columns);
+    }
+  }));
 
   useEffect(() => {
     loadData(1);
@@ -83,10 +112,6 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
       setLoading(false);
     }
   };
-
-  useImperativeHandle(ref, () => ({
-    openModal: () => openModal(null)
-  }));
 
   const openModal = (item: Company | null = null) => {
     setEditingItem(item);
@@ -246,14 +271,16 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
           </div>
         ) : (
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">企业名称</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">法人</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">信用代码</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">注册资本</th>
-                  
+                  {visibleColumns.includes('name') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">企业名称</th>}
+                  {visibleColumns.includes('unified_social_credit_code') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">统一社会信用代码</th>}
+                  {visibleColumns.includes('legal_person') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">法人</th>}
+                  {visibleColumns.includes('establishment_date') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">成立日期</th>}
+                  {visibleColumns.includes('address') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">注册地址</th>}
+                  {visibleColumns.includes('registered_capital') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">注册资本</th>}
+                  {visibleColumns.includes('business_scope') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">经营范围</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -264,28 +291,60 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
                     onClick={() => handleRowClick(company)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', company.id)}
                   >
-                    <td className="px-4 py-3">
-                      <span className="font-medium text-sm text-gray-900 dark:text-white">{company.name}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-900 dark:text-white">{company.legal_person || '-'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{company.unified_social_credit_code || '-'}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleCopyText(company.unified_social_credit_code || '', '信用代码已复制'); }}
-                          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                          title="复制信用代码"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">{company.registered_capital || '-'}</span>
-                    </td>
-                    </tr>
+                    {visibleColumns.includes('name') && (
+                      <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
+                        <span className="font-medium text-sm text-gray-900 dark:text-white">{company.name}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('unified_social_credit_code') && (
+                      <td className="px-4 py-3 max-w-[120px]">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate flex-1">{company.unified_social_credit_code || '-'}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleCopyText(company.unified_social_credit_code || '', '信用代码已复制'); }}
+                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
+                            title="复制信用代码"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.includes('legal_person') && (
+                      <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
+                        <span className="text-sm text-gray-900 dark:text-white">{company.legal_person || '-'}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('establishment_date') && (
+                      <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{company.establishment_date || '-'}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('address') && (
+                      <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{company.address || '-'}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('registered_capital') && (
+                      <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{company.registered_capital || '-'}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('business_scope') && (
+                      <td className="px-4 py-3 max-w-[120px]">
+                        <span 
+                          className="text-sm text-gray-500 dark:text-gray-400"
+                          style={{ 
+                            display: '-webkit-box', 
+                            WebkitLineClamp: 2, 
+                            WebkitBoxOrient: 'vertical', 
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                        >{company.business_scope || '-'}</span>
+                      </td>
+                    )}
+                  </tr>
                 ))}
               </tbody>
             </table>

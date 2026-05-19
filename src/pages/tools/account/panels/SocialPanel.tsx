@@ -20,6 +20,7 @@ interface SocialPanelProps {
 
 interface SocialPanelRef {
   openModal: () => void;
+  setVisibleColumns: (columns: string[]) => void;
 }
 
 const platformOptions = [
@@ -59,6 +60,7 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
   const [pageSize, setPageSize] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['platform', 'user_name', 'account', 'bind_company', 'account_status']);
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<SocialAccount | null>(null);
@@ -82,6 +84,36 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean; title: string; message: string; onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  useImperativeHandle(ref, () => ({
+    openModal: (socialAccount?: SocialAccount) => {
+      if (socialAccount) {
+        setEditingItem(socialAccount);
+        setSocialForm({
+          email: socialAccount.email,
+          platform: socialAccount.platform,
+          account: socialAccount.account,
+          password: socialAccount.password,
+          phone: socialAccount.phone,
+          user_name: socialAccount.user_name,
+          bind_company: socialAccount.bind_company,
+          register_time: socialAccount.register_time,
+          account_status: socialAccount.account_status,
+          remark: socialAccount.remark
+        });
+      } else {
+        setEditingItem(null);
+        setSocialForm({
+          email: '', platform: '', account: '', password: '', phone: '',
+          user_name: '', bind_company: '', register_time: '', account_status: '正常', remark: ''
+        });
+      }
+      setShowModal(true);
+    },
+    setVisibleColumns: (columns: string[]) => {
+      setVisibleColumns(columns);
+    }
+  }));
 
   useEffect(() => {
     loadData(1);
@@ -147,10 +179,6 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
       setLoading(false);
     }
   };
-
-  useImperativeHandle(ref, () => ({
-    openModal: () => openModal(null)
-  }));
 
   const openModal = (item: SocialAccount | null = null) => {
     setEditingItem(item);
@@ -320,11 +348,15 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">用户名</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>
+                  {visibleColumns.includes('platform') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台</th>}
+                  {visibleColumns.includes('user_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">用户名</th>}
+                  {visibleColumns.includes('account') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>}
+                  {visibleColumns.includes('bind_company') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">绑定企业</th>}
+                  {visibleColumns.includes('account_status') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>}
+                  {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>}
+                  {visibleColumns.includes('password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">密码</th>}
+                  {visibleColumns.includes('phone') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">手机号</th>}
+                  {visibleColumns.includes('remark') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">备注</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -338,40 +370,70 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
                       onClick={() => handleRowClick(social)}
                       onContextMenu={(e) => handleContextMenu(e, 'item', social.id)}
                     >
-                      <td className="px-4 py-3 w-24">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-purple-50 text-purple-600 whitespace-nowrap">
-                          {iconPath && <img src={iconPath} alt={platformLabel} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-                          {platformLabel}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-sm text-gray-900 dark:text-white">{social.user_name || social.account}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-900 dark:text-white">{social.account}</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleCopyText(social.account || '', '账号已复制'); }}
-                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            title="复制账号"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm text-gray-900 dark:text-white truncate max-w-[150px]">{social.email || '-'}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${
-                          social.account_status === '正常' ? 'bg-green-50 text-green-600' :
-                          social.account_status === '异常' ? 'bg-yellow-50 text-yellow-600' :
-                          'bg-red-50 text-red-600'
-                        }`}>
-                          {social.account_status}
-                        </span>
-                      </td>
-                      </tr>
+                      {visibleColumns.includes('platform') && (
+                        <td className="px-4 py-3 w-24">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-purple-50 text-purple-600 whitespace-nowrap">
+                            {iconPath && <img src={iconPath} alt={platformLabel} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                            {platformLabel}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('user_name') && (
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-sm text-gray-900 dark:text-white">{social.user_name || social.account}</div>
+                        </td>
+                      )}
+                      {visibleColumns.includes('account') && (
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-900 dark:text-white">{social.account}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleCopyText(social.account || '', '账号已复制'); }}
+                              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              title="复制账号"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.includes('bind_company') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-900 dark:text-white truncate max-w-[150px]">{social.bind_company || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('account_status') && (
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                            social.account_status === '正常' ? 'bg-green-50 text-green-600' :
+                            social.account_status === '异常' ? 'bg-yellow-50 text-yellow-600' :
+                            'bg-red-50 text-red-600'
+                          }`}>
+                            {social.account_status}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('email') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{social.email || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('password') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{social.password || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('phone') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-900 dark:text-white">{social.phone || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('remark') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-w-[200px]">{social.remark || '-'}</span>
+                        </td>
+                      )}
+                    </tr>
                   );
                 })}
               </tbody>

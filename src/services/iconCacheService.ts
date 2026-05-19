@@ -28,6 +28,7 @@ class IconCacheService {
         return response.clone();
       }
     } catch {
+      // Cache API may not be available in some environments
     }
 
     return null;
@@ -52,6 +53,7 @@ class IconCacheService {
 
       await this.enforceCacheLimits(cache);
     } catch {
+      // Cache API may not be available in some environments
     }
   }
 
@@ -76,6 +78,7 @@ class IconCacheService {
         }
       }
     } catch {
+      // Cache API may not be available in some environments
     }
   }
 
@@ -99,12 +102,13 @@ class IconCacheService {
             }
           }
         }
-      }
-    } catch {
     }
+  } catch {
+    // Cache API may not be available in some environments
   }
+}
 
-  async clearAll(): Promise<void> {
+async clearAll(): Promise<void> {
     if (!this.isCacheApiAvailable()) {
       return;
     }
@@ -112,6 +116,7 @@ class IconCacheService {
     try {
       await caches.delete(IconCacheService.CACHE_NAME);
     } catch {
+      // Cache API may not be available in some environments
     }
   }
 

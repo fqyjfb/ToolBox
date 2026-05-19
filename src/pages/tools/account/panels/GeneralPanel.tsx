@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Plus, Edit, Trash2, Copy, Share2, Eye, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Trash2, Copy, Share2, Eye } from 'lucide-react';
 import { useNavSearch } from '../../../../contexts/NavSearchContext';
 import { accountService } from '../../../../services/AccountService';
 import { GeneralAccount, GeneralAccountRequest, Email, Phone } from '../../../../types/account';
@@ -21,6 +21,7 @@ interface GeneralPanelProps {
 
 interface GeneralPanelRef {
   openModal: () => void;
+  setVisibleColumns: (columns: string[]) => void;
 }
 
 const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId }, ref) => {
@@ -32,6 +33,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
   const [pageSize, setPageSize] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['platform_name', 'account', 'password', 'notes', 'status']);
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<GeneralAccount | null>(null);
@@ -54,6 +56,37 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean; title: string; message: string; onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  useImperativeHandle(ref, () => ({
+    openModal: (account?: GeneralAccount) => {
+      if (account) {
+        setEditingItem(account);
+        setGeneralForm({
+          platform_name: account.platform_name,
+          website: account.website,
+          account: account.account,
+          password: account.password,
+          email: account.email,
+          phone: account.phone,
+          registration_date: account.registration_date,
+          status: account.status,
+          security_question: account.security_question,
+          security_answer: account.security_answer,
+          notes: account.notes
+        });
+      } else {
+        setEditingItem(null);
+        setGeneralForm({
+          platform_name: '', website: '', account: '', password: '', email: '', phone: '',
+          registration_date: '', status: 'active', security_question: '', security_answer: '', notes: ''
+        });
+      }
+      setShowModal(true);
+    },
+    setVisibleColumns: (columns: string[]) => {
+      setVisibleColumns(columns);
+    }
+  }));
 
   useEffect(() => {
     loadData(1);
@@ -109,10 +142,6 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
       setLoading(false);
     }
   };
-
-  useImperativeHandle(ref, () => ({
-    openModal: () => openModal(null)
-  }));
 
   const openModal = (item: GeneralAccount | null = null) => {
     setEditingItem(item);
@@ -280,12 +309,13 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台名称</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">网站地址</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>
-                  
+                  {visibleColumns.includes('platform_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider cursor-help" title="存在网址时可点击">平台名称</th>}
+                  {visibleColumns.includes('account') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>}
+                  {visibleColumns.includes('password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">密码</th>}
+                  {visibleColumns.includes('notes') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">备注</th>}
+                  {visibleColumns.includes('status') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>}
+                  {visibleColumns.includes('url') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">网址</th>}
+                  {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -296,49 +326,77 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                     onClick={() => handleRowClick(general)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', general.id)}
                   >
-                    <td className="px-4 py-3">
-                      <span className="font-medium text-sm text-gray-900 dark:text-white">{general.platform_name}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-900 dark:text-white">{general.account}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleCopyText(general.account || '', '账号已复制'); }}
-                          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                          title="复制账号"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {general.website ? (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); openUrl(general.website); }}
-                          className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors truncate max-w-[180px]"
-                          title="点击打开网站"
-                        >
-                          <span className="truncate">{general.website}</span>
-                          <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                        </button>
-                      ) : (
-                        <span className="text-sm text-gray-500 dark:text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{general.email || '-'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${
-                        general.status === 'active' ? 'bg-green-50 text-green-600' :
-                        general.status === 'abnormal' ? 'bg-yellow-50 text-yellow-600' :
-                        general.status === 'banned' ? 'bg-red-50 text-red-600' :
-                        'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {general.status === 'active' ? '活跃' : general.status === 'abnormal' ? '异常' : general.status === 'banned' ? '封禁' : '过期'}
-                      </span>
-                    </td>
-                    </tr>
+                    {visibleColumns.includes('platform_name') && (
+                      <td className="px-4 py-3">
+                        {general.website ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openUrl(general.website); }}
+                            className="font-medium text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                            title={`点击打开: ${general.website}`}
+                          >
+                            {general.platform_name}
+                          </button>
+                        ) : (
+                          <span className="font-medium text-sm text-gray-900 dark:text-white">{general.platform_name}</span>
+                        )}
+                      </td>
+                    )}
+                    {visibleColumns.includes('account') && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-900 dark:text-white">{general.account}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleCopyText(general.account || '', '账号已复制'); }}
+                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            title="复制账号"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.includes('password') && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">******</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleCopyText(general.password || '', '密码已复制'); }}
+                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            title="复制密码"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.includes('notes') && (
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-w-[300px]" title={general.notes}>{general.notes || '-'}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('status') && (
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${
+                          general.status === 'active' ? 'bg-green-50 text-green-600' :
+                          general.status === 'abnormal' ? 'bg-yellow-50 text-yellow-600' :
+                          general.status === 'banned' ? 'bg-red-50 text-red-600' :
+                          'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        }`}>
+                          {general.status === 'active' ? '活跃' : general.status === 'abnormal' ? '异常' : general.status === 'banned' ? '封禁' : '过期'}
+                        </span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('url') && (
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{general.website || '-'}</span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('email') && (
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{general.email || '-'}</span>
+                      </td>
+                    )}
+                  </tr>
                 ))}
               </tbody>
             </table>

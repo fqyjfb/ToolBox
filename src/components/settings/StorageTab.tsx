@@ -17,21 +17,6 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   const [isClearingIconCache, setIsClearingIconCache] = useState(false);
   const [isRefreshingIconCache, setIsRefreshingIconCache] = useState(false);
 
-  useEffect(() => {
-    const fetchDataPath = async () => {
-      try {
-        if (window.electron) {
-          const path = await window.electron.getUserDataPath();
-          setTimeout(() => setDataPath(path), 0);
-        }
-      } catch (error) {
-        logError('Failed to load data path', 'StorageTab', error as Error);
-      }
-    };
-    fetchDataPath();
-    refreshIconCacheStats();
-  }, []);
-
   const formatSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -46,6 +31,21 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
     setIconCacheStats(stats);
     setIsRefreshingIconCache(false);
   };
+
+  useEffect(() => {
+    const fetchDataPath = async () => {
+      try {
+        const path = await window.electron?.getUserDataPath();
+        if (path) {
+          setTimeout(() => setDataPath(path), 0);
+        }
+      } catch (error) {
+        logError('Failed to load data path', 'StorageTab', error as Error);
+      }
+    };
+    fetchDataPath();
+    setTimeout(() => refreshIconCacheStats(), 0);
+  }, []);
 
   const clearAllIconCache = async () => {
     setIsClearingIconCache(true);

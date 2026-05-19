@@ -20,6 +20,7 @@ interface ShopPanelProps {
 
 interface ShopPanelRef {
   openModal: () => void;
+  setVisibleColumns: (columns: string[]) => void;
 }
 
 const platformIconMap: Record<string, string> = {
@@ -40,6 +41,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
   const [pageSize, setPageSize] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['platform', 'shop_name', 'account', 'contact_person', 'phone']);
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<Shop | null>(null);
@@ -65,6 +67,36 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean; title: string; message: string; onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  const openModalFn = (item: Shop | null = null) => {
+    setEditingItem(item);
+    if (item) {
+      setShopForm({
+        shop_name: item.shop_name, platform: item.platform, account: item.account,
+        password: item.password, payment_password: item.payment_password,
+        phone: item.phone, email: item.email, shop_type: item.shop_type,
+        corporation: item.corporation, alipay_account: item.alipay_account,
+        alipay_password: item.alipay_password, contact_person: item.contact_person,
+        address: item.address, base_deposit: item.base_deposit,
+        risk_deposit: item.risk_deposit, remark: item.remark
+      });
+    } else {
+      setShopForm({
+        shop_name: '', platform: '淘宝', account: '', password: '', payment_password: '',
+        phone: '', email: '', shop_type: '', corporation: '', alipay_account: '',
+        alipay_password: '', contact_person: '', address: '', base_deposit: '',
+        risk_deposit: '', remark: ''
+      });
+    }
+    setShowModal(true);
+  };
+
+  useImperativeHandle(ref, () => ({
+    openModal: () => openModalFn(null),
+    setVisibleColumns: (columns: string[]) => {
+      setVisibleColumns(columns);
+    }
+  }));
 
   useEffect(() => {
     loadData(1);
@@ -129,33 +161,6 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
     } finally {
       setLoading(false);
     }
-  };
-
-  useImperativeHandle(ref, () => ({
-    openModal: () => openModal(null)
-  }));
-
-  const openModal = (item: Shop | null = null) => {
-    setEditingItem(item);
-    if (item) {
-      setShopForm({
-        shop_name: item.shop_name, platform: item.platform, account: item.account,
-        password: item.password, payment_password: item.payment_password,
-        phone: item.phone, email: item.email, shop_type: item.shop_type,
-        corporation: item.corporation, alipay_account: item.alipay_account,
-        alipay_password: item.alipay_password, contact_person: item.contact_person,
-        address: item.address, base_deposit: item.base_deposit,
-        risk_deposit: item.risk_deposit, remark: item.remark
-      });
-    } else {
-      setShopForm({
-        shop_name: '', platform: '淘宝', account: '', password: '', payment_password: '',
-        phone: '', email: '', shop_type: '', corporation: '', alipay_account: '',
-        alipay_password: '', contact_person: '', address: '', base_deposit: '',
-        risk_deposit: '', remark: ''
-      });
-    }
-    setShowModal(true);
   };
 
   const saveItem = async () => {
@@ -272,7 +277,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
         { id: 'divider1', label: '', divider: true },
         { id: 'share', label: '分享', icon: <Share2 className="w-4 h-4" />, onClick: () => { handleShareShop(shop); handleCloseContextMenu(); } },
         { id: 'divider2', label: '', divider: true },
-        { id: 'edit', label: '编辑', icon: <Edit className="w-4 h-4" />, onClick: () => { openModal(shop); handleCloseContextMenu(); } },
+        { id: 'edit', label: '编辑', icon: <Edit className="w-4 h-4" />, onClick: () => { openModalFn(shop); handleCloseContextMenu(); } },
         { id: 'divider3', label: '', divider: true },
         { id: 'delete', label: '删除', icon: <Trash2 className="w-4 h-4" />, onClick: () => handleOpenConfirmDialog('删除确认', '确定要删除这个店铺吗？', () => handleDeleteItem(shop.id)) }
       ];
@@ -280,7 +285,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
 
     if (contextMenu.type === 'empty') {
       return [
-        { id: 'add-shop', label: '添加店铺', icon: <Plus className="w-4 h-4" />, onClick: () => { openModal(); handleCloseContextMenu(); } }
+        { id: 'add-shop', label: '添加店铺', icon: <Plus className="w-4 h-4" />, onClick: () => { openModalFn(); handleCloseContextMenu(); } }
       ];
     }
 
@@ -308,11 +313,22 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">店铺名称</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">联系人</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">手机</th>
+                  {visibleColumns.includes('platform') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台</th>}
+                  {visibleColumns.includes('shop_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">店铺名称</th>}
+                  {visibleColumns.includes('account') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>}
+                  {visibleColumns.includes('contact_person') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">联系人</th>}
+                  {visibleColumns.includes('phone') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">手机</th>}
+                  {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>}
+                  {visibleColumns.includes('password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">密码</th>}
+                  {visibleColumns.includes('payment_password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">支付密码</th>}
+                  {visibleColumns.includes('shop_type') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">店铺类型</th>}
+                  {visibleColumns.includes('corporation') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">公司名称</th>}
+                  {visibleColumns.includes('alipay_account') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">支付宝账号</th>}
+                  {visibleColumns.includes('alipay_password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">支付宝密码</th>}
+                  {visibleColumns.includes('address') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">地址</th>}
+                  {visibleColumns.includes('base_deposit') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">基础保证金</th>}
+                  {visibleColumns.includes('risk_deposit') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">风险保证金</th>}
+                  {visibleColumns.includes('remark') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">备注</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -325,34 +341,99 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
                       onClick={() => handleRowClick(shop)}
                       onContextMenu={(e) => handleContextMenu(e, 'item', shop.id)}
                     >
-                      <td className="px-4 py-3 w-24">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-600 whitespace-nowrap">
-                          {platformIcon && <img src={platformIcon} alt={shop.platform} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-                          {shop.platform}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-sm text-gray-900 dark:text-white">{shop.shop_name}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-900 dark:text-white">{shop.account}</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleCopyText(shop.account || '', '账号已复制'); }}
-                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            title="复制账号"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm text-gray-900 dark:text-white">{shop.contact_person || '-'}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm text-gray-900 dark:text-white">{shop.phone || '-'}</span>
-                      </td>
-                      </tr>
+                      {visibleColumns.includes('platform') && (
+                        <td className="px-4 py-3 w-24">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-600 whitespace-nowrap">
+                            {platformIcon && <img src={platformIcon} alt={shop.platform} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                            {shop.platform}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('shop_name') && (
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-sm text-gray-900 dark:text-white">{shop.shop_name}</div>
+                        </td>
+                      )}
+                      {visibleColumns.includes('account') && (
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-900 dark:text-white">{shop.account}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleCopyText(shop.account || '', '账号已复制'); }}
+                              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              title="复制账号"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.includes('contact_person') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-900 dark:text-white">{shop.contact_person || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('phone') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-900 dark:text-white">{shop.phone || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('email') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{shop.email || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('password') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{shop.password || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('payment_password') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{shop.payment_password || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('shop_type') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-900 dark:text-white">{shop.shop_type || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('corporation') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-900 dark:text-white truncate max-w-[150px]">{shop.corporation || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('alipay_account') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{shop.alipay_account || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('alipay_password') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{shop.alipay_password || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('address') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{shop.address || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('base_deposit') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{shop.base_deposit || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('risk_deposit') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{shop.risk_deposit || '-'}</span>
+                        </td>
+                      )}
+                      {visibleColumns.includes('remark') && (
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-w-[200px]">{shop.remark || '-'}</span>
+                        </td>
+                      )}
+                    </tr>
                   );
                 })}
               </tbody>

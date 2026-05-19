@@ -26,6 +26,7 @@ interface WebsitePanelProps {
 
 interface WebsitePanelRef {
   openModal: () => void;
+  setVisibleColumns: (columns: string[]) => void;
 }
 
 const SortableCategoryItem: React.FC<{ 
@@ -352,7 +353,8 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
   };
 
   useImperativeHandle(ref, () => ({
-    openModal: () => openItemModal(null)
+    openModal: () => openItemModal(null),
+    setVisibleColumns: () => {}
   }));
 
   const openItemModal = async (item: Password | null = null) => {

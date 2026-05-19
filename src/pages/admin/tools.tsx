@@ -66,7 +66,7 @@ interface CategoryTree extends ToolCategory {
   children: CategoryTree[]
 }
 
-export const buildCategoryTreeFromData = (categories: ToolCategory[]): CategoryTree[] => {
+const buildCategoryTreeFromData = (categories: ToolCategory[]): CategoryTree[] => {
   const categoryMap = new Map<string, CategoryTree>()
 
   categories.forEach(category => {

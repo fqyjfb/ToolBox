@@ -114,8 +114,18 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
     }
   };
 
-  const renderField = (label: string, value: string, copyable: boolean = false) => {
+  const renderField = (label: string, value: string, copyable: boolean = false, wrap: boolean = false) => {
     if (!value) return null;
+    if (wrap) {
+      return (
+        <div className="py-2 border-b border-gray-100 dark:border-gray-700">
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</span>
+          <div className="mt-1">
+            <span className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap break-words">{value}</span>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
         <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</span>
@@ -178,7 +188,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
               {renderField('地址', (item as Shop).address)}
               {renderField('基础保证金', (item as Shop).base_deposit)}
               {renderField('风险保证金', (item as Shop).risk_deposit)}
-              {renderField('备注', (item as Shop).remark)}
+              {renderField('备注', (item as Shop).remark, false, true)}
             </>
           )}
 
@@ -193,17 +203,17 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
               {renderField('绑定企业', (item as SocialAccount).bind_company)}
               {renderField('注册时间', (item as SocialAccount).register_time)}
               {renderField('账号状态', (item as SocialAccount).account_status)}
-              {renderField('备注', (item as SocialAccount).remark)}
+              {renderField('备注', (item as SocialAccount).remark, false, true)}
             </>
           )}
 
-          {('email' in item && !('platform' in item) && !('shop_name' in item)) && (
+          {('email' in item && !('platform' in item) && !('shop_name' in item) && !('platform_name' in item)) && (
             <>
               {renderField('邮箱地址', (item as Email).email, true)}
               {renderField('密码', (item as Email).password, true)}
               {renderField('手机号', (item as Email).phone, true)}
               {renderField('验证信息', (item as Email).verification_info)}
-              {renderField('备注', (item as Email).remark)}
+              {renderField('备注', (item as Email).remark, false, true)}
             </>
           )}
 
@@ -214,7 +224,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
               {renderField('运营商', (item as Phone).phone_operator)}
               {renderField('地区', (item as Phone).phone_region)}
               {renderField('状态', (item as Phone).status)}
-              {renderField('备注', (item as Phone).remarks)}
+              {renderField('备注', (item as Phone).remarks, false, true)}
             </>
           )}
 
@@ -225,8 +235,8 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
               {renderField('法人', (item as Company).legal_person)}
               {renderField('成立日期', (item as Company).establishment_date)}
               {renderField('注册资本', (item as Company).registered_capital)}
-              {renderField('地址', (item as Company).address)}
-              {renderField('经营范围', (item as Company).business_scope)}
+              {renderField('注册地址', (item as Company).address, false, true)}
+              {renderField('经营范围', (item as Company).business_scope, false, true)}
             </>
           )}
 
@@ -241,7 +251,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
               {renderField('银行账号', (item as Credential).bank_account, true)}
               {renderField('手机号', (item as Credential).phone, true)}
               {renderField('证件状态', (item as Credential).certificate_status)}
-              {renderField('备注', (item as Credential).certificate_remark)}
+              {renderField('备注', (item as Credential).certificate_remark, false, true)}
             </>
           )}
 
@@ -256,7 +266,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
               {renderField('注册日期', (item as GeneralAccount).registration_date)}
               {renderField('状态', (item as GeneralAccount).status === 'active' ? '活跃' : (item as GeneralAccount).status === 'abnormal' ? '异常' : (item as GeneralAccount).status === 'banned' ? '封禁' : '过期')}
               {renderField('安全问题', (item as GeneralAccount).security_question)}
-              {renderField('备注', (item as GeneralAccount).notes)}
+              {renderField('备注', (item as GeneralAccount).notes, false, true)}
             </>
           )}
         </div>
