@@ -64,7 +64,7 @@ const OcrPage: React.FC = () => {
     return () => {
       window.removeEventListener('ocr-settings-changed', handleSettingsChanged);
     };
-  }, []);
+  }, [addToast]);
 
   const checkOcrStatus = async () => {
     try {
@@ -201,7 +201,7 @@ const OcrPage: React.FC = () => {
     }
   }, [history]);
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       addToast({ type: 'error', message: '请上传图片文件' });
       return;
@@ -220,7 +220,7 @@ const OcrPage: React.FC = () => {
       performOcr(base64);
     };
     reader.readAsDataURL(file);
-  };
+  }, [addToast, ocrStatus?.available]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
@@ -274,7 +274,7 @@ const OcrPage: React.FC = () => {
 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [ocrStatus?.available]);
+  }, [ocrStatus?.available, addToast, handleImageUpload]);
 
   const handleCopy = async () => {
     const textToCopy = isEditing ? editableResult : ocrResult;

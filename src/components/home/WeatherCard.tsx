@@ -115,7 +115,7 @@ const WeatherCard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="w-full h-full rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex flex-col items-center justify-center text-white gap-3 shadow-md">
+      <div className="w-full h-full rounded-lg bg-gray-500 flex flex-col items-center justify-center text-white gap-3 shadow-md">
         <Cloud className="w-8 h-8 text-white/60" />
         <p className="text-xs text-white/80">{error}</p>
         <button
@@ -131,7 +131,7 @@ const WeatherCard: React.FC = () => {
 
   if (loading && !weatherData) {
     return (
-      <div className="w-full h-full rounded-lg bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center shadow-md">
+      <div className="w-full h-full rounded-lg bg-gray-400 flex items-center justify-center shadow-md">
         <LoadingSpinner />
       </div>
     );
@@ -139,7 +139,7 @@ const WeatherCard: React.FC = () => {
 
   const colors = weatherData?.weather?.weather_colors || ['#6366f1', '#8b5cf6'];
   const bgStyle = {
-    background: `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`,
+    backgroundColor: colors[0],
   };
 
   const WeatherDetailPopup = () => {
@@ -155,7 +155,7 @@ const WeatherCard: React.FC = () => {
         }}
       >
         <div className="w-52 rounded-lg overflow-hidden shadow-xl transition-all duration-300 pointer-events-auto">
-          <div className="bg-gradient-to-br from-sky-500 to-indigo-500 text-white">
+          <div className="bg-sky-500 text-white">
             <div className="p-2.5">
               <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/10 p-1.5 backdrop-blur-sm mb-2">
                 <div className="flex flex-col items-center gap-0.5">

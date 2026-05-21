@@ -422,7 +422,7 @@ console.log(theme);
       selection?.removeAllRanges();
       document.body.removeChild(wrapper);
     }
-  }, [markdown, addToast]);
+  }, [markdown, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copyPreviewHtml = useCallback(() => {
     if (!markdown.trim()) {
@@ -436,7 +436,7 @@ console.log(theme);
     }).catch(() => {
       addToast({ message: '复制失败', type: 'error' });
     });
-  }, [markdown, addToast]);
+  }, [markdown, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="h-full flex flex-col p-4 markdown-wechat-container">

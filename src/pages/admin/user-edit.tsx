@@ -57,7 +57,7 @@ const UserEditPage: React.FC = () => {
       setIsLoading(false)
     }
     fetchUser()
-  }, [id])
+  }, [id, addToast])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target

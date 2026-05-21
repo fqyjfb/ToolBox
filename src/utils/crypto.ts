@@ -71,6 +71,9 @@ export const encrypt = async (text: string): Promise<string> => {
 
 export const decrypt = async (text: string): Promise<string> => {
   try {
+    if (!text || !text.includes(':')) {
+      return text;
+    }
     const textParts = text.split(':');
     const iv = base64ToUint8Array(textParts.shift() || '');
     const encryptedText = base64ToUint8Array(textParts.join(':'));
@@ -85,6 +88,6 @@ export const decrypt = async (text: string): Promise<string> => {
     return new TextDecoder().decode(decrypted);
   } catch (error) {
     console.error('Decryption error:', error);
-    throw new Error('解密失败');
+    return text;
   }
 };

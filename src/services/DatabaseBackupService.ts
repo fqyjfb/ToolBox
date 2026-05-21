@@ -17,8 +17,8 @@ export interface TableData {
   blog_comments: Record<string, unknown>[]
   clipboard_categories: Record<string, unknown>[]
   clipboard_items: Record<string, unknown>[]
-  password_categories: Record<string, unknown>[]
-  passwords: Record<string, unknown>[]
+  website_account_categories: Record<string, unknown>[]
+  website_accounts: Record<string, unknown>[]
   tiktok_forms: Record<string, unknown>[]
   tiktok_form_fields: Record<string, unknown>[]
   tiktok_customers: Record<string, unknown>[]
@@ -50,7 +50,7 @@ class DatabaseBackupService {
   private tables: (keyof TableData)[] = [
     'profiles', 'users', 'announcements', 'blog_categories', 'blog_posts',
     'blog_comments', 'clipboard_categories', 'clipboard_items',
-    'password_categories', 'passwords', 'tiktok_forms', 'tiktok_form_fields',
+    'website_account_categories', 'website_accounts', 'tiktok_forms', 'tiktok_form_fields',
     'tiktok_customers', 'tiktok_settings', 'tiktok_sync_configs',
     'quick_reply_categories', 'quick_replies', 'categories', 'bookmarks',
     'user_favorites', 'tool_categories', 'tools', 'shops', 'social_accounts',

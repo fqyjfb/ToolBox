@@ -110,7 +110,7 @@ WHERE
     AND age >= 18 
 ORDER BY 
     created_at DESC;`);
-  }, [output, addToast]);
+  }, []);
 
   const percentageSaved = originalSize > 0 ? ((originalSize - minifiedSize) / originalSize * 100).toFixed(1) : '0';
 

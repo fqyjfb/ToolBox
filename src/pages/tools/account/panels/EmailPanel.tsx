@@ -112,32 +112,16 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
     }
   }));
 
-  useEffect(() => {
-    loadData(1);
-    loadPhones();
-  }, []);
-
-  const loadPhones = async () => {
+  const loadPhones = useCallback(async () => {
     try {
       const result = await accountService.getPhones(userId, 1, 100);
       setPhones(result.list);
     } catch (error) {
       logError('加载手机数据失败', 'EmailPanel', error as Error);
     }
-  };
+  }, [userId]);
 
-  useEffect(() => {
-    if (currentPage > 1) {
-      loadData(currentPage);
-    }
-  }, [currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive]);
-
-  const loadData = async (pageNum: number = 1) => {
+  const loadData = useCallback(async (pageNum: number = 1) => {
     try {
       setLoading(true);
       let result;
@@ -155,7 +139,23 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
+
+  useEffect(() => {
+    loadData(1);
+    loadPhones();
+  }, [loadData, loadPhones]);
+
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadData(currentPage);
+    }
+  }, [currentPage, loadData]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadData(1);
+  }, [searchQuery, isSearchActive, loadData]);
 
   const openModal = (item: Email | null = null) => {
     setEditingItem(item);
@@ -177,7 +177,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
     try {
       setLoading(true);
       if (editingItem) {
-        await accountService.updateEmail(editingItem.id, emailForm);
+        await accountService.updateEmail(userId, editingItem.id, emailForm);
       } else {
         await accountService.createEmail(userId, emailForm);
       }
@@ -193,10 +193,10 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      await accountService.deleteEmail(id);
+      await accountService.deleteEmail(userId, id);
       addToast({ message: '删除成功', type: 'success' });
       await loadData(currentPage);
     } catch (error) {
@@ -205,19 +205,19 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast, loadData, currentPage]);
 
-  const handleCopyText = async (text: string, message: string) => {
+  const handleCopyText = useCallback(async (text: string, message: string) => {
     try {
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
       console.error('复制失败:', error);
-      addToast({ message: '复制失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
-  const handleShareEmail = async (email: Email) => {
+  const handleShareEmail = useCallback(async (email: Email) => {
     try {
       let shareContent = `${email.email}\n`;
       shareContent += email.password ? `密码: ${email.password}\n` : '';
@@ -228,9 +228,9 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
       addToast({ message: '邮箱信息已复制到剪贴板', type: 'success' });
     } catch (error) {
       console.error('分享失败:', error);
-      addToast({ message: '分享失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -291,7 +291,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, emails, handleCloseContextMenu, handleOpenConfirmDialog]);
+  }, [contextMenu.type, contextMenu.targetId, emails, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleDeleteItem, handleShareEmail]);
 
   return (
     <div className="h-full flex flex-col" onClick={handleCloseContextMenu}>

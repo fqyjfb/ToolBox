@@ -115,52 +115,34 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
     }
   }));
 
-  useEffect(() => {
-    loadData(1);
-    loadEmails();
-    loadPhones();
-    loadCompanies();
-  }, []);
-
-  const loadEmails = async () => {
+  const loadEmails = useCallback(async () => {
     try {
       const result = await accountService.getEmails(userId, 1, 100);
       setEmails(result.list);
     } catch (error) {
       logError('加载邮箱数据失败', 'SocialPanel', error as Error);
     }
-  };
+  }, [userId]);
 
-  const loadPhones = async () => {
+  const loadPhones = useCallback(async () => {
     try {
       const result = await accountService.getPhones(userId, 1, 100);
       setPhones(result.list);
     } catch (error) {
       console.error('加载手机数据失败:', error);
     }
-  };
+  }, [userId]);
 
-  const loadCompanies = async () => {
+  const loadCompanies = useCallback(async () => {
     try {
       const result = await accountService.getCompanies(userId, 1, 100);
       setCompanies(result.list);
     } catch (error) {
       console.error('加载企业数据失败:', error);
     }
-  };
+  }, [userId]);
 
-  useEffect(() => {
-    if (currentPage > 1) {
-      loadData(currentPage);
-    }
-  }, [currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive]);
-
-  const loadData = async (pageNum: number = 1) => {
+  const loadData = useCallback(async (pageNum: number = 1) => {
     try {
       setLoading(true);
       let result;
@@ -178,7 +160,25 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
+
+  useEffect(() => {
+    loadData(1);
+    loadEmails();
+    loadPhones();
+    loadCompanies();
+  }, [loadData, loadEmails, loadPhones, loadCompanies]);
+
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadData(currentPage);
+    }
+  }, [currentPage, loadData]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadData(1);
+  }, [searchQuery, isSearchActive, loadData]);
 
   const openModal = (item: SocialAccount | null = null) => {
     setEditingItem(item);
@@ -203,7 +203,7 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
     try {
       setLoading(true);
       if (editingItem) {
-        await accountService.updateSocialAccount(editingItem.id, socialForm);
+        await accountService.updateSocialAccount(userId, editingItem.id, socialForm);
       } else {
         await accountService.createSocialAccount(userId, socialForm);
       }
@@ -219,10 +219,10 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      await accountService.deleteSocialAccount(id);
+      await accountService.deleteSocialAccount(userId, id);
       addToast({ message: '删除成功', type: 'success' });
       await loadData(currentPage);
     } catch (error) {
@@ -231,19 +231,19 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast, loadData, currentPage]);
 
-  const handleCopyText = async (text: string, message: string) => {
+  const handleCopyText = useCallback(async (text: string, message: string) => {
     try {
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
       console.error('复制失败:', error);
-      addToast({ message: '复制失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
-  const handleShareSocial = async (social: SocialAccount) => {
+  const handleShareSocial = useCallback(async (social: SocialAccount) => {
     try {
       let shareContent = `${social.user_name || social.account}\n`;
       shareContent += `平台: ${social.platform}\n`;
@@ -259,9 +259,9 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
       addToast({ message: '社媒账号信息已复制到剪贴板', type: 'success' });
     } catch (error) {
       logError('分享失败', 'SocialPanel', error as Error);
-      addToast({ message: '分享失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -322,7 +322,7 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, socialAccounts, handleCloseContextMenu, handleOpenConfirmDialog]);
+  }, [contextMenu.type, contextMenu.targetId, socialAccounts, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleDeleteItem, handleShareSocial]);
 
   return (
     <div className="h-full flex flex-col" onClick={handleCloseContextMenu}>

@@ -98,52 +98,34 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
     }
   }));
 
-  useEffect(() => {
-    loadData(1);
-    loadEmails();
-    loadPhones();
-    loadCompanies();
-  }, []);
-
-  const loadEmails = async () => {
+  const loadEmails = useCallback(async () => {
     try {
       const result = await accountService.getEmails(userId, 1, 100);
       setEmails(result.list);
     } catch (error) {
       console.error('加载邮箱数据失败:', error);
     }
-  };
+  }, [userId]);
 
-  const loadPhones = async () => {
+  const loadPhones = useCallback(async () => {
     try {
       const result = await accountService.getPhones(userId, 1, 100);
       setPhones(result.list);
     } catch (error) {
       console.error('加载手机数据失败:', error);
     }
-  };
+  }, [userId]);
 
-  const loadCompanies = async () => {
+  const loadCompanies = useCallback(async () => {
     try {
       const result = await accountService.getCompanies(userId, 1, 100);
       setCompanies(result.list);
     } catch (error) {
       console.error('加载企业数据失败:', error);
     }
-  };
+  }, [userId]);
 
-  useEffect(() => {
-    if (currentPage > 1) {
-      loadData(currentPage);
-    }
-  }, [currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive]);
-
-  const loadData = async (pageNum: number = 1) => {
+  const loadData = useCallback(async (pageNum: number = 1) => {
     try {
       setLoading(true);
       let result;
@@ -161,14 +143,32 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
+
+  useEffect(() => {
+    loadData(1);
+    loadEmails();
+    loadPhones();
+    loadCompanies();
+  }, [loadData, loadEmails, loadPhones, loadCompanies]);
+
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadData(currentPage);
+    }
+  }, [currentPage, loadData]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadData(1);
+  }, [searchQuery, isSearchActive, loadData]);
 
   const saveItem = async () => {
     if (!shopForm.shop_name.trim()) return;
     try {
       setLoading(true);
       if (editingItem) {
-        await accountService.updateShop(editingItem.id, shopForm);
+        await accountService.updateShop(userId, editingItem.id, shopForm);
       } else {
         await accountService.createShop(userId, shopForm);
       }
@@ -184,10 +184,10 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      await accountService.deleteShop(id);
+      await accountService.deleteShop(userId, id);
       addToast({ message: '删除成功', type: 'success' });
       await loadData(currentPage);
     } catch (error) {
@@ -196,19 +196,19 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast, loadData, currentPage]);
 
-  const handleCopyText = async (text: string, message: string) => {
+  const handleCopyText = useCallback(async (text: string, message: string) => {
     try {
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
       console.error('复制失败:', error);
-      addToast({ message: '复制失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
-  const handleShareShop = async (shop: Shop) => {
+  const handleShareShop = useCallback(async (shop: Shop) => {
     try {
       let shareContent = `${shop.shop_name}\n`;
       shareContent += `平台: ${shop.platform}\n`;
@@ -227,9 +227,9 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       addToast({ message: '店铺信息已复制到剪贴板', type: 'success' });
     } catch (error) {
       logError('分享失败', 'ShopPanel', error as Error);
-      addToast({ message: '分享失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -290,7 +290,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, shops, handleCloseContextMenu, handleOpenConfirmDialog]);
+  }, [contextMenu.type, contextMenu.targetId, shops, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleDeleteItem, handleShareShop]);
 
   return (
     <div className="h-full flex flex-col" onClick={handleCloseContextMenu}>

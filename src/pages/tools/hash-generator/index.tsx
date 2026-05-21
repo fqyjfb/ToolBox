@@ -2,19 +2,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Hash, Copy, FileText } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 
+const hashAlgorithms = [
+  { id: 'md5', name: 'MD5', bits: '128 位' },
+  { id: 'sha1', name: 'SHA-1', bits: '160 位' },
+  { id: 'sha256', name: 'SHA-256', bits: '256 位' },
+  { id: 'sha384', name: 'SHA-384', bits: '384 位' },
+  { id: 'sha512', name: 'SHA-512', bits: '512 位' },
+  { id: 'base64', name: 'Base64', bits: '编码' },
+];
+
 const HashGeneratorPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
   const [input, setInput] = useState('');
   const [results, setResults] = useState<Record<string, string>>({});
-
-  const hashAlgorithms = [
-    { id: 'md5', name: 'MD5', bits: '128 位' },
-    { id: 'sha1', name: 'SHA-1', bits: '160 位' },
-    { id: 'sha256', name: 'SHA-256', bits: '256 位' },
-    { id: 'sha384', name: 'SHA-384', bits: '384 位' },
-    { id: 'sha512', name: 'SHA-512', bits: '512 位' },
-    { id: 'base64', name: 'Base64', bits: '编码' },
-  ];
 
   const md5 = (string: string): string => {
     function md5cycle(x: number[], k: number[]) {

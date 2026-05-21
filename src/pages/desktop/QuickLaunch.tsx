@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home } from 'lucide-react';
+import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor } from 'lucide-react';
 import path from 'path';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { QuickLaunchCategory, QuickLaunchItem, addHomeQuickLaunchApp, isAppInHomeQuickLaunch } from '../../utils/quickLaunch';
+import { QuickLaunchCategory, QuickLaunchItem, addHomeQuickLaunchApp, isAppInHomeQuickLaunch, loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps } from '../../utils/quickLaunch';
 import { useNavSearch } from '../../contexts/NavSearchContext';
+import { useToastStore } from '../../store/toastStore';
 import Modal from '../../components/ui/Modal';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import './QuickLaunch.css';
@@ -93,6 +94,7 @@ const SortableCategoryItem: React.FC<{ category: QuickLaunchCategory; isActive: 
 
 const QuickLaunch: React.FC = () => {
   const { searchQuery, isSearchActive } = useNavSearch();
+  const addToast = useToastStore(state => state.addToast);
   const [apps, setApps] = useState<QuickLaunchItem[]>([]);
   const [categories, setCategories] = useState<QuickLaunchCategory[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
@@ -120,6 +122,7 @@ const QuickLaunch: React.FC = () => {
     return (saved === 'small' || saved === 'medium') ? saved : 'medium';
   });
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -327,6 +330,37 @@ const QuickLaunch: React.FC = () => {
       handleDropFiles(validPaths);
     }
   }, [handleDropFiles]);
+
+  const handleScanDesktopApps = useCallback(async () => {
+    setIsScanning(true);
+    addToast({ type: 'info', message: '正在扫描桌面应用...' });
+
+    try {
+      const existingApps = loadApps();
+      const categories = loadCategories();
+      const defaultCategoryId = getDefaultCategoryId(categories);
+
+      const result = await scanAndAddDesktopApps(existingApps, defaultCategoryId);
+
+      if (result.addedCount > 0) {
+        addToast({ type: 'success', message: `成功添加 ${result.addedCount} 个应用到快启动` });
+        setApps(loadApps());
+      }
+
+      if (result.skippedCount > 0) {
+        addToast({ type: 'info', message: `${result.skippedCount} 个应用已存在，已跳过` });
+      }
+
+      if (result.addedCount === 0 && result.skippedCount === 0) {
+        addToast({ type: 'info', message: '桌面上未找到可添加的应用程序' });
+      }
+    } catch (error) {
+      addToast({ type: 'error', message: '扫描桌面应用失败，请重试' });
+      console.error('Error scanning desktop:', error);
+    } finally {
+      setIsScanning(false);
+    }
+  }, [addToast]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, type: 'app' | 'category' | 'empty', targetId?: string) => {
     e.preventDefault();
@@ -619,17 +653,27 @@ const QuickLaunch: React.FC = () => {
             <Plus size={16} />
           </button>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleScanDesktopApps}
+            disabled={isScanning}
+            className={`icon-toggle-container ${
+              isScanning ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title="扫描桌面应用"
+          >
+            <Monitor size={16} className={isScanning ? 'text-gray-400' : 'text-green-600 dark:text-green-500'} />
+          </button>
           <label className="icon-toggle-container" title={iconSize === 'small' ? '当前：小图标' : '当前：中图标'}>
             <input 
               type="checkbox" 
               checked={iconSize === 'medium'} 
               onChange={(e) => setIconSize(e.target.checked ? 'medium' : 'small')}
             />
-            <svg viewBox="0 0 448 512" height="1.25em" className="expand-icon">
+            <svg viewBox="0 0 448 512" width={16} height={16} className="expand-icon">
               <path d="M32 32C14.3 32 0 46.3 0 64v96c0 17.7 14.3 32 32 32s32-14.3 32-32V96h64c17.7 0 32-14.3 32-32s-14.3-32-32-32H32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7 14.3 32 32 32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H64V352zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32h64v64c0 17.7 14.3 32 32 32s32-14.3 32-32V64c0-17.7-14.3-32-32-32H320zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32v64H320c-17.7 0-32 14.3-32 32s14.3 32 32 32h96c17.7 0 32-14.3 32-32V352z" />
             </svg>
-            <svg viewBox="0 0 448 512" height="1.25em" className="compress-icon">
+            <svg viewBox="0 0 448 512" width={16} height={16} className="compress-icon">
               <path d="M160 64c0-17.7-14.3-32-32-32s-32 14.3-32 32v64H32c-17.7 0-32 14.3-32 32s14.3 32 32 32h96c17.7 0 32-14.3 32-32V64zM32 320c-17.7 0-32 14.3-32 32s14.3 32 32 32H96v64c0 17.7 14.3 32 32 32s32-14.3 32-32V352c0-17.7-14.3-32-32-32H32zM352 64c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7 14.3 32 32 32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H352V64zM320 320c-17.7 0-32 14.3-32 32v96c0 17.7 14.3 32 32 32s32-14.3 32-32V384h64c17.7 0 32-14.3 32-32s-14.3-32-32-32H320z" />
             </svg>
           </label>

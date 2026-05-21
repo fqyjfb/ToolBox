@@ -202,3 +202,14 @@ export interface ListResponse<T> {
   list: T[];
   total: number;
 }
+
+export interface PlatformVisibility {
+  website_account: boolean;
+  shops: boolean;
+  social: boolean;
+  emails: boolean;
+  phones: boolean;
+  companies: boolean;
+  credentials: boolean;
+  general: boolean;
+}

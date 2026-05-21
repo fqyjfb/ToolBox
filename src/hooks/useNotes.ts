@@ -138,6 +138,7 @@ export function useNotes(): UseNotesReturn {
     };
 
     initNotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectRootFolder = useCallback(async (): Promise<boolean> => {

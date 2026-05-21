@@ -83,6 +83,7 @@ const IPInfoPage: React.FC = () => {
 
   useEffect(() => {
     fetchIPInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleQuery = () => {

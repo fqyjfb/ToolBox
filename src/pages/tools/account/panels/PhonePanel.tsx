@@ -75,22 +75,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     }
   }));
 
-  useEffect(() => {
-    loadData(1);
-  }, []);
-
-  useEffect(() => {
-    if (currentPage > 1) {
-      loadData(currentPage);
-    }
-  }, [currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive]);
-
-  const loadData = async (pageNum: number = 1) => {
+  const loadData = useCallback(async (pageNum: number = 1) => {
     try {
       setLoading(true);
       let result;
@@ -108,7 +93,22 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
+
+  useEffect(() => {
+    loadData(1);
+  }, [loadData]);
+
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadData(currentPage);
+    }
+  }, [currentPage, loadData]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadData(1);
+  }, [searchQuery, isSearchActive, loadData]);
 
   const openModal = (item: Phone | null = null) => {
     setEditingItem(item);
@@ -130,7 +130,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     try {
       setLoading(true);
       if (editingItem) {
-        await accountService.updatePhone(editingItem.id, phoneForm);
+        await accountService.updatePhone(userId, editingItem.id, phoneForm);
       } else {
         await accountService.createPhone(userId, phoneForm);
       }
@@ -146,10 +146,10 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      await accountService.deletePhone(id);
+      await accountService.deletePhone(userId, id);
       addToast({ message: '删除成功', type: 'success' });
       await loadData(currentPage);
     } catch (error) {
@@ -158,19 +158,19 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast, loadData, currentPage]);
 
-  const handleCopyText = async (text: string, message: string) => {
+  const handleCopyText = useCallback(async (text: string, message: string) => {
     try {
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
       console.error('复制失败:', error);
-      addToast({ message: '复制失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
-  const handleSharePhone = async (phone: Phone) => {
+  const handleSharePhone = useCallback(async (phone: Phone) => {
     try {
       let shareContent = `${phone.phone_number}\n`;
       shareContent += phone.owner ? `机主: ${phone.owner}\n` : '';
@@ -182,9 +182,9 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
       addToast({ message: '手机号信息已复制到剪贴板', type: 'success' });
     } catch (error) {
       logError('分享失败', 'PhonePanel', error as Error);
-      addToast({ message: '分享失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -244,7 +244,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, phones, handleCloseContextMenu, handleOpenConfirmDialog]);
+  }, [contextMenu.type, contextMenu.targetId, phones, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleDeleteItem, handleSharePhone]);
 
   return (
     <div className="h-full flex flex-col" onClick={handleCloseContextMenu}>

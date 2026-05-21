@@ -203,7 +203,7 @@ const TodoManagerPage: React.FC = () => {
     }
   };
 
-  const resetNewTodo = () => {
+  const resetNewTodo = useCallback(() => {
     setNewTodo({
       title: '',
       description: '',
@@ -212,7 +212,7 @@ const TodoManagerPage: React.FC = () => {
       status: '待办',
       category_id: null
     });
-  };
+  }, []);
 
   const handleToggleComplete = useCallback(async (id: string) => {
     if (!admin) return;

@@ -86,32 +86,16 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
     }
   }));
 
-  useEffect(() => {
-    loadData(1);
-    loadPhones();
-  }, []);
-
-  const loadPhones = async () => {
+  const loadPhones = useCallback(async () => {
     try {
       const result = await accountService.getPhones(userId, 1, 100);
       setPhones(result.list);
     } catch (error) {
       logError('加载手机数据失败', 'CredentialPanel', error as Error);
     }
-  };
+  }, [userId]);
 
-  useEffect(() => {
-    if (currentPage > 1) {
-      loadData(currentPage);
-    }
-  }, [currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive]);
-
-  const loadData = async (pageNum: number = 1) => {
+  const loadData = useCallback(async (pageNum: number = 1) => {
     try {
       setLoading(true);
       let result;
@@ -129,7 +113,23 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
+
+  useEffect(() => {
+    loadData(1);
+    loadPhones();
+  }, [loadData, loadPhones]);
+
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadData(currentPage);
+    }
+  }, [currentPage, loadData]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadData(1);
+  }, [searchQuery, isSearchActive, loadData]);
 
   const openModal = (item: Credential | null = null) => {
     setEditingItem(item);
@@ -155,7 +155,7 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
     try {
       setLoading(true);
       if (editingItem) {
-        await accountService.updateCredential(editingItem.id, credentialForm);
+        await accountService.updateCredential(userId, editingItem.id, credentialForm);
       } else {
         await accountService.createCredential(userId, credentialForm);
       }
@@ -171,10 +171,10 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      await accountService.deleteCredential(id);
+      await accountService.deleteCredential(userId, id);
       addToast({ message: '删除成功', type: 'success' });
       await loadData(currentPage);
     } catch (error) {
@@ -183,7 +183,7 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast, loadData, currentPage]);
 
   const parseIdCardNumber = (idCard: string): { gender: '' | '男' | '女'; birthDate: string } => {
     const cleanIdCard = idCard.replace(/\s/g, '');
@@ -210,17 +210,17 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
     });
   };
 
-  const handleCopyText = async (text: string, message: string) => {
+  const handleCopyText = useCallback(async (text: string, message: string) => {
     try {
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
       console.error('复制失败:', error);
-      addToast({ message: '复制失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
-  const handleShareCredential = async (credential: Credential) => {
+  const handleShareCredential = useCallback(async (credential: Credential) => {
     try {
       let shareContent = `${credential.certificate_name}\n`;
       shareContent += credential.id_card_number ? `身份证号: ${credential.id_card_number}\n` : '';
@@ -236,9 +236,9 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
       addToast({ message: '证件信息已复制到剪贴板', type: 'success' });
     } catch (error) {
       logError('分享失败', 'CredentialPanel', error as Error);
-      addToast({ message: '分享失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -298,7 +298,7 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, credentials, handleCloseContextMenu, handleOpenConfirmDialog]);
+  }, [contextMenu.type, contextMenu.targetId, credentials, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleDeleteItem, handleShareCredential]);
 
   return (
     <div className="h-full flex flex-col" onClick={handleCloseContextMenu}>

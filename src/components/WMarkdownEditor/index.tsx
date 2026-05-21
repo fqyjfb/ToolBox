@@ -205,7 +205,8 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
       handleLinkClick(e);
     };
 
-    containerRef.current.addEventListener('click', handleContainerClick, true);
+    const currentContainer = containerRef.current;
+    currentContainer.addEventListener('click', handleContainerClick, true);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -219,7 +220,7 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      containerRef.current?.removeEventListener('click', handleContainerClick, true);
+      currentContainer?.removeEventListener('click', handleContainerClick, true);
 
       const styleEl = document.getElementById('vditor-tip-fix');
       if (styleEl) styleEl.remove();

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Admin, LoginRequest, RegisterRequest } from '../types/auth'
 import { authService } from '../services/AuthService'
 import { logError } from '../services/loggerService'
+import { getDataAccessLayer } from '../services/dataAccessLayer'
 
 interface AuthState {
   admin: Admin | null
@@ -29,6 +30,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
       try {
         const response = await authService.login(credentials)
         if (response.success && response.data) {
+          // 初始化数据访问层
+          const dal = getDataAccessLayer(response.data.admin.id)
+          await dal.init(response.data.admin.id)
+          
           set({
             admin: response.data.admin,
             isAuthenticated: true,
@@ -47,6 +52,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
       try {
         const response = await authService.register(userData)
         if (response.success && response.data) {
+          // 初始化数据访问层
+          const dal = getDataAccessLayer(response.data.admin.id)
+          await dal.init(response.data.admin.id)
+          
           set({
             admin: response.data.admin,
             isAuthenticated: true,
@@ -87,6 +96,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
       try {
         const response = await authService.getCurrentAdmin()
         if (response.success && response.data) {
+          // 初始化数据访问层
+          const dal = getDataAccessLayer(response.data.id)
+          await dal.init(response.data.id)
+          
           set({
             admin: response.data,
             isAuthenticated: true,

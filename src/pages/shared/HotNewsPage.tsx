@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { hotNewsApi } from '../../services/hotNews';
 import type { UnifiedHotItem, HotNewsPlatform } from '../../types/hotNews';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -65,32 +65,35 @@ const HotNewsPage: React.FC = () => {
   }, []);
 
   // 刷新热点数据 - 使用防抖优化，避免频繁点击
-  const refreshHotNews = useCallback(debounce(async () => {
-    // 取消之前的请求
-    if (controllerRef.current) {
-      controllerRef.current.abort();
-    }
-    
-    controllerRef.current = new AbortController();
-    
-    setLoading(true);
-    setError('');
-    
-    try {
-      const data = await hotNewsApi.refreshAllHotNews();
-      if (data) {
-        setHotNewsData(data);
-      } else {
-        setError('刷新热点数据失败，请稍后重试');
+  const refreshHotNews = useMemo(() => {
+    const fetchData = async () => {
+      if (controllerRef.current) {
+        controllerRef.current.abort();
       }
-    } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
-        setError('刷新失败，请检查网络连接后重试');
+      
+      controllerRef.current = new AbortController();
+      
+      setLoading(true);
+      setError('');
+      
+      try {
+        const data = await hotNewsApi.refreshAllHotNews();
+        if (data) {
+          setHotNewsData(data);
+        } else {
+          setError('刷新热点数据失败，请稍后重试');
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError('刷新失败，请检查网络连接后重试');
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, 500), []);
+    };
+    
+    return debounce(fetchData, 500);
+  }, []);
 
   // 组件挂载时获取数据
   useEffect(() => {

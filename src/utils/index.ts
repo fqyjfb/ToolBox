@@ -22,3 +22,4 @@ export const formatHotValue = (value: number | string): string => {
 };
 
 export { APP_VERSION, getVersion, parseVersion, compareVersions } from './version';
+export { formatBytes } from './format';

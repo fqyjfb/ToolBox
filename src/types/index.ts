@@ -50,3 +50,5 @@ export interface SearchType {
   url: string;
   placeholder: string;
 }
+
+export * from './offline';

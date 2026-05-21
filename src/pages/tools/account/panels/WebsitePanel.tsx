@@ -3,9 +3,9 @@ import { Plus, Edit, Trash2, Copy, Share2, Tag, ChevronDown, RefreshCw, External
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { passwordService } from '../../../../services/PasswordService';
+import { websiteAccountService } from '../../../../services/WebsiteAccountService';
 import { accountService } from '../../../../services/AccountService';
-import { Password, PasswordCategory, PasswordRequest } from '../../../../types/password';
+import { WebsiteAccount, WebsiteAccountCategory, WebsiteAccountRequest } from '../../../../types/websiteAccount';
 import { Email, Phone } from '../../../../types/account';
 import { useToastStore } from '../../../../store/toastStore';
 import { useNavSearch } from '../../../../contexts/NavSearchContext';
@@ -16,9 +16,19 @@ import Pagination from '../../../../components/ui/Pagination';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
 import PasswordInput from '../../../../components/forms/PasswordInput';
-import { decrypt } from '../../../../utils/crypto';
 import { logError } from '../../../../services/loggerService';
 import { openUrl } from '../../../../services/browserService';
+
+const findCategoryById = (catList: WebsiteAccountCategory[], targetId: string): WebsiteAccountCategory | undefined => {
+  for (const cat of catList) {
+    if (cat.id === targetId) return cat;
+    if (cat.children) {
+      const found = findCategoryById(cat.children, targetId);
+      if (found) return found;
+    }
+  }
+  return undefined;
+};
 
 interface WebsitePanelProps {
   userId: string;
@@ -30,7 +40,7 @@ interface WebsitePanelRef {
 }
 
 const SortableCategoryItem: React.FC<{ 
-  category: PasswordCategory; 
+  category: WebsiteAccountCategory; 
   isActive: boolean; 
   isExpanded: boolean;
   onClick: (e: React.MouseEvent) => void; 
@@ -78,8 +88,8 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
   const addToast = useToastStore((state) => state.addToast);
   const { searchQuery, isSearchActive } = useNavSearch();
 
-  const [categories, setCategories] = useState<PasswordCategory[]>([]);
-  const [passwords, setPasswords] = useState<Password[]>([]);
+  const [categories, setCategories] = useState<WebsiteAccountCategory[]>([]);
+  const [accounts, setAccounts] = useState<WebsiteAccount[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -88,11 +98,11 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
 
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [showItemModal, setShowItemModal] = useState<boolean>(false);
-  const [editingCategory, setEditingCategory] = useState<PasswordCategory | null>(null);
-  const [editingItem, setEditingItem] = useState<Password | null>(null);
+  const [editingCategory, setEditingCategory] = useState<WebsiteAccountCategory | null>(null);
+  const [editingItem, setEditingItem] = useState<WebsiteAccount | null>(null);
 
   const [categoryForm, setCategoryForm] = useState<{ name: string; parent_id: string | null }>({ name: '', parent_id: null });
-  const [passwordForm, setPasswordForm] = useState<PasswordRequest>({
+  const [accountForm, setAccountForm] = useState<WebsiteAccountRequest>({
     category_id: null, name: '', url: '', username: '', password: '',
     email: '', phone: '', security_question: '', date: '', status: 'active', notes: ''
   });
@@ -140,7 +150,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
           .filter(cat => cat.parent_id === null)
           .map(cat => cat.id);
         
-        localStorage.setItem(`passwordCategoryOrder_${userId}`, JSON.stringify(mainCategoryIds));
+        localStorage.setItem(`websiteAccountCategoryOrder_${userId}`, JSON.stringify(mainCategoryIds));
         
         return newCategories;
       });
@@ -173,63 +183,19 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     return categoryColors[hash % categoryColors.length];
   };
 
-  useEffect(() => {
-    loadCategories();
-    loadEmails();
-    loadPhones();
-  }, []);
-
-  const loadEmails = async () => {
-    try {
-      const result = await accountService.getEmails(userId, 1, 100);
-      setEmails(result.list);
-    } catch (error) {
-      console.error('加载邮箱数据失败:', error);
-    }
-  };
-
-  const loadPhones = async () => {
-    try {
-      const result = await accountService.getPhones(userId, 1, 100);
-      setPhones(result.list);
-    } catch (error) {
-      console.error('加载手机数据失败:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (categories.length > 0) {
-      setCurrentPage(1);
-      loadPasswords(1);
-    }
-  }, [categories, selectedCategory]);
-
-  useEffect(() => {
-    if (currentPage > 1 && categories.length > 0) {
-      loadPasswords(currentPage);
-    }
-  }, [currentPage]);
-
-  useEffect(() => {
-    if (categories.length > 0) {
-      setCurrentPage(1);
-      loadPasswords(1);
-    }
-  }, [searchQuery, isSearchActive, categories]);
-
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await passwordService.getCategories(userId);
+      const response = await websiteAccountService.getCategories(userId);
       
-      const savedOrder = localStorage.getItem(`passwordCategoryOrder_${userId}`);
+      const savedOrder = localStorage.getItem(`websiteAccountCategoryOrder_${userId}`);
       let sortedCategories = response;
       
       if (savedOrder) {
         try {
           const order = JSON.parse(savedOrder);
-          const sortedMainCategories: PasswordCategory[] = [];
-          const remainingMainCategories: PasswordCategory[] = [...response];
+          const sortedMainCategories: WebsiteAccountCategory[] = [];
+          const remainingMainCategories: WebsiteAccountCategory[] = [...response];
           
           for (const id of order) {
             const index = remainingMainCategories.findIndex(c => c.id === id);
@@ -251,21 +217,45 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, addToast]);
 
-  const loadPasswords = async (pageNum: number = 1, categoryId?: string | null, categoriesList?: PasswordCategory[]) => {
+  const loadEmails = useCallback(async () => {
+    try {
+      const result = await accountService.getEmails(userId, 1, 100);
+      setEmails(result.list);
+    } catch (error) {
+      console.error('加载邮箱数据失败:', error);
+    }
+  }, [userId]);
+
+  const loadPhones = useCallback(async () => {
+    try {
+      const result = await accountService.getPhones(userId, 1, 100);
+      setPhones(result.list);
+    } catch (error) {
+      console.error('加载手机数据失败:', error);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadCategories();
+    loadEmails();
+    loadPhones();
+  }, [loadCategories, loadEmails, loadPhones]);
+
+  const loadAccounts = useCallback(async (pageNum: number = 1, categoryId?: string | null, categoriesList?: WebsiteAccountCategory[]) => {
     try {
       setLoading(true);
       let result;
 
       if (isSearchActive && searchQuery.trim()) {
-        result = await passwordService.searchPasswords(userId, searchQuery.trim(), pageNum, pageSize);
+        result = await websiteAccountService.searchAccounts(userId, searchQuery.trim(), pageNum, pageSize);
       } else {
         const currentCategories = categoriesList || categories;
         const currentCategoryId = categoryId !== undefined ? categoryId : selectedCategory;
 
         if (currentCategoryId) {
-          const collectCategoryIds = (category: PasswordCategory): string[] => {
+          const collectCategoryIds = (category: WebsiteAccountCategory): string[] => {
             const ids: string[] = [category.id];
             if (category.children && category.children.length > 0) {
               for (const child of category.children) {
@@ -277,13 +267,13 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
 
           const category = findCategoryById(currentCategories, currentCategoryId);
           const categoryFilter = category ? collectCategoryIds(category) : undefined;
-          result = await passwordService.getPasswords(userId, categoryFilter, pageNum, pageSize);
+          result = await websiteAccountService.getAccounts(userId, categoryFilter, pageNum, pageSize);
         } else {
-          result = await passwordService.getPasswords(userId, undefined, pageNum, pageSize);
+          result = await websiteAccountService.getAccounts(userId, undefined, pageNum, pageSize);
         }
       }
 
-      setPasswords(result.list);
+      setAccounts(result.list);
       setTotal(result.total);
       setCurrentPage(pageNum);
     } catch (error) {
@@ -292,15 +282,34 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, isSearchActive, searchQuery, categories, selectedCategory, pageSize, addToast]);
 
-  const handleCategorySelect = (categoryId: string | null) => {
+  useEffect(() => {
+    if (categories.length > 0) {
+      loadAccounts(1);
+    }
+  }, [categories, selectedCategory, loadAccounts]);
+
+  useEffect(() => {
+    if (currentPage > 1 && categories.length > 0) {
+      loadAccounts(currentPage);
+    }
+  }, [currentPage, categories, loadAccounts]);
+
+  useEffect(() => {
+    if (categories.length > 0) {
+      setCurrentPage(1);
+      loadAccounts(1);
+    }
+  }, [searchQuery, isSearchActive, categories, loadAccounts]);
+
+  const handleCategorySelect = useCallback((categoryId: string | null) => {
     setSelectedCategory(categoryId);
     setCurrentPage(1);
-    loadPasswords(1, categoryId);
-  };
+    loadAccounts(1, categoryId);
+  }, [loadAccounts]);
 
-  const openCategoryModal = (category: PasswordCategory | null = null, parentCategory: PasswordCategory | null = null) => {
+  const openCategoryModal = useCallback((category: WebsiteAccountCategory | null = null, parentCategory: WebsiteAccountCategory | null = null) => {
     if (category) {
       setEditingCategory(category);
       setCategoryForm({ name: category.name, parent_id: category.parent_id });
@@ -312,17 +321,17 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       setCategoryForm({ name: '', parent_id: null });
     }
     setShowCategoryModal(true);
-  };
+  }, []);
 
-  const saveCategory = async () => {
+  const saveCategory = useCallback(async () => {
     if (!categoryForm.name.trim()) return;
     try {
       setLoading(true);
       if (editingCategory) {
-        await passwordService.updateCategory(editingCategory.id, categoryForm);
+        await websiteAccountService.updateCategory(userId, editingCategory.id, categoryForm);
         addToast({ message: '分类更新成功', type: 'success' });
       } else {
-        await passwordService.createCategory(userId, categoryForm);
+        await websiteAccountService.createCategory(userId, categoryForm);
         addToast({ message: '分类创建成功', type: 'success' });
       }
       await loadCategories();
@@ -333,12 +342,12 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     } finally {
       setLoading(false);
     }
-  };
+  }, [categoryForm, editingCategory, userId, loadCategories, addToast]);
 
-  const handleDeleteCategory = async (categoryId: string) => {
+  const handleDeleteCategory = useCallback(async (categoryId: string) => {
     try {
       setLoading(true);
-      await passwordService.deleteCategory(categoryId);
+      await websiteAccountService.deleteCategory(userId, categoryId);
       await loadCategories();
       if (selectedCategory === categoryId) {
         setSelectedCategory(null);
@@ -350,23 +359,21 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, loadCategories, selectedCategory, addToast]);
 
   useImperativeHandle(ref, () => ({
     openModal: () => openItemModal(null),
     setVisibleColumns: () => {}
   }));
 
-  const openItemModal = async (item: Password | null = null) => {
+  const openItemModal = useCallback((item: WebsiteAccount | null = null) => {
     setEditingItem(item);
     const today = new Date().toISOString().split('T')[0];
 
     if (item) {
-      let decryptedPassword = item.password;
-      try { decryptedPassword = await decrypt(item.password); } catch { decryptedPassword = item.password; }
-      setPasswordForm({
+      setAccountForm({
         category_id: item.category_id, name: item.name, url: item.url, username: item.username,
-        password: decryptedPassword, email: item.email, phone: item.phone,
+        password: item.password, email: item.email, phone: item.phone,
         security_question: item.security_question, date: item.date, status: item.status, notes: item.notes
       });
       const itemCategory = findCategoryById(categories, item.category_id || '');
@@ -384,25 +391,25 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       const mainCategories = categories.filter(c => !c.parent_id);
       const defaultCategory = mainCategories.length > 0 ? mainCategories[0].id : null;
       setSelectedParentCategory(defaultCategory);
-      setPasswordForm({
+      setAccountForm({
         category_id: defaultCategory || null, name: '', url: '', username: '', password: '',
         email: '', phone: '', security_question: '', date: today, status: 'active', notes: ''
       });
     }
     setShowItemModal(true);
-  };
+  }, [categories]);
 
-  const saveItem = async () => {
-    if (!passwordForm.name.trim() || !passwordForm.password.trim()) return;
+  const saveItem = useCallback(async () => {
+    if (!accountForm.name.trim() || !accountForm.password.trim()) return;
     try {
       setLoading(true);
       if (editingItem) {
-        await passwordService.updatePassword(editingItem.id, passwordForm);
+        await websiteAccountService.updateAccount(userId, editingItem.id, accountForm);
       } else {
-        await passwordService.createPassword(userId, passwordForm);
+        await websiteAccountService.createAccount(userId, accountForm);
       }
       addToast({ message: editingItem ? '更新成功' : '创建成功', type: 'success' });
-      await loadPasswords(1);
+      await loadAccounts(1);
       setShowItemModal(false);
       setEditingItem(null);
     } catch (error) {
@@ -411,81 +418,79 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     } finally {
       setLoading(false);
     }
-  };
+  }, [accountForm, editingItem, userId, loadAccounts, addToast]);
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      await passwordService.deletePassword(id);
+      await websiteAccountService.deleteAccount(userId, id);
       addToast({ message: '删除成功', type: 'success' });
-      await loadPasswords(currentPage);
+      await loadAccounts(currentPage);
     } catch (error) {
       logError('删除失败', 'WebsitePanel', error as Error);
       addToast({ message: '删除失败', type: 'error' });
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, loadAccounts, currentPage, addToast]);
 
-  const handleCopyPassword = async (encryptedPassword: string) => {
+  const handleCopyPassword = useCallback(async (password: string) => {
     try {
-      const decrypted = await decrypt(encryptedPassword);
-      await navigator.clipboard.writeText(decrypted);
+      await navigator.clipboard.writeText(password);
       addToast({ message: '密码已复制到剪贴板', type: 'success' });
     } catch (error) {
       console.error('复制密码失败:', error);
-      addToast({ message: '复制密码失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
-  const handleCopyText = async (text: string, message: string) => {
+  const handleCopyText = useCallback(async (text: string, message: string) => {
     try {
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
       console.error('复制失败:', error);
-      addToast({ message: '复制失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
-  const handleSharePassword = async (password: Password) => {
+  const handleSharePassword = useCallback(async (account: WebsiteAccount) => {
     try {
-      const decrypted = await decrypt(password.password);
-      let shareContent = `${password.name}\n`;
-      shareContent += password.url ? `网址: ${password.url}\n` : '';
-      shareContent += password.username ? `用户名: ${password.username}\n` : '';
-      shareContent += `密码: ${decrypted}\n`;
-      shareContent += password.email ? `邮箱: ${password.email}\n` : '';
-      shareContent += password.phone ? `手机号: ${password.phone}\n` : '';
-      shareContent += password.security_question ? `密保: ${password.security_question}\n` : '';
-      shareContent += password.notes ? `备注: ${password.notes}\n` : '';
+      let shareContent = `${account.name}\n`;
+      shareContent += account.url ? `网址: ${account.url}\n` : '';
+      shareContent += account.username ? `用户名: ${account.username}\n` : '';
+      shareContent += `密码: ${account.password}\n`;
+      shareContent += account.email ? `邮箱: ${account.email}\n` : '';
+      shareContent += account.phone ? `手机号: ${account.phone}\n` : '';
+      shareContent += account.security_question ? `密保: ${account.security_question}\n` : '';
+      shareContent += account.notes ? `备注: ${account.notes}\n` : '';
       await navigator.clipboard.writeText(shareContent.trim());
       addToast({ message: '账号信息已复制到剪贴板', type: 'success' });
     } catch (error) {
       logError('分享账号失败', 'WebsitePanel', error as Error);
-      addToast({ message: '分享账号失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
-  const generatePassword = () => {
+  const generatePassword = useCallback(() => {
     const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
     let password = '';
     for (let i = 0; i < 16; i++) {
       password += charset.charAt(Math.floor(Math.random() * charset.length));
     }
-    setPasswordForm(prev => ({ ...prev, password }));
-  };
+    setAccountForm(prev => ({ ...prev, password }));
+  }, []);
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setCurrentPage(newPage);
-    loadPasswords(newPage);
-  };
+    loadAccounts(newPage);
+  }, [loadAccounts]);
 
-  const handlePageSizeChange = (newPageSize: number) => {
+  const handlePageSizeChange = useCallback((newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
-    loadPasswords(1);
-  };
+    loadAccounts(1);
+  }, [loadAccounts]);
 
   const handleOpenConfirmDialog = useCallback((title: string, message: string, onConfirm: () => void) => {
     setConfirmDialog({ isOpen: true, title, message, onConfirm });
@@ -505,29 +510,18 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     setContextMenu(prev => ({ ...prev, isOpen: false }));
   }, []);
 
-  const findCategoryById = (catList: PasswordCategory[], targetId: string): PasswordCategory | undefined => {
-    for (const cat of catList) {
-      if (cat.id === targetId) return cat;
-      if (cat.children) {
-        const found = findCategoryById(cat.children, targetId);
-        if (found) return found;
-      }
-    }
-    return undefined;
-  };
-
   const getContextMenuItems = useCallback((): ContextMenuItem[] => {
     if (contextMenu.type === 'item' && contextMenu.targetId) {
-      const password = passwords.find(p => p.id === contextMenu.targetId);
-      if (!password) return [];
+      const account = accounts.find(p => p.id === contextMenu.targetId);
+      if (!account) return [];
 
       return [
-        { id: 'copy-username', label: '复制账号', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyText(password.username || '', '用户名已复制'); handleCloseContextMenu(); } },
-        { id: 'copy-pwd', label: '复制密码', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyPassword(password.password); handleCloseContextMenu(); } },
+        { id: 'copy-username', label: '复制账号', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyText(account.username || '', '用户名已复制'); handleCloseContextMenu(); } },
+        { id: 'copy-pwd', label: '复制密码', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyPassword(account.password); handleCloseContextMenu(); } },
         { id: 'divider1', label: '', divider: true },
-        { id: 'edit', label: '编辑', icon: <Edit className="w-4 h-4" />, onClick: async () => { await openItemModal(password); handleCloseContextMenu(); } },
+        { id: 'edit', label: '编辑', icon: <Edit className="w-4 h-4" />, onClick: async () => { await openItemModal(account); handleCloseContextMenu(); } },
         { id: 'divider2', label: '', divider: true },
-        { id: 'delete', label: '删除', icon: <Trash2 className="w-4 h-4" />, onClick: () => handleOpenConfirmDialog('删除确认', '确定要删除这个账号吗？', () => handleDeleteItem(password.id)) }
+        { id: 'delete', label: '删除', icon: <Trash2 className="w-4 h-4" />, onClick: () => handleOpenConfirmDialog('删除确认', '确定要删除这个账号吗？', () => handleDeleteItem(account.id)) }
       ];
     }
 
@@ -545,16 +539,16 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
 
     if (contextMenu.type === 'empty') {
       return [
-        { id: 'add-password', label: '添加账号', icon: <Plus className="w-4 h-4" />, onClick: async () => { await openItemModal(); handleCloseContextMenu(); } },
+        { id: 'add-account', label: '添加账号', icon: <Plus className="w-4 h-4" />, onClick: async () => { await openItemModal(); handleCloseContextMenu(); } },
         { id: 'add-category', label: '添加分类', icon: <Tag className="w-4 h-4" />, onClick: () => { openCategoryModal(); handleCloseContextMenu(); } }
       ];
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, passwords, categories, handleCloseContextMenu, handleOpenConfirmDialog]);
+  }, [contextMenu.type, contextMenu.targetId, accounts, categories, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyPassword, handleCopyText, handleDeleteCategory, handleDeleteItem, openItemModal, openCategoryModal]);
 
-  const renderPasswordItem = (password: Password) => (
-    <div key={password.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3" onContextMenu={(e) => handleContextMenu(e, 'item', password.id)}>
+  const renderAccountItem = (account: WebsiteAccount) => (
+    <div key={account.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3" onContextMenu={(e) => handleContextMenu(e, 'item', account.id)}>
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 flex flex-col items-center">
           <div className="w-9 h-9 rounded-md bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-700 flex items-center justify-center">
@@ -563,41 +557,41 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
               <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          {password.category_name && <span className={`mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${getCategoryColor(password.category_name).bg} ${getCategoryColor(password.category_name).text}`}>{password.category_name}</span>}
+          {account.category_name && <span className={`mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${getCategoryColor(account.category_name).bg} ${getCategoryColor(account.category_name).text}`}>{account.category_name}</span>}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-              {password.url ? (
+              {account.url ? (
                 <button 
-                  onClick={(e) => { e.stopPropagation(); openUrl(password.url); }}
+                  onClick={(e) => { e.stopPropagation(); openUrl(account.url); }}
                   className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate"
                   title="点击打开网站"
                 >
-                  <span className="truncate">{password.name}</span>
+                  <span className="truncate">{account.name}</span>
                   <ExternalLink className="w-3 h-3 flex-shrink-0" />
                 </button>
-              ) : password.name}
+              ) : account.name}
             </h3>
-            <span className={`flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded-full ${password.status === 'active' ? 'bg-green-50 text-green-600' : password.status === 'inactive' ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600'}`}>
-              {password.status === 'active' ? '活跃' : password.status === 'inactive' ? '非活跃' : '已过期'}
+            <span className={`flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded-full ${account.status === 'active' ? 'bg-green-50 text-green-600' : account.status === 'inactive' ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600'}`}>
+              {account.status === 'active' ? '活跃' : account.status === 'inactive' ? '非活跃' : '已过期'}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {password.username && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">账号:</span><span className="text-gray-900 dark:text-white truncate max-w-[100px]">{password.username}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(password.username, '用户名已复制'); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制用户名"><Copy className="w-3 h-3" /></button></div>}
-            {password.email && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">邮箱:</span><span className="text-gray-900 dark:text-white truncate max-w-[120px]">{password.email}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(password.email, '邮箱已复制'); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制邮箱"><Copy className="w-3 h-3" /></button></div>}
-            {password.phone && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">手机:</span><span className="text-gray-900 dark:text-white">{password.phone}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(password.phone, '手机号已复制'); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制手机号"><Copy className="w-3 h-3" /></button></div>}
-            {password.notes && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">备注:</span><span className="text-gray-900 dark:text-white truncate max-w-[120px]">{password.notes}</span></div>}
+            {account.username && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">账号:</span><span className="text-gray-900 dark:text-white truncate max-w-[100px]">{account.username}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.username, '用户名已复制'); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制用户名"><Copy className="w-3 h-3" /></button></div>}
+            {account.email && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">邮箱:</span><span className="text-gray-900 dark:text-white truncate max-w-[120px]">{account.email}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.email, '邮箱已复制'); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制邮箱"><Copy className="w-3 h-3" /></button></div>}
+            {account.phone && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">手机:</span><span className="text-gray-900 dark:text-white">{account.phone}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.phone, '手机号已复制'); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制手机号"><Copy className="w-3 h-3" /></button></div>}
+            {account.notes && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">备注:</span><span className="text-gray-900 dark:text-white truncate max-w-[120px]">{account.notes}</span></div>}
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button onClick={(e) => { e.stopPropagation(); handleCopyPassword(password.password); }} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制密码">
+          <button onClick={(e) => { e.stopPropagation(); handleCopyPassword(account.password); }} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制密码">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
               <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-          <button onClick={(e) => { e.stopPropagation(); handleSharePassword(password); }} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="分享账号">
+          <button onClick={(e) => { e.stopPropagation(); handleSharePassword(account); }} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="分享账号">
             <Share2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -693,7 +687,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner size="lg" />
           </div>
-        ) : passwords.length === 0 ? (
+        ) : accounts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
               <svg className="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -704,7 +698,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
             <p className="text-gray-500 dark:text-gray-400 text-sm">暂无网站账号</p>
           </div>
         ) : (
-          passwords.map(renderPasswordItem)
+          accounts.map(renderAccountItem)
         )}
       </div>
 
@@ -729,10 +723,10 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
                 const parentCategory = categories.find(c => c.id === parentId);
                 const children = parentCategory?.children || [];
                 if (children.length > 0) {
-                  setPasswordForm(prev => ({ ...prev, category_id: children[0].id }));
-                } else {
-                  setPasswordForm(prev => ({ ...prev, category_id: parentId }));
-                }
+                  setAccountForm(prev => ({ ...prev, category_id: children[0].id }));
+                  } else {
+                    setAccountForm(prev => ({ ...prev, category_id: parentId }));
+                  }
               }} 
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             >
@@ -742,8 +736,8 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
               ))}
             </select>
             <select 
-              value={passwordForm.category_id || ''} 
-              onChange={(e) => setPasswordForm(prev => ({ ...prev, category_id: e.target.value || null }))} 
+              value={accountForm.category_id || ''} 
+              onChange={(e) => setAccountForm(prev => ({ ...prev, category_id: e.target.value || null }))} 
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             >
               <option value="">选择子分类</option>
@@ -759,12 +753,12 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
               })()}
             </select>
           </div>
-          <input type="text" value={passwordForm.name} onChange={(e) => setPasswordForm(prev => ({ ...prev, name: e.target.value }))} placeholder="网站名称" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <input type="text" value={accountForm.name} onChange={(e) => setAccountForm(prev => ({ ...prev, name: e.target.value }))} placeholder="网站名称" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
           <div className="grid grid-cols-2 gap-4">
-            <input type="text" value={passwordForm.url} onChange={(e) => setPasswordForm(prev => ({ ...prev, url: e.target.value }))} placeholder="网站地址" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+            <input type="text" value={accountForm.url} onChange={(e) => setAccountForm(prev => ({ ...prev, url: e.target.value }))} placeholder="网站地址" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
             <PasswordInput
-              value={passwordForm.password}
-              onChange={(value) => setPasswordForm(prev => ({ ...prev, password: value }))}
+              value={accountForm.password}
+              onChange={(value) => setAccountForm(prev => ({ ...prev, password: value }))}
               placeholder="密码"
               extraButton={
                 <button
@@ -778,30 +772,30 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <input type="text" value={passwordForm.username} onChange={(e) => setPasswordForm(prev => ({ ...prev, username: e.target.value }))} placeholder="用户名" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+            <input type="text" value={accountForm.username} onChange={(e) => setAccountForm(prev => ({ ...prev, username: e.target.value }))} placeholder="用户名" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
             <SelectWithCustom
-              value={passwordForm.email}
-              onChange={(value) => setPasswordForm(prev => ({ ...prev, email: value }))}
+              value={accountForm.email}
+              onChange={(value) => setAccountForm(prev => ({ ...prev, email: value }))}
               options={emails.map(e => ({ id: e.id, label: e.email }))}
               placeholder="邮箱"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <SelectWithCustom
-              value={passwordForm.phone}
-              onChange={(value) => setPasswordForm(prev => ({ ...prev, phone: value }))}
+              value={accountForm.phone}
+              onChange={(value) => setAccountForm(prev => ({ ...prev, phone: value }))}
               options={phones.map(p => ({ id: p.id, label: p.phone_number }))}
               placeholder="手机号"
             />
-            <input type="date" value={passwordForm.date} onChange={(e) => setPasswordForm(prev => ({ ...prev, date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+            <input type="date" value={accountForm.date} onChange={(e) => setAccountForm(prev => ({ ...prev, date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
           </div>
-          <select value={passwordForm.status} onChange={(e) => setPasswordForm(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'expired' }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+          <select value={accountForm.status} onChange={(e) => setAccountForm(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'expired' }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
             <option value="active">活跃</option>
             <option value="inactive">非活跃</option>
             <option value="expired">已过期</option>
           </select>
-          <textarea value={passwordForm.security_question} onChange={(e) => setPasswordForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题及答案" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <textarea value={passwordForm.notes} onChange={(e) => setPasswordForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <textarea value={accountForm.security_question} onChange={(e) => setAccountForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题及答案" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <textarea value={accountForm.notes} onChange={(e) => setAccountForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
         </div>
       </Modal>
 

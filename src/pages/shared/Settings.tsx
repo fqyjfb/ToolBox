@@ -1,8 +1,8 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Settings as SettingsIcon, Monitor, Keyboard, Circle, Database, Scan, FileText } from 'lucide-react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { Settings as SettingsIcon, Keyboard, Circle, Database, Scan, FileText, RefreshCw } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
-import { loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps, QuickLaunchItem } from '../../utils/quickLaunch';
+import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
 import {
   ShortcutItem,
   FloatConfigItem,
@@ -15,10 +15,10 @@ import { logError } from '../../services/loggerService';
 import { isElectron } from '../../utils/environment';
 import {
   GeneralTab,
-  QuickLaunchTab,
   ShortcutsTab,
   FloatWindowTab,
   StorageTab,
+  SyncTab,
   LogMonitorTab
 } from '../../components/settings';
 const OcrTab = isElectron() ? lazy(() => import('../../components/settings/OcrTab')) : null;
@@ -31,7 +31,6 @@ const Settings: React.FC = () => {
   // State management
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [browserMode, setBrowserMode] = useState<'internal' | 'external'>('internal');
-  const [isScanning, setIsScanning] = useState(false);
   const [autostartEnabled, setAutostartEnabled] = useState(false);
   const [notifications, setNotifications] = useState<NotificationSettings>(() => {
     const saved = localStorage.getItem('toolbox_notification_errors');
@@ -49,37 +48,8 @@ const Settings: React.FC = () => {
   const [floatConfig, setFloatConfig] = useState<FloatConfigItem[]>([]);
   const [quickLaunchApps, setQuickLaunchApps] = useState<QuickLaunchItem[]>([]);
 
-  // Initialize data
-  useEffect(() => {
-    const savedBrowserMode = localStorage.getItem('toolbox_browser_mode') as 'internal' | 'external';
-    if (savedBrowserMode) {
-      setBrowserMode(savedBrowserMode);
-    }
-
-    loadSettings();
-    loadShortcuts();
-    loadFloatConfig();
-    loadQuickLaunchApps();
-  }, []);
-
   // Data loading functions
-  const loadFloatConfig = async () => {
-    try {
-      if (window.electron) {
-        const config = await window.electron.getFloatConfig();
-        setFloatConfig(config);
-      }
-    } catch (error) {
-      console.error('Failed to load float config:', error);
-    }
-  };
-
-  const loadQuickLaunchApps = () => {
-    const apps = loadApps();
-    setQuickLaunchApps(apps);
-  };
-
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       if (window.electron) {
         const settings = await window.electron.getSettings();
@@ -103,9 +73,9 @@ const Settings: React.FC = () => {
     } catch (error) {
       logError('Failed to load settings', 'Settings', error as Error);
     }
-  };
+  }, [setVisible, setPosition]);
 
-  const loadShortcuts = async () => {
+  const loadShortcuts = useCallback(async () => {
     try {
       if (window.electron) {
         const data = await window.electron.getShortcuts();
@@ -117,7 +87,38 @@ const Settings: React.FC = () => {
       logError('Failed to load shortcuts', 'Settings', error as Error);
       setShortcuts(DEFAULT_SHORTCUTS);
     }
-  };
+  }, []);
+
+  const loadFloatConfig = useCallback(async () => {
+    try {
+      if (window.electron) {
+        const config = await window.electron.getFloatConfig();
+        setFloatConfig(config);
+      }
+    } catch (error) {
+      console.error('Failed to load float config:', error);
+    }
+  }, []);
+
+  const loadQuickLaunchApps = useCallback(() => {
+    const apps = loadApps();
+    setQuickLaunchApps(apps);
+  }, []);
+
+  // Initialize data
+  useEffect(() => {
+    const savedBrowserMode = localStorage.getItem('toolbox_browser_mode') as 'internal' | 'external';
+    if (savedBrowserMode) {
+      setBrowserMode(savedBrowserMode);
+    }
+
+    loadSettings();
+    loadShortcuts();
+    loadFloatConfig();
+    loadQuickLaunchApps();
+  }, [loadSettings, loadShortcuts, loadFloatConfig, loadQuickLaunchApps]);
+
+
 
   // Event handlers
   const handleAutostartToggle = async (enabled: boolean) => {
@@ -130,36 +131,6 @@ const Settings: React.FC = () => {
     } catch (error) {
       logError('Failed to set autostart status', 'Settings', error as Error);
       addToast({ type: 'error', message: '设置失败，请重试' });
-    }
-  };
-
-  const handleScanDesktopApps = async () => {
-    setIsScanning(true);
-    addToast({ type: 'info', message: '正在扫描桌面应用...' });
-
-    try {
-      const existingApps = loadApps();
-      const categories = loadCategories();
-      const defaultCategoryId = getDefaultCategoryId(categories);
-
-      const result = await scanAndAddDesktopApps(existingApps, defaultCategoryId);
-
-      if (result.addedCount > 0) {
-        addToast({ type: 'success', message: `成功添加 ${result.addedCount} 个应用到快启动` });
-      }
-
-      if (result.skippedCount > 0) {
-        addToast({ type: 'info', message: `${result.skippedCount} 个应用已存在，已跳过` });
-      }
-
-      if (result.addedCount === 0 && result.skippedCount === 0) {
-        addToast({ type: 'info', message: '桌面上未找到可添加的应用程序' });
-      }
-    } catch (error) {
-      addToast({ type: 'error', message: '扫描桌面应用失败，请重试' });
-      console.error('Error scanning desktop:', error);
-    } finally {
-      setIsScanning(false);
     }
   };
 
@@ -360,7 +331,7 @@ const Settings: React.FC = () => {
   const tabs = [
     { id: 'general' as const, label: '通用设置', icon: SettingsIcon },
     { id: 'storage' as const, label: '存储管理', icon: Database },
-    { id: 'quickLaunch' as const, label: '快启动设置', icon: Monitor },
+    { id: 'sync' as const, label: '数据同步', icon: RefreshCw },
     { id: 'shortcuts' as const, label: '快捷键设置', icon: Keyboard },
     { id: 'floatWindow' as const, label: '悬浮窗设置', icon: Circle },
     ...(isElectron() ? [{ id: 'ocr' as const, label: 'OCR设置', icon: Scan }] : []),
@@ -419,14 +390,7 @@ const Settings: React.FC = () => {
           />
         )}
 
-        {activeTab === 'quickLaunch' && (
-          <QuickLaunchTab
-            isScanning={isScanning}
-            onScanDesktopApps={handleScanDesktopApps}
-          />
-        )}
-
-
+        {activeTab === 'sync' && <SyncTab />}
 
         {activeTab === 'shortcuts' && (
           <ShortcutsTab

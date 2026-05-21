@@ -1,14 +1,14 @@
-export interface PasswordCategory {
+export interface WebsiteAccountCategory {
   id: string;
   user_id: string;
   name: string;
   parent_id: string | null;
   created_at: string;
   updated_at: string;
-  children?: PasswordCategory[];
+  children?: WebsiteAccountCategory[];
 }
 
-export interface Password {
+export interface WebsiteAccount {
   id: string;
   user_id: string;
   category_id: string | null;
@@ -27,12 +27,12 @@ export interface Password {
   category_name?: string;
 }
 
-export interface PasswordCategoryRequest {
+export interface WebsiteAccountCategoryRequest {
   name: string;
   parent_id?: string | null;
 }
 
-export interface PasswordRequest {
+export interface WebsiteAccountRequest {
   category_id: string | null;
   name: string;
   url: string;

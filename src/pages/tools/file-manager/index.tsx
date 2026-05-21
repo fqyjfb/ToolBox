@@ -70,11 +70,7 @@ const FileManagerPage: React.FC = () => {
   const [showDeletePathConfirm, setShowDeletePathConfirm] = useState(false);
   const [deletePathItem, setDeletePathItem] = useState<PathConfig | null>(null);
 
-  useEffect(() => {
-    initializeFileManager();
-  }, []);
-
-  const initializeFileManager = async () => {
+  const initializeFileManager = useCallback(async () => {
     try {
       await loadSystemFavorites();
       await loadUserFavorites();
@@ -89,9 +85,13 @@ const FileManagerPage: React.FC = () => {
       console.error('初始化文件管理器失败:', error);
       addToast({ type: 'error', message: '初始化文件管理器失败' });
     }
-  };
+  }, [addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadSystemFavorites = async () => {
+  useEffect(() => {
+    initializeFileManager();
+  }, [initializeFileManager]);
+
+  const loadSystemFavorites = useCallback(async () => {
     try {
       const systemPaths = await window.electron?.fileManager.getSystemPaths();
       setFavorites(prev => {
@@ -101,9 +101,9 @@ const FileManagerPage: React.FC = () => {
     } catch (error) {
       console.error('加载系统路径失败:', error);
     }
-  };
+  }, []);
 
-  const loadUserFavorites = async () => {
+  const loadUserFavorites = useCallback(async () => {
     try {
       const savedFavorites = await window.electron?.fileManager.getFavorites();
       setFavorites(prev => {
@@ -113,18 +113,18 @@ const FileManagerPage: React.FC = () => {
     } catch (error) {
       logError('加载用户收藏失败', 'FileManager', error as Error);
     }
-  };
+  }, []);
 
-  const loadTargetPaths = async () => {
+  const loadTargetPaths = useCallback(async () => {
     try {
       const paths = await window.electron?.fileManager.getTargetPaths();
       setTargetPaths(paths || []);
     } catch (error) {
       console.error('加载目标路径失败:', error);
     }
-  };
+  }, []);
 
-  const loadFiles = async (path: string) => {
+  const loadFiles = useCallback(async (path: string) => {
     setLoading(true);
     setStatus(`正在加载: ${path}`);
     try {
@@ -138,20 +138,20 @@ const FileManagerPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast]);
 
-  const navigateToPath = async (path: string) => {
+  const navigateToPath = useCallback(async (path: string) => {
     setCurrentPath(path);
     await loadFiles(path);
-  };
+  }, [loadFiles]);
 
-  const goBack = async () => {
+  const goBack = useCallback(async () => {
     if (!currentPath) return;
     const parentPath = await window.electron?.fileManager.getParentPath(currentPath);
     if (parentPath) {
       await navigateToPath(parentPath);
     }
-  };
+  }, [currentPath, navigateToPath]);
 
   const openItem = useCallback(async (item: FileItem) => {
     if (item.isDirectory) {
@@ -166,7 +166,7 @@ const FileManagerPage: React.FC = () => {
         addToast({ type: 'error', message: '打开文件失败' });
       }
     }
-  }, []);
+  }, [addToast, navigateToPath]);
 
   const addToFavorites = useCallback(async (item: FileItem) => {
     if (!item.isDirectory) {
@@ -182,7 +182,7 @@ const FileManagerPage: React.FC = () => {
       console.error('添加收藏失败:', error);
       addToast({ type: 'error', message: '添加收藏失败' });
     }
-  }, []);
+  }, [addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const removeFromFavorites = useCallback(async (path: string) => {
     try {
@@ -194,7 +194,7 @@ const FileManagerPage: React.FC = () => {
       console.error('移除收藏失败:', error);
       addToast({ type: 'error', message: '移除收藏失败' });
     }
-  }, []);
+  }, [addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addToTargetPaths = useCallback(async (item: FileItem) => {
     if (!item.isDirectory) {
@@ -210,7 +210,7 @@ const FileManagerPage: React.FC = () => {
       logError('添加目标路径失败', 'FileManager', error as Error);
       addToast({ type: 'error', message: '添加目标路径失败' });
     }
-  }, []);
+  }, [addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const deleteItem = useCallback((item: FileItem) => {
     setDeleteConfirmItem(item);
@@ -232,7 +232,7 @@ const FileManagerPage: React.FC = () => {
       setShowDeleteConfirm(false);
       setDeleteConfirmItem(null);
     }
-  }, [deleteConfirmItem, currentPath]);
+  }, [deleteConfirmItem, currentPath, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copyToTarget = useCallback(async (filePaths: string[], targetPath: string, targetName: string) => {
     if (filePaths.length === 0) return;
@@ -247,7 +247,7 @@ const FileManagerPage: React.FC = () => {
       addToast({ type: 'error', message: '复制失败' });
       setStatus('复制失败');
     }
-  }, []);
+  }, [addToast]);
 
   const handleAddTargetPath = async () => {
     if (!newPathName || !newPathValue) {
@@ -290,7 +290,7 @@ const FileManagerPage: React.FC = () => {
       setShowDeletePathConfirm(false);
       setDeletePathItem(null);
     }
-  }, [deletePathItem]);
+  }, [deletePathItem, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openTargetPath = useCallback(async (path: string) => {
     try {
@@ -304,7 +304,7 @@ const FileManagerPage: React.FC = () => {
       logError('打开路径失败', 'FileManager', error as Error);
       addToast({ type: 'error', message: '打开路径失败' });
     }
-  }, [targetPaths]);
+  }, [targetPaths, addToast]);
 
   const handleFileContextMenu = useCallback((e: React.MouseEvent, item: FileItem) => {
     e.preventDefault();

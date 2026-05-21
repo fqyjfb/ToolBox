@@ -84,7 +84,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
       menu.style.left = `${newX}px`;
       menu.style.top = `${newY}px`;
     }
-  }, [isOpen, x, y, items.length]);
+  }, [isOpen, x, y, items]);
 
   if (!isOpen) return null;
 

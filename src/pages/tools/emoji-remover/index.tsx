@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Smile, Copy, Trash2, FileText } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 
@@ -8,7 +8,7 @@ const EmojiRemoverPage: React.FC = () => {
   const [output, setOutput] = useState('');
   const [count, setCount] = useState(0);
 
-  const emojiRegex = /\p{Extended_Pictographic}/gu;
+  const emojiRegex = useMemo(() => /\p{Extended_Pictographic}/gu, []);
 
   const removeEmoji = useCallback(() => {
     if (!input) {
@@ -20,7 +20,7 @@ const EmojiRemoverPage: React.FC = () => {
     const matches = input.match(emojiRegex) || [];
     setOutput(input.replace(emojiRegex, ''));
     setCount(matches.length);
-  }, [input]);
+  }, [input, emojiRegex]);
 
   const handleCopy = useCallback(() => {
     if (!output) {

@@ -102,13 +102,13 @@ class IconCacheService {
             }
           }
         }
+      }
+    } catch {
+      // Cache API may not be available in some environments
     }
-  } catch {
-    // Cache API may not be available in some environments
   }
-}
 
-async clearAll(): Promise<void> {
+  async clearAll(): Promise<void> {
     if (!this.isCacheApiAvailable()) {
       return;
     }

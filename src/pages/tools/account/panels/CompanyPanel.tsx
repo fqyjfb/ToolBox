@@ -78,22 +78,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
     }
   }));
 
-  useEffect(() => {
-    loadData(1);
-  }, []);
-
-  useEffect(() => {
-    if (currentPage > 1) {
-      loadData(currentPage);
-    }
-  }, [currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive]);
-
-  const loadData = async (pageNum: number = 1) => {
+  const loadData = useCallback(async (pageNum: number = 1) => {
     try {
       setLoading(true);
       let result;
@@ -111,7 +96,22 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
+
+  useEffect(() => {
+    loadData(1);
+  }, [loadData]);
+
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadData(currentPage);
+    }
+  }, [currentPage, loadData]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadData(1);
+  }, [searchQuery, isSearchActive, loadData]);
 
   const openModal = (item: Company | null = null) => {
     setEditingItem(item);
@@ -136,7 +136,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
     try {
       setLoading(true);
       if (editingItem) {
-        await accountService.updateCompany(editingItem.id, companyForm);
+        await accountService.updateCompany(userId, editingItem.id, companyForm);
       } else {
         await accountService.createCompany(userId, companyForm);
       }
@@ -152,10 +152,10 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      await accountService.deleteCompany(id);
+      await accountService.deleteCompany(userId, id);
       addToast({ message: '删除成功', type: 'success' });
       await loadData(currentPage);
     } catch (error) {
@@ -164,19 +164,19 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast, loadData, currentPage]);
 
-  const handleCopyText = async (text: string, message: string) => {
+  const handleCopyText = useCallback(async (text: string, message: string) => {
     try {
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
       console.error('复制失败:', error);
-      addToast({ message: '复制失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
-  const handleShareCompany = async (company: Company) => {
+  const handleShareCompany = useCallback(async (company: Company) => {
     try {
       let shareContent = `${company.name}\n`;
       shareContent += company.unified_social_credit_code ? `统一社会信用代码: ${company.unified_social_credit_code}\n` : '';
@@ -189,9 +189,9 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
       addToast({ message: '企业信息已复制到剪贴板', type: 'success' });
     } catch (error) {
       logError('分享失败', 'CompanyPanel', error as Error);
-      addToast({ message: '分享失败', type: 'error' });
+      addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
-  };
+  }, [addToast]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -251,7 +251,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, companies, handleCloseContextMenu, handleOpenConfirmDialog]);
+  }, [contextMenu.type, contextMenu.targetId, companies, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleDeleteItem, handleShareCompany]);
 
   return (
     <div className="h-full flex flex-col" onClick={handleCloseContextMenu}>

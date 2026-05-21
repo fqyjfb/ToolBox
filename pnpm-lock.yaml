@@ -23,9 +23,6 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.100.10
         version: 5.100.10(react@19.2.5)
-      '@types/styled-components':
-        specifier: ^5.1.36
-        version: 5.1.36
       electron-log:
         specifier: ^5.4.4
         version: 5.4.4
@@ -90,6 +87,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
+      '@types/styled-components':
+        specifier: ^5.1.36
+        version: 5.1.36
       '@vitejs/plugin-react':
         specifier: ^6.0.1
         version: 6.0.1(vite@8.0.8(@types/node@24.12.2)(jiti@1.21.7))

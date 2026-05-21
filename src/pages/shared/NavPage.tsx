@@ -80,6 +80,11 @@ const NavPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('')
   
   const [activeMainCategoryId, setActiveMainCategoryId] = useState<string | null>(null)
+  const activeMainCategoryIdRef = useRef(activeMainCategoryId)
+  useEffect(() => {
+    activeMainCategoryIdRef.current = activeMainCategoryId
+  }, [activeMainCategoryId])
+  
   const [activeSubCategoryIds, setActiveSubCategoryIds] = useState<Record<string, string>>({})
   const [activeFavorites, setActiveFavorites] = useState(false)
   
@@ -202,7 +207,7 @@ const NavPage: React.FC = () => {
       isInitializedRef.current = true
       loadData()
     }
-  }, [])
+  }, [loadData])
 
   // 检测分类导航是否超出可视宽度
   useEffect(() => {
@@ -240,6 +245,13 @@ const NavPage: React.FC = () => {
     }
   }, [categoriesTree])
 
+  // 获取子分类 - 使用useMemo缓存
+  const getSubCategories = useCallback((mainCategoryId: string) => {
+    const mainCategory = categoriesTree.find(category => category.id === mainCategoryId)
+    const subCategories = mainCategory?.children || []
+    return [{ id: 'all', name: '全部', children: [], parent_id: null, order: 0, created_at: '', updated_at: '' }, ...subCategories]
+  }, [categoriesTree])
+
   // 检测子分类导航是否超出可视宽度
   useEffect(() => {
     if (!activeMainCategoryId) return
@@ -269,7 +281,7 @@ const NavPage: React.FC = () => {
     return () => {
       window.removeEventListener('resize', checkSubCategoryOverflow)
     }
-  }, [activeMainCategoryId, categoriesTree])
+  }, [activeMainCategoryId, categoriesTree, getSubCategories])
 
   // 处理搜索 - 使用useMemo缓存搜索结果
   const searchResults = useMemo(() => {
@@ -294,13 +306,6 @@ const NavPage: React.FC = () => {
       setActiveFavorites(false)
     }
   }, [isSearchActive])
-
-  // 获取子分类 - 使用useMemo缓存
-  const getSubCategories = useCallback((mainCategoryId: string) => {
-    const mainCategory = categoriesTree.find(category => category.id === mainCategoryId)
-    const subCategories = mainCategory?.children || []
-    return [{ id: 'all', name: '全部', children: [], parent_id: null, order: 0, created_at: '', updated_at: '' }, ...subCategories]
-  }, [categoriesTree])
 
   // 获取当前激活的子分类ID
   const getActiveSubCategoryId = useCallback((mainCategoryId: string) => {
@@ -467,55 +472,61 @@ const NavPage: React.FC = () => {
 
   // 节流函数
   const throttle = <T extends (...args: unknown[]) => void>(func: T, delay: number) => {
-    let inThrottle: boolean
-    return function(this: unknown, ...args: Parameters<T>) {
+    let inThrottle = false
+    return (...args: Parameters<T>) => {
       if (!inThrottle) {
-        func.apply(this, args)
+        func(...args)
         inThrottle = true
-        setTimeout(() => inThrottle = false, delay)
+        setTimeout(() => {
+          inThrottle = false
+        }, delay)
       }
     }
   }
 
   // 处理滚动事件 - 使用节流优化
-  const handleScroll = useCallback(throttle(() => {
-    if (!contentRef.current) return
-    
-    const categoryHeaders = document.querySelectorAll('.category-section .section-header')
-    if (categoryHeaders.length === 0) return
-    
-    let currentVisibleCategoryId: string | null = null
-    let minDistance = Infinity
-    
-    categoryHeaders.forEach(header => {
-      const categoryId = header.querySelector('.section-title')?.id?.replace('category-', '')
-      if (!categoryId) return
+  const handleScroll = useMemo(() => {
+    const handleScrollFn = () => {
+      if (!contentRef.current) return
       
-      const rect = header.getBoundingClientRect()
-      const contentRect = contentRef.current!.getBoundingClientRect()
-      const distanceFromTop = rect.top - contentRect.top
+      const categoryHeaders = document.querySelectorAll('.category-section .section-header')
+      if (categoryHeaders.length === 0) return
       
-      if (distanceFromTop < contentRect.height / 2 && distanceFromTop > -rect.height) {
-        if (Math.abs(distanceFromTop) < minDistance) {
-          minDistance = Math.abs(distanceFromTop)
-          currentVisibleCategoryId = categoryId
+      let currentVisibleCategoryId: string | null = null
+      let minDistance = Infinity
+      
+      categoryHeaders.forEach(header => {
+        const categoryId = header.querySelector('.section-title')?.id?.replace('category-', '')
+        if (!categoryId) return
+        
+        const rect = header.getBoundingClientRect()
+        const contentRect = contentRef.current!.getBoundingClientRect()
+        const distanceFromTop = rect.top - contentRect.top
+        
+        if (distanceFromTop < contentRect.height / 2 && distanceFromTop > -rect.height) {
+          if (Math.abs(distanceFromTop) < minDistance) {
+            minDistance = Math.abs(distanceFromTop)
+            currentVisibleCategoryId = categoryId
+          }
         }
-      }
-    })
-    
-    if (currentVisibleCategoryId && currentVisibleCategoryId !== activeMainCategoryId) {
-      setActiveMainCategoryId(currentVisibleCategoryId)
-      setActiveSubCategoryIds(prev => {
-        const newState = { ...prev }
-        if (typeof currentVisibleCategoryId === 'string') {
-          newState[currentVisibleCategoryId] = 'all'
-        }
-        return newState
       })
-      setShowFavorites(false)
-      setActiveFavorites(false)
-    }
-  }, 100), [activeMainCategoryId])
+      
+      if (currentVisibleCategoryId && currentVisibleCategoryId !== activeMainCategoryIdRef.current) {
+        setActiveMainCategoryId(currentVisibleCategoryId)
+        setActiveSubCategoryIds(prev => {
+          const newState = { ...prev }
+          if (typeof currentVisibleCategoryId === 'string') {
+            newState[currentVisibleCategoryId] = 'all'
+          }
+          return newState
+        })
+        setShowFavorites(false)
+        setActiveFavorites(false)
+      }
+    };
+    
+    return throttle(handleScrollFn, 100)
+  }, []);
 
   useEffect(() => {
     const contentElement = contentRef.current

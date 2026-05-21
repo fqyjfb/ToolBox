@@ -174,7 +174,7 @@ const Home: React.FC = () => {
         setFavorites(cachedData.favorites);
       }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, favorites.length]);
 
   const shouldFetchFavorites = useMemo(() => {
     return isAuthenticated && favorites.length === 0;
@@ -233,7 +233,7 @@ const Home: React.FC = () => {
       setFavorites([]);
       localStorage.removeItem('homeFavorites');
     }
-  }, [shouldFetchFavorites, isAuthenticated]);
+  }, [shouldFetchFavorites, isAuthenticated, fetchFavorites]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
