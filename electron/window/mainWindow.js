@@ -696,7 +696,28 @@ Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
   });
 
   ipcMain.on('open-internal', (event, urlPath) => {
-    const { BrowserWindow, Menu, MenuItem, nativeImage } = require('electron');
+    const { BrowserWindow, Menu, MenuItem, nativeImage, app } = require('electron');
+    // 查找 icon 路径
+    let iconPath = null;
+    const iconPaths = app.isPackaged
+      ? [
+          path.join(process.resourcesPath, 'app', 'public', 'favicon.ico'),
+          path.join(process.resourcesPath, 'app', 'public', 'favicon.png'),
+          path.join(process.resourcesPath, 'public', 'favicon.ico'),
+          path.join(process.resourcesPath, 'public', 'favicon.png')
+        ]
+      : [
+          path.join(__dirname, '../../public/favicon.ico'),
+          path.join(__dirname, '../../public/favicon.png')
+        ];
+
+    for (const p of iconPaths) {
+      if (fs.existsSync(p)) {
+        iconPath = p;
+        break;
+      }
+    }
+    
     const internalWindow = new BrowserWindow({
       width: 1024,
       height: 768,
