@@ -1,15 +1,11 @@
+import { BaseService } from './baseService'
 import { getDataAccessLayer } from './dataAccessLayer'
 import { TodoCategory, Todo, CreateTodoCategoryRequest, CreateTodoRequest } from '../types/todo'
 import { logError, logInfo } from './loggerService'
 
-interface ServiceResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
-}
-
+// 分类服务
 const categoryService = {
-  async getCategories(userId: string): Promise<ServiceResponse<TodoCategory[]>> {
+  async getCategories(userId: string): Promise<{ success: boolean; data?: TodoCategory[]; error?: string }> {
     try {
       const dal = getDataAccessLayer(userId)
       const { data } = await dal.list<TodoCategory>('todo_categories', {
@@ -22,7 +18,7 @@ const categoryService = {
     }
   },
 
-  async createCategory(userId: string, request: CreateTodoCategoryRequest): Promise<ServiceResponse<TodoCategory>> {
+  async createCategory(userId: string, request: CreateTodoCategoryRequest) {
     try {
       const dal = getDataAccessLayer(userId)
       const data = await dal.create<TodoCategory>('todo_categories', {
@@ -39,14 +35,13 @@ const categoryService = {
     }
   },
 
-  async updateCategory(userId: string, categoryId: string, request: CreateTodoCategoryRequest): Promise<ServiceResponse<TodoCategory>> {
+  async updateCategory(userId: string, categoryId: string, request: CreateTodoCategoryRequest) {
     try {
       const dal = getDataAccessLayer(userId)
-      const data = await dal.update<TodoCategory>('todo_categories', categoryId, {
-        name: request.name,
-        color: request.color,
-        parent_id: request.parent_id || null
-      })
+      const updates: Partial<TodoCategory> = { name: request.name }
+      if (request.color !== undefined) updates.color = request.color
+      if (request.parent_id !== undefined) updates.parent_id = request.parent_id || null
+      const data = await dal.update<TodoCategory>('todo_categories', categoryId, updates)
       logInfo(`更新待办分类成功: ${request.name}`, 'TodoService')
       return { success: true, data }
     } catch (error) {
@@ -55,7 +50,7 @@ const categoryService = {
     }
   },
 
-  async deleteCategory(userId: string, categoryId: string): Promise<ServiceResponse<void>> {
+  async deleteCategory(userId: string, categoryId: string) {
     try {
       const dal = getDataAccessLayer(userId)
       await dal.delete('todo_categories', categoryId)
@@ -68,65 +63,50 @@ const categoryService = {
   }
 }
 
+// 待办任务服务
 const todoService = {
-  async getTodos(userId: string, filter?: { category_id?: string }, page: number = 1, pageSize: number = 10): Promise<ServiceResponse<{ data: Todo[]; total: number }>> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      const filters = filter?.category_id ? { category_id: filter.category_id } : undefined
-      const { data, total } = await dal.list<Todo>('todos', {
-        filters,
-        orderBy: { column: 'created_at', ascending: false },
-        range: { from: (page - 1) * pageSize, to: page * pageSize - 1 }
-      })
-      return { success: true, data: { data, total } }
-    } catch (error) {
-      logError('获取待办任务失败', 'TodoService', error instanceof Error ? error : undefined)
-      return { success: false, error: error instanceof Error ? error.message : '获取任务失败' }
-    }
+  async getTodos(userId: string, filter?: { category_id?: string }, page: number = 1, pageSize: number = 10) {
+    const baseService = new BaseService<Todo>('todos', 'TodoService')
+    const filters = filter?.category_id ? { category_id: filter.category_id } : undefined
+    return baseService.getList(userId, { filters }, page, pageSize)
   },
 
-  async createTodo(userId: string, request: CreateTodoRequest): Promise<ServiceResponse<Todo>> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      const data = await dal.create<Todo>('todos', {
-        title: request.title,
-        description: request.description || null,
-        due_date: request.due_date || null,
-        priority: request.priority || '中',
-        status: request.status || '待办',
-        category_id: request.category_id || null,
-        is_completed: false,
-        completed_at: null,
-        order: 0
-      })
+  async createTodo(userId: string, request: CreateTodoRequest) {
+    const baseService = new BaseService<Todo>('todos', 'TodoService')
+    const result = await baseService.create(userId, {
+      title: request.title,
+      description: request.description || null,
+      due_date: request.due_date || null,
+      priority: request.priority || '中',
+      status: request.status || '待办',
+      category_id: request.category_id || null,
+      is_completed: false,
+      completed_at: null,
+      order: 0
+    })
+    if (result.success) {
       logInfo(`创建待办任务成功: ${request.title}`, 'TodoService')
-      return { success: true, data }
-    } catch (error) {
-      logError('创建待办任务失败', 'TodoService', error instanceof Error ? error : undefined)
-      return { success: false, error: error instanceof Error ? error.message : '创建任务失败' }
     }
+    return result
   },
 
-  async updateTodo(userId: string, todoId: string, request: CreateTodoRequest): Promise<ServiceResponse<Todo>> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      const data = await dal.update<Todo>('todos', todoId, {
-        title: request.title,
-        description: request.description || null,
-        due_date: request.due_date || null,
-        priority: request.priority || '中',
-        status: request.status || '待办',
-        category_id: request.category_id || null
-      })
+  async updateTodo(userId: string, todoId: string, request: CreateTodoRequest) {
+    const baseService = new BaseService<Todo>('todos', 'TodoService')
+    const result = await baseService.update(userId, todoId, {
+      title: request.title,
+      description: request.description || null,
+      due_date: request.due_date || null,
+      priority: request.priority || '中',
+      status: request.status || '待办',
+      category_id: request.category_id || null
+    })
+    if (result.success) {
       logInfo(`更新待办任务成功: ${request.title}`, 'TodoService')
-      return { success: true, data }
-    } catch (error) {
-      logError('更新待办任务失败', 'TodoService', error instanceof Error ? error : undefined)
-      return { success: false, error: error instanceof Error ? error.message : '更新任务失败' }
     }
+    return result
   },
 
-  async updateTodoStatus(userId: string, todoId: string, isCompleted: boolean): Promise<ServiceResponse<Todo>> {
+  async updateTodoStatus(userId: string, todoId: string, isCompleted: boolean) {
     try {
       const dal = getDataAccessLayer(userId)
       const data = await dal.update<Todo>('todos', todoId, {
@@ -142,30 +122,18 @@ const todoService = {
     }
   },
 
-  async deleteTodo(userId: string, todoId: string): Promise<ServiceResponse<void>> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      await dal.delete('todos', todoId)
+  async deleteTodo(userId: string, todoId: string) {
+    const baseService = new BaseService<Todo>('todos', 'TodoService')
+    const result = await baseService.delete(userId, todoId)
+    if (result.success) {
       logInfo(`删除待办任务成功: ID=${todoId}`, 'TodoService')
-      return { success: true }
-    } catch (error) {
-      logError('删除待办任务失败', 'TodoService', error instanceof Error ? error : undefined)
-      return { success: false, error: error instanceof Error ? error.message : '删除任务失败' }
     }
+    return result
   },
 
-  async searchTodos(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<ServiceResponse<{ data: Todo[]; total: number }>> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      const { data, total } = await dal.search<Todo>('todos', keyword, ['title', 'description'], {
-        orderBy: { column: 'created_at', ascending: false },
-        range: { from: (page - 1) * pageSize, to: page * pageSize - 1 }
-      })
-      return { success: true, data: { data, total } }
-    } catch (error) {
-      logError('搜索待办任务失败', 'TodoService', error instanceof Error ? error : undefined)
-      return { success: false, error: error instanceof Error ? error.message : '搜索任务失败' }
-    }
+  async searchTodos(userId: string, keyword: string, page: number = 1, pageSize: number = 10) {
+    const baseService = new BaseService<Todo>('todos', 'TodoService')
+    return baseService.search(userId, keyword, ['title', 'description'], {}, page, pageSize)
   }
 }
 
@@ -174,4 +142,4 @@ export const todoServiceWrapper = {
   todo: todoService
 }
 
-export type { ServiceResponse, TodoCategory, Todo, CreateTodoCategoryRequest, CreateTodoRequest }
+export type { TodoCategory, Todo, CreateTodoCategoryRequest, CreateTodoRequest }

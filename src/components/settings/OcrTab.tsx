@@ -333,7 +333,7 @@ const OcrTab: React.FC = () => {
                   type="number"
                   value={settings.httpPort}
                   onChange={(e) => handleSettingChange('httpPort', parseInt(e.target.value) || 0)}
-                  className="w-20 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  className="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   min="1"
                   max="65535"
                 />
@@ -361,7 +361,7 @@ const OcrTab: React.FC = () => {
                   type="number"
                   value={settings.wsPort}
                   onChange={(e) => handleSettingChange('wsPort', parseInt(e.target.value) || 0)}
-                  className="w-20 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  className="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   min="1"
                   max="65535"
                 />
@@ -392,7 +392,7 @@ const OcrTab: React.FC = () => {
               type="number"
               value={settings.idleTimeoutMinutes}
               onChange={(e) => handleSettingChange('idleTimeoutMinutes', parseInt(e.target.value) || 0)}
-              className="w-20 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              className="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               min="1"
               max="60"
             />
@@ -420,7 +420,7 @@ const OcrTab: React.FC = () => {
               type="number"
               value={settings.maxRestarts}
               onChange={(e) => handleSettingChange('maxRestarts', parseInt(e.target.value) || 0)}
-              className="w-20 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              className="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               min="0"
               max="10"
             />
@@ -438,7 +438,7 @@ const OcrTab: React.FC = () => {
               type="text"
               value={settings.pythonPath}
               onChange={(e) => handleSettingChange('pythonPath', e.target.value)}
-              className="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              className="flex-1 px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               placeholder="例如: C:\Python39\python.exe"
             />
             <button

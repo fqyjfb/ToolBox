@@ -117,7 +117,7 @@ const Modal: React.FC<ModalProps> = ({
           }
         }
         .animate-modal-in {
-          animation: modal-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: modal-in var(--duration-modal) cubic-bezier(0.16, 1, 0.3, 1);
         }
       `}</style>
     </div>

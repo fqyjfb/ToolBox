@@ -69,7 +69,7 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, onUpdate }) => {
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           onBlur={() => setIsEditing(false)}
-          className={`w-full px-3 py-1.5 text-sm text-center border rounded-md transition-colors ${
+          className={`w-full px-2 py-1 text-xs text-center border rounded-md transition-colors ${
             isEditing
               ? 'border-primary bg-gray-50 dark:bg-gray-700 outline-none'
               : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer'

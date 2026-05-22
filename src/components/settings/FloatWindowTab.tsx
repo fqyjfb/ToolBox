@@ -1,5 +1,5 @@
 import React from 'react';
-import { Circle, Info, Save, RotateCcw } from 'lucide-react';
+import { Circle, Save, RotateCcw } from 'lucide-react';
 import FloatConfigEditor from './FloatConfigEditor';
 import { FloatConfigItem } from '../../types/settings';
 import { QuickLaunchItem } from '../../utils/quickLaunch';
@@ -27,18 +27,6 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
         </div>
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">悬浮窗设置</h2>
       </div>
-      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
-        <div className="flex items-start gap-2">
-          <Info size={14} className="text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
-            <p>1. 悬浮球最多支持8个快捷操作按钮</p>
-            <p>2. 导航类型：跳转到应用内的页面</p>
-            <p>3. 工具类型：快速打开工具中心的工具</p>
-            <p>4. 应用类型：快速启动快启动中的应用程序</p>
-            <p>5. 系统类型：执行系统级操作（清空回收站、关机等）</p>
-          </div>
-        </div>
-      </div>
       <div className="p-4">
         <div className="space-y-3">
           {floatConfig.map((config, index) => (
@@ -53,14 +41,14 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
         <div className="flex justify-center gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onResetFloatConfig}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
             <RotateCcw size={14} />
             重置
           </button>
           <button
             onClick={onSaveFloatConfig}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-primary rounded-md hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white bg-gray-800 dark:bg-gray-700 rounded-md hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
           >
             <Save size={14} />
             保存

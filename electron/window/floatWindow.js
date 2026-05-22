@@ -148,6 +148,21 @@ const registerFloatIpcHandlers = () => {
   floatIpcHandlersRegistered = true;
   
   ipcMain.on('float-window-action', (event, action) => {
+    if (action === 'toggle-lock') {
+      require('./lockWindow').toggleLock();
+      return;
+    }
+    
+    const settings = loadSettings();
+    const checkLockAndShow = (callback) => {
+      if (settings.isLockEnabled === 1) {
+        require('./lockWindow').toggleLock();
+        return false;
+      }
+      callback();
+      return true;
+    };
+    
     const mainWindow = require('./mainWindow').getMainWindow();
     
     if (action.startsWith('open-app:')) {
@@ -176,21 +191,23 @@ const registerFloatIpcHandlers = () => {
     
     const navAction = action.replace('nav:', '');
      if (typeof actions[navAction] === 'function') {
-       actions[navAction]();
+       checkLockAndShow(() => actions[navAction]());
        return;
      }
      
      if (action.startsWith('nav:')) {
        const navPath = action.replace('nav:', '');
-       if (mainWindow && navPath) {
-         mainWindow.show();
-         mainWindow.focus();
-         mainWindow.webContents.send('navigate-to', navPath);
-       }
+       checkLockAndShow(() => {
+         if (mainWindow && navPath) {
+           mainWindow.show();
+           mainWindow.focus();
+           mainWindow.webContents.send('navigate-to', navPath);
+         }
+       });
        return;
      }
     if (typeof actions[action] === 'function') {
-      actions[action]();
+      checkLockAndShow(() => actions[action]());
     }
   });
 
@@ -222,32 +239,52 @@ const registerFloatIpcHandlers = () => {
 
   ipcMain.on('float-show-context-menu', () => {
     if (!floatWindow) return;
+    const settings = loadSettings();
+    
+    if (settings.isLockEnabled === 1) {
+      require('./lockWindow').toggleLock();
+      return;
+    }
+    
+    const checkLockAndShow = (callback) => {
+      if (settings.isLockEnabled === 1) {
+        require('./lockWindow').toggleLock();
+        return;
+      }
+      callback();
+    };
     const menu = Menu.buildFromTemplate([
       {
         label: '主窗口',
         click: () => { 
-          const mainWindow = require('./mainWindow').getMainWindow();
-          if (mainWindow) { mainWindow.show(); mainWindow.focus(); } 
+          checkLockAndShow(() => {
+            const mainWindow = require('./mainWindow').getMainWindow();
+            if (mainWindow) { mainWindow.show(); mainWindow.focus(); } 
+          });
         }
       },
       {
         label: '设置',
         click: () => { 
-          const mainWindow = require('./mainWindow').getMainWindow();
-          if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/settings'); } 
+          checkLockAndShow(() => {
+            const mainWindow = require('./mainWindow').getMainWindow();
+            if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/settings'); } 
+          });
         }
       },
       { type: 'separator' },
       {
         label: '关闭',
         click: () => {
-          const settings = loadSettings();
-          settings.isFloatWindowEnabled = 0;
-          saveSettings(settings);
-          if (floatWindow) { floatWindow.close(); floatWindow = null; }
-          const mainWindow = require('./mainWindow').getMainWindow();
-          mainWindow?.webContents.send('setting-changed', { name: 'isFloatWindowEnabled', value: 0 });
-          require('./tray').refreshTrayMenu();
+          checkLockAndShow(() => {
+            const settings = loadSettings();
+            settings.isFloatWindowEnabled = 0;
+            saveSettings(settings);
+            if (floatWindow) { floatWindow.close(); floatWindow = null; }
+            const mainWindow = require('./mainWindow').getMainWindow();
+            mainWindow?.webContents.send('setting-changed', { name: 'isFloatWindowEnabled', value: 0 });
+            require('./tray').refreshTrayMenu();
+          });
         }
       }
     ]);

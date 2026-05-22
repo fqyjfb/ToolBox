@@ -91,7 +91,9 @@ export const websiteAccountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) {
+            logError('解密失败', 'WebsiteAccountService', e as Error)
+          }
         }
         return {
           ...item,
@@ -188,7 +190,9 @@ export const websiteAccountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) {
+            logError('解密失败', 'WebsiteAccountService', e as Error)
+          }
         }
         return {
           ...item,

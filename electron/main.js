@@ -2,12 +2,13 @@ const { app } = require('electron');
 const { stopPythonService } = require('./services/pythonProcessService');
 const { registerOcrIpc } = require('./ipc/ocrIpc');
 const { registerFileManagerIpc } = require('./ipc/fileManagerIpc');
-const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization } = require('./window/mainWindow');
+const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization, getMainWindow } = require('./window/mainWindow');
 const { createFloatWindow, registerFloatIpcHandlers } = require('./window/floatWindow');
 const { createTray } = require('./window/tray');
 const { registerLogIpcHandlers } = require('./logs/window');
 const { initLogger } = require('./logs/logger');
 const { loadSettings } = require('./lib/config');
+const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow');
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -15,7 +16,12 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    const mainWindow = require('./window/mainWindow').getMainWindow();
+    const settings = loadSettings();
+    if (settings.isLockEnabled === 1) {
+      require('./window/lockWindow').toggleLock();
+      return;
+    }
+    const mainWindow = getMainWindow();
     if (mainWindow) {
       mainWindow.show();
       if (mainWindow.isMinimized()) mainWindow.restore();
@@ -39,6 +45,7 @@ function onWindowReady() {
   registerFileManagerIpc();
   registerFloatIpcHandlers();
   registerLogIpcHandlers();
+  registerLockIpcHandlers();
 
   setTimeout(() => createTray(), 500);
 
@@ -52,13 +59,25 @@ function onWindowReady() {
 
 app.whenReady().then(async () => {
   initLogger();
-  createWindow(onWindowReady);
+  registerLockIpcHandlers();
 
-  app.on('activate', () => {
-    if (require('electron').BrowserWindow.getAllWindows().length === 0) {
-      createWindow(onWindowReady);
-    }
-  });
+  const isLocked = checkLockOnStartup();
+  if (!isLocked) {
+    createWindow(onWindowReady, true);
+  }
+});
+
+app.on('activate', () => {
+  const settings = loadSettings();
+  if (settings.isLockEnabled === 1) {
+    require('./window/lockWindow').toggleLock();
+    return;
+  }
+  if (getMainWindow()) {
+    getMainWindow().show();
+  } else {
+    createWindow(onWindowReady, true);
+  }
 });
 
 app.on('before-quit', () => {
@@ -74,4 +93,12 @@ app.on('window-all-closed', () => {
 
 module.exports = {
   startMemoryOptimization,
+  createWindowOnUnlock: () => {
+    if (!getMainWindow()) {
+      createWindow(onWindowReady, true);
+    } else {
+      getMainWindow().show();
+      getMainWindow().focus();
+    }
+  },
 };

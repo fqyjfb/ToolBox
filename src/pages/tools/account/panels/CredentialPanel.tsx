@@ -183,7 +183,7 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
     } finally {
       setLoading(false);
     }
-  }, [addToast, loadData, currentPage]);
+  }, [addToast, loadData, currentPage, userId]);
 
   const parseIdCardNumber = (idCard: string): { gender: '' | '男' | '女'; birthDate: string } => {
     const cleanIdCard = idCard.replace(/\s/g, '');

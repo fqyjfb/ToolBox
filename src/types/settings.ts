@@ -9,6 +9,7 @@ export interface ShortcutItem {
   cmd: string;
   isOpen: number;
   isGlobal: number;
+  name?: string;
 }
 
 export type FloatConfigType = 'nav' | 'tool' | 'app' | 'system';

@@ -158,7 +158,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     } finally {
       setLoading(false);
     }
-  }, [addToast, loadData, currentPage]);
+  }, [addToast, loadData, currentPage, userId]);
 
   const handleCopyText = useCallback(async (text: string, message: string) => {
     try {

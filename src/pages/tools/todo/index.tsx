@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Plus, Edit, Trash2, Tag, CheckSquare, FolderOpen } from 'lucide-react';
 import { todoServiceWrapper, Todo, TodoCategory, CreateTodoRequest, CreateTodoCategoryRequest } from '../../../services/TodoService';
 import { useAuthStore } from '../../../store/AuthStore';
@@ -9,6 +9,7 @@ import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import TodoCard from '../../../components/ui/TodoCard';
+import { debounce } from '../../../utils';
 
 function formatDateTimeForInput(dateTimeStr: string): string {
   if (!dateTimeStr) return '';
@@ -111,9 +112,12 @@ const TodoManagerPage: React.FC = () => {
     category_id: null as string | null
   });
 
+  // 防抖加载待办事项
+  const debouncedLoadTodosRef = useRef<(() => void) | null>(null);
+
   const loadTodos = useCallback(async () => {
     if (!admin) return;
-    
+
     const categoriesResult = await todoServiceWrapper.category.getCategories(admin.id);
     if (categoriesResult.success) {
       setCategories(categoriesResult.data || []);
@@ -121,13 +125,13 @@ const TodoManagerPage: React.FC = () => {
 
     let todosResult;
     const finalSearchQuery = isSearchActive && searchQuery.trim() ? searchQuery.trim() : undefined;
-    
+
     if (finalSearchQuery) {
       todosResult = await todoServiceWrapper.todo.searchTodos(admin.id, finalSearchQuery, 1, 100);
     } else {
       todosResult = await todoServiceWrapper.todo.getTodos(admin.id, undefined, 1, 100);
     }
-    
+
     if (todosResult.success && todosResult.data) {
       setTodos(todosResult.data.data || []);
     }
@@ -143,12 +147,24 @@ const TodoManagerPage: React.FC = () => {
     };
   }, []);
 
+  // 初始化防抖函数
   useEffect(() => {
-    const timer = setTimeout(() => {
+    debouncedLoadTodosRef.current = debounce(() => {
       loadTodos();
-    }, 0);
-    return () => clearTimeout(timer);
+    }, 300);
   }, [loadTodos]);
+
+  // 搜索查询变化时防抖加载
+  useEffect(() => {
+    if (debouncedLoadTodosRef.current) {
+      debouncedLoadTodosRef.current();
+    }
+    return () => {
+      if (debouncedLoadTodosRef.current) {
+        // debounce 内部已处理清理
+      }
+    };
+  }, [searchQuery, isSearchActive]);
 
   const handleCloseContextMenu = useCallback(() => {
     setContextMenu(prev => ({ ...prev, isOpen: false }));

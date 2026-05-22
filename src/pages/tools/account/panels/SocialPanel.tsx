@@ -231,7 +231,7 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
     } finally {
       setLoading(false);
     }
-  }, [addToast, loadData, currentPage]);
+  }, [addToast, loadData, currentPage, userId]);
 
   const handleCopyText = useCallback(async (text: string, message: string) => {
     try {

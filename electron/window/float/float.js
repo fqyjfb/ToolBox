@@ -94,6 +94,7 @@ function attachItemEvents() {
 
 function handleItemClick(e) {
   e.stopPropagation();
+  
   const index = parseInt(e.currentTarget.dataset.index);
   const configItem = floatConfig[index];
   
@@ -132,6 +133,7 @@ function toggleExpand() {
 
 function handleFloatBallClick(e) {
   e.stopPropagation();
+  
   if (!moved) {
     toggleExpand();
   }

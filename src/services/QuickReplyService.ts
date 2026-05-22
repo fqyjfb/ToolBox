@@ -1,8 +1,10 @@
+import { BaseService } from './baseService'
 import { getDataAccessLayer } from './dataAccessLayer'
 import { QuickReply, QuickReplyCategory } from '../types/quickReply'
 import { logError, logInfo } from './loggerService'
 
-export const quickReplyService = {
+// 分类服务
+const categoryService = {
   async getCategories(userId: string): Promise<QuickReplyCategory[]> {
     try {
       const dal = getDataAccessLayer(userId)
@@ -26,7 +28,7 @@ export const quickReplyService = {
     }
   },
 
-  async createCategory(userId: string, request: { name: string; parent_id?: string | null }): Promise<QuickReplyCategory> {
+  async createCategory(userId: string, request: { name: string; parent_id?: string | null }) {
     try {
       const dal = getDataAccessLayer(userId)
       const data = await dal.create<QuickReplyCategory>('quick_reply_categories', {
@@ -42,7 +44,7 @@ export const quickReplyService = {
     }
   },
 
-  async updateCategory(userId: string, categoryId: string, request: { name: string }): Promise<QuickReplyCategory> {
+  async updateCategory(userId: string, categoryId: string, request: { name: string }) {
     try {
       const dal = getDataAccessLayer(userId)
       const data = await dal.update<QuickReplyCategory>('quick_reply_categories', categoryId, {
@@ -56,7 +58,7 @@ export const quickReplyService = {
     }
   },
 
-  async deleteCategory(userId: string, categoryId: string): Promise<void> {
+  async deleteCategory(userId: string, categoryId: string) {
     try {
       const dal = getDataAccessLayer(userId)
       await dal.delete('quick_reply_categories', categoryId)
@@ -65,91 +67,86 @@ export const quickReplyService = {
       logError('删除快捷回复分类失败', 'QuickReplyService', error as Error)
       throw error
     }
-  },
-
-  async getQuickReplies(userId: string, categoryId?: string, page: number = 1, pageSize: number = 10): Promise<{ list: QuickReply[]; total: number }> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      const filters = categoryId ? { category_id: categoryId } : undefined
-      const { data, total } = await dal.list<QuickReply>('quick_replies', {
-        filters,
-        orderBy: { column: 'created_at', ascending: false },
-        range: { from: (page - 1) * pageSize, to: page * pageSize - 1 }
-      })
-
-      const { data: categories } = await dal.list<QuickReplyCategory>('quick_reply_categories')
-      const categoryMap = new Map(categories.map(c => [c.id, c]))
-
-      const list = data.map(item => ({
-        ...item,
-        category_name: (item.category_id ? categoryMap.get(item.category_id)?.name : '') || ''
-      }))
-
-      return { list, total }
-    } catch (error) {
-      logError('获取快捷回复列表失败', 'QuickReplyService', error as Error)
-      throw error
-    }
-  },
-
-  async createQuickReply(userId: string, request: { category_id?: string | null; content: string }): Promise<QuickReply> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      const data = await dal.create<QuickReply>('quick_replies', {
-        category_id: request.category_id || null,
-        content: request.content
-      })
-      logInfo(`创建快捷回复成功`, 'QuickReplyService')
-      return data
-    } catch (error) {
-      logError('创建快捷回复失败', 'QuickReplyService', error as Error)
-      throw error
-    }
-  },
-
-  async updateQuickReply(userId: string, quickReplyId: string, request: { content?: string; category_id?: string | null }): Promise<QuickReply> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      const data = await dal.update<QuickReply>('quick_replies', quickReplyId, request)
-      logInfo(`更新快捷回复成功: ID=${quickReplyId}`, 'QuickReplyService')
-      return data
-    } catch (error) {
-      logError('更新快捷回复失败', 'QuickReplyService', error as Error)
-      throw error
-    }
-  },
-
-  async deleteQuickReply(userId: string, quickReplyId: string): Promise<void> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      await dal.delete('quick_replies', quickReplyId)
-      logInfo(`删除快捷回复成功: ID=${quickReplyId}`, 'QuickReplyService')
-    } catch (error) {
-      logError('删除快捷回复失败', 'QuickReplyService', error as Error)
-      throw error
-    }
-  },
-
-  async searchQuickReplies(userId: string, keyword: string, page: number = 1, pageSize: number = 10): Promise<{ list: QuickReply[]; total: number }> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      const { data, total } = await dal.search<QuickReply>('quick_replies', keyword, ['content'], {
-        orderBy: { column: 'created_at', ascending: false },
-        range: { from: (page - 1) * pageSize, to: page * pageSize - 1 }
-      })
-
-      const { data: categories } = await dal.list<QuickReplyCategory>('quick_reply_categories')
-      const categoryMap = new Map(categories.map(c => [c.id, c]))
-
-      const list = data.map(item => ({
-        ...item,
-        category_name: (item.category_id ? categoryMap.get(item.category_id)?.name : '') || ''
-      }))
-
-      return { list, total }
-    } catch (error) {
-      logError('搜索快捷回复失败', 'QuickReplyService', error as Error)
-      throw error
-    }
   }
 }
+
+// 快捷回复服务（使用 replyService 避免与导出名冲突）
+const replyService = {
+  async getQuickReplies(userId: string, categoryId?: string, page: number = 1, pageSize: number = 10) {
+    const baseService = new BaseService<QuickReply>('quick_replies', 'QuickReplyService')
+    const filters = categoryId ? { category_id: categoryId } : undefined
+    const result = await baseService.getList(userId, { filters }, page, pageSize)
+
+    if (result.success && result.data) {
+      const dal = getDataAccessLayer(userId)
+      const { data: categories } = await dal.list<QuickReplyCategory>('quick_reply_categories')
+      const categoryMap = new Map(categories.map(c => [c.id, c]))
+
+      const list = result.data.data.map(item => ({
+        ...item,
+        category_name: (item.category_id ? categoryMap.get(item.category_id)?.name : '') || ''
+      }))
+
+      return { list, total: result.data.total }
+    }
+
+    return { list: [], total: 0 }
+  },
+
+  async createQuickReply(userId: string, request: { category_id?: string | null; content: string }) {
+    const baseService = new BaseService<QuickReply>('quick_replies', 'QuickReplyService')
+    const result = await baseService.create(userId, {
+      category_id: request.category_id || null,
+      content: request.content
+    })
+    if (result.success) {
+      logInfo(`创建快捷回复成功`, 'QuickReplyService')
+    }
+    return result.data
+  },
+
+  async updateQuickReply(userId: string, quickReplyId: string, request: { content?: string; category_id?: string | null }) {
+    const baseService = new BaseService<QuickReply>('quick_replies', 'QuickReplyService')
+    const updates: Partial<QuickReply> = {}
+    if (request.content !== undefined) updates.content = request.content
+    if (request.category_id !== undefined) updates.category_id = request.category_id
+    const result = await baseService.update(userId, quickReplyId, updates)
+    if (result.success) {
+      logInfo(`更新快捷回复成功: ID=${quickReplyId}`, 'QuickReplyService')
+    }
+    return result.data
+  },
+
+  async deleteQuickReply(userId: string, quickReplyId: string) {
+    const baseService = new BaseService<QuickReply>('quick_replies', 'QuickReplyService')
+    await baseService.delete(userId, quickReplyId)
+    logInfo(`删除快捷回复成功: ID=${quickReplyId}`, 'QuickReplyService')
+  },
+
+  async searchQuickReplies(userId: string, keyword: string, page: number = 1, pageSize: number = 10) {
+    const baseService = new BaseService<QuickReply>('quick_replies', 'QuickReplyService')
+    const result = await baseService.search(userId, keyword, ['content'], {}, page, pageSize)
+
+    if (result.success && result.data) {
+      const dal = getDataAccessLayer(userId)
+      const { data: categories } = await dal.list<QuickReplyCategory>('quick_reply_categories')
+      const categoryMap = new Map(categories.map(c => [c.id, c]))
+
+      const list = result.data.data.map(item => ({
+        ...item,
+        category_name: (item.category_id ? categoryMap.get(item.category_id)?.name : '') || ''
+      }))
+
+      return { list, total: result.data.total }
+    }
+
+    return { list: [], total: 0 }
+  }
+}
+
+export const quickReplyService = {
+  ...categoryService,
+  ...replyService
+}
+
+export type { QuickReply, QuickReplyCategory }

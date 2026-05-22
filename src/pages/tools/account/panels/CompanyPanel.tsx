@@ -164,7 +164,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
     } finally {
       setLoading(false);
     }
-  }, [addToast, loadData, currentPage]);
+  }, [addToast, loadData, currentPage, userId]);
 
   const handleCopyText = useCallback(async (text: string, message: string) => {
     try {

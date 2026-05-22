@@ -369,7 +369,6 @@ const Settings: React.FC = () => {
             leftMenuPosition={leftMenuPosition}
             defaultWindowSize={defaultWindowSize}
             browserMode={browserMode}
-            notifications={notifications}
             onAutostartToggle={handleAutostartToggle}
             onEdgeAdsorptionChange={handleEdgeAdsorptionChange}
             onMemoryOptimizationChange={handleMemoryOptimizationChange}
@@ -378,7 +377,6 @@ const Settings: React.FC = () => {
             onMenuPositionChange={handleMenuPositionChange}
             onWindowSizeChange={handleWindowSizeChange}
             onBrowserModeChange={handleBrowserModeChange}
-            onNotificationToggle={handleNotificationToggle}
           />
         )}
 
@@ -415,7 +413,12 @@ const Settings: React.FC = () => {
           </Suspense>
         )}
 
-        {activeTab === 'logMonitor' && <LogMonitorTab />}
+        {activeTab === 'logMonitor' && (
+          <LogMonitorTab
+            notifications={notifications}
+            onNotificationToggle={handleNotificationToggle}
+          />
+        )}
       </div>
     </div>
   );

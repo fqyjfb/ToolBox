@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Globe, Settings, Users, Wrench, Shield, Database } from 'lucide-react';
+import { Globe, Users, Wrench, Database } from 'lucide-react';
 import '../../styles/theme.css';
 
 const AdminDashboardPage: React.FC = () => {
@@ -29,20 +29,6 @@ const AdminDashboardPage: React.FC = () => {
           </div>
           <p className="card-title">工具管理</p>
           <p className="card-description">管理下载工具</p>
-        </div>
-        <div className="admin-card admin-card-small" onClick={() => {}}>
-          <div className="icon-wrapper">
-            <Shield className="w-8 h-8" />
-          </div>
-          <p className="card-title">安全设置</p>
-          <p className="card-description">配置安全选项</p>
-        </div>
-        <div className="admin-card admin-card-small" onClick={() => {}}>
-          <div className="icon-wrapper">
-            <Settings className="w-8 h-8" />
-          </div>
-          <p className="card-title">系统设置</p>
-          <p className="card-description">系统参数配置</p>
         </div>
         <div className="admin-card admin-card-wide" onClick={() => navigate('/admin/database')}>
           <div className="icon-wrapper">

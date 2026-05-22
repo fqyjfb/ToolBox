@@ -1,0 +1,267 @@
+/* 锁定窗口样式 - 使用项目主题配色 */
+:root {
+  --lock-primary: #275D7E;
+  --lock-primary-hover: #1e4a6a;
+  --lock-success: #22c55e;
+  --lock-error: #ef4444;
+  --lock-text-primary: #111827;
+  --lock-text-secondary: #6b7280;
+  --lock-text-tertiary: #9ca3af;
+  --lock-bg-primary: #ffffff;
+  --lock-bg-secondary: #f8f9fa;
+  --lock-bg-tertiary: #f3f4f6;
+  --lock-border: #e5e7eb;
+  --lock-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --lock-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --lock-radius: 0.5rem;
+  --lock-radius-lg: 0.75rem;
+  --lock-space-xs: 0.25rem;
+  --lock-space-sm: 0.5rem;
+  --lock-space-md: 0.75rem;
+  --lock-space-lg: 1rem;
+  --lock-space-xl: 1.5rem;
+  --lock-text-xs: 0.75rem;
+  --lock-text-sm: 0.875rem;
+  --lock-text-base: 1rem;
+  --lock-text-lg: 1.125rem;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lock-container {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  background: transparent;
+  border-radius: var(--lock-radius-lg);
+  box-shadow: none;
+  overflow: hidden;
+  border: none;
+}
+
+.title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--lock-space-sm) var(--lock-space-md);
+  background: var(--lock-bg-secondary);
+  cursor: move;
+  user-select: none;
+  -webkit-app-region: drag;
+  border-bottom: 1px solid var(--lock-border);
+}
+
+.title-bar:active {
+  cursor: grabbing;
+}
+
+.title-text {
+  font-size: var(--lock-text-sm);
+  font-weight: 600;
+  color: var(--lock-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--lock-space-sm);
+}
+
+.title-icon {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 2px;
+}
+
+.close-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: var(--lock-radius);
+  cursor: pointer;
+  color: var(--lock-text-tertiary);
+  transition: all 0.2s ease;
+  -webkit-app-region: no-drag;
+}
+
+.close-btn:hover {
+  background: var(--lock-bg-tertiary);
+  color: var(--lock-text-primary);
+}
+
+.lock-content {
+  padding: var(--lock-space-xs) var(--lock-space-md);
+}
+
+.lock-icon-wrapper {
+  width: 4rem;
+  height: 4rem;
+  margin: var(--lock-space-sm) auto var(--lock-space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lock-primary);
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.lock-icon-wrapper:hover {
+  transform: scale(1.05);
+}
+
+.lock-icon {
+  width: 2rem;
+  height: 2rem;
+  color: #ffffff;
+}
+
+.lock-title {
+  font-size: var(--lock-text-lg);
+  font-weight: 600;
+  color: var(--lock-text-primary);
+  margin-bottom: var(--lock-space-xs);
+  text-align: center;
+}
+
+.lock-subtitle {
+  font-size: var(--lock-text-xs);
+  color: var(--lock-text-secondary);
+  margin-bottom: var(--lock-space-md);
+  text-align: center;
+}
+
+.lock-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lock-space-sm);
+}
+
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-input {
+  width: 100%;
+  padding: var(--lock-space-sm) var(--lock-space-md);
+  padding-left: 2.5rem;
+  font-size: var(--lock-text-sm);
+  border: 1px solid var(--lock-border);
+  border-radius: var(--lock-radius);
+  outline: none;
+  background: var(--lock-bg-primary);
+  color: var(--lock-text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.password-input::placeholder {
+  color: var(--lock-text-tertiary);
+}
+
+.password-input:focus {
+  border-color: var(--lock-primary);
+  box-shadow: 0 0 0 2px rgba(39, 93, 126, 0.1);
+}
+
+.password-icon {
+  position: absolute;
+  left: var(--lock-space-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: var(--lock-text-tertiary);
+  pointer-events: none;
+}
+
+.error-msg {
+  font-size: var(--lock-text-xs);
+  color: var(--lock-error);
+  text-align: left;
+  min-height: 1rem;
+  padding-left: var(--lock-space-xs);
+}
+
+.error-msg.hidden {
+  visibility: hidden;
+}
+
+.unlock-btn {
+  width: 100%;
+  padding: var(--lock-space-sm) var(--lock-space-md);
+  font-size: var(--lock-text-sm);
+  font-weight: 500;
+  color: #ffffff;
+  background: var(--lock-primary);
+  border: none;
+  border-radius: var(--lock-radius);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lock-space-sm);
+}
+
+.unlock-btn:hover {
+  background: var(--lock-primary-hover);
+}
+
+.unlock-btn:active {
+  transform: translateY(1px);
+}
+
+.unlock-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.unlock-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.exit-btn {
+  width: 100%;
+  padding: var(--lock-space-sm) var(--lock-space-md);
+  font-size: var(--lock-text-sm);
+  font-weight: 500;
+  color: var(--lock-text-secondary);
+  background: transparent;
+  border: 1px solid var(--lock-border);
+  border-radius: var(--lock-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lock-space-sm);
+}
+
+.exit-btn:hover {
+  background: var(--lock-bg-tertiary);
+  color: var(--lock-text-primary);
+}
+
+.exit-icon {
+  width: 1rem;
+  height: 1rem;
+}

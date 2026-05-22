@@ -123,17 +123,21 @@
   
   --card-height: 280px;
   --card-radius: 8px;
-  
+
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
   --transition-slow: 0.5s ease;
 
-  --gradient-primary: linear-gradient(15deg, #880088, #aa2068, #cc3f47, #de6f3d, #f09f33);
-  --gradient-secondary: linear-gradient(90deg, #880088, #f09f33);
-  --gradient-login: linear-gradient(135deg, #00c4c3 0%, #67e383 50%, #ffe800 100%);
-  --gradient-login-dark: linear-gradient(135deg, #051937 0%, #004046 50%, #3f5a00 100%);
-  --gradient-button: linear-gradient(45deg, #1089d3 0%, #12b1d1 100%);
-  --gradient-float: linear-gradient(138deg, rgba(3, 169, 244, 1) 15%, rgba(63, 180, 233, 1) 65%);
+  /* 动画时长变量 */
+  --duration-modal: 0.18s;
+  --duration-toast: 5s;
+  --duration-transition: 0.25s;
+
+  /* 按钮渐变已移除，改用实心填充 */
+  --color-button-primary: #275D7E;
+  --color-button-primary-hover: #1e4a66;
+  --color-admin-button: #dda36c;
+  --color-admin-button-hover: #c4935a;
 
   --color-todo-1: #3B82F6;
   --color-todo-2: #F97316;
@@ -165,8 +169,6 @@
   --color-admin-4: #f5a623;
   --color-admin-5: #00bcd4;
   --color-admin-6: #e91e63;
-  
-  --gradient-admin: linear-gradient(135deg, #dda36c 0%, #d4955a 100%);
 }
 
 .dark {
@@ -245,17 +247,21 @@
   
   --card-height: 280px;
   --card-radius: 8px;
-  
+
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
   --transition-slow: 0.5s ease;
 
-  --gradient-primary: linear-gradient(15deg, #880088, #aa2068, #cc3f47, #de6f3d, #f09f33);
-  --gradient-secondary: linear-gradient(90deg, #880088, #f09f33);
-  --gradient-login: linear-gradient(135deg, #00c4c3 0%, #67e383 50%, #ffe800 100%);
-  --gradient-login-dark: linear-gradient(135deg, #051937 0%, #004046 50%, #3f5a00 100%);
-  --gradient-button: linear-gradient(45deg, #1089d3 0%, #12b1d1 100%);
-  --gradient-float: linear-gradient(138deg, rgba(3, 169, 244, 1) 15%, rgba(63, 180, 233, 1) 65%);
+  /* 动画时长变量 */
+  --duration-modal: 0.18s;
+  --duration-toast: 5s;
+  --duration-transition: 0.25s;
+
+  /* 按钮渐变已移除，改用实心填充 */
+  --color-button-primary: #275D7E;
+  --color-button-primary-hover: #1e4a66;
+  --color-admin-button: #dda36c;
+  --color-admin-button-hover: #c4935a;
 
   --color-todo-1: #3B82F6;
   --color-todo-2: #F97316;
@@ -536,18 +542,14 @@ body {
   font-weight: bold;
   border-radius: 30px;
   cursor: pointer;
-  text-shadow: 2px 2px 3px rgb(136 0 136 / 50%);
-  background: var(--gradient-primary) no-repeat;
-  background-size: 300%;
-  background-position: left center;
-  transition: background var(--transition-normal);
+  background-color: var(--color-button-primary);
+  transition: background-color var(--transition-normal);
   color: var(--color-bg-primary);
   font-size: var(--text-sm);
 }
 
 .nav-btn-gradient:hover {
-  background-size: 320%;
-  background-position: right center;
+  background-color: var(--color-button-primary-hover);
 }
 
 .logo-icon {
@@ -580,7 +582,7 @@ body {
 
 .admin-card-large {
   grid-area: a;
-  background: var(--gradient-admin);
+  background-color: var(--color-admin-button);
 }
 
 .admin-card-small:nth-child(2) {

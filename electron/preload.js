@@ -124,6 +124,10 @@ contextBridge.exposeInMainWorld('electron', {
     indexAll: (rootPath) => ipcRenderer.invoke('notes-index-all', rootPath),
     openFileInFolder: (filePath) => ipcRenderer.invoke('notes-open-file-in-folder', filePath),
   },
+  lock: {
+    getStatus: () => ipcRenderer.invoke('lock:getStatus'),
+    setPassword: (password) => ipcRenderer.invoke('lock:setPassword', password),
+  },
   onDownloadProgress: (callback) => {
     downloadProgressCallback = callback;
   },

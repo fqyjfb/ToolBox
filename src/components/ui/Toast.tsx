@@ -1,304 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useToastStore } from '../../store/toastStore';
-import styled from 'styled-components';
-
-const StyledWrapper = styled.div`
-  .notification-container {
-    position: fixed;
-    top: 8%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
-    max-width: 80%;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5em;
-    list-style-type: none;
-    font-family: sans-serif;
-  }
-
-  .notification-item {
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-direction: row;
-    gap: 1em;
-    overflow: hidden;
-    padding: 10px 15px;
-    border-radius: 6px;
-    box-shadow: rgba(111, 111, 111, 0.2) 0px 8px 24px;
-    background-color: #f3f3f3;
-    transition: all 250ms ease;
-    min-width: 280px;
-    max-width: 400px;
-
-    --grid-color: rgba(225, 225, 225, 0.7);
-    background-image: linear-gradient(
-        0deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      ),
-      linear-gradient(
-        90deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      );
-    background-size: 55px 55px;
-  }
-
-  .notification-item svg {
-    transition: 250ms ease;
-    width: 1em;
-    height: 1em;
-  }
-
-  .notification-item:hover {
-    transform: scale(1.01);
-  }
-
-  .notification-item:active {
-    transform: scale(1.05);
-  }
-
-  .notification-item .notification-close:hover {
-    background-color: rgba(204, 204, 204, 0.45);
-  }
-
-  .notification-item .notification-close:hover svg {
-    color: rgb(0, 0, 0);
-  }
-
-  .notification-item .notification-close:active svg {
-    transform: scale(1.1);
-  }
-
-  .notification-close {
-    padding: 2px;
-    border-radius: 5px;
-    transition: all 250ms;
-    cursor: pointer;
-  }
-
-  .notification-icon {
-    display: flex;
-    align-items: center;
-  }
-
-  .success {
-    color: #047857;
-    background-color: #7dffbc;
-    --grid-color: rgba(16, 185, 129, 0.25);
-    background-image: linear-gradient(
-        0deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      ),
-      linear-gradient(
-        90deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      );
-  }
-
-  .success svg {
-    color: #047857;
-  }
-
-  .success .notification-progress-bar {
-    background-color: #047857;
-  }
-
-  .success:hover {
-    background-color: #5bffaa;
-  }
-
-  .info {
-    color: #1e3a8a;
-    background-color: #7eb8ff;
-    --grid-color: rgba(59, 131, 246, 0.25);
-    background-image: linear-gradient(
-        0deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      ),
-      linear-gradient(
-        90deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      );
-  }
-
-  .info svg {
-    color: #1e3a8a;
-  }
-
-  .info .notification-progress-bar {
-    background-color: #1e3a8a;
-  }
-
-  .info:hover {
-    background-color: #5ba5ff;
-  }
-
-  .warning {
-    color: #78350f;
-    background-color: #ffe57e;
-    --grid-color: rgba(245, 159, 11, 0.25);
-    background-image: linear-gradient(
-        0deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      ),
-      linear-gradient(
-        90deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      );
-  }
-
-  .warning svg {
-    color: #78350f;
-  }
-
-  .warning .notification-progress-bar {
-    background-color: #78350f;
-  }
-
-  .warning:hover {
-    background-color: #ffde59;
-  }
-
-  .error {
-    color: #7f1d1d;
-    background-color: #ff7e7e;
-    --grid-color: rgba(239, 68, 68, 0.25);
-    background-image: linear-gradient(
-        0deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      ),
-      linear-gradient(
-        90deg,
-        transparent 23%,
-        var(--grid-color) 24%,
-        var(--grid-color) 25%,
-        transparent 26%,
-        transparent 73%,
-        var(--grid-color) 74%,
-        var(--grid-color) 75%,
-        transparent 76%,
-        transparent
-      );
-  }
-
-  .error svg {
-    color: #7f1d1d;
-  }
-
-  .error .notification-progress-bar {
-    background-color: #7f1d1d;
-  }
-
-  .error:hover {
-    background-color: #ff5f5f;
-  }
-
-  .notification-content {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 0.5em;
-    flex: 1;
-  }
-
-  .notification-text {
-    font-size: 0.75em;
-    user-select: none;
-  }
-
-  .notification-progress-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 1px;
-    width: 100%;
-    transform: translateX(100%);
-    animation: progressBar 5s linear forwards;
-  }
-
-  @keyframes progressBar {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-100%);
-    }
-  }
-`;
+import { X, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
 
 const Toast: React.FC = () => {
   const { toasts, removeToast } = useToastStore();
@@ -306,7 +8,7 @@ const Toast: React.FC = () => {
 
   useEffect(() => {
     if (toasts.length > 0) {
-      const newToast = toastRefs.current[toastRefs.current.length - 1];
+      const newToast = toastRefs.current[toasts.length - 1];
       if (newToast) {
         setTimeout(() => {
           newToast.classList.add('show');
@@ -315,60 +17,55 @@ const Toast: React.FC = () => {
     }
   }, [toasts]);
 
-  const getToastTypeClass = (type: string) => {
+  const getToastTypeStyles = (type: string) => {
     switch (type) {
       case 'success':
-        return 'success';
+        return 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-800 dark:text-green-200';
       case 'error':
-        return 'error';
+        return 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200';
       case 'warning':
-        return 'warning';
+        return 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200';
       case 'info':
-        return 'info';
+        return 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200';
       default:
-        return '';
+        return 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
     }
   };
 
   const getToastIcon = (type: string) => {
+    const iconClass = 'w-5 h-5';
     switch (type) {
       case 'success':
-        return (
-          <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.5 11.5 11 14l4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-        );
+        return <CheckCircle className={iconClass} />;
       case 'error':
-        return (
-          <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m15 9-6 6m0-6 6 6m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-        );
+        return <XCircle className={iconClass} />;
       case 'warning':
-        return (
-          <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-        );
+        return <AlertCircle className={iconClass} />;
       case 'info':
-        return (
-          <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 11h2v5m-2 0h4m-2.592-8.5h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-        );
+        return <Info className={iconClass} />;
       default:
-        return (
-          <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13v-2a1 1 0 0 0-1-1h-.757l-.707-1.707.535-.536a1 1 0 0 0 0-1.414l-1.414-1.414a1 1 0 0 0-1.414 0l-.536.535L14 4.757V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v.757l-1.707.707-.536-.535a1 1 0 0 0-1.414 0L4.929 6.343a1 1 0 0 0 0 1.414l.536.536L4.757 10H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h.757l.707 1.707-.535.536a1 1 0 0 0 0 1.414l1.414 1.414a1 1 0 0 0 1.414 0l.536-.535 1.707.707V20a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-.757l1.707-.708.536.536a1 1 0 0 0 1.414 0l1.414-1.414a1 1 0 0 0 0-1.414l-.535-.536.707-1.707H20a1 1 0 0 0 1-1Z" />
-            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-          </svg>
-        );
+        return <Info className={iconClass} />;
+    }
+  };
+
+  const getProgressBarColor = (type: string) => {
+    switch (type) {
+      case 'success':
+        return 'bg-green-600 dark:bg-green-400';
+      case 'error':
+        return 'bg-red-600 dark:bg-red-400';
+      case 'warning':
+        return 'bg-amber-600 dark:bg-amber-400';
+      case 'info':
+        return 'bg-blue-600 dark:bg-blue-400';
+      default:
+        return 'bg-gray-600 dark:bg-gray-400';
     }
   };
 
   return (
-    <StyledWrapper>
-      <ul className="notification-container">
+    <div className="fixed top-[8%] left-1/2 -translate-x-1/2 z-[1000] max-w-[80%]">
+      <ul className="flex flex-col gap-2 list-none font-sans">
         {toasts.map((toast, index) => (
           <li
             key={toast.id}
@@ -376,24 +73,38 @@ const Toast: React.FC = () => {
               if (el) toastRefs.current[index] = el;
             }}
             role="alert"
-            className={`notification-item ${getToastTypeClass(toast.type)}`}
+            className={`relative flex items-center justify-between gap-4 p-3 px-4 min-w-[280px] max-w-[400px] rounded-md shadow-lg border transition-all duration-250 ${getToastTypeStyles(toast.type)}`}
           >
-            <div className="notification-content">
-              <div className="notification-icon">
-                {getToastIcon(toast.type)}
-              </div>
-              <div className="notification-text">{toast.message}</div>
+            <div className="flex items-center gap-2 flex-1">
+              <span className="flex-shrink-0">{getToastIcon(toast.type)}</span>
+              <span className="text-sm select-none">{toast.message}</span>
             </div>
-            <div className="notification-icon notification-close" onClick={() => removeToast(toast.id)}>
-              <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18 17.94 6M18 18 6.06 6" />
-              </svg>
-            </div>
-            <div className="notification-progress-bar" />
+            <button
+              onClick={() => removeToast(toast.id)}
+              className="flex-shrink-0 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-250"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className={`absolute bottom-0 left-0 h-[1px] w-full ${getProgressBarColor(toast.type)} animate-toast-progress-origin-left`} />
           </li>
         ))}
       </ul>
-    </StyledWrapper>
+      <style>{`
+        @keyframes toast-progress-origin-left {
+          from {
+            transform: scaleX(1);
+            transform-origin: left;
+          }
+          to {
+            transform: scaleX(0);
+            transform-origin: left;
+          }
+        }
+        .animate-toast-progress-origin-left {
+          animation: toast-progress-origin-left var(--duration-toast, 5s) linear forwards;
+        }
+      `}</style>
+    </div>
   );
 };
 

@@ -79,7 +79,12 @@ export const syncManager = {
     try {
       for (const [, tables] of Object.entries(MODULE_TABLE_MAP)) {
         for (const table of tables) {
-          const localData = await offlineStorage.queryByUser<any>(table, userId);
+          interface TableRecord {
+            id: string;
+            user_id: string;
+            [key: string]: unknown;
+          }
+          const localData = await offlineStorage.queryByUser<TableRecord>(table, userId);
           for (const item of localData) {
             const { data, error } = await supabase.from(table).select('id').eq('id', item.id).single();
             if (error || !data) {

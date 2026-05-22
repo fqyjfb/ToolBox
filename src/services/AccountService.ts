@@ -17,7 +17,7 @@ export const accountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) { logError('解密失败', 'AccountService', e as Error); }
         }
         return {
           ...item,
@@ -62,7 +62,7 @@ export const accountService = {
       let decryptedPassword = data.password
       try {
         decryptedPassword = await decrypt(data.password)
-      } catch { }
+      } catch (e) { logError('解密失败', 'AccountService', e as Error); }
 
       return {
         ...data,
@@ -104,7 +104,7 @@ export const accountService = {
       let decryptedPassword = data.password
       try {
         decryptedPassword = await decrypt(data.password)
-      } catch { }
+      } catch (e) { logError('解密失败', 'AccountService', e as Error); }
 
       return {
         ...data,
@@ -142,7 +142,7 @@ export const accountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) { logError('解密失败', 'AccountService', e as Error); }
         }
         return {
           ...item,
@@ -172,7 +172,7 @@ export const accountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) { logError('解密失败', 'AccountService', e as Error); }
         }
         return {
           ...item,
@@ -210,7 +210,7 @@ export const accountService = {
       let decryptedPassword = data.password
       try {
         decryptedPassword = await decrypt(data.password)
-      } catch { }
+      } catch (e) { logError('解密失败', 'AccountService', e as Error); }
 
       return {
         ...data,
@@ -245,7 +245,7 @@ export const accountService = {
       let decryptedPassword = data.password
       try {
         decryptedPassword = await decrypt(data.password)
-      } catch { }
+      } catch (e) { logError('解密失败', 'AccountService', e as Error); }
 
       return {
         ...data,
@@ -282,7 +282,7 @@ export const accountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) { logError('解密失败', 'AccountService', e as Error); }
         }
         return {
           ...item,
@@ -311,7 +311,7 @@ export const accountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) { logError('解密失败', 'AccountService', e as Error); }
         }
         return { ...item, password: decryptedPassword }
       }))
@@ -340,7 +340,7 @@ export const accountService = {
       let decryptedPassword = data.password
       try {
         decryptedPassword = await decrypt(data.password)
-      } catch { }
+      } catch (e) { logError('解密失败', 'AccountService', e as Error); }
 
       return { ...data, password: decryptedPassword }
     } catch (error) {
@@ -366,7 +366,7 @@ export const accountService = {
       let decryptedPassword = data.password
       try {
         decryptedPassword = await decrypt(data.password)
-      } catch { }
+      } catch (e) { logError('解密失败', 'AccountService', e as Error); }
 
       return { ...data, password: decryptedPassword }
     } catch (error) {
@@ -399,7 +399,7 @@ export const accountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) { logError('解密失败', 'AccountService', e as Error); }
         }
         return { ...item, password: decryptedPassword }
       }))
@@ -717,7 +717,7 @@ export const accountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) { logError('解密失败', 'AccountService', e as Error); }
         }
         return {
           ...item,
@@ -756,7 +756,7 @@ export const accountService = {
       let decryptedPassword = data.password
       try {
         decryptedPassword = await decrypt(data.password)
-      } catch { }
+      } catch (e) { logError('解密失败', 'AccountService', e as Error); }
 
       return {
         ...data,
@@ -792,7 +792,7 @@ export const accountService = {
       let decryptedPassword = data.password
       try {
         decryptedPassword = await decrypt(data.password)
-      } catch { }
+      } catch (e) { logError('解密失败', 'AccountService', e as Error); }
 
       return {
         ...data,
@@ -829,7 +829,7 @@ export const accountService = {
         if (item.password) {
           try {
             decryptedPassword = await decrypt(item.password)
-          } catch { }
+          } catch (e) { logError('解密失败', 'AccountService', e as Error); }
         }
         return {
           ...item,

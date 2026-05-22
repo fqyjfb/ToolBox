@@ -19,6 +19,17 @@ if (!fs.existsSync(iconCacheFolder)) {
 
 const shortcutManager = new ShortcutManager();
 
+// 检查锁定状态，如果已锁定则聚焦锁定窗口
+const checkLockAndShowMain = (callback) => {
+  const settings = loadSettings();
+  if (settings.isLockEnabled === 1) {
+    require('./lockWindow').toggleLock();
+    return false;
+  }
+  if (callback) callback();
+  return true;
+};
+
 const shortcutFunctions = {
   softwareExit: () => { require('electron').app.quit(); },
   softwareWindowVisibilityController: () => {
@@ -26,8 +37,10 @@ const shortcutFunctions = {
       if (mainWindow.isVisible()) {
         mainWindow.hide();
       } else {
-        mainWindow.show();
-        mainWindow.focus();
+        checkLockAndShowMain(() => {
+          mainWindow.show();
+          mainWindow.focus();
+        });
       }
     }
   },
@@ -38,11 +51,13 @@ const shortcutFunctions = {
     mainWindow?.webContents.send('setting-changed', { name: 'isMenuVisible', value: settings.isMenuVisible });
   },
   softwareSetting: () => {
-    if (mainWindow) {
-      mainWindow.show();
-      mainWindow.focus();
-      mainWindow.webContents.send('navigate-to', '/settings');
-    }
+    checkLockAndShowMain(() => {
+      if (mainWindow) {
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('navigate-to', '/settings');
+      }
+    });
   },
   windowTopmostToggle: () => {
     if (mainWindow) {
@@ -58,9 +73,11 @@ const shortcutFunctions = {
         mainWindow.maximize();
       } else {
         if (mainWindow.isMaximized()) mainWindow.unmaximize();
-        if (!mainWindow.isVisible()) mainWindow.show();
-        mainWindow.setSize(origin.width, origin.height, true);
-        mainWindow.center();
+        checkLockAndShowMain(() => {
+          if (!mainWindow.isVisible()) mainWindow.show();
+          mainWindow.setSize(origin.width, origin.height, true);
+          mainWindow.center();
+        });
       }
     }
   },
@@ -83,7 +100,17 @@ const shortcutFunctions = {
         mainWindow.maximize();
       }
     }
-  }
+  },
+  lockToggle: () => {
+    const { loadSettings } = require('../lib/config');
+    const settings = loadSettings();
+
+    if (settings.isLockEnabled === 1) {
+      require('./lockWindow').toggleLock();
+    } else {
+      require('./lockWindow').lockOrPrompt();
+    }
+  },
 };
 
 const generateCacheFileName = (filePath) => {
@@ -158,7 +185,7 @@ const stopMemoryOptimization = () => {
   }
 };
 
-const createWindow = (onReadyCallback) => {
+const createWindow = (onReadyCallback, showOnReady = true) => {
   const { app } = require('electron');
   let iconPath = null;
   const iconPaths = app.isPackaged
@@ -223,7 +250,9 @@ const createWindow = (onReadyCallback) => {
   }
 
   mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.show();
+    if (showOnReady) {
+      mainWindow.show();
+    }
     initShortcuts();
     
     if (onReadyCallback) {

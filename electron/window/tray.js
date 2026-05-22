@@ -42,6 +42,11 @@ const createTray = () => {
     refreshTrayMenu();
 
     tray.on('click', () => {
+      const settings = loadSettings();
+      if (settings.isLockEnabled === 1) {
+        require('./lockWindow').toggleLock();
+        return;
+      }
       const mainWindow = require('./mainWindow').getMainWindow();
       if (mainWindow && mainWindow.isVisible()) {
         mainWindow.hide();
@@ -57,21 +62,47 @@ const createTray = () => {
 const refreshTrayMenu = () => {
   if (!tray) return;
   const settings = loadSettings();
+
+  if (settings.isLockEnabled === 1) {
+    const lockMenu = Menu.buildFromTemplate([
+      {
+        label: '解锁',
+        click: () => {
+          require('./lockWindow').toggleLock();
+        },
+      },
+      { type: 'separator' },
+      { label: '退出', click: () => { require('electron').app.quit(); } },
+    ]);
+    tray.setContextMenu(lockMenu);
+    return;
+  }
+
   const floatWindowLabel = settings.isFloatWindowEnabled === 1 ? '关闭悬浮窗' : '开启悬浮窗';
+
+  const checkLockAndShow = (callback) => {
+    if (settings.isLockEnabled === 1) {
+      require('./lockWindow').toggleLock();
+      return;
+    }
+    callback();
+  };
 
   const newContextMenu = Menu.buildFromTemplate([
     {
       label: '新建待办',
       click: () => {
-        const mainWindow = require('./mainWindow').getMainWindow();
-        if (mainWindow) {
-          mainWindow.show();
-          mainWindow.focus();
-          mainWindow.webContents.send('navigate-to', '/tools/todo');
-          setTimeout(() => {
-            mainWindow.webContents.send('open-add-todo');
-          }, 300);
-        }
+        checkLockAndShow(() => {
+          const mainWindow = require('./mainWindow').getMainWindow();
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+            mainWindow.webContents.send('navigate-to', '/tools/todo');
+            setTimeout(() => {
+              mainWindow.webContents.send('open-add-todo');
+            }, 300);
+          }
+        });
       },
     },
     { type: 'separator' },
@@ -102,7 +133,11 @@ const refreshTrayMenu = () => {
       submenu: [
         {
           label: floatWindowLabel,
-          click: () => { require('./floatWindow').toggleFloatWindow(); },
+          click: () => {
+            checkLockAndShow(() => {
+              require('./floatWindow').toggleFloatWindow();
+            });
+          },
         },
       ],
     },
@@ -119,18 +154,29 @@ const refreshTrayMenu = () => {
         {
           label: '设置',
           click: () => {
-            const mainWindow = require('./mainWindow').getMainWindow();
-            if (mainWindow) { mainWindow.show(); mainWindow.webContents.send('navigate-to', '/settings'); }
+            checkLockAndShow(() => {
+              const mainWindow = require('./mainWindow').getMainWindow();
+              if (mainWindow) { mainWindow.show(); mainWindow.webContents.send('navigate-to', '/settings'); }
+            });
           },
         },
         {
           label: '日志',
           click: () => {
-            require('../logs/window').openLogWindow();
+            checkLockAndShow(() => {
+              require('../logs/window').openLogWindow();
+            });
           },
         },
         { label: '重启', click: () => { require('electron').app.relaunch(); require('electron').app.quit(); } },
       ],
+    },
+    { type: 'separator' },
+    {
+      label: '锁定',
+      click: () => {
+        require('./lockWindow').lockOrPrompt();
+      },
     },
     { type: 'separator' },
     { label: '退出', click: () => { require('electron').app.quit(); } },

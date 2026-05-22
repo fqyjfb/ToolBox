@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToolBox - 锁定</title>
+  <link rel="stylesheet" href="lock.css">
+</head>
+<body>
+  <div class="lock-container">
+    <div class="title-bar" id="titleBar">
+      <span class="title-text">
+        <img src="../public/favicon.png" alt="ToolBox" class="title-icon" />
+        ToolBox
+      </span>
+      <button class="close-btn" id="closeBtn" title="关闭">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="lock-content">
+      <div class="lock-icon-wrapper">
+        <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h2 class="lock-title">ToolBox 已锁定</h2>
+      <p class="lock-subtitle">请输入密码解锁</p>
+      <form id="unlockForm" class="lock-form">
+        <div class="password-input-wrapper">
+          <svg class="password-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <input
+            type="password"
+            id="passwordInput"
+            class="password-input"
+            placeholder="请输入密码"
+            autocomplete="off"
+            autofocus
+          >
+        </div>
+        <p id="errorMsg" class="error-msg hidden">密码错误，请重试</p>
+        <button type="submit" class="unlock-btn">
+          <svg class="unlock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+            <path d="M15 11V7a5 5 0 0 0-10 0v4"></path>
+          </svg>
+          解锁
+        </button>
+        <button type="button" class="exit-btn" id="exitBtn">
+          <svg class="exit-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          退出应用
+        </button>
+      </form>
+    </div>
+  </div>
+  <script src="lock.js"></script>
+</body>
+</html>

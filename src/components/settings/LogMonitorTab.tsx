@@ -1,9 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AlertCircle, AlertTriangle, Info, Bug, ExternalLink } from 'lucide-react';
 import { loggerService, LoggerSettings, LogLevel } from '../../services/loggerService';
+import { NotificationSettings } from '../../types/settings';
 import ToggleSwitch from './ToggleSwitch';
 
-const LogMonitorTab: React.FC = () => {
+interface LogMonitorTabProps {
+  notifications: NotificationSettings;
+  onNotificationToggle: (key: keyof NotificationSettings) => void;
+}
+
+const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
+  notifications,
+  onNotificationToggle,
+}) => {
   const [settings, setSettings] = useState<LoggerSettings>({
     enabled: false,
     maxEntries: 500,
@@ -76,6 +85,17 @@ const LogMonitorTab: React.FC = () => {
         </div>
 
         <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={16} className="text-red-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">错误通知</span>
+            </div>
+            <ToggleSwitch
+              enabled={notifications.errors}
+              onChange={() => onNotificationToggle('errors')}
+            />
+          </div>
+
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">开启监控</p>

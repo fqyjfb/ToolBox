@@ -255,7 +255,11 @@ export const offlineStorage = {
             const request = index.getAll(IDBKeyRange.upperBound(thresholdTime));
             request.onsuccess = () => {
               const records = request.result || [];
-              records.forEach((record: any) => {
+              interface UserRecord {
+                id: string;
+                user_id: string;
+              }
+              records.forEach((record: UserRecord) => {
                 if (record.user_id === userId) {
                   store.delete(record.id);
                 }

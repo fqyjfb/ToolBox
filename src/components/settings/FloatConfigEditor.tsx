@@ -191,7 +191,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                 type="text"
                 value={localConfig.name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               />
             </div>
 
@@ -222,7 +222,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                 <select
                   value={localConfig.action}
                   onChange={(e) => handleToolSelect(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                 >
                   <option value="">请选择工具</option>
                   {ALL_TOOLS.map((tool) => (
@@ -243,7 +243,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                       handlePathChange(selectedApp.path, selectedApp.name, selectedApp.icon);
                     }
                   }}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                 >
                   <option value="">请选择应用</option>
                   {quickLaunchApps.map((app) => (
@@ -306,7 +306,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                   <select
                     value={localConfig.icon}
                     onChange={(e) => handleIconChange(e.target.value)}
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   >
                     {AVAILABLE_ICONS.map(({ name, label }) => (
                       <option key={name} value={name}>{label}</option>

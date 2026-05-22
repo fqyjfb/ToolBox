@@ -1,5 +1,5 @@
 import React from 'react';
-import { Keyboard, Info } from 'lucide-react';
+import { Keyboard } from 'lucide-react';
 import ShortcutRow from './ShortcutRow';
 import { ShortcutItem } from '../../types/settings';
 
@@ -16,16 +16,6 @@ const ShortcutsTab: React.FC<ShortcutsTabProps> = ({ shortcuts, onUpdateShortcut
           <Keyboard size={16} />
         </div>
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">快捷键设置</h2>
-      </div>
-      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
-        <div className="flex items-start gap-2">
-          <Info size={14} className="text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
-            <p>1. 全局快捷键标记：程序失去焦点后也能使用</p>
-            <p>2. 在macOS系统：Ctrl === Command键，Alt === Option键</p>
-            <p>3. 自定义快捷键时，先点击输入框获取焦点，然后按下新的快捷键组合</p>
-          </div>
-        </div>
       </div>
       <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2">
         <div className="flex items-center">

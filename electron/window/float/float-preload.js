@@ -22,5 +22,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setExpanded: (expanded) => ipcRenderer.send('float-expanded', expanded),
   onConfigChanged: (callback) => {
     configChangedCallback = callback;
-  }
+  },
+  getLockStatus: () => ipcRenderer.invoke('lock:get-status'),
 });

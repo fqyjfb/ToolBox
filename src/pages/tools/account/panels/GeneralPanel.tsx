@@ -196,7 +196,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
     } finally {
       setLoading(false);
     }
-  }, [addToast, loadData, currentPage]);
+  }, [addToast, loadData, currentPage, userId]);
 
   const handleCopyText = useCallback(async (text: string, message: string) => {
     try {

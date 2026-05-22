@@ -1,5 +1,15 @@
-const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'jfb519695178';
+const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY;
 const IV_LENGTH = 16;
+
+const getEncryptionKey = (): string => {
+  if (!ENCRYPTION_KEY) {
+    throw new Error('加密密钥未配置，请设置 VITE_ENCRYPTION_KEY 环境变量');
+  }
+  if (ENCRYPTION_KEY.length < 16) {
+    throw new Error('加密密钥长度不足，至少需要16个字符');
+  }
+  return ENCRYPTION_KEY;
+};
 
 export const checkPasswordStrength = (password: string): { strength: 'weak' | 'medium' | 'strong', message: string } => {
   let score = 0;
@@ -40,7 +50,8 @@ const base64ToUint8Array = (base64: string): Uint8Array => {
 };
 
 const getKey = async (): Promise<CryptoKey> => {
-  const keyMaterial = stringToUint8Array(ENCRYPTION_KEY.padEnd(32, '0').slice(0, 32));
+  const key = getEncryptionKey();
+  const keyMaterial = stringToUint8Array(key.padEnd(32, '0').slice(0, 32));
   return await crypto.subtle.importKey(
     'raw',
     keyMaterial as BufferSource,

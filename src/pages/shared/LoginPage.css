@@ -1,6 +1,6 @@
 .login-container {
   min-height: 100vh;
-  background: var(--gradient-login);
+  background-color: var(--color-bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8,12 +8,12 @@
 }
 
 .dark .login-container {
-  background: var(--gradient-login-dark);
+  background-color: var(--color-bg-primary);
 }
 
 .login-card {
   max-width: 350px;
-  background: linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+  background-color: var(--color-bg-primary);
   border-radius: 40px;
   padding: 25px 35px;
   border: 5px solid var(--color-bg-primary);
@@ -158,7 +158,7 @@
 }
 
 .dark .login-card {
-  background: linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
+  background-color: var(--color-bg-secondary);
   border-color: var(--color-border);
 }
 
@@ -240,7 +240,7 @@
   display: block;
   width: 100%;
   font-weight: bold;
-  background: var(--gradient-button);
+  background-color: var(--color-button-primary);
   color: var(--color-bg-primary);
   padding-block: 15px;
   margin: var(--space-5) auto;
@@ -374,7 +374,7 @@
 }
 
 .login-social-button {
-  background: linear-gradient(45deg, var(--color-text-primary) 0%, var(--color-text-tertiary) 100%);
+  background-color: var(--color-text-primary);
   border: 5px solid var(--color-bg-primary);
   padding: 5px;
   border-radius: 50%;

@@ -26,46 +26,50 @@ export const useAuthStore = create<AuthState>((set, get) => {
     error: null,
 
     login: async (credentials: LoginRequest) => {
-      set({ isLoading: true, error: null })
+      set({ isLoading: true, error: null });
       try {
-        const response = await authService.login(credentials)
+        const response = await authService.login(credentials);
         if (response.success && response.data) {
           // 初始化数据访问层
-          const dal = getDataAccessLayer(response.data.admin.id)
-          await dal.init(response.data.admin.id)
-          
+          const dal = getDataAccessLayer(response.data.admin.id);
+          await dal.init(response.data.admin.id);
+
           set({
             admin: response.data.admin,
             isAuthenticated: true,
             isLoading: false
-          })
+          });
         } else {
-          set({ error: response.message || '登录失败', isLoading: false })
+          set({ error: response.message || '登录失败', isLoading: false });
         }
-      } catch {
-        set({ error: '登录失败，请检查网络连接', isLoading: false })
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : '登录失败，请检查网络连接';
+        logError('登录失败', 'AuthStore', error instanceof Error ? error : undefined);
+        set({ error: errorMessage, isLoading: false });
       }
     },
 
     register: async (userData: RegisterRequest) => {
-      set({ isLoading: true, error: null })
+      set({ isLoading: true, error: null });
       try {
-        const response = await authService.register(userData)
+        const response = await authService.register(userData);
         if (response.success && response.data) {
           // 初始化数据访问层
-          const dal = getDataAccessLayer(response.data.admin.id)
-          await dal.init(response.data.admin.id)
-          
+          const dal = getDataAccessLayer(response.data.admin.id);
+          await dal.init(response.data.admin.id);
+
           set({
             admin: response.data.admin,
             isAuthenticated: true,
             isLoading: false
-          })
+          });
         } else {
-          set({ error: response.message || '注册失败', isLoading: false })
+          set({ error: response.message || '注册失败', isLoading: false });
         }
-      } catch {
-        set({ error: '注册失败，请检查网络连接', isLoading: false })
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : '注册失败，请检查网络连接';
+        logError('注册失败', 'AuthStore', error instanceof Error ? error : undefined);
+        set({ error: errorMessage, isLoading: false });
       }
     },
 
@@ -90,34 +94,35 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     getCurrentAdmin: async () => {
       // 避免重复请求
-      if (get().isLoading) return
-      
-      set({ isLoading: true })
+      if (get().isLoading) return;
+
+      set({ isLoading: true });
       try {
-        const response = await authService.getCurrentAdmin()
+        const response = await authService.getCurrentAdmin();
         if (response.success && response.data) {
           // 初始化数据访问层
-          const dal = getDataAccessLayer(response.data.id)
-          await dal.init(response.data.id)
-          
+          const dal = getDataAccessLayer(response.data.id);
+          await dal.init(response.data.id);
+
           set({
             admin: response.data,
             isAuthenticated: true,
             isLoading: false
-          })
+          });
         } else {
           set({
             admin: null,
             isAuthenticated: false,
             isLoading: false
-          })
+          });
         }
-      } catch {
+      } catch (error) {
+        logError('获取当前管理员信息失败', 'AuthStore', error instanceof Error ? error : undefined);
         set({
           admin: null,
           isAuthenticated: false,
           isLoading: false
-        })
+        });
       }
     },
 
