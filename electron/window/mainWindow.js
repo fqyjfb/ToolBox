@@ -297,19 +297,35 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     }
   });
 
-  mainWindow.on('focus', () => {
-    resetAutoLockTimer();
-  });
+  const { execFile } = require('child_process');
+  let activityCheckInterval = null;
 
-  mainWindow.on('blur', () => {
-    resetAutoLockTimer();
-  });
+  const startSystemActivityMonitoring = () => {
+    const checkSystemActivity = () => {
+      const settings = loadSettings();
+      if (!settings.isAutoLockEnabled || !settings.lockPassword) return;
 
-  mainWindow.webContents.on('input-event', (event, input) => {
-    if (input.type === 'mouseMove' || input.type === 'keyDown') {
-      resetAutoLockTimer();
-    }
-  });
+      if (process.platform === 'win32') {
+        execFile('powershell.exe', [
+          '-ExecutionPolicy', 'Bypass',
+          '-Command',
+          'Add-Type -AssemblyName User32; $lastInput = [User32]::GetLastInputInfo(); $idleMs = ([Environment]::TickCount - $lastInput.dwTime); $idleMs'
+        ], (error, stdout) => {
+          if (!error && stdout) {
+            const idleMs = parseInt(stdout.trim(), 10);
+            if (idleMs >= 0 && idleMs < 1000) {
+              resetAutoLockTimer();
+            }
+          }
+        });
+      }
+    };
+
+    const checkInterval = Math.max(500, (settings.autoLockTimeout || 600) * 1000 / 20);
+    activityCheckInterval = setInterval(checkSystemActivity, checkInterval);
+  };
+
+  startSystemActivityMonitoring();
 
   mainWindow.on('closed', () => {
     mainWindow = null;

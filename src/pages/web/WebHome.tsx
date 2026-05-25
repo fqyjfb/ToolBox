@@ -64,9 +64,7 @@ const WebHome: React.FC = () => {
       if (data) {
         setSixtySecondsData(data.data.news.slice(0, 5));
       }
-    } catch {
-      console.log('获取60秒新闻失败');
-    } finally {
+    } catch {} finally {
       setSixtySecondsLoading(false);
     }
   }, []);
@@ -78,9 +76,7 @@ const WebHome: React.FC = () => {
       if (data) {
         setItNewsData(data.data.slice(0, 6));
       }
-    } catch {
-      console.log('获取IT新闻失败');
-    } finally {
+    } catch {} finally {
       setItNewsLoading(false);
     }
   }, []);
@@ -92,9 +88,7 @@ const WebHome: React.FC = () => {
       if (data) {
         setAiNewsData(data.data.news.slice(0, 6));
       }
-    } catch {
-      console.log('获取AI新闻失败');
-    } finally {
+    } catch {} finally {
       setAiNewsLoading(false);
     }
   }, []);

@@ -6,6 +6,8 @@ import { ClipboardCategory, ClipboardItem } from '../../../types/clipboard';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
+import { logError } from '../../../services/loggerService';
+
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
@@ -82,7 +84,7 @@ const CloudClipboardPage: React.FC = () => {
       const categoriesData = await clipboardService.getCategories(admin.id);
       setCategories(categoriesData);
     } catch (error) {
-      console.error('Error loading categories:', error);
+      logError('Error loading categories', 'CloudClipboardPage', error as Error);
       addToast({ message: '加载分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -124,7 +126,7 @@ const CloudClipboardPage: React.FC = () => {
       setTotalItems(result.total);
       setCurrentPage(pageNum);
     } catch (error) {
-      console.error('Error loading items:', error);
+      logError('Error loading items', 'CloudClipboardPage', error as Error);
       addToast({ message: '加载项目失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -144,7 +146,7 @@ const CloudClipboardPage: React.FC = () => {
       setShowAddCategoryModal(false);
       addToast({ message: '分类添加成功', type: 'success' });
     } catch (error) {
-      console.error('Error creating category:', error);
+      logError('Error creating category', 'CloudClipboardPage', error as Error);
       addToast({ message: '添加分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -164,7 +166,7 @@ const CloudClipboardPage: React.FC = () => {
       setShowEditCategoryModal(false);
       addToast({ message: '分类修改成功', type: 'success' });
     } catch (error) {
-      console.error('Error updating category:', error);
+      logError('Error updating category', 'CloudClipboardPage', error as Error);
       addToast({ message: '修改分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -182,7 +184,7 @@ const CloudClipboardPage: React.FC = () => {
       }
       addToast({ message: '分类删除成功', type: 'success' });
     } catch (error) {
-      console.error('Error deleting category:', error);
+      logError('Error deleting category', 'CloudClipboardPage', error as Error);
       addToast({ message: '删除分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -204,7 +206,7 @@ const CloudClipboardPage: React.FC = () => {
       await loadItems(1);
       addToast({ message: '项目添加成功', type: 'success' });
     } catch (error) {
-      console.error('Error creating item:', error);
+      logError('Error creating item', 'CloudClipboardPage', error as Error);
       addToast({ message: '添加项目失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -226,7 +228,7 @@ const CloudClipboardPage: React.FC = () => {
       await loadItems(1);
       addToast({ message: '项目修改成功', type: 'success' });
     } catch (error) {
-      console.error('Error updating item:', error);
+      logError('Error updating item', 'CloudClipboardPage', error as Error);
       addToast({ message: '修改项目失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -241,7 +243,7 @@ const CloudClipboardPage: React.FC = () => {
       await loadItems(1);
       addToast({ message: '项目删除成功', type: 'success' });
     } catch (error) {
-      console.error('Error deleting item:', error);
+      logError('Error deleting item', 'CloudClipboardPage', error as Error);
       addToast({ message: '删除项目失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -253,7 +255,7 @@ const CloudClipboardPage: React.FC = () => {
       await navigator.clipboard.writeText(content);
       addToast({ message: '复制成功', type: 'success' });
     } catch (error) {
-      console.error('Error copying to clipboard:', error);
+      logError('Error copying to clipboard', 'CloudClipboardPage', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);
@@ -263,7 +265,7 @@ const CloudClipboardPage: React.FC = () => {
       const text = await navigator.clipboard.readText();
       setNewItemContent(text);
     } catch (error) {
-      console.error('Error pasting from clipboard:', error);
+      logError('Error pasting from clipboard', 'CloudClipboardPage', error as Error);
       addToast({ message: '浏览器权限限制，请手动粘贴', type: 'warning' });
     }
   };
@@ -283,7 +285,7 @@ const CloudClipboardPage: React.FC = () => {
       await loadItems(1);
       addToast({ message: '快速粘贴成功', type: 'success' });
     } catch (error) {
-      console.error('Error quick pasting:', error);
+      logError('Error quick pasting', 'CloudClipboardPage', error as Error);
       addToast({ message: '浏览器权限限制，请手动粘贴', type: 'warning' });
     } finally {
       setLoading(false);

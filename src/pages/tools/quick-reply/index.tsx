@@ -6,6 +6,8 @@ import { QuickReplyCategory, QuickReply } from '../../../types/quickReply';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
+import { logError } from '../../../services/loggerService';
+
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
@@ -80,7 +82,7 @@ const QuickReplyPage: React.FC = () => {
       const categoriesData = await quickReplyService.getCategories(admin.id);
       setCategories(categoriesData);
     } catch (error) {
-      console.error('Error loading categories:', error);
+      logError('Error loading categories', 'QuickReplyPage', error as Error);
       addToast({ message: '加载分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -122,7 +124,7 @@ const QuickReplyPage: React.FC = () => {
       setTotalItems(result.total);
       setCurrentPage(pageNum);
     } catch (error) {
-      console.error('Error loading quick replies:', error);
+      logError('Error loading quick replies', 'QuickReplyPage', error as Error);
       addToast({ message: '加载快捷回复失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -142,7 +144,7 @@ const QuickReplyPage: React.FC = () => {
       setShowAddCategoryModal(false);
       addToast({ message: '分类添加成功', type: 'success' });
     } catch (error) {
-      console.error('Error creating category:', error);
+      logError('Error creating category', 'QuickReplyPage', error as Error);
       addToast({ message: '添加分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -162,7 +164,7 @@ const QuickReplyPage: React.FC = () => {
       setShowEditCategoryModal(false);
       addToast({ message: '分类修改成功', type: 'success' });
     } catch (error) {
-      console.error('Error updating category:', error);
+      logError('Error updating category', 'QuickReplyPage', error as Error);
       addToast({ message: '修改分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -180,7 +182,7 @@ const QuickReplyPage: React.FC = () => {
       }
       addToast({ message: '分类删除成功', type: 'success' });
     } catch (error) {
-      console.error('Error deleting category:', error);
+      logError('Error deleting category', 'QuickReplyPage', error as Error);
       addToast({ message: '删除分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -201,7 +203,7 @@ const QuickReplyPage: React.FC = () => {
       await loadQuickReplies(1);
       addToast({ message: '快捷回复添加成功', type: 'success' });
     } catch (error) {
-      console.error('Error creating quick reply:', error);
+      logError('Error creating quick reply', 'QuickReplyPage', error as Error);
       addToast({ message: '添加快捷回复失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -222,7 +224,7 @@ const QuickReplyPage: React.FC = () => {
       await loadQuickReplies(1);
       addToast({ message: '快捷回复修改成功', type: 'success' });
     } catch (error) {
-      console.error('Error updating quick reply:', error);
+      logError('Error updating quick reply', 'QuickReplyPage', error as Error);
       addToast({ message: '修改快捷回复失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -237,7 +239,7 @@ const QuickReplyPage: React.FC = () => {
       await loadQuickReplies(1);
       addToast({ message: '快捷回复删除成功', type: 'success' });
     } catch (error) {
-      console.error('Error deleting quick reply:', error);
+      logError('Error deleting quick reply', 'QuickReplyPage', error as Error);
       addToast({ message: '删除快捷回复失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -249,7 +251,7 @@ const QuickReplyPage: React.FC = () => {
       await navigator.clipboard.writeText(content);
       addToast({ message: '复制成功', type: 'success' });
     } catch (error) {
-      console.error('Error copying to clipboard:', error);
+      logError('Error copying to clipboard', 'QuickReplyPage', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);
@@ -259,7 +261,7 @@ const QuickReplyPage: React.FC = () => {
       const text = await navigator.clipboard.readText();
       setNewQuickReplyContent(text);
     } catch (error) {
-      console.error('Error pasting from clipboard:', error);
+      logError('Error pasting from clipboard', 'QuickReplyPage', error as Error);
       addToast({ message: '浏览器权限限制，请手动粘贴', type: 'warning' });
     }
   };
@@ -279,7 +281,7 @@ const QuickReplyPage: React.FC = () => {
       await loadQuickReplies(1);
       addToast({ message: '快速粘贴成功', type: 'success' });
     } catch (error) {
-      console.error('Error quick pasting:', error);
+      logError('Error quick pasting', 'QuickReplyPage', error as Error);
       addToast({ message: '浏览器权限限制，请手动粘贴', type: 'warning' });
     } finally {
       setLoading(false);

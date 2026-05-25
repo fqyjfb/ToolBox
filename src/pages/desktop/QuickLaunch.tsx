@@ -202,7 +202,6 @@ const QuickLaunch: React.FC = () => {
       const exists = apps.some(app => app.path.toLowerCase() === lowerPath);
       
       if (exists) {
-        console.log('Duplicate app detected, skipping:', customPath);
         return;
       }
       

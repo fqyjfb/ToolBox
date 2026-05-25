@@ -62,9 +62,7 @@ const MobileHome: React.FC = () => {
       if (data) {
         setSixtySecondsData(data.data.news.slice(0, 4));
       }
-    } catch {
-      console.log('获取60秒新闻失败');
-    }
+    } catch {}
   }, []);
 
   const fetchItNews = useCallback(async () => {
@@ -73,9 +71,7 @@ const MobileHome: React.FC = () => {
       if (data) {
         setItNewsData(data.data.slice(0, 4));
       }
-    } catch {
-      console.log('获取IT新闻失败');
-    }
+    } catch {}
   }, []);
 
   const fetchAiNews = useCallback(async () => {
@@ -84,9 +80,7 @@ const MobileHome: React.FC = () => {
       if (data) {
         setAiNewsData(data.data.news.slice(0, 4));
       }
-    } catch {
-      console.log('获取AI新闻失败');
-    }
+    } catch {}
   }, []);
 
   const fetchWeather = useCallback(async () => {
@@ -102,9 +96,7 @@ const MobileHome: React.FC = () => {
       if (data?.data) {
         setWeatherData(data.data);
       }
-    } catch {
-      console.log('获取天气失败');
-    }
+    } catch {}
   }, []);
 
   useEffect(() => {

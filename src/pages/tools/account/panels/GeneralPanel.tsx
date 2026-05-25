@@ -102,7 +102,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
       const result = await accountService.getPhones(userId, 1, 100);
       setPhones(result.list);
     } catch (error) {
-      console.error('加载手机数据失败:', error);
+      logError('加载手机数据失败', 'GeneralPanel', error as Error);
     }
   }, [userId]);
 
@@ -119,7 +119,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
       setTotal(result.total);
       setCurrentPage(pageNum);
     } catch (error) {
-      console.error('加载通用账号数据失败:', error);
+      logError('加载通用账号数据失败', 'GeneralPanel', error as Error);
       addToast({ message: '加载通用账号数据失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -177,7 +177,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
       setShowModal(false);
       setEditingItem(null);
     } catch (error) {
-      console.error('保存失败:', error);
+      logError('保存失败', 'GeneralPanel', error as Error);
       addToast({ message: '保存失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -203,7 +203,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
-      console.error('复制失败:', error);
+      logError('复制失败', 'GeneralPanel', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);

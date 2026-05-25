@@ -145,7 +145,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
       setShowModal(false);
       setEditingItem(null);
     } catch (error) {
-      console.error('保存失败:', error);
+      logError('保存失败', 'CompanyPanel', error as Error);
       addToast({ message: '保存失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -159,19 +159,19 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
       addToast({ message: '删除成功', type: 'success' });
       await loadData(currentPage);
     } catch (error) {
-      console.error('删除失败:', error);
+      logError('删除失败', 'CompanyPanel', error as Error);
       addToast({ message: '删除失败', type: 'error' });
     } finally {
       setLoading(false);
     }
   }, [addToast, loadData, currentPage, userId]);
 
-  const handleCopyText = useCallback(async (text: string, message: string) => {
+  const handleCopyText = useCallback(async (text: string, successMsg: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      addToast({ message, type: 'success' });
+      addToast({ message: successMsg, type: 'success' });
     } catch (error) {
-      console.error('复制失败:', error);
+      logError('复制失败', 'CompanyPanel', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);

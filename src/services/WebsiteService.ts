@@ -99,7 +99,6 @@ export const websiteService = {
     if (!options?.forceRefresh) {
       const cachedData = cacheService.get<Category[]>(cacheKey)
       if (cachedData) {
-        console.log('Using cached categories data')
         return cachedData
       }
     }
@@ -138,7 +137,6 @@ export const websiteService = {
     // 检查缓存
     const cachedData = cacheService.get<Category>(cacheKey)
     if (cachedData) {
-      console.log(`Using cached category data for id: ${id}`)
       return cachedData
     }
 
@@ -209,7 +207,6 @@ export const websiteService = {
     if (!options?.forceRefresh) {
       const cachedData = cacheService.get<Bookmark[]>(cacheKey)
       if (cachedData) {
-        console.log('Using cached public bookmarks data')
         return cachedData
       }
     }
@@ -244,7 +241,6 @@ export const websiteService = {
       // 如果缓存存在，返回缓存数据
       const cachedData = cacheService.get<Bookmark[]>(cacheKey)
       if (cachedData) {
-        console.log('Using cached public bookmarks data due to API error')
         return cachedData
       }
       
@@ -328,7 +324,6 @@ export const websiteService = {
       if (!options?.forceRefresh) {
         const cachedData = cacheService.get<Bookmark[]>(cacheKey)
         if (cachedData) {
-          console.log('Using cached favorites data')
           return cachedData
         }
       }

@@ -103,7 +103,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       const result = await accountService.getEmails(userId, 1, 100);
       setEmails(result.list);
     } catch (error) {
-      console.error('加载邮箱数据失败:', error);
+      logError('加载邮箱数据失败', 'ShopPanel', error as Error);
     }
   }, [userId]);
 
@@ -112,7 +112,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       const result = await accountService.getPhones(userId, 1, 100);
       setPhones(result.list);
     } catch (error) {
-      console.error('加载手机数据失败:', error);
+      logError('加载手机数据失败', 'ShopPanel', error as Error);
     }
   }, [userId]);
 
@@ -121,7 +121,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       const result = await accountService.getCompanies(userId, 1, 100);
       setCompanies(result.list);
     } catch (error) {
-      console.error('加载企业数据失败:', error);
+      logError('加载企业数据失败', 'ShopPanel', error as Error);
     }
   }, [userId]);
 
@@ -177,7 +177,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       setShowModal(false);
       setEditingItem(null);
     } catch (error) {
-      console.error('保存失败:', error);
+      logError('保存失败', 'ShopPanel', error as Error);
       addToast({ message: '保存失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -191,7 +191,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       addToast({ message: '删除成功', type: 'success' });
       await loadData(currentPage);
     } catch (error) {
-      console.error('删除失败:', error);
+      logError('删除失败', 'ShopPanel', error as Error);
       addToast({ message: '删除失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -203,7 +203,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
-      console.error('复制失败:', error);
+      logError('复制失败', 'ShopPanel', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);

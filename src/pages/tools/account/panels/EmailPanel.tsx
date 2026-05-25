@@ -134,7 +134,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
       setTotal(result.total);
       setCurrentPage(pageNum);
     } catch (error) {
-      console.error('加载邮箱数据失败:', error);
+      logError('加载邮箱数据失败', 'EmailPanel', error as Error);
       addToast({ message: '加载邮箱数据失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -186,7 +186,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
       setShowModal(false);
       setEditingItem(null);
     } catch (error) {
-      console.error('保存失败:', error);
+      logError('保存失败', 'EmailPanel', error as Error);
       addToast({ message: '保存失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -212,7 +212,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
-      console.error('复制失败:', error);
+      logError('复制失败', 'EmailPanel', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);
@@ -227,7 +227,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
       await navigator.clipboard.writeText(shareContent.trim());
       addToast({ message: '邮箱信息已复制到剪贴板', type: 'success' });
     } catch (error) {
-      console.error('分享失败:', error);
+      logError('分享失败', 'EmailPanel', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);

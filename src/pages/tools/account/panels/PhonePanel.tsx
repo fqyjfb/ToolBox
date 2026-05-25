@@ -139,7 +139,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
       setShowModal(false);
       setEditingItem(null);
     } catch (error) {
-      console.error('保存失败:', error);
+      logError('保存失败', 'PhonePanel', error as Error);
       addToast({ message: '保存失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -153,7 +153,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
       addToast({ message: '删除成功', type: 'success' });
       await loadData(currentPage);
     } catch (error) {
-      console.error('删除失败:', error);
+      logError('删除失败', 'PhonePanel', error as Error);
       addToast({ message: '删除失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -165,7 +165,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
-      console.error('复制失败:', error);
+      logError('复制失败', 'PhonePanel', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);

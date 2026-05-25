@@ -206,13 +206,13 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
           
           sortedCategories = [...sortedMainCategories, ...remainingMainCategories];
         } catch {
-          console.error('Failed to parse saved category order');
+          logError('Failed to parse saved category order', 'WebsitePanel');
         }
       }
       
       setCategories(sortedCategories);
     } catch (error) {
-      console.error('加载分类失败:', error);
+      logError('加载分类失败', 'WebsitePanel', error as Error);
       addToast({ message: '加载分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -224,7 +224,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       const result = await accountService.getEmails(userId, 1, 100);
       setEmails(result.list);
     } catch (error) {
-      console.error('加载邮箱数据失败:', error);
+      logError('加载邮箱数据失败', 'WebsitePanel', error as Error);
     }
   }, [userId]);
 
@@ -233,7 +233,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       const result = await accountService.getPhones(userId, 1, 100);
       setPhones(result.list);
     } catch (error) {
-      console.error('加载手机数据失败:', error);
+      logError('加载手机数据失败', 'WebsitePanel', error as Error);
     }
   }, [userId]);
 
@@ -277,7 +277,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       setTotal(result.total);
       setCurrentPage(pageNum);
     } catch (error) {
-      console.error('加载账号列表失败:', error);
+      logError('加载账号列表失败', 'WebsitePanel', error as Error);
       addToast({ message: '加载账号失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -337,7 +337,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       await loadCategories();
       setShowCategoryModal(false);
     } catch (error) {
-      console.error('保存分类失败:', error);
+      logError('保存分类失败', 'WebsitePanel', error as Error);
       addToast({ message: '保存分类失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -413,7 +413,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       setShowItemModal(false);
       setEditingItem(null);
     } catch (error) {
-      console.error('保存失败:', error);
+      logError('保存失败', 'WebsitePanel', error as Error);
       addToast({ message: '保存失败', type: 'error' });
     } finally {
       setLoading(false);
@@ -439,7 +439,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       await navigator.clipboard.writeText(password);
       addToast({ message: '密码已复制到剪贴板', type: 'success' });
     } catch (error) {
-      console.error('复制密码失败:', error);
+      logError('复制密码失败', 'WebsitePanel', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);
@@ -449,7 +449,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       await navigator.clipboard.writeText(text);
       addToast({ message, type: 'success' });
     } catch (error) {
-      console.error('复制失败:', error);
+      logError('复制失败', 'WebsitePanel', error as Error);
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);
