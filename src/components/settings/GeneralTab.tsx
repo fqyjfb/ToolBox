@@ -16,6 +16,8 @@ interface GeneralTabProps {
   leftMenuPosition: string;
   defaultWindowSize: WindowSize;
   browserMode: string;
+  autoLockEnabled: boolean;
+  autoLockTimeout: number;
   onAutostartToggle: (enabled: boolean) => void;
   onEdgeAdsorptionChange: (enabled: boolean) => void;
   onMemoryOptimizationChange: (enabled: boolean) => void;
@@ -24,7 +26,17 @@ interface GeneralTabProps {
   onMenuPositionChange: (position: string) => void;
   onWindowSizeChange: (key: 'width' | 'height', value: string) => void;
   onBrowserModeChange: (value: string) => void;
+  onAutoLockChange: (enabled: boolean) => void;
+  onAutoLockTimeoutChange: (timeout: number) => void;
 }
+
+const AUTO_LOCK_OPTIONS = [
+  { label: '1分钟', value: 60 },
+  { label: '5分钟', value: 300 },
+  { label: '10分钟', value: 600 },
+  { label: '30分钟', value: 1800 },
+  { label: '1小时', value: 3600 },
+];
 
 const GeneralTab: React.FC<GeneralTabProps> = ({
   autostartEnabled,
@@ -35,6 +47,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   leftMenuPosition,
   defaultWindowSize,
   browserMode,
+  autoLockEnabled,
+  autoLockTimeout,
   onAutostartToggle,
   onEdgeAdsorptionChange,
   onMemoryOptimizationChange,
@@ -43,6 +57,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   onMenuPositionChange,
   onWindowSizeChange,
   onBrowserModeChange,
+  onAutoLockChange,
+  onAutoLockTimeoutChange,
 }) => {
   const addToast = useToastStore(state => state.addToast);
   const { isDark, setTheme } = useThemeStore();
@@ -299,6 +315,31 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
                 </svg>
               </button>
             )}
+          </div>
+        </div>
+        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 dark:text-gray-300">自动锁定</span>
+            {!passwordSet && (
+              <span className="text-xs text-gray-400">(需先设置锁定密码)</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {autoLockEnabled && (
+              <select
+                value={autoLockTimeout}
+                onChange={(e) => onAutoLockTimeoutChange(Number(e.target.value))}
+                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                {AUTO_LOCK_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            )}
+            <ToggleSwitch
+              enabled={autoLockEnabled}
+              onChange={onAutoLockChange}
+            />
           </div>
         </div>
       </div>

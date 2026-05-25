@@ -32,6 +32,8 @@ const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [browserMode, setBrowserMode] = useState<'internal' | 'external'>('internal');
   const [autostartEnabled, setAutostartEnabled] = useState(false);
+  const [autoLockEnabled, setAutoLockEnabled] = useState(false);
+  const [autoLockTimeout, setAutoLockTimeout] = useState(600);
   const [notifications, setNotifications] = useState<NotificationSettings>(() => {
     const saved = localStorage.getItem('toolbox_notification_errors');
     return {
@@ -56,6 +58,7 @@ const Settings: React.FC = () => {
         const getValue = (name: string) => {
           const item = settings.find(s => s.name === name);
           if (item === undefined) return undefined;
+          if (name === 'autoLockTimeout') return item.value;
           if (typeof item.value === 'number') return item.value !== 0;
           if (typeof item.value === 'string' && item.value === '0') return false;
           return item.value;
@@ -69,6 +72,11 @@ const Settings: React.FC = () => {
         const windowSize = getValue('defaultWindowSize');
         setDefaultWindowSize(typeof windowSize === 'object' ? (windowSize as WindowSize) : DEFAULT_WINDOW_SIZE);
         setAutostartEnabled(Boolean(getValue('isAutoLaunch')));
+        setAutoLockEnabled(Boolean(getValue('isAutoLockEnabled')));
+        const timeout = getValue('autoLockTimeout');
+        if (typeof timeout === 'number' && timeout > 0) {
+          setAutoLockTimeout(timeout);
+        }
       }
     } catch (error) {
       logError('Failed to load settings', 'Settings', error as Error);
@@ -327,6 +335,16 @@ const Settings: React.FC = () => {
     addToast({ type: 'success', message: `浏览器设置已更新为${mode === 'internal' ? '程序弹窗' : '默认浏览器'}` });
   };
 
+  const handleAutoLockChange = async (enabled: boolean) => {
+    setAutoLockEnabled(enabled);
+    handleSettingUpdate('isAutoLockEnabled', enabled ? 1 : 0);
+  };
+
+  const handleAutoLockTimeoutChange = async (timeout: number) => {
+    setAutoLockTimeout(timeout);
+    handleSettingUpdate('autoLockTimeout', timeout);
+  };
+
   // Tab config
   const tabs = [
     { id: 'general' as const, label: '通用设置', icon: SettingsIcon },
@@ -369,6 +387,8 @@ const Settings: React.FC = () => {
             leftMenuPosition={leftMenuPosition}
             defaultWindowSize={defaultWindowSize}
             browserMode={browserMode}
+            autoLockEnabled={autoLockEnabled}
+            autoLockTimeout={autoLockTimeout}
             onAutostartToggle={handleAutostartToggle}
             onEdgeAdsorptionChange={handleEdgeAdsorptionChange}
             onMemoryOptimizationChange={handleMemoryOptimizationChange}
@@ -377,6 +397,8 @@ const Settings: React.FC = () => {
             onMenuPositionChange={handleMenuPositionChange}
             onWindowSizeChange={handleWindowSizeChange}
             onBrowserModeChange={handleBrowserModeChange}
+            onAutoLockChange={handleAutoLockChange}
+            onAutoLockTimeoutChange={handleAutoLockTimeoutChange}
           />
         )}
 

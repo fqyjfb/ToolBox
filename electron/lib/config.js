@@ -27,6 +27,8 @@ const defaultSettings = {
   isLockEnabled: 0,
   lockPassword: '',
   lockedAt: null,
+  isAutoLockEnabled: 0,
+  autoLockTimeout: 600,
 };
 
 const defaultFloatConfig = [

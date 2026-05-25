@@ -164,6 +164,7 @@ const unlock = () => {
   require('./tray').refreshTrayMenu();
 
   setTimeout(() => {
+    require('./mainWindow').resetAutoLockTimer();
     if (settings.isFloatWindowEnabled === 1) {
       require('./floatWindow').createFloatWindow();
     }

@@ -11,6 +11,8 @@ const { getFloatWindow } = require('./floatWindow');
 
 let mainWindow = null;
 let memoryCleanupTimer = null;
+let autoLockTimer = null;
+let lastActivityTime = Date.now();
 
 const iconCacheFolder = path.join(require('electron').app.getPath('userData'), 'icon-cache');
 if (!fs.existsSync(iconCacheFolder)) {
@@ -185,6 +187,40 @@ const stopMemoryOptimization = () => {
   }
 };
 
+const stopAutoLock = () => {
+  if (autoLockTimer) {
+    clearInterval(autoLockTimer);
+    autoLockTimer = null;
+  }
+};
+
+const startAutoLock = () => {
+  stopAutoLock();
+  const settings = loadSettings();
+  if (!settings.isAutoLockEnabled || !settings.lockPassword) return;
+
+  const interval = 1000;
+
+  autoLockTimer = setInterval(() => {
+    const currentSettings = loadSettings();
+    if (!currentSettings.isAutoLockEnabled || !currentSettings.lockPassword) {
+      stopAutoLock();
+      return;
+    }
+
+    const elapsed = Date.now() - lastActivityTime;
+    const threshold = (currentSettings.autoLockTimeout || 600) * 1000;
+
+    if (elapsed >= threshold && currentSettings.isLockEnabled !== 1) {
+      require('./lockWindow').lock();
+    }
+  }, interval);
+};
+
+const resetAutoLockTimer = () => {
+  lastActivityTime = Date.now();
+};
+
 const createWindow = (onReadyCallback, showOnReady = true) => {
   const { app } = require('electron');
   let iconPath = null;
@@ -254,9 +290,24 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
       mainWindow.show();
     }
     initShortcuts();
-    
+    startAutoLock();
+
     if (onReadyCallback) {
       onReadyCallback();
+    }
+  });
+
+  mainWindow.on('focus', () => {
+    resetAutoLockTimer();
+  });
+
+  mainWindow.on('blur', () => {
+    resetAutoLockTimer();
+  });
+
+  mainWindow.webContents.on('input-event', (event, input) => {
+    if (input.type === 'mouseMove' || input.type === 'keyDown') {
+      resetAutoLockTimer();
     }
   });
 
@@ -560,6 +611,13 @@ Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
 
     if (setting.name === 'isMemoryOptimizationEnabled') {
       startMemoryOptimization();
+    }
+
+    if (setting.name === 'isAutoLockEnabled' || setting.name === 'autoLockTimeout') {
+      startAutoLock();
+      if (setting.name === 'isAutoLockEnabled') {
+        resetAutoLockTimer();
+      }
     }
 
     mainWindow?.webContents.send('setting-changed', { name: setting.name, value: setting.value });
@@ -879,5 +937,8 @@ module.exports = {
   registerIpcHandlers,
   startMemoryOptimization,
   stopMemoryOptimization,
+  startAutoLock,
+  stopAutoLock,
+  resetAutoLockTimer,
   getMainWindow: () => mainWindow,
 };
