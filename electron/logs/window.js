@@ -14,6 +14,7 @@ const {
 } = require('./logger');
 
 let logWindow = null;
+let logIpcHandlersRegistered = false;
 
 function createLogWindow() {
   if (logWindow && !logWindow.isDestroyed()) {
@@ -56,6 +57,9 @@ function createLogWindow() {
 }
 
 function registerLogIpcHandlers() {
+  if (logIpcHandlersRegistered) return;
+  logIpcHandlersRegistered = true;
+  
   ipcMain.on('log:open', () => {
     createLogWindow();
   });

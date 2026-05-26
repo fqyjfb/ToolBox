@@ -6,6 +6,8 @@
  */
 
 const { ipcMain } = require("electron");
+
+let ocrIpcRegistered = false;
 const { get, post, waitForPythonApi } = require("../services/pythonApiClient");
 const { startPythonService, stopPythonService, isRunning, resetIdleTimer, getPythonServiceInfo } = require("../services/pythonProcessService");
 
@@ -48,6 +50,9 @@ async function ensurePythonServiceRunning() {
  * 注册 OCR 相关 IPC 处理器
  */
 function registerOcrIpc() {
+  if (ocrIpcRegistered) return;
+  ocrIpcRegistered = true;
+
   // OCR 识别 Base64 图片（超时时间 60 秒）
   ipcMain.handle("ocr:recognize", async (_event, imageBase64) => {
     try {

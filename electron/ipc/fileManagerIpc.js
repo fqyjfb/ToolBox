@@ -4,6 +4,7 @@ const path = require('path');
 
 let FAVORITES_FILE;
 let TARGET_PATHS_FILE;
+let fileManagerIpcRegistered = false;
 
 function initConfigPaths() {
   FAVORITES_FILE = path.join(app.getPath('userData'), 'fileManagerFavorites.json');
@@ -259,6 +260,9 @@ function deleteItem(itemPath) {
 }
 
 function registerFileManagerIpc() {
+  if (fileManagerIpcRegistered) return;
+  fileManagerIpcRegistered = true;
+  
   initConfigPaths();
   ensureConfigFiles();
   
