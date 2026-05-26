@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Trash2, Download, AlertCircle, AlertTriangle, Info, Bug, Minus, X } from 'lucide-react';
-import { loggerService, LogEntry, LogLevel } from '../../../services/loggerService';
+import { loggerService, LogEntry, LogLevel } from '../../services/loggerService';
 
 const LogsPage: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -173,9 +173,9 @@ const LogsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen w-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden">
       <div 
-        className="bg-gray-800 dark:bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between"
+        className="bg-gray-800 dark:bg-gray-900 border-b border-gray-700 px-3 py-2 flex items-center justify-between flex-shrink-0"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         <div className="flex items-center gap-2">
@@ -186,14 +186,14 @@ const LogsPage: React.FC = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={handleMinimize}
-              className="p-2 rounded hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded hover:bg-gray-700 transition-colors"
               title="最小化"
             >
               <Minus className="w-4 h-4 text-gray-400 hover:text-white" />
             </button>
             <button
               onClick={handleClose}
-              className="p-2 rounded hover:bg-red-600 transition-colors"
+              className="p-1.5 rounded hover:bg-red-600 transition-colors"
               title="关闭"
             >
               <X className="w-4 h-4 text-gray-400 hover:text-white" />
@@ -201,45 +201,45 @@ const LogsPage: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">日志监控</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">日志监控</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               共 {stats.total} 条日志
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleRefresh}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+              className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1.5"
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={14} />
               刷新
             </button>
             <button
               onClick={handleClear}
-              className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-800/20 transition-colors flex items-center gap-2"
+              className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md hover:bg-red-100 dark:hover:bg-red-800/20 transition-colors flex items-center gap-1.5"
             >
-              <Trash2 size={16} />
+              <Trash2 size={14} />
               清空
             </button>
             <button
               onClick={handleExport}
-              className="px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-2"
+              className="px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors flex items-center gap-1.5"
             >
-              <Download size={16} />
+              <Download size={14} />
               导出
             </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mt-4">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">筛选:</span>
-          <div className="flex gap-2">
+        <div className="flex items-center gap-3 mt-3">
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">筛选:</span>
+          <div className="flex gap-1.5">
             <button
               onClick={() => setFilterLevel('all')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                 filterLevel === 'all'
                   ? 'bg-gray-800 text-white dark:bg-gray-600'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -249,75 +249,75 @@ const LogsPage: React.FC = () => {
             </button>
             <button
               onClick={() => setFilterLevel('error')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
                 filterLevel === 'error'
                   ? 'bg-red-500 text-white'
                   : 'bg-red-50 text-red-600 hover:bg-red-100'
               }`}
             >
-              <AlertCircle size={12} />
+              <AlertCircle size={10} />
               Error ({stats.byLevel.error})
             </button>
             <button
               onClick={() => setFilterLevel('warn')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
                 filterLevel === 'warn'
                   ? 'bg-yellow-500 text-white'
                   : 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100'
               }`}
             >
-              <AlertTriangle size={12} />
+              <AlertTriangle size={10} />
               Warn ({stats.byLevel.warn})
             </button>
             <button
               onClick={() => setFilterLevel('info')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
                 filterLevel === 'info'
                   ? 'bg-blue-500 text-white'
                   : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
               }`}
             >
-              <Info size={12} />
+              <Info size={10} />
               Info ({stats.byLevel.info})
             </button>
             <button
               onClick={() => setFilterLevel('debug')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
                 filterLevel === 'debug'
                   ? 'bg-gray-500 text-white'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <Bug size={12} />
+              <Bug size={10} />
               Debug ({stats.byLevel.debug})
             </button>
           </div>
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="flex-1 p-4 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full flex flex-col">
           {filteredLogs.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
               <div className="text-gray-400 mb-2">
-                <Info size={48} />
+                <Info size={40} />
               </div>
-              <p className="text-gray-500 dark:text-gray-400">暂无日志记录</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">暂无日志记录</p>
             </div>
           ) : (
-            <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
               {filteredLogs.map((log) => (
                 <div
                   key={log.id}
-                  className={`border-b border-gray-100 dark:border-gray-700 last:border-b-0 p-4 ${getLevelBgClass(log.level)}`}
+                  className={`border-b border-gray-100 dark:border-gray-700 last:border-b-0 p-3 ${getLevelBgClass(log.level)}`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2">
                     <div className="flex-shrink-0 mt-0.5">
                       {getLevelIcon(log.level)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
                           log.level === 'error' ? 'bg-red-200 text-red-800' :
                           log.level === 'warn' ? 'bg-yellow-200 text-yellow-800' :
                           log.level === 'info' ? 'bg-blue-200 text-blue-800' :
@@ -330,15 +330,15 @@ const LogsPage: React.FC = () => {
                             [{log.context}]
                           </span>
                         )}
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                        <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
                           {formatTimestamp(log.timestamp)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-800 dark:text-gray-200 mt-2 break-all">
+                      <p className="text-xs text-gray-800 dark:text-gray-200 mt-1.5 break-all leading-relaxed">
                         {log.message}
                       </p>
                       {log.stack && (
-                        <pre className="text-xs text-gray-500 dark:text-gray-400 mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 overflow-x-auto">
+                        <pre className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 p-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 overflow-x-auto">
                           {log.stack}
                         </pre>
                       )}

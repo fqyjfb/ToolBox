@@ -101,6 +101,10 @@ const lock = () => {
     return false;
   }
 
+  if (settings.isLockEnabled === 1) {
+    return false;
+  }
+
   settings.isLockEnabled = 1;
   settings.lockedAt = Date.now();
   saveSettings(settings);
@@ -154,6 +158,8 @@ const unlock = () => {
   settings.lockedAt = null;
   saveSettings(settings);
 
+  require('./mainWindow').resetAutoLockTimer();
+
   if (lockWindow) {
     lockWindow.removeAllListeners('close');
     lockWindow.close();
@@ -164,7 +170,6 @@ const unlock = () => {
   require('./tray').refreshTrayMenu();
 
   setTimeout(() => {
-    require('./mainWindow').resetAutoLockTimer();
     if (settings.isFloatWindowEnabled === 1) {
       require('./floatWindow').createFloatWindow();
     }
@@ -227,15 +232,30 @@ const registerLockIpcHandlers = () => {
     const { salt, hash } = hashPassword(password);
 
     try {
-      fs.writeFileSync(passwordFile, JSON.stringify({
-        passwordHash: hash,
-        salt: salt,
-        createdAt: new Date().toISOString(),
-      }));
+      if (password) {
+        fs.writeFileSync(passwordFile, JSON.stringify({
+          passwordHash: hash,
+          salt: salt,
+          createdAt: new Date().toISOString(),
+        }));
 
-      const settings = loadSettings();
-      settings.lockPassword = hash;
-      saveSettings(settings);
+        const settings = loadSettings();
+        settings.lockPassword = hash;
+        saveSettings(settings);
+
+        require('./mainWindow').resetAutoLockTimer();
+        require('./mainWindow').startAutoLock();
+      } else {
+        if (fs.existsSync(passwordFile)) {
+          fs.unlinkSync(passwordFile);
+        }
+
+        const settings = loadSettings();
+        settings.lockPassword = '';
+        saveSettings(settings);
+
+        require('./mainWindow').stopAutoLock();
+      }
 
       return { success: true };
     } catch (error) {
@@ -290,6 +310,8 @@ const checkLockOnStartup = () => {
     settings.isLockEnabled = 1;
     settings.lockedAt = Date.now();
     saveSettings(settings);
+    
+    require('./mainWindow').resetAutoLockTimer();
     
     createLockWindow();
     return true;

@@ -160,7 +160,8 @@ declare interface Window {
     selectFolder: () => Promise<string | null>;
     getFileIcon: (path: string) => Promise<string | null>;
     scanDesktopApps: () => Promise<DesktopAppInfo[]>;
-    getDroppedFiles: (fileDataList: FileData[]) => Promise<string[]>;
+    getDroppedFiles: (filePaths: string[]) => Promise<string[]>;
+    getFileOrFolderPath: (item: File) => Promise<string | undefined>;
     getAutostartStatus: () => Promise<boolean>;
     setAutostartStatus: (enable: boolean) => Promise<boolean>;
     getSettings: () => Promise<SettingItem[]>;

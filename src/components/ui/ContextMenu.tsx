@@ -29,6 +29,8 @@ export interface ContextMenuProps {
 const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose }) => {
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const subMenuRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const handleClickOutside = useCallback((event: MouseEvent) => {
     const target = event.target as HTMLElement;
@@ -37,6 +39,72 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
       setActiveSubMenu(null);
     }
   }, [onClose]);
+
+  const adjustSubMenuPosition = useCallback((subMenuId: string) => {
+    if (!menuRef.current) return;
+    
+    const subMenu = subMenuRefs.current.get(subMenuId);
+    if (!subMenu) return;
+
+    requestAnimationFrame(() => {
+      try {
+        const menuRect = menuRef.current?.getBoundingClientRect();
+        const subMenuRect = subMenu.getBoundingClientRect();
+        
+        if (!menuRect) return;
+
+        const maxWidth = document.documentElement.clientWidth || window.innerWidth;
+        const maxHeight = document.documentElement.clientHeight || window.innerHeight;
+        const padding = 8;
+        const subMenuRight = menuRect.right + subMenuRect.width;
+        const subMenuBottom = menuRect.top + subMenuRect.height;
+
+        if (subMenuRight > maxWidth - padding) {
+          subMenu.style.setProperty('left', 'auto');
+          subMenu.style.setProperty('right', '100%');
+          subMenu.style.setProperty('margin-left', '0');
+          subMenu.style.setProperty('margin-right', '1px');
+        } else {
+          subMenu.style.setProperty('left', '100%');
+          subMenu.style.setProperty('right', 'auto');
+          subMenu.style.setProperty('margin-left', '1px');
+          subMenu.style.setProperty('margin-right', '0');
+        }
+
+        if (subMenuBottom > maxHeight - padding) {
+          subMenu.style.setProperty('top', 'auto');
+          subMenu.style.setProperty('bottom', '0');
+        } else {
+          subMenu.style.setProperty('top', '0');
+          subMenu.style.setProperty('bottom', 'auto');
+        }
+      } catch (error) {
+        console.warn('Failed to adjust submenu position:', error);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (activeSubMenu) {
+      adjustSubMenuPosition(activeSubMenu);
+    }
+  }, [activeSubMenu, adjustSubMenuPosition]);
+
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      resizeObserverRef.current = new ResizeObserver(() => {
+        if (activeSubMenu) {
+          adjustSubMenuPosition(activeSubMenu);
+        }
+      });
+      
+      resizeObserverRef.current.observe(document.body);
+      
+      return () => {
+        resizeObserverRef.current?.disconnect();
+      };
+    }
+  }, [isOpen, activeSubMenu, adjustSubMenuPosition]);
 
   useEffect(() => {
     if (isOpen) {
@@ -56,9 +124,9 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
       const maxWidth = document.documentElement.clientWidth || window.innerWidth;
       const maxHeight = document.documentElement.clientHeight || window.innerHeight;
       
-      const itemHeight = 36;
-      const menuWindowPadding = 16;
-      const dividerHeight = 8;
+      const itemHeight = 24;
+      const menuWindowPadding = 8;
+      const dividerHeight = 4;
       
       const dividerCount = items.filter(item => item.divider).length;
       const estimatedHeight = items.length * itemHeight + dividerCount * dividerHeight + menuWindowPadding;
@@ -85,6 +153,12 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
       menu.style.top = `${newY}px`;
     }
   }, [isOpen, x, y, items]);
+
+  useEffect(() => {
+    return () => {
+      subMenuRefs.current.clear();
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -131,6 +205,11 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
                   </button>
                   {item.subMenu && activeSubMenu === item.id && (
                     <div 
+                      ref={(el) => {
+                        if (el) {
+                          subMenuRefs.current.set(item.id, el as HTMLDivElement);
+                        }
+                      }}
                       className="popup-menu-window context-submenu"
                       onMouseLeave={() => {
                         setActiveSubMenu(null);

@@ -335,5 +335,31 @@ export const syncManager = {
 
   getAutoSyncStatus(): { running: boolean; interval: number } {
     return { running: false, interval: 0 };
+  },
+
+  async hasCloudUpdates(userId: string): Promise<boolean> {
+    try {
+      const metadata = await this.getSyncMetadata(userId);
+      const lastSyncTime = metadata?.lastSyncTime || '1970-01-01T00:00:00Z';
+
+      const tables = Object.values(MODULE_TABLE_MAP).flat();
+      
+      for (const table of tables) {
+        const { data, error } = await supabase
+          .from(table)
+          .select('id')
+          .eq('user_id', userId)
+          .gt('updated_at', lastSyncTime)
+          .limit(1);
+
+        if (!error && data && data.length > 0) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch {
+      return false;
+    }
   }
 };

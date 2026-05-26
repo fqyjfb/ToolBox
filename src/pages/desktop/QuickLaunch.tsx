@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor } from 'lucide-react';
-import path from 'path';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -9,6 +8,7 @@ import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useToastStore } from '../../store/toastStore';
 import Modal from '../../components/ui/Modal';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
+import { logDebug, logInfo, logWarn } from '../../services/loggerService';
 import './QuickLaunch.css';
 
 const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'medium'; onLaunch: (path: string) => void; onContextMenu: (e: React.MouseEvent) => void; }> = ({ app, iconSize, onLaunch, onContextMenu }) => {
@@ -229,20 +229,20 @@ const QuickLaunch: React.FC = () => {
 
   const handleDropFiles = useCallback(async (paths: string[]) => {
     const targetCategoryId = activeCategoryId === 'all' ? (categories[0]?.id || '') : activeCategoryId;
-    
-    for (const path of paths) {
-      const lowerPath = path.toLowerCase();
+
+    for (const filePath of paths) {
+      const lowerPath = filePath.toLowerCase();
       const exists = apps.some(app => app.path.toLowerCase() === lowerPath);
-      
+
       if (exists) {
         continue;
       }
-      
-      const icon = await window.electron?.getFileIcon(path) || undefined;
+
+      const icon = await window.electron?.getFileIcon(filePath) || undefined;
       const newApp: QuickLaunchItem = {
         id: Date.now().toString(),
-        name: getAppName(path),
-        path,
+        name: getAppName(filePath),
+        path: filePath,
         icon,
         categoryId: targetCategoryId,
         addedAt: Date.now(),
@@ -268,65 +268,44 @@ const QuickLaunch: React.FC = () => {
     e.stopPropagation();
     setIsDragOver(false);
 
-    const files = e.dataTransfer.files;
-    const items = e.dataTransfer.items;
-    const fileDataList: { name: string; type: string; size: number; path?: string }[] = [];
+    const startTime = Date.now();
+    logDebug(`[QuickLaunch] 开始处理拖拽事件`, 'drag-drop');
 
-    if (items && items.length > 0) {
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.kind === 'file') {
-          const file = item.getAsFile();
-          if (file) {
-            const path = (file as unknown as { path?: string }).path;
-            fileDataList.push({
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              path: path
-            });
+    try {
+      logDebug(`[QuickLaunch] 检查 dataTransfer 内容`, 'drag-drop');
+
+      const files = e.dataTransfer.files;
+      const filePaths: string[] = [];
+
+      if (files && files.length > 0) {
+        logDebug(`[QuickLaunch] 处理 dataTransfer.files (数量: ${files.length})`, 'drag-drop');
+        
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          
+          const filePath = await window.electron?.getFileOrFolderPath(file);
+          logDebug(`[QuickLaunch] File ${i}: name=${file.name}, path=${filePath}`, 'drag-drop');
+          
+          if (filePath) {
+            filePaths.push(filePath);
           }
         }
       }
-    } else if (files.length > 0) {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i] as File & { path?: string };
-        fileDataList.push({
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          path: file.path
-        });
-      }
-    }
 
-    const uriList = e.dataTransfer.getData('text/uri-list');
-    if (uriList) {
-      const uris = uriList.split('\n').filter(u => u.trim());
-      for (const uri of uris) {
-        if (uri.startsWith('file:///')) {
-          try {
-            const decodedPath = decodeURIComponent(uri.replace('file:///', ''));
-            const windowsPath = decodedPath.replace(/\//g, '\\');
-            const existingEntry = fileDataList.find(f => f.path === windowsPath || f.name === path.basename(windowsPath));
-            if (!existingEntry) {
-              fileDataList.push({
-                name: path.basename(windowsPath),
-                type: '',
-                size: 0,
-                path: windowsPath
-              });
-            }
-          } catch {
-            // Ignore parse errors
-          }
-        }
-      }
-    }
+      logInfo(`[QuickLaunch] 收集到 ${filePaths.length} 个文件待处理`, 'drag-drop');
       
-    const validPaths = await window.electron?.getDroppedFiles(fileDataList);
-    if (validPaths && validPaths.length > 0) {
-      handleDropFiles(validPaths);
+      if (filePaths.length > 0) {
+        handleDropFiles(filePaths);
+        logInfo(`[QuickLaunch] 成功添加 ${filePaths.length} 个应用`, 'drag-drop');
+      } else {
+        logWarn(`[QuickLaunch] 未找到有效路径`, 'drag-drop');
+      }
+
+      const duration = Date.now() - startTime;
+      logDebug(`[QuickLaunch] 拖拽处理完成，耗时 ${duration}ms`, 'drag-drop');
+
+    } catch (error) {
+      logWarn(`[QuickLaunch] 拖拽处理异常: ${(error as Error).message}`, 'drag-drop');
     }
   }, [handleDropFiles]);
 

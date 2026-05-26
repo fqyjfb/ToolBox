@@ -199,22 +199,45 @@ const startAutoLock = () => {
   const settings = loadSettings();
   if (!settings.isAutoLockEnabled || !settings.lockPassword) return;
 
-  const interval = 1000;
+  const threshold = (settings.autoLockTimeout || 600) * 1000;
+  const checkInterval = Math.max(5000, threshold / 10);
+  const { execFile } = require('child_process');
 
   autoLockTimer = setInterval(() => {
     const currentSettings = loadSettings();
+    
     if (!currentSettings.isAutoLockEnabled || !currentSettings.lockPassword) {
       stopAutoLock();
       return;
     }
 
-    const elapsed = Date.now() - lastActivityTime;
-    const threshold = (currentSettings.autoLockTimeout || 600) * 1000;
-
-    if (elapsed >= threshold && currentSettings.isLockEnabled !== 1) {
-      require('./lockWindow').lock();
+    if (currentSettings.isLockEnabled === 1) {
+      return;
     }
-  }, interval);
+
+    if (process.platform === 'win32') {
+      execFile('powershell.exe', [
+        '-ExecutionPolicy', 'Bypass',
+        '-Command',
+        'Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public static class User32 { [StructLayout(LayoutKind.Sequential)] public struct LASTINPUTINFO { public uint cbSize; public uint dwTime; } [DllImport(`\"user32.dll`\")] public static extern bool GetLastInputInfo(ref LASTINPUTINFO plii); }"; $lastInputInfo = New-Object User32+LASTINPUTINFO; $lastInputInfo.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf($lastInputInfo); [User32]::GetLastInputInfo([ref]$lastInputInfo) | Out-Null; [Environment]::TickCount - $lastInputInfo.dwTime'
+      ], (error, stdout) => {
+        if (error || !stdout) return;
+        
+        const idleMs = parseInt(stdout.trim(), 10);
+        const currentThreshold = (currentSettings.autoLockTimeout || 600) * 1000;
+        
+        if (idleMs >= 0 && idleMs >= currentThreshold) {
+          require('./lockWindow').lock();
+        }
+      });
+    } else {
+      const elapsed = Date.now() - lastActivityTime;
+      const currentThreshold = (currentSettings.autoLockTimeout || 600) * 1000;
+      if (elapsed >= currentThreshold) {
+        require('./lockWindow').lock();
+      }
+    }
+  }, checkInterval);
 };
 
 const resetAutoLockTimer = () => {
@@ -297,37 +320,8 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     }
   });
 
-  const { execFile } = require('child_process');
-  let activityCheckInterval = null;
-
-  const startSystemActivityMonitoring = () => {
-    const checkSystemActivity = () => {
-      const settings = loadSettings();
-      if (!settings.isAutoLockEnabled || !settings.lockPassword) return;
-
-      if (process.platform === 'win32') {
-        execFile('powershell.exe', [
-          '-ExecutionPolicy', 'Bypass',
-          '-Command',
-          'Add-Type -AssemblyName User32; $lastInput = [User32]::GetLastInputInfo(); $idleMs = ([Environment]::TickCount - $lastInput.dwTime); $idleMs'
-        ], (error, stdout) => {
-          if (!error && stdout) {
-            const idleMs = parseInt(stdout.trim(), 10);
-            if (idleMs >= 0 && idleMs < 1000) {
-              resetAutoLockTimer();
-            }
-          }
-        });
-      }
-    };
-
-    const checkInterval = Math.max(500, (settings.autoLockTimeout || 600) * 1000 / 20);
-    activityCheckInterval = setInterval(checkSystemActivity, checkInterval);
-  };
-
-  startSystemActivityMonitoring();
-
   mainWindow.on('closed', () => {
+    stopAutoLock();
     mainWindow = null;
   });
 
@@ -448,20 +442,23 @@ const registerIpcHandlers = () => {
     }
   });
 
+  const logger = require('../logs/logger');
+
   const getShortcutTarget = (shortcutPath) => {
     return new Promise((resolve) => {
+      const escapedPath = shortcutPath.replace(/\\/g, '\\\\').replace(/"/g, '`"');
       const psScript = `
         $Shell = New-Object -ComObject WScript.Shell
         try {
-          $Shortcut = $Shell.CreateShortcut("${shortcutPath}")
+          $Shortcut = $Shell.CreateShortcut("${escapedPath}")
           $TargetPath = $Shortcut.TargetPath
           if ($TargetPath -and (Test-Path -Path $TargetPath -PathType Leaf)) {
             Write-Output $TargetPath
           } else {
-            Write-Output "${shortcutPath}"
+            Write-Output "${escapedPath}"
           }
         } catch {
-          Write-Output "${shortcutPath}"
+          Write-Output "${escapedPath}"
         }
       `;
       execFile('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-Command', psScript], { timeout: 5000 }, (error, stdout) => {
@@ -474,41 +471,56 @@ const registerIpcHandlers = () => {
     });
   };
 
-  ipcMain.handle('get-dropped-files', async (event, fileDataList) => {
-    const result = [];
-    const searchPaths = [
-      require('electron').app.getPath('desktop'),
-      require('electron').app.getPath('downloads'),
-      require('electron').app.getPath('documents'),
-      require('electron').app.getPath('home')
-    ];
-    for (const fileData of fileDataList) {
-      let found = false;
-      let filePath = null;
-      
-      for (const searchPath of searchPaths) {
-        if (!fs.existsSync(searchPath)) continue;
-        const fullPath = path.join(searchPath, fileData.name);
-        if (fs.existsSync(fullPath) && isSupportedFileType(fullPath)) {
-          filePath = fullPath;
-          found = true;
-          break;
-        }
-      }
-      
-      if (!found && fileData.path && fs.existsSync(fileData.path) && isSupportedFileType(fileData.path)) {
-        filePath = fileData.path;
-      }
-      
-      if (filePath) {
-        if (filePath.toLowerCase().endsWith('.lnk')) {
-          const targetPath = await getShortcutTarget(filePath);
-          result.push(targetPath);
-        } else {
-          result.push(filePath);
-        }
+  const normalizePath = (inputPath) => {
+    if (!inputPath) return null;
+    
+    let normalized = inputPath.trim();
+    normalized = normalized.replace(/\//g, '\\');
+    
+    if (normalized.startsWith('\\')) {
+      normalized = normalized.substring(1);
+    }
+    
+    const unixDriveMatch = normalized.match(/^([A-Za-z]):\\/);
+    if (!unixDriveMatch) {
+      const driveMatch = inputPath.match(/^\/([A-Za-z])\//);
+      if (driveMatch) {
+        normalized = `${driveMatch[1]}:\\${inputPath.substring(3).replace(/\//g, '\\')}`;
       }
     }
+    
+    return normalized;
+  };
+
+  ipcMain.handle('get-dropped-files', async (event, filePaths) => {
+    const result = [];
+
+    logger.addLog('debug', `[QuickLaunch] 接收到 ${filePaths.length} 个文件路径`, 'drag-drop');
+
+    for (const filePath of filePaths) {
+      if (!filePath || !filePath.trim()) {
+        continue;
+      }
+
+      logger.addLog('debug', `[QuickLaunch] 处理文件: ${filePath}`, 'drag-drop');
+
+      if (isSupportedFileType(filePath)) {
+        const targetPath = filePath.toLowerCase().endsWith('.lnk')
+          ? await getShortcutTarget(filePath)
+          : filePath;
+        
+        if (fs.existsSync(targetPath)) {
+          logger.addLog('debug', `[QuickLaunch] 路径存在: ${targetPath}`, 'drag-drop');
+          result.push(targetPath);
+        } else {
+          logger.addLog('warn', `[QuickLaunch] 路径不存在: ${targetPath}`, 'drag-drop');
+        }
+      } else {
+        logger.addLog('debug', `[QuickLaunch] 路径扩展名不支持: ${filePath}`, 'drag-drop');
+      }
+    }
+
+    logger.addLog('info', `[QuickLaunch] getDroppedFiles 返回 ${result.length} 个有效路径`, 'drag-drop');
     return result;
   });
 

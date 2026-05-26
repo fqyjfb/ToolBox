@@ -337,12 +337,28 @@ const Settings: React.FC = () => {
 
   const handleAutoLockChange = async (enabled: boolean) => {
     setAutoLockEnabled(enabled);
-    handleSettingUpdate('isAutoLockEnabled', enabled ? 1 : 0);
+    try {
+      if (window.electron) {
+        await window.electron.updateSetting({ name: 'isAutoLockEnabled', value: enabled ? 1 : 0 });
+        addToast({ type: 'success', message: enabled ? '自动锁定已开启' : '自动锁定已关闭' });
+      }
+    } catch (error) {
+      logError('Failed to update auto lock setting', 'Settings', error as Error);
+      addToast({ type: 'error', message: '设置失败，请重试' });
+    }
   };
 
   const handleAutoLockTimeoutChange = async (timeout: number) => {
     setAutoLockTimeout(timeout);
-    handleSettingUpdate('autoLockTimeout', timeout);
+    try {
+      if (window.electron) {
+        await window.electron.updateSetting({ name: 'autoLockTimeout', value: timeout });
+        addToast({ type: 'success', message: '自动锁定时间已更新' });
+      }
+    } catch (error) {
+      logError('Failed to update auto lock timeout', 'Settings', error as Error);
+      addToast({ type: 'error', message: '设置失败，请重试' });
+    }
   };
 
   // Tab config

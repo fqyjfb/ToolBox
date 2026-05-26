@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 let navigateCallback = null;
 let downloadProgressCallback = null;
@@ -43,6 +43,10 @@ contextBridge.exposeInMainWorld('electron', {
   getFileIcon: (path) => ipcRenderer.invoke('get-file-icon', path),
   scanDesktopApps: () => ipcRenderer.invoke('scan-desktop-apps'),
   getDroppedFiles: (fileDataList) => ipcRenderer.invoke('get-dropped-files', fileDataList),
+  getFileOrFolderPath: (item) => {
+    if (!item) return undefined;
+    return webUtils.getPathForFile(item);
+  },
   getAutostartStatus: () => ipcRenderer.invoke('get-autostart-status'),
   setAutostartStatus: (enable) => ipcRenderer.invoke('set-autostart-status', enable),
   getSettings: () => ipcRenderer.invoke('get-settings'),

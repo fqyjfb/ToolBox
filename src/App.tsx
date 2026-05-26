@@ -8,11 +8,12 @@ import LoadingSpinner from './components/ui/LoadingSpinner';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/AuthStore';
 import { useSidebarStore } from './store/sidebarStore';
-import { logError } from './services/loggerService';
+import { logError, logInfo } from './services/loggerService';
+import { syncManager } from './services/syncManager';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes, RouteConfig } from './config/routes';
-const LogsPage = React.lazy(() => import('./pages/tools/logs/index'));
+const LogsPage = React.lazy(() => import('./pages/logs/index'));
 import { isElectron } from './utils/environment';
 import { usePreloadTools } from './hooks/usePreloadTools';
 
@@ -215,6 +216,34 @@ function App() {
 
     initialize();
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !admin?.id) return;
+
+    const performSync = async () => {
+      const storageLocation = useThemeStore.getState().storageLocation;
+      const syncEnabled = useThemeStore.getState().syncEnabled;
+
+      if (storageLocation !== 'cloud' || !syncEnabled) {
+        return;
+      }
+
+      try {
+        const hasUpdates = await syncManager.hasCloudUpdates(admin.id);
+        if (!hasUpdates) {
+          return;
+        }
+        
+        await syncManager.syncAll(admin.id, true);
+        useThemeStore.getState().setLastSyncTime(new Date().toISOString());
+        logInfo('静默同步完成', 'App');
+      } catch (error) {
+        logError('静默同步失败', 'App', error as Error);
+      }
+    };
+
+    performSync();
+  }, [isAuthenticated, admin?.id]);
 
   if (!isInitialized || isLoading) {
     return (
