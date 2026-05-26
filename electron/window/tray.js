@@ -7,6 +7,8 @@ const { loadSettings } = require('../lib/config');
 let tray = null;
 
 const createTray = () => {
+  if (tray) return;
+  
   let iconPath = null;
   const iconPaths = [
     path.join(__dirname, '../../public/favicon.png'),
