@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const net = require('net');
 const { app } = require('electron');
-const { detectPythonEnvironment } = require('./pythonEnvService');
+const { detectPythonEnvironment } = require('./pythonEnvService.cjs');
 
 const DEFAULT_CONFIG = {
   port: 8765,

@@ -1,14 +1,14 @@
 const { app } = require('electron');
-const { stopPythonService } = require('./services/pythonProcessService');
-const { registerOcrIpc } = require('./ipc/ocrIpc');
-const { registerFileManagerIpc } = require('./ipc/fileManagerIpc');
-const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization, getMainWindow } = require('./window/mainWindow');
-const { createFloatWindow, registerFloatIpcHandlers } = require('./window/floatWindow');
-const { createTray } = require('./window/tray');
-const { registerLogIpcHandlers } = require('./logs/window');
-const { initLogger } = require('./logs/logger');
-const { loadSettings } = require('./lib/config');
-const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow');
+const { stopPythonService } = require('./services/pythonProcessService.cjs');
+const { registerOcrIpc } = require('./ipc/ocrIpc.cjs');
+const { registerFileManagerIpc } = require('./ipc/fileManagerIpc.cjs');
+const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization, getMainWindow } = require('./window/mainWindow.cjs');
+const { createFloatWindow, registerFloatIpcHandlers } = require('./window/floatWindow.cjs');
+const { createTray } = require('./window/tray.cjs');
+const { registerLogIpcHandlers } = require('./logs/window.cjs');
+const { initLogger } = require('./logs/logger.cjs');
+const { loadSettings } = require('./lib/config.cjs');
+const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow.cjs');
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -18,7 +18,7 @@ if (!gotTheLock) {
   app.on('second-instance', () => {
     const settings = loadSettings();
     if (settings.isLockEnabled === 1) {
-      require('./window/lockWindow').toggleLock();
+      require('./window/lockWindow.cjs').toggleLock();
       return;
     }
     const mainWindow = getMainWindow();
@@ -70,7 +70,7 @@ app.whenReady().then(async () => {
 app.on('activate', () => {
   const settings = loadSettings();
   if (settings.isLockEnabled === 1) {
-    require('./window/lockWindow').toggleLock();
+    require('./window/lockWindow.cjs').toggleLock();
     return;
   }
   if (getMainWindow()) {

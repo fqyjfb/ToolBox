@@ -10,6 +10,18 @@ interface CachedIconProps {
   onError?: () => void;
 }
 
+const getProxiedUrl = (url: string): string => {
+  const raw = (url || '').trim();
+  if (!raw) return '';
+  if (/^(data|blob):/i.test(raw)) return raw;
+  
+  try {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(raw)}`;
+  } catch {
+    return raw;
+  }
+};
+
 const CachedIcon: React.FC<CachedIconProps> = ({
   src,
   alt,
@@ -24,10 +36,15 @@ const CachedIcon: React.FC<CachedIconProps> = ({
 
   const fetchImage = useCallback(async () => {
     if (!src || !src.trim()) {
+      setImageSrc(null);
       setIsLoading(false);
       setHasError(true);
       return;
     }
+
+    setIsLoading(true);
+    setHasError(false);
+    setImageSrc(null);
 
     try {
       const cachedResponse = await iconCacheService.get(src);
@@ -40,9 +57,10 @@ const CachedIcon: React.FC<CachedIconProps> = ({
         return;
       }
 
-      const response = await fetch(src, {
+      const proxiedUrl = getProxiedUrl(src);
+      const response = await fetch(proxiedUrl, {
         mode: 'cors',
-        cache: 'default'
+        cache: 'no-cache'
       });
 
       if (!response.ok) {

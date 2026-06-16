@@ -2,7 +2,7 @@ const { BrowserWindow, ipcMain, dialog, screen } = require('electron');
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
-const { loadSettings, saveSettings } = require('../lib/config');
+const { loadSettings, saveSettings } = require('../lib/config.cjs');
 
 let lockWindow = null;
 let dragOffset = { x: 0, y: 0 };
@@ -54,7 +54,7 @@ const createLockWindow = () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, './lock/lock-preload.js'),
+      preload: path.join(__dirname, './lock/lock-preload.cjs'),
     },
   });
 
@@ -109,18 +109,18 @@ const lock = () => {
   settings.lockedAt = Date.now();
   saveSettings(settings);
 
-  const mainWindow = require('./mainWindow').getMainWindow();
+  const mainWindow = require('./mainWindow.cjs').getMainWindow();
   if (mainWindow) {
     mainWindow.hide();
   }
 
-  const floatWindow = require('./floatWindow').getFloatWindow();
+  const floatWindow = require('./floatWindow.cjs').getFloatWindow();
   if (floatWindow) {
     floatWindow.hide();
   }
 
   createLockWindow();
-  require('./tray').refreshTrayMenu();
+  require('./tray.cjs').refreshTrayMenu();
 
   return true;
 };
@@ -138,7 +138,7 @@ const lockOrPrompt = () => {
       defaultId: 0
     }).then((result) => {
       if (result.response === 0) {
-        const mainWindow = require('./mainWindow').getMainWindow();
+        const mainWindow = require('./mainWindow.cjs').getMainWindow();
         if (mainWindow) {
           mainWindow.show();
           mainWindow.focus();
@@ -158,7 +158,7 @@ const unlock = () => {
   settings.lockedAt = null;
   saveSettings(settings);
 
-  require('./mainWindow').resetAutoLockTimer();
+  require('./mainWindow.cjs').resetAutoLockTimer();
 
   if (lockWindow) {
     lockWindow.removeAllListeners('close');
@@ -166,12 +166,12 @@ const unlock = () => {
     lockWindow = null;
   }
 
-  require('../main').createWindowOnUnlock();
-  require('./tray').refreshTrayMenu();
+  require('../main.cjs').createWindowOnUnlock();
+  require('./tray.cjs').refreshTrayMenu();
 
   setTimeout(() => {
     if (settings.isFloatWindowEnabled === 1) {
-      require('./floatWindow').createFloatWindow();
+      require('./floatWindow.cjs').createFloatWindow();
     }
   }, 500);
 };
@@ -243,8 +243,8 @@ const registerLockIpcHandlers = () => {
         settings.lockPassword = hash;
         saveSettings(settings);
 
-        require('./mainWindow').resetAutoLockTimer();
-        require('./mainWindow').startAutoLock();
+        require('./mainWindow.cjs').resetAutoLockTimer();
+        require('./mainWindow.cjs').startAutoLock();
       } else {
         if (fs.existsSync(passwordFile)) {
           fs.unlinkSync(passwordFile);
@@ -254,7 +254,7 @@ const registerLockIpcHandlers = () => {
         settings.lockPassword = '';
         saveSettings(settings);
 
-        require('./mainWindow').stopAutoLock();
+        require('./mainWindow.cjs').stopAutoLock();
       }
 
       return { success: true };
@@ -311,7 +311,7 @@ const checkLockOnStartup = () => {
     settings.lockedAt = Date.now();
     saveSettings(settings);
     
-    require('./mainWindow').resetAutoLockTimer();
+    require('./mainWindow.cjs').resetAutoLockTimer();
     
     createLockWindow();
     return true;

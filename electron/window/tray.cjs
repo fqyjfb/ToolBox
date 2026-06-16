@@ -2,7 +2,7 @@ const { Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
-const { loadSettings } = require('../lib/config');
+const { loadSettings } = require('../lib/config.cjs');
 
 let tray = null;
 
@@ -46,10 +46,10 @@ const createTray = () => {
     tray.on('click', () => {
       const settings = loadSettings();
       if (settings.isLockEnabled === 1) {
-        require('./lockWindow').toggleLock();
+        require('./lockWindow.cjs').toggleLock();
         return;
       }
-      const mainWindow = require('./mainWindow').getMainWindow();
+      const mainWindow = require('./mainWindow.cjs').getMainWindow();
       if (mainWindow && mainWindow.isVisible()) {
         mainWindow.hide();
       } else if (mainWindow) {
@@ -70,7 +70,7 @@ const refreshTrayMenu = () => {
       {
         label: '解锁',
         click: () => {
-          require('./lockWindow').toggleLock();
+          require('./lockWindow.cjs').toggleLock();
         },
       },
       { type: 'separator' },
@@ -84,7 +84,7 @@ const refreshTrayMenu = () => {
 
   const checkLockAndShow = (callback) => {
     if (settings.isLockEnabled === 1) {
-      require('./lockWindow').toggleLock();
+      require('./lockWindow.cjs').toggleLock();
       return;
     }
     callback();
@@ -95,7 +95,7 @@ const refreshTrayMenu = () => {
       label: '新建待办',
       click: () => {
         checkLockAndShow(() => {
-          const mainWindow = require('./mainWindow').getMainWindow();
+          const mainWindow = require('./mainWindow.cjs').getMainWindow();
           if (mainWindow) {
             mainWindow.show();
             mainWindow.focus();
@@ -137,7 +137,7 @@ const refreshTrayMenu = () => {
           label: floatWindowLabel,
           click: () => {
             checkLockAndShow(() => {
-              require('./floatWindow').toggleFloatWindow();
+              require('./floatWindow.cjs').toggleFloatWindow();
             });
           },
         },
@@ -157,7 +157,7 @@ const refreshTrayMenu = () => {
           label: '设置',
           click: () => {
             checkLockAndShow(() => {
-              const mainWindow = require('./mainWindow').getMainWindow();
+              const mainWindow = require('./mainWindow.cjs').getMainWindow();
               if (mainWindow) { mainWindow.show(); mainWindow.webContents.send('navigate-to', '/settings'); }
             });
           },
@@ -166,7 +166,7 @@ const refreshTrayMenu = () => {
           label: '日志',
           click: () => {
             checkLockAndShow(() => {
-              require('../logs/window').openLogWindow();
+              require('../logs/window.cjs').openLogWindow();
             });
           },
         },
@@ -177,7 +177,7 @@ const refreshTrayMenu = () => {
     {
       label: '锁定',
       click: () => {
-        require('./lockWindow').lockOrPrompt();
+        require('./lockWindow.cjs').lockOrPrompt();
       },
     },
     { type: 'separator' },

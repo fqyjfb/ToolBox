@@ -340,8 +340,9 @@ function readFile(filePath) {
 
 function saveFile(filePath, content) {
   try {
-    if (!fs.existsSync(filePath)) {
-      return { success: false, error: '文件不存在' };
+    const dirPath = path.dirname(filePath);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
     }
 
     fs.writeFileSync(filePath, content, 'utf-8');

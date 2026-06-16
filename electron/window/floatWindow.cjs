@@ -2,7 +2,7 @@ const { BrowserWindow, Menu, screen, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
-const { loadSettings, saveSettings, loadFloatConfig } = require('../lib/config');
+const { loadSettings, saveSettings, loadFloatConfig } = require('../lib/config.cjs');
 
 let floatWindow = null;
 let dragOffset = { x: 0, y: 0 };
@@ -57,7 +57,7 @@ const createFloatWindow = () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, './float/float-preload.js'),
+      preload: path.join(__dirname, './float/float-preload.cjs'),
     },
   });
 
@@ -133,10 +133,10 @@ const toggleFloatWindow = () => {
     saveSettings(settings);
   }
   
-  const mainWindow = require('./mainWindow').getMainWindow();
+  const mainWindow = require('./mainWindow.cjs').getMainWindow();
   mainWindow?.webContents.send('setting-changed', { name: 'isFloatWindowEnabled', value: settings.isFloatWindowEnabled });
   
-  require('./tray').refreshTrayMenu();
+  require('./tray.cjs').refreshTrayMenu();
   
   return settings.isFloatWindowEnabled;
 };
@@ -149,21 +149,21 @@ const registerFloatIpcHandlers = () => {
   
   ipcMain.on('float-window-action', (event, action) => {
     if (action === 'toggle-lock') {
-      require('./lockWindow').toggleLock();
+      require('./lockWindow.cjs').toggleLock();
       return;
     }
     
     const settings = loadSettings();
     const checkLockAndShow = (callback) => {
       if (settings.isLockEnabled === 1) {
-        require('./lockWindow').toggleLock();
+        require('./lockWindow.cjs').toggleLock();
         return false;
       }
       callback();
       return true;
     };
     
-    const mainWindow = require('./mainWindow').getMainWindow();
+    const mainWindow = require('./mainWindow.cjs').getMainWindow();
     
     if (action.startsWith('open-app:')) {
       const appPath = action.replace('open-app:', '');
@@ -242,13 +242,13 @@ const registerFloatIpcHandlers = () => {
     const settings = loadSettings();
     
     if (settings.isLockEnabled === 1) {
-      require('./lockWindow').toggleLock();
+      require('./lockWindow.cjs').toggleLock();
       return;
     }
     
     const checkLockAndShow = (callback) => {
       if (settings.isLockEnabled === 1) {
-        require('./lockWindow').toggleLock();
+        require('./lockWindow.cjs').toggleLock();
         return;
       }
       callback();
@@ -258,7 +258,7 @@ const registerFloatIpcHandlers = () => {
         label: '主窗口',
         click: () => { 
           checkLockAndShow(() => {
-            const mainWindow = require('./mainWindow').getMainWindow();
+            const mainWindow = require('./mainWindow.cjs').getMainWindow();
             if (mainWindow) { mainWindow.show(); mainWindow.focus(); } 
           });
         }
@@ -267,7 +267,7 @@ const registerFloatIpcHandlers = () => {
         label: '设置',
         click: () => { 
           checkLockAndShow(() => {
-            const mainWindow = require('./mainWindow').getMainWindow();
+            const mainWindow = require('./mainWindow.cjs').getMainWindow();
             if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/settings'); } 
           });
         }
@@ -281,9 +281,9 @@ const registerFloatIpcHandlers = () => {
             settings.isFloatWindowEnabled = 0;
             saveSettings(settings);
             if (floatWindow) { floatWindow.close(); floatWindow = null; }
-            const mainWindow = require('./mainWindow').getMainWindow();
+            const mainWindow = require('./mainWindow.cjs').getMainWindow();
             mainWindow?.webContents.send('setting-changed', { name: 'isFloatWindowEnabled', value: 0 });
-            require('./tray').refreshTrayMenu();
+            require('./tray.cjs').refreshTrayMenu();
           });
         }
       }

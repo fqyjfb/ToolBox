@@ -11,7 +11,7 @@ const {
   setLogWindow,
   getLogWindow,
   importLogs
-} = require('./logger');
+} = require('./logger.cjs');
 
 let logWindow = null;
 let logIpcHandlersRegistered = false;
@@ -35,7 +35,7 @@ function createLogWindow() {
     frame: false,
     titleBarStyle: 'hidden',
     webPreferences: {
-      preload: path.join(__dirname, '../preload.js'),
+      preload: path.join(__dirname, '../preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false
     },

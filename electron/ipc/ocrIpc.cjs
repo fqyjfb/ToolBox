@@ -8,8 +8,8 @@
 const { ipcMain } = require("electron");
 
 let ocrIpcRegistered = false;
-const { get, post, waitForPythonApi } = require("../services/pythonApiClient");
-const { startPythonService, stopPythonService, isRunning, resetIdleTimer, getPythonServiceInfo } = require("../services/pythonProcessService");
+const { get, post, waitForPythonApi } = require("../services/pythonApiClient.cjs");
+const { startPythonService, stopPythonService, isRunning, resetIdleTimer, getPythonServiceInfo } = require("../services/pythonProcessService.cjs");
 
 function formatError(error) {
   const errorStr = String(error);

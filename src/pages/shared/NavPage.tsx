@@ -1,49 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Star, StarOff, Menu, Globe, ChevronDown, Search } from 'lucide-react'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import CachedIcon from '../../components/ui/CachedIcon'
 import { websiteService } from '../../services/WebsiteService'
 import { supabase } from '../../services/supabase'
 import { useNavSearch } from '../../contexts/NavSearchContext'
 import { openUrl } from '../../services/browserService'
 import './NavPage.css'
-
-// 检测是否为国外域名
-const isForeignDomain = (url: string): boolean => {
-  try {
-    const hostname = new URL(url).hostname.toLowerCase()
-    // 常见的国内域名后缀
-    const domesticDomains = [
-      '.cn', '.com.cn', '.net.cn', '.org.cn', '.gov.cn', '.edu.cn',
-      '.hk', '.macau', '.tw'
-    ]
-    // 检查是否包含国内域名后缀
-    return !domesticDomains.some(suffix => hostname.endsWith(suffix))
-  } catch {
-    return true
-  }
-}
-
-// 默认图标路径，使用相对路径以支持 Electron 打包环境
-const defaultIconPath = './网址.png'
-
-// 图片代理函数，用于解决部分图片无法加载的问题
-const proxyImageUrl = (url: string): string => {
-  const raw = (url || '').trim()
-  if (!raw) return defaultIconPath
-  // 允许 data/blob URLs
-  if (/^(data|blob):/i.test(raw)) return raw
-  // 对于国外域名的图片，直接使用国内代理服务
-  if (isForeignDomain(raw)) {
-    try {
-      return `https://images.weserv.nl/?url=${encodeURIComponent(raw)}`
-    } catch {
-      return defaultIconPath
-    }
-  }
-  // 国内域名的图片直接加载
-  return raw
-}
 
 // 类型定义
 export interface Category {
@@ -75,7 +37,6 @@ export interface Bookmark {
 
 
 const NavPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   
@@ -90,7 +51,6 @@ const NavPage: React.FC = () => {
   
   const [showFavorites, setShowFavorites] = useState(false)
   const [favorites, setFavorites] = useState<Bookmark[]>([])
-  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
   
   const [categoriesTree, setCategoriesTree] = useState<Category[]>([])
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
@@ -160,12 +120,20 @@ const NavPage: React.FC = () => {
       }
     }
     
-    setIsLoading(true)
     setHasError(false)
     setErrorMessage('')
     
     try {
       const categories = await websiteService.getCategories()
+      
+      const categoriesTreeData = websiteService.buildCategoryTree(categories)
+      setCategoriesTree(categoriesTreeData)
+      
+      if (categoriesTreeData.length > 0) {
+        const firstCatId = categoriesTreeData[0].id
+        setActiveSubCategoryIds({ [firstCatId]: 'all' })
+        setActiveMainCategoryId(firstCatId)
+      }
       
       const [bookmarksData, userFavorites] = await Promise.all([
         websiteService.getPublicBookmarks(),
@@ -178,8 +146,6 @@ const NavPage: React.FC = () => {
         is_favorite: favoriteIds.includes(bookmark.id)
       }))
       
-      const categoriesTreeData = websiteService.buildCategoryTree(categories)
-      setCategoriesTree(categoriesTreeData)
       setBookmarks(bookmarksWithFavorites)
       
       cacheRef.current = {
@@ -188,17 +154,9 @@ const NavPage: React.FC = () => {
         lastLoaded: Date.now()
       }
       isInitializedRef.current = true
-      
-      if (categoriesTreeData.length > 0) {
-        const firstCatId = categoriesTreeData[0].id
-        setActiveSubCategoryIds({ [firstCatId]: 'all' })
-        setActiveMainCategoryId(firstCatId)
-      }
     } catch (err) {
       setHasError(true)
       setErrorMessage('数据加载过程中遇到问题，部分内容可能无法显示: ' + ((err as Error).message || ''))
-    } finally {
-      setIsLoading(false)
     }
   }, [loadUserFavorites, activeMainCategoryId])
 
@@ -381,16 +339,11 @@ const NavPage: React.FC = () => {
     
     if (!showFavorites) {
       setActiveMainCategoryId(null)
-      // 加载用户收藏
-      setIsLoadingFavorites(true)
       try {
-        // 使用已有的分类数据，避免重复请求
         const userFavorites = await loadUserFavorites(categoriesTree.flatMap(cat => [cat, ...cat.children]))
         setFavorites(userFavorites)
       } catch {
         setFavorites([])
-      } finally {
-        setIsLoadingFavorites(false)
       }
     } else {
       if (!activeMainCategoryId && categoriesTree.length > 0) {
@@ -535,14 +488,6 @@ const NavPage: React.FC = () => {
       return () => contentElement.removeEventListener('scroll', handleScroll)
     }
   }, [handleScroll])
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
 
   if (hasError) {
     return (
@@ -737,7 +682,7 @@ const NavPage: React.FC = () => {
                         <div className="icon-category-container">
                           {bookmark.ico_url ? (
                             <CachedIcon
-                              src={proxyImageUrl(bookmark.ico_url)}
+                              src={bookmark.ico_url || null}
                               alt={bookmark.title}
                               className="bookmark-icon"
                               defaultIcon={
@@ -793,11 +738,7 @@ const NavPage: React.FC = () => {
               {/* 我的收藏内容 */}
               {activeFavorites && (
                 <div>
-                  {isLoadingFavorites ? (
-                    <div className="flex items-center justify-center py-8">
-                      <LoadingSpinner size="md" />
-                    </div>
-                  ) : favorites.length > 0 ? (
+                  {favorites.length > 0 ? (
                     <div>
                       <div className="subcategory-nav flex flex-wrap gap-2 mb-4">
                         <button
@@ -832,7 +773,7 @@ const NavPage: React.FC = () => {
                                 <div className="icon-category-container">
                                   {bookmark.ico_url ? (
                                     <CachedIcon
-                                      src={proxyImageUrl(bookmark.ico_url)}
+                                      src={bookmark.ico_url || null}
                                       alt={bookmark.title}
                                       className="bookmark-icon"
                                       defaultIcon={
@@ -951,7 +892,7 @@ const NavPage: React.FC = () => {
                               <div className="icon-category-container">
                                 {bookmark.ico_url ? (
                                   <CachedIcon
-                                    src={proxyImageUrl(bookmark.ico_url)}
+                                    src={bookmark.ico_url || null}
                                     alt={bookmark.title}
                                     className="bookmark-icon"
                                     defaultIcon={

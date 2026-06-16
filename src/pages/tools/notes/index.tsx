@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNotes } from '@/hooks/useNotes';
+import { useChatNotes } from './hooks/useChatNotes';
 import FolderSelectModal from './components/FolderSelectModal';
 import NotesSidebar from './components/NotesSidebar';
 import NotesEditor from './components/NotesEditor';
+import { ChatMessageList } from './components/ChatMessageList';
+import { ChatInput } from './components/ChatInput';
 
 const NotesPage: React.FC = () => {
   const {
     hasRootPath,
+    rootPath,
     fileTree,
     selectedFile,
     fileContent,
@@ -27,6 +31,36 @@ const NotesPage: React.FC = () => {
     changeFolder,
   } = useNotes();
 
+  const {
+    isChatMode,
+    setIsChatMode,
+    messages,
+    selectedMessages,
+    sendMessage,
+    toggleMessageDone,
+    toggleMessageSelection,
+    clearSelection,
+    moveMessages,
+    refreshMessages,
+  } = useChatNotes({ rootPath, onRefreshFileTree: refreshFileTree });
+
+  useEffect(() => {
+    if (isChatMode) {
+      refreshMessages();
+    }
+  }, [isChatMode, refreshMessages]);
+
+  const handleToggleChatMode = () => {
+    setIsChatMode(!isChatMode);
+  };
+
+  const handleSelectFile = (file: typeof selectedFile) => {
+    if (file) {
+      setIsChatMode(false);
+      selectFile(file);
+    }
+  };
+
   if (!hasRootPath) {
     return (
       <div className="h-full flex flex-col overflow-hidden">
@@ -41,7 +75,7 @@ const NotesPage: React.FC = () => {
         <NotesSidebar
           fileTree={fileTree}
           selectedFile={selectedFile}
-          onSelectFile={selectFile}
+          onSelectFile={handleSelectFile}
           onToggleFolder={toggleFolderExpand}
           onCreateFolder={createFolder}
           onCreateFolderForce={createFolderForce}
@@ -53,14 +87,45 @@ const NotesPage: React.FC = () => {
           onRebuildIndex={rebuildIndex}
           onChangeFolder={changeFolder}
           loading={loading}
+          isChatMode={isChatMode}
+          onToggleChatMode={handleToggleChatMode}
         />
 
-        <NotesEditor
-          selectedFile={selectedFile}
-          content={fileContent}
-          onContentChange={updateFileContent}
-          onSave={saveFile}
-        />
+        {isChatMode ? (
+          <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-gray-900">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white">聊天记录</h2>
+                <p className="text-xs text-gray-400">快速记录想法，稍后整理</p>
+              </div>
+              {selectedMessages.length > 0 && (
+                <button
+                  className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  onClick={clearSelection}
+                >
+                  清除选择 ({selectedMessages.length})
+                </button>
+              )}
+            </div>
+
+            <ChatMessageList
+              messages={messages}
+              selectedMessages={selectedMessages}
+              onToggleDone={toggleMessageDone}
+              onToggleSelection={toggleMessageSelection}
+              onMove={moveMessages}
+            />
+
+            <ChatInput onSend={sendMessage} />
+          </div>
+        ) : (
+          <NotesEditor
+            selectedFile={selectedFile}
+            content={fileContent}
+            onContentChange={updateFileContent}
+            onSave={saveFile}
+          />
+        )}
       </main>
     </div>
   );

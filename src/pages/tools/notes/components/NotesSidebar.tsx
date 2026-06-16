@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink } from 'lucide-react';
+import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle } from 'lucide-react';
 import ContextMenu, { ContextMenuItem } from '@/components/ui/ContextMenu';
 
 export interface FileTreeNode {
@@ -27,6 +27,8 @@ interface NotesSidebarProps {
   onRebuildIndex?: () => Promise<void>;
   onChangeFolder?: () => Promise<boolean>;
   loading: boolean;
+  isChatMode: boolean;
+  onToggleChatMode: () => void;
 }
 
 const FileTreeItem: React.FC<{
@@ -262,6 +264,8 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   onRebuildIndex,
   onChangeFolder,
   loading,
+  isChatMode,
+  onToggleChatMode,
 }) => {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -504,6 +508,18 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-2">
+        <div
+          className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 mb-2 transition-colors ${
+            isChatMode
+              ? 'border-l-2 border-blue-500 bg-blue-50 text-blue-600'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+          }`}
+          onClick={onToggleChatMode}
+        >
+          <MessageCircle className="w-4 h-4" />
+          <span className="flex-1 truncate text-sm">对话</span>
+        </div>
+
         {fileTree.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-gray-400">
             <FolderOpen className="mb-2 h-12 w-12" />

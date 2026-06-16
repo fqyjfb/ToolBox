@@ -4,10 +4,10 @@ const url = require('url');
 const fs = require('fs');
 const crypto = require('crypto');
 const { execFile } = require('child_process');
-const { loadSettings, saveSettings } = require('../lib/config');
-const ShortcutManager = require('../lib/shortcutManager');
-const notesService = require('../services/notesService');
-const { getFloatWindow } = require('./floatWindow');
+const { loadSettings, saveSettings } = require('../lib/config.cjs');
+const ShortcutManager = require('../lib/shortcutManager.cjs');
+const notesService = require('../services/notesService.cjs');
+const { getFloatWindow } = require('./floatWindow.cjs');
 
 let mainWindow = null;
 let memoryCleanupTimer = null;
@@ -25,7 +25,7 @@ const shortcutManager = new ShortcutManager();
 const checkLockAndShowMain = (callback) => {
   const settings = loadSettings();
   if (settings.isLockEnabled === 1) {
-    require('./lockWindow').toggleLock();
+    require('./lockWindow.cjs').toggleLock();
     return false;
   }
   if (callback) callback();
@@ -104,13 +104,13 @@ const shortcutFunctions = {
     }
   },
   lockToggle: () => {
-    const { loadSettings } = require('../lib/config');
+    const { loadSettings } = require('../lib/config.cjs');
     const settings = loadSettings();
 
     if (settings.isLockEnabled === 1) {
-      require('./lockWindow').toggleLock();
+      require('./lockWindow.cjs').toggleLock();
     } else {
-      require('./lockWindow').lockOrPrompt();
+      require('./lockWindow.cjs').lockOrPrompt();
     }
   },
 };
@@ -129,7 +129,7 @@ const isSupportedFileType = (filePath) => {
 };
 
 const initShortcuts = () => {
-  const { loadShortcuts } = require('../lib/config');
+  const { loadShortcuts } = require('../lib/config.cjs');
   shortcutManager.unregisterAll();
   const shortcuts = loadShortcuts();
   shortcuts.forEach((shortcut) => {
@@ -227,14 +227,14 @@ const startAutoLock = () => {
         const currentThreshold = (currentSettings.autoLockTimeout || 600) * 1000;
         
         if (idleMs >= 0 && idleMs >= currentThreshold) {
-          require('./lockWindow').lock();
+          require('./lockWindow.cjs').lock();
         }
       });
     } else {
       const elapsed = Date.now() - lastActivityTime;
       const currentThreshold = (currentSettings.autoLockTimeout || 600) * 1000;
       if (elapsed >= currentThreshold) {
-        require('./lockWindow').lock();
+        require('./lockWindow.cjs').lock();
       }
     }
   }, checkInterval);
@@ -274,7 +274,7 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     icon: iconPath,
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, '../preload.js'),
+      preload: path.join(__dirname, '../preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
@@ -379,7 +379,7 @@ const registerIpcHandlers = () => {
   ipcHandlersRegistered = true;
   
   const { ipcMain } = require('electron');
-  const { loadShortcuts, saveShortcuts, loadFloatConfig, saveFloatConfig, defaultFloatConfig } = require('../lib/config');
+  const { loadShortcuts, saveShortcuts, loadFloatConfig, saveFloatConfig, defaultFloatConfig } = require('../lib/config.cjs');
 
   ipcMain.on('window-minimize', () => { mainWindow.minimize(); });
   ipcMain.on('window-maximize', () => {
@@ -442,7 +442,7 @@ const registerIpcHandlers = () => {
     }
   });
 
-  const logger = require('../logs/logger');
+  const logger = require('../logs/logger.cjs');
 
   const getShortcutTarget = (shortcutPath) => {
     return new Promise((resolve) => {

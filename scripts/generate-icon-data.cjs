@@ -50,6 +50,6 @@ const jsContent = `// 自动生成的图标数据 - 请勿手动修改
 `;
 
 // 写入到 electron/lib 目录
-fs.writeFileSync(path.join(__dirname, '../electron/lib/icon-data.js'), jsContent);
-console.log('✓ 已生成 electron/lib/icon-data.js');
+fs.writeFileSync(path.join(__dirname, '../electron/lib/icon-data.cjs'), jsContent);
+console.log('✓ 已生成 electron/lib/icon-data.cjs');
 

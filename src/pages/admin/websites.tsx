@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Edit, Trash2, Search, ExternalLink, X, List, Check } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, ExternalLink, X, List, Check, Download, Globe } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/AuthStore'
 import { useToastStore } from '../../store/toastStore'
@@ -13,34 +13,6 @@ import ContextMenu from '../../components/ui/ContextMenu'
 import Switch from '../../components/ui/Switch'
 import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager'
 import CachedIcon from '../../components/ui/CachedIcon'
-import linkIcon from '../../assets/react.svg'
-
-const isForeignDomain = (url: string): boolean => {
-  try {
-    const hostname = new URL(url).hostname.toLowerCase()
-    const domesticDomains = [
-      '.cn', '.com.cn', '.net.cn', '.org.cn', '.gov.cn', '.edu.cn',
-      '.hk', '.macau', '.tw'
-    ]
-    return !domesticDomains.some(suffix => hostname.endsWith(suffix))
-  } catch {
-    return true
-  }
-}
-
-const proxyImageUrl = (url: string): string => {
-  const raw = (url || '').trim()
-  if (!raw) return linkIcon
-  if (/^(data|blob):/i.test(raw)) return raw
-  if (isForeignDomain(raw)) {
-    try {
-      return `https://images.weserv.nl/?url=${encodeURIComponent(raw)}`
-    } catch {
-      return raw
-    }
-  }
-  return raw
-}
 
 const AdminWebsitesPage: React.FC = () => {
   const { isAuthenticated, getCurrentAdmin } = useAuthStore()
@@ -66,6 +38,7 @@ const AdminWebsitesPage: React.FC = () => {
   const [selectedMainCategory, setSelectedMainCategory] = useState('')
   const [selectedSubCategory, setSelectedSubCategory] = useState('')
   const [bookmarkError, setBookmarkError] = useState('')
+  const [isFetchingWebsiteInfo, setIsFetchingWebsiteInfo] = useState(false)
   
   // 删除确认对话框状态
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
@@ -392,6 +365,44 @@ const AdminWebsitesPage: React.FC = () => {
     }))
   }
 
+  const fetchWebsiteInfo = async () => {
+    const url = bookmarkFormData.url.trim()
+    if (!url) {
+      addToast({ message: '请先输入网址', type: 'warning' })
+      return
+    }
+
+    try {
+      new URL(url)
+    } catch {
+      addToast({ message: '请输入有效的URL地址', type: 'warning' })
+      return
+    }
+
+    setIsFetchingWebsiteInfo(true)
+    
+    try {
+      const response = await fetch(`https://api.ahfi.cn/api/websiteinfo?url=${encodeURIComponent(url)}`)
+      const result = await response.json()
+      
+      if (result.code === 200 && result.data) {
+        setBookmarkFormData(prev => ({
+          ...prev,
+          title: result.data.title || prev.title,
+          description: result.data.description || prev.description,
+          ico_url: result.data.ico_url || prev.ico_url
+        }))
+        addToast({ message: '获取网站信息成功', type: 'success' })
+      } else {
+        addToast({ message: result.message || '获取网站信息失败', type: 'error' })
+      }
+    } catch {
+      addToast({ message: '获取网站信息失败，请检查网络连接', type: 'error' })
+    } finally {
+      setIsFetchingWebsiteInfo(false)
+    }
+  }
+
   const handleBookmarkSubmit = () => {
     if (!bookmarkFormData.title.trim() || !bookmarkFormData.url.trim() || !bookmarkFormData.category_id) {
       setBookmarkError('标题、网址和分类不能为空')
@@ -705,15 +716,30 @@ const AdminWebsitesPage: React.FC = () => {
               <label htmlFor="url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 网址
               </label>
-              <input
-                type="url"
-                id="url"
-                name="url"
-                value={bookmarkFormData.url}
-                onChange={handleBookmarkInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  id="url"
+                  name="url"
+                  value={bookmarkFormData.url}
+                  onChange={handleBookmarkInputChange}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={fetchWebsiteInfo}
+                  disabled={isFetchingWebsiteInfo}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="获取网站信息"
+                >
+                  {isFetchingWebsiteInfo ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <Download className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                  )}
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -789,10 +815,10 @@ const AdminWebsitesPage: React.FC = () => {
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
                 <CachedIcon
-                  src={bookmarkFormData.ico_url ? proxyImageUrl(bookmarkFormData.ico_url) : null}
+                  src={bookmarkFormData.ico_url || null}
                   alt="图标预览"
                   className="w-10 h-10 rounded-md object-cover border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex-shrink-0"
-                  defaultIcon={<img src={linkIcon} alt="图标" className="w-10 h-10" />}
+                  defaultIcon={<div className="w-10 h-10 flex items-center justify-center text-gray-500"><Globe className="w-5 h-5" /></div>}
                 />
               </div>
             </div>
@@ -838,15 +864,30 @@ const AdminWebsitesPage: React.FC = () => {
               <label htmlFor="edit-url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 网址
               </label>
-              <input
-                type="url"
-                id="edit-url"
-                name="url"
-                value={bookmarkFormData.url}
-                onChange={handleBookmarkInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  id="edit-url"
+                  name="url"
+                  value={bookmarkFormData.url}
+                  onChange={handleBookmarkInputChange}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={fetchWebsiteInfo}
+                  disabled={isFetchingWebsiteInfo}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="获取网站信息"
+                >
+                  {isFetchingWebsiteInfo ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <Download className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                  )}
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -922,10 +963,10 @@ const AdminWebsitesPage: React.FC = () => {
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
                 <CachedIcon
-                  src={bookmarkFormData.ico_url ? proxyImageUrl(bookmarkFormData.ico_url) : null}
+                  src={bookmarkFormData.ico_url || null}
                   alt="图标预览"
                   className="w-10 h-10 rounded-md object-cover border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex-shrink-0"
-                  defaultIcon={<img src={linkIcon} alt="图标" className="w-10 h-10" />}
+                  defaultIcon={<div className="w-10 h-10 flex items-center justify-center text-gray-500"><Globe className="w-5 h-5" /></div>}
                 />
               </div>
             </div>
