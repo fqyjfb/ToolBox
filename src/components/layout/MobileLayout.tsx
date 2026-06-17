@@ -7,9 +7,9 @@ interface MobileLayoutProps {
 
 const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg-secondary)', paddingBottom: 'calc(var(--space-8) + var(--space-3))' }}>
       <MobileNavbar />
-      <main className="px-4 py-4">
+      <main style={{ padding: 'var(--space-3)' }}>
         {children}
       </main>
     </div>

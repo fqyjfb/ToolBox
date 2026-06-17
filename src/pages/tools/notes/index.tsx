@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useNotes } from '@/hooks/useNotes';
 import { useChatNotes } from './hooks/useChatNotes';
 import FolderSelectModal from './components/FolderSelectModal';
@@ -8,6 +9,8 @@ import { ChatMessageList } from './components/ChatMessageList';
 import { ChatInput } from './components/ChatInput';
 
 const NotesPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const chatModeParam = searchParams.get('chatMode');
   const {
     hasRootPath,
     rootPath,
@@ -49,6 +52,12 @@ const NotesPage: React.FC = () => {
       refreshMessages();
     }
   }, [isChatMode, refreshMessages]);
+
+  useEffect(() => {
+    if (chatModeParam === '1' && !isChatMode) {
+      setIsChatMode(true);
+    }
+  }, [chatModeParam, isChatMode, setIsChatMode]);
 
   const handleToggleChatMode = () => {
     setIsChatMode(!isChatMode);

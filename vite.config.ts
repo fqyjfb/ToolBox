@@ -16,6 +16,14 @@ export default defineConfig(({ mode }) => {
     server: {
       port: isElectron ? 5174 : 5173,
       host: true,
+      proxy: {
+        '/api/news': {
+          target: 'https://60s.viki.moe/v2',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/news/, ''),
+          secure: true,
+        },
+      },
     },
     preview: {
       port: isElectron ? 5174 : 5173,

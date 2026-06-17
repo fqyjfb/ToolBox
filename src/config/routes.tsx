@@ -79,6 +79,11 @@ export const webRoutes: RouteConfig[] = [
   { path: '/nav', element: <NavPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/about', element: <About /> },
+  { path: '/tools', element: <ToolsPage /> },
+  { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
+  { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
+  { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
+  { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
   { path: '/tools/weather', element: <WeatherPage /> },
 ];
 
@@ -88,6 +93,11 @@ export const mobileRoutes: RouteConfig[] = [
   { path: '/nav', element: <NavPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/about', element: <About /> },
+  { path: '/tools', element: <ToolsPage /> },
+  { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
+  { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
+  { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
+  { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
   { path: '/tools/weather', element: <WeatherPage /> },
 ];
 

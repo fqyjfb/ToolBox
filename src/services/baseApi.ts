@@ -1,6 +1,15 @@
 const MAIN_URL = import.meta.env.VITE_HOTNEWS_API_URL || 'https://60s.viki.moe/v2';
 const FALLBACK_URL = import.meta.env.VITE_HOTNEWS_API_URL_FALLBACK || 'https://60s.mizhoubaobei.top/v2';
 
+const isWebDev = !import.meta.env.VITE_ELECTRON && import.meta.env.DEV;
+
+const getBaseUrl = () => {
+  if (isWebDev) {
+    return '/api/news';
+  }
+  return MAIN_URL;
+};
+
 const fetchWithUrl = async <T>(baseUrl: string, endpoint: string, options?: { signal?: AbortSignal }): Promise<T | null> => {
   const response = await fetch(`${baseUrl}${endpoint}`, {
     method: 'GET',
@@ -20,9 +29,10 @@ const fetchWithUrl = async <T>(baseUrl: string, endpoint: string, options?: { si
 export const baseApi = {
   async fetch<T>(endpoint: string, options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<T | null> {
     try {
-      let data = await fetchWithUrl<T>(MAIN_URL, endpoint, options);
+      const baseUrl = getBaseUrl();
+      let data = await fetchWithUrl<T>(baseUrl, endpoint, options);
       
-      if (!data && FALLBACK_URL && FALLBACK_URL !== MAIN_URL) {
+      if (!data && FALLBACK_URL && FALLBACK_URL !== MAIN_URL && baseUrl !== FALLBACK_URL) {
         data = await fetchWithUrl<T>(FALLBACK_URL, endpoint, options);
       }
       

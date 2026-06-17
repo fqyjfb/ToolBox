@@ -53,9 +53,10 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
 
     const currentContent = await (window.electron?.notes.readFile(chatFilePath) || Promise.resolve({ success: false }));
     let content = currentContent.success && currentContent.content ? currentContent.content : '';
-    
+
     const todayHeader = `#### ${generateTodayHeader()}`;
-    const formattedContent = `- [ ] \`${timestamp}\` ${text.trim()}\n`;
+    const lines = text.trim().split('\n');
+    const formattedContent = `- [ ] \`${timestamp}\` ${lines[0]}\n${lines.slice(1).map(l => `  ${l}`).join('\n')}\n`;
 
     if (!content.includes(todayHeader)) {
       if (content) content += '\n\n';

@@ -264,11 +264,15 @@ const registerFloatIpcHandlers = () => {
         }
       },
       {
-        label: '设置',
-        click: () => { 
+        label: '记事本',
+        click: () => {
           checkLockAndShow(() => {
             const mainWindow = require('./mainWindow.cjs').getMainWindow();
-            if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/settings'); } 
+            if (mainWindow) {
+              mainWindow.show();
+              mainWindow.focus();
+              mainWindow.webContents.send('open-notes-chat');
+            }
           });
         }
       },

@@ -6,6 +6,7 @@ import { useAuth } from '../../store/AuthStore';
 const navItems = [
   { path: '/', label: '首页' },
   { path: '/news', label: '热点资讯' },
+  { path: '/nav', label: '网址导航' },
   { path: '/tools', label: '工具库' },
 ];
 
@@ -61,29 +62,36 @@ const WebNavbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+    <header className="sticky top-0 z-50 shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderBottom: '1px solid var(--color-border)' }}>
       
-      <div className="max-w-7xl mx-auto px-4 py-2.5">
+      <div className="max-w-7xl mx-auto" style={{ padding: 'var(--space-2)', paddingLeft: 'var(--space-4)', paddingRight: 'var(--space-4)' }}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
+          <div className="flex items-center" style={{ gap: 'var(--space-2)' }} onClick={() => navigate('/')}>
             <img 
               src="./favicon.png" 
               alt="ToolBox Logo" 
-              className="w-8 h-8 rounded-lg logo-icon object-contain"
+              className="rounded-lg logo-icon object-contain"
+              style={{ width: 'calc(var(--space-5) * 0.8)', height: 'calc(var(--space-5) * 0.8)' }}
             />
-            <h1 className="text-base font-bold shine-text">ToolBox</h1>
+            <h1 className="font-bold shine-text" style={{ fontSize: 'var(--text-sm)' }}>ToolBox</h1>
           </div>
           
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center" style={{ gap: 'var(--space-1)' }}>
             {navItems.map((item) => (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all nav-item ${
+                className={`font-medium rounded-lg transition-all nav-item ${
                   isActive(item.path)
-                    ? 'text-gray-800 dark:text-white bg-gray-100 dark:bg-gray-700 active'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'active'
+                    : ''
                 }`}
+                style={{
+                  padding: 'var(--space-1-5) var(--space-3)',
+                  fontSize: 'var(--text-xs)',
+                  color: isActive(item.path) ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                  backgroundColor: isActive(item.path) ? 'var(--color-bg-tertiary)' : 'transparent',
+                }}
               >
                 {item.label}
               </button>
@@ -93,25 +101,34 @@ const WebNavbar: React.FC = () => {
               <>
                 <button
                   onClick={() => navigate('/tools/todo')}
-                  className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors nav-item flex items-center gap-1"
+                  className="nav-item flex items-center"
+                  style={{ gap: 'var(--space-1)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                 >
                   <ClipboardList className="w-4 h-4" />
                   待办
                 </button>
                 
-                <div className="relative ml-2">
+                <div className="relative" style={{ marginLeft: 'var(--space-2)' }}>
                   <button
                     onClick={handleUserButtonClick}
                     onContextMenu={handleUserButtonRightClick}
-                    className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors nav-item flex items-center gap-2 relative"
+                    className="nav-item flex items-center relative"
+                    style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                     title={isAuthenticated ? '点击进入个人信息，右键点击退出登录' : '点击进入登录页面'}
                   >
                     <User className="w-4 h-4" />
                     <span>{admin?.name || admin?.username || '个人中心'}</span>
                     <span
-                      className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer transition-transform hover:scale-110 ${
-                        isAuthenticated ? 'bg-green-500' : 'bg-gray-400'
-                      }`}
+                      className="absolute cursor-pointer transition-transform hover:scale-110"
+                      style={{
+                        top: '-2px',
+                        right: '-2px',
+                        width: 'var(--space-2)',
+                        height: 'var(--space-2)',
+                        borderRadius: '50%',
+                        border: '2px solid var(--color-card)',
+                        backgroundColor: isAuthenticated ? 'var(--color-success)' : 'var(--color-text-tertiary)',
+                      }}
                       onClick={handleStatusDotClick}
                       title={isAuthenticated ? '点击退出登录' : '未登录'}
                     />
@@ -120,11 +137,22 @@ const WebNavbar: React.FC = () => {
                   {showUserMenu && (
                     <div
                       ref={menuRef}
-                      className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-36"
+                      className="absolute right-0 top-full z-50"
+                      style={{
+                        marginTop: 'var(--space-1)',
+                        backgroundColor: 'var(--color-card)',
+                        borderRadius: 'var(--radius-md)',
+                        boxShadow: 'var(--shadow-md)',
+                        border: '1px solid var(--color-border)',
+                        paddingTop: 'var(--space-1)',
+                        paddingBottom: 'var(--space-1)',
+                        minWidth: 'var(--space-32)',
+                      }}
                     >
                       <button
                         onClick={handleLogout}
-                        className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 user-menu-item flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left user-menu-item flex items-center"
+                        style={{ gap: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                       >
                         <LogOut className="w-4 h-4" />
                         退出登录
@@ -141,7 +169,16 @@ const WebNavbar: React.FC = () => {
               >
                 登录
                 <span
-                  className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white bg-gray-400"
+                  className="absolute"
+                  style={{
+                    top: '-2px',
+                    right: '-2px',
+                    width: 'var(--space-2)',
+                    height: 'var(--space-2)',
+                    borderRadius: '50%',
+                    border: '2px solid var(--color-card)',
+                    backgroundColor: 'var(--color-text-tertiary)',
+                  }}
                   title="未登录"
                 />
               </button>
@@ -150,23 +187,26 @@ const WebNavbar: React.FC = () => {
 
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            className="md:hidden rounded-lg"
+            style={{ padding: 'var(--space-1-5)', color: 'var(--color-text-secondary)' }}
           >
             {isMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
         </div>
 
         {isMenuOpen && (
-          <nav className="md:hidden mt-2.5 pt-2.5 border-t border-gray-200 dark:border-gray-700">
+          <nav className="md:hidden border-t" style={{ marginTop: 'var(--space-2)', paddingTop: 'var(--space-2)', borderColor: 'var(--color-border)' }}>
             {navItems.map((item) => (
               <button
                 key={item.path}
                 onClick={() => { navigate(item.path); setIsMenuOpen(false); }}
-                className={`w-full px-3 py-1.5 text-left text-sm font-medium rounded-lg transition-colors ${
-                  isActive(item.path)
-                    ? 'text-gray-800 dark:text-white bg-gray-100 dark:bg-gray-700'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
+                className="w-full text-left font-medium rounded-lg transition-colors"
+                style={{
+                  padding: 'var(--space-1-5) var(--space-3)',
+                  fontSize: 'var(--text-xs)',
+                  color: isActive(item.path) ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                  backgroundColor: isActive(item.path) ? 'var(--color-bg-tertiary)' : 'transparent',
+                }}
               >
                 {item.label}
               </button>
@@ -175,21 +215,24 @@ const WebNavbar: React.FC = () => {
               <>
                 <button
                   onClick={() => { navigate('/tools/todo'); setIsMenuOpen(false); }}
-                  className="w-full px-3 py-1.5 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                  className="w-full text-left font-medium rounded-lg flex items-center"
+                  style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                 >
                   <ClipboardList className="w-4 h-4" />
                   待办
                 </button>
                 <button
                   onClick={() => { navigate('/tools/profile'); setIsMenuOpen(false); }}
-                  className="w-full px-3 py-1.5 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                  className="w-full text-left font-medium rounded-lg flex items-center"
+                  style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                 >
                   <User className="w-4 h-4" />
                   个人信息
                 </button>
                 <button
                   onClick={() => { handleLogout(); }}
-                  className="w-full px-3 py-1.5 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                  className="w-full text-left font-medium rounded-lg flex items-center"
+                  style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                 >
                   <LogOut className="w-4 h-4" />
                   退出登录
@@ -198,7 +241,8 @@ const WebNavbar: React.FC = () => {
             ) : (
               <button
                 onClick={() => { navigate('/login'); setIsMenuOpen(false); }}
-                className="w-full nav-btn-gradient justify-center mt-2"
+                className="w-full nav-btn-gradient justify-center"
+                style={{ marginTop: 'var(--space-2)' }}
               >
                 登录
               </button>

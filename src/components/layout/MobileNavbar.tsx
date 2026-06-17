@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Compass, Wrench, User, LogOut, ClipboardList } from 'lucide-react';
+import { Menu, X, Home, Compass, Wrench, User, LogOut, ClipboardList, Link, Clipboard, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../store/AuthStore';
 
 const bottomNavItems = [
@@ -69,22 +69,24 @@ const MobileNavbar: React.FC = () => {
   return (
     <>
       
-      <header className="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="px-4 py-2.5">
+      <header className="sticky top-0 z-50 shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderBottom: '1px solid var(--color-border)' }}>
+        <div style={{ padding: 'var(--space-2)', paddingLeft: 'var(--space-4)', paddingRight: 'var(--space-4)' }}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="flex items-center" style={{ gap: 'var(--space-2)' }} onClick={() => navigate('/')}>
               <img 
                 src="./favicon.png" 
                 alt="ToolBox Logo" 
-                className="w-7 h-7 rounded-lg object-contain"
+                className="rounded-lg object-contain"
+                style={{ width: 'calc(var(--space-5) * 0.7)', height: 'calc(var(--space-5) * 0.7)' }}
               />
-              <span className="text-base font-bold shine-text">ToolBox</span>
+              <span className="font-bold shine-text" style={{ fontSize: 'var(--text-sm)' }}>ToolBox</span>
             </div>
             
             <div className="relative">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                className="rounded-lg"
+                style={{ padding: 'var(--space-1-5)', color: 'var(--color-text-secondary)' }}
               >
                 {isMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </button>
@@ -92,78 +94,109 @@ const MobileNavbar: React.FC = () => {
           </div>
 
           {isMenuOpen && (
-            <nav className="mt-2.5 pt-2.5 border-t border-gray-200 dark:border-gray-700">
+            <nav className="border-t" style={{ marginTop: 'var(--space-2)', paddingTop: 'var(--space-2)', borderColor: 'var(--color-border)' }}>
               {isAuthenticated ? (
                 <>
                   <button
                     onClick={() => { navigate('/tools/todo'); setIsMenuOpen(false); }}
-                    className="w-full px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                    className="w-full text-left font-medium rounded-lg flex items-center"
+                    style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                   >
                     <ClipboardList className="w-4 h-4" />
                     待办事项
                   </button>
                   <button
                     onClick={() => { navigate('/tools/cloud-clipboard'); setIsMenuOpen(false); }}
-                    className="w-full px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                    className="w-full text-left font-medium rounded-lg flex items-center"
+                    style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                   >
-                    <span className="w-4 h-4 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-xs">📋</span>
+                    <Clipboard className="w-4 h-4" />
                     云剪贴板
                   </button>
                   <button
                     onClick={() => { navigate('/tools/quick-reply'); setIsMenuOpen(false); }}
-                    className="w-full px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                    className="w-full text-left font-medium rounded-lg flex items-center"
+                    style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                   >
-                    <span className="w-4 h-4 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-xs">💬</span>
+                    <MessageSquare className="w-4 h-4" />
                     快捷回复
                   </button>
                   <button
+                    onClick={() => { navigate('/nav'); setIsMenuOpen(false); }}
+                    className="w-full text-left font-medium rounded-lg flex items-center"
+                    style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
+                  >
+                    <Link className="w-4 h-4" />
+                    网址导航
+                  </button>
+                  <button
                     onClick={() => { navigate('/tools/profile'); setIsMenuOpen(false); }}
-                    className="w-full px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                    className="w-full text-left font-medium rounded-lg flex items-center"
+                    style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                   >
                     <User className="w-4 h-4" />
                     个人信息
                   </button>
                   <button
                     onClick={() => { handleLogout(); }}
-                    className="w-full px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                    className="w-full text-left font-medium rounded-lg flex items-center"
+                    style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
                   >
                     <LogOut className="w-4 h-4" />
                     退出登录
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => { navigate('/login'); setIsMenuOpen(false); }}
-                  className="w-full nav-btn-gradient justify-center"
-                >
-                  登录
-                </button>
+                <>
+                  <button
+                    onClick={() => { navigate('/nav'); setIsMenuOpen(false); }}
+                    className="w-full text-left font-medium rounded-lg flex items-center"
+                    style={{ gap: 'var(--space-2)', padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
+                  >
+                    <Link className="w-4 h-4" />
+                    网址导航
+                  </button>
+                  <button
+                    onClick={() => { navigate('/login'); setIsMenuOpen(false); }}
+                    className="w-full nav-btn-gradient justify-center"
+                  >
+                    登录
+                  </button>
+                </>
               )}
             </nav>
           )}
         </div>
       </header>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
-        <div className="flex items-center justify-around py-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50" style={{ backgroundColor: 'var(--color-card)', borderTop: '1px solid var(--color-border)' }}>
+        <div className="flex items-center justify-around" style={{ paddingTop: 'var(--space-2)' }}>
           {bottomNavItems.map((item, index) => (
             <button
               key={item.path}
               onClick={index === 3 ? handleUserButtonClick : () => navigate(item.path)}
               onContextMenu={index === 3 ? handleUserButtonRightClick : undefined}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 transition-colors relative ${
-                currentTab === index
-                  ? 'text-gray-800 dark:text-white bottom-nav-active'
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}
+              className={`flex flex-col items-center transition-colors relative bottom-nav-active`}
+              style={{
+                gap: '2px',
+                padding: '0 var(--space-3) var(--space-1-5) var(--space-3)',
+                color: currentTab === index ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
+              }}
             >
               <item.icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className="font-medium" style={{ fontSize: 'var(--text-xs)' }}>{item.label}</span>
               {index === 3 && (
                 <span
-                  className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-gray-800 cursor-pointer transition-transform hover:scale-110 ${
-                    isAuthenticated ? 'bg-green-500' : 'bg-gray-400'
-                  }`}
+                  className="absolute cursor-pointer transition-transform hover:scale-110"
+                  style={{
+                    top: '2px',
+                    right: 'var(--space-1)',
+                    width: 'calc(var(--space-2) * 0.8)',
+                    height: 'calc(var(--space-2) * 0.8)',
+                    borderRadius: '50%',
+                    border: '2px solid var(--color-card)',
+                    backgroundColor: isAuthenticated ? 'var(--color-success)' : 'var(--color-text-tertiary)',
+                  }}
                   onClick={handleStatusDotClick}
                   title={isAuthenticated ? '点击退出登录' : '未登录'}
                 />
@@ -175,11 +208,20 @@ const MobileNavbar: React.FC = () => {
         {showUserMenu && (
           <div
             ref={menuRef}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+            className="absolute bottom-full left-1/2 -translate-x-1/2 z-50"
+            style={{
+              marginBottom: 'var(--space-2)',
+              width: 'var(--space-32)',
+              backgroundColor: 'var(--color-card)',
+              borderRadius: 'var(--radius-md)',
+              boxShadow: 'var(--shadow-md)',
+              border: '1px solid var(--color-border)',
+            }}
           >
             <button
               onClick={handleLogout}
-              className="w-full px-4 py-2.5 text-left text-sm font-medium text-gray-700 dark:text-gray-300 user-menu-item flex items-center gap-2"
+              className="w-full text-left font-medium user-menu-item flex items-center"
+              style={{ gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
             >
               <LogOut className="w-4 h-4" />
               退出登录

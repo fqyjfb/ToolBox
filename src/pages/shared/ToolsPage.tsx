@@ -46,10 +46,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Folder,
 };
 
-const MY_TOOLS_IDS = ['todo', 'notes', 'quick-reply', 'cloud-clipboard', 'account', 'weather', 'navigation', 'news'];
+const BASE_TOOLS_IDS = ['todo', 'quick-reply', 'cloud-clipboard', 'account', 'weather', 'navigation', 'news'];
 
 const ToolsPage = () => {
   const navigate = useNavigate();
+  const isDesktop = isElectron();
   
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuX, setContextMenuX] = useState(0);
@@ -57,24 +58,26 @@ const ToolsPage = () => {
   const [selectedTool, setSelectedTool] = useState<HomeToolItem | null>(null);
 
   const myTools = useMemo(() => {
+    const toolIds = isDesktop ? [...BASE_TOOLS_IDS, 'notes'] : BASE_TOOLS_IDS;
     return ALL_TOOLS
-      .filter(tool => MY_TOOLS_IDS.includes(tool.id))
+      .filter(tool => toolIds.includes(tool.id))
       .map(tool => ({
         ...tool,
         icon: iconMap[tool.iconName] || Clipboard,
         textColor: 'var(--color-bg-primary)' as const,
       }));
-  }, []);
+  }, [isDesktop]);
 
   const newTools = useMemo(() => {
+    const toolIds = isDesktop ? [...BASE_TOOLS_IDS, 'notes'] : BASE_TOOLS_IDS;
     return ALL_TOOLS
-      .filter(tool => !MY_TOOLS_IDS.includes(tool.id) && (isElectron() || tool.id !== 'ocr'))
+      .filter(tool => !toolIds.includes(tool.id) && (isElectron() || tool.id !== 'ocr'))
       .map(tool => ({
         ...tool,
         icon: iconMap[tool.iconName] || Clipboard,
         textColor: 'var(--color-bg-primary)' as const,
       }));
-  }, []);
+  }, [isDesktop]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, tool: typeof myTools[0]) => {
     e.preventDefault();
@@ -143,33 +146,37 @@ const ToolsPage = () => {
   };
 
   return (
-    <div className="h-full p-6 overflow-auto" style={{ backgroundColor: 'var(--color-card)' }}>
+    <div className="h-full overflow-auto" style={{ backgroundColor: 'var(--color-card)', padding: 'var(--space-6)' }}>
       <div className="tools-page-content">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">我的工具</h2>
+        <div style={{ marginBottom: 'var(--space-6)' }}>
+          <h2 className="font-semibold mb-4" style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)' }}>我的工具</h2>
           <div className="tools-grid-wrapper">
             {myTools.map(renderToolCard)}
           </div>
         </div>
 
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">实用工具</h2>
-          <div className="tools-grid-wrapper">
-            {newTools.map(renderToolCard)}
+        {isDesktop && (
+          <div>
+            <h2 className="font-semibold" style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)' }}>实用工具</h2>
+            <div className="tools-grid-wrapper">
+              {newTools.map(renderToolCard)}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <ContextMenu
-        isOpen={contextMenuOpen}
-        x={contextMenuX}
-        y={contextMenuY}
-        items={getContextMenuItems()}
-        onClose={() => {
-          setContextMenuOpen(false);
-          setSelectedTool(null);
-        }}
-      />
+      {isDesktop && (
+        <ContextMenu
+          isOpen={contextMenuOpen}
+          x={contextMenuX}
+          y={contextMenuY}
+          items={getContextMenuItems()}
+          onClose={() => {
+            setContextMenuOpen(false);
+            setSelectedTool(null);
+          }}
+        />
+      )}
     </div>
   );
 };

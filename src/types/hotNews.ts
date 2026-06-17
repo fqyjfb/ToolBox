@@ -295,7 +295,7 @@ export interface AiNewsResponse {
 }
 
 // 热点平台类型
-export type HotNewsPlatform = 'douyin' | 'rednote' | 'bilibili' | 'quark' | 'weibo' | 'baidu' | 'toutiao' | 'zhihu' | 'dongchedi' | 'maoyan'
+export type HotNewsPlatform = 'douyin' | 'rednote' | 'quark' | 'weibo' | 'baidu' | 'toutiao' | 'zhihu' | 'dongchedi'
 
 // 摸鱼日报数据类型
 export interface MoyuResponse {

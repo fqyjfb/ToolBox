@@ -5,14 +5,12 @@ import type {
   HotNewsResponse,
   DouyinHotItem,
   RednoteHotItem,
-  BilibiliHotItem,
   QuarkHotItem,
   WeiboHotItem,
   BaiduHotItem,
   ToutiaoHotItem,
   ZhihuHotItem,
   DongchediHotItem,
-  MaoyanMovieResponse,
   UnifiedHotItem,
   HotNewsPlatform,
   SixtySecondsResponse,
@@ -25,14 +23,12 @@ import type {
 const PLATFORM_NAMES: Record<HotNewsPlatform, string> = {
   douyin: '抖音',
   rednote: '小红书',
-  bilibili: '哔哩哔哩',
   quark: '夸克',
   weibo: '微博',
   baidu: '百度',
   toutiao: '头条',
   zhihu: '知乎',
-  dongchedi: '懂车帝',
-  maoyan: '猫眼电影'
+  dongchedi: '懂车帝'
 };
 
 const fetchData = async <T>(url: string, options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<T | null> => {
@@ -69,11 +65,6 @@ const getRednoteHotNews = async (options?: { signal?: AbortSignal; forceRefresh?
   return data?.data || null;
 };
 
-const getBilibiliHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<BilibiliHotItem[] | null> => {
-  const data = await fetchData<HotNewsResponse<BilibiliHotItem>>('/bili', options);
-  return data?.data || null;
-};
-
 const getQuarkHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<QuarkHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<QuarkHotItem>>('/quark', options);
   return data?.data || null;
@@ -102,11 +93,6 @@ const getZhihuHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: 
 const getDongchediHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<DongchediHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<DongchediHotItem>>('/dongchedi', options);
   return data?.data || null;
-};
-
-const getMaoyanMovieNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<MaoyanMovieResponse | null> => {
-  const data = await fetchData<HotNewsResponse<MaoyanMovieResponse>>('/maoyan/realtime/movie', options);
-  return data?.data[0] || null;
 };
 
 const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotItem[] => {
@@ -138,19 +124,6 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
       
       case 'rednote': {
         const itemData = item as unknown as RednoteHotItem;
-        return {
-          ...baseItem,
-          title: itemData.title,
-          link: itemData.link,
-          hotValue: itemData.score,
-          rank: itemData.rank,
-          wordType: itemData.word_type,
-          workTypeIcon: itemData.work_type_icon
-        };
-      }
-      
-      case 'bilibili': {
-        const itemData = item as unknown as BilibiliHotItem;
         return {
           ...baseItem,
           title: itemData.title,
@@ -249,24 +222,6 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
         };
       }
       
-      case 'maoyan': {
-        const maoyanItem = item as unknown as { movie_name?: string; title?: string; movie_id?: string; box_office_desc?: string; score?: number; avg_seat_view?: string; avg_show_view?: string; release_info?: string; sum_box_desc?: string; split_box_desc?: string };
-        const boxOfficeDesc = maoyanItem.box_office_desc;
-        return {
-          ...baseItem,
-          title: maoyanItem.movie_name || maoyanItem.title || '',
-          link: `https://maoyan.com/films/${maoyanItem.movie_id}`,
-          hotValue: boxOfficeDesc ? parseInt(boxOfficeDesc.replace(/[^0-9]/g, '')) || 0 : maoyanItem.score || 0,
-          rank: index + 1,
-          avgSeatView: maoyanItem.avg_seat_view,
-          avgShowView: maoyanItem.avg_show_view,
-          releaseInfo: maoyanItem.release_info,
-          boxOfficeDesc: maoyanItem.box_office_desc,
-          sumBoxDesc: maoyanItem.sum_box_desc,
-          splitBoxDesc: maoyanItem.split_box_desc
-        };
-      }
-      
       default:
         return baseItem;
     }
@@ -283,9 +238,6 @@ export const hotNewsApi = {
         break;
       case 'rednote':
         data = await getRednoteHotNews(options);
-        break;
-      case 'bilibili':
-        data = await getBilibiliHotNews(options);
         break;
       case 'quark':
         data = await getQuarkHotNews(options);
@@ -305,10 +257,6 @@ export const hotNewsApi = {
       case 'dongchedi':
         data = await getDongchediHotNews(options);
         break;
-      case 'maoyan':
-        const maoyanData = await getMaoyanMovieNews(options);
-        data = maoyanData?.list || [];
-        break;
     }
     
     if (data) {
@@ -319,7 +267,7 @@ export const hotNewsApi = {
   },
   
   async getAllHotNews(options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<Record<HotNewsPlatform, UnifiedHotItem[]>> {
-    const platforms: HotNewsPlatform[] = ['douyin', 'rednote', 'bilibili', 'quark', 'weibo', 'baidu', 'toutiao', 'zhihu', 'dongchedi', 'maoyan'];
+    const platforms: HotNewsPlatform[] = ['douyin', 'rednote', 'quark', 'weibo', 'baidu', 'toutiao', 'zhihu', 'dongchedi'];
     
     const results: Record<HotNewsPlatform, UnifiedHotItem[]> = {} as Record<HotNewsPlatform, UnifiedHotItem[]>;
     

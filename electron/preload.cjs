@@ -19,6 +19,12 @@ ipcRenderer.on('open-add-todo', () => {
 
 
 
+ipcRenderer.on('open-notes-chat', () => {
+  if (navigateCallback) {
+    navigateCallback('/tools/notes?chatMode=1');
+  }
+});
+
 ipcRenderer.on('update-download-progress', (event, progress) => {
   if (downloadProgressCallback) {
     downloadProgressCallback(progress);

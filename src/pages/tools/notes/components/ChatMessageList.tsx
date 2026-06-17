@@ -111,8 +111,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                     {message.done && <Check className="h-4 w-4" />}
                   </button>
 
-                  <div className="ml-[76px] mr-12 p-3">
-                    <p className={`text-base leading-relaxed ${message.done ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                  <div className="ml-[76px] mr-12 p-3 break-words">
+                    <p className={`text-base leading-relaxed whitespace-pre-wrap ${message.done ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                       {message.text}
                     </p>
                   </div>

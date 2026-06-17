@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 
 interface ChatInputProps {
@@ -7,14 +7,6 @@ interface ChatInputProps {
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
   const [text, setText] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 250)}px`;
-    }
-  }, [text]);
 
   const handleKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -27,9 +19,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
     if (!text.trim()) return;
     await onSend(text.trim());
     setText('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
   };
 
   const handlePaste = async (e: React.ClipboardEvent) => {
@@ -49,28 +38,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
   };
 
   return (
-    <div className="flex justify-center py-6">
-      <div className="relative w-full max-w-[720px] overflow-hidden">
+    <div className="flex justify-center py-6 px-6">
+      <div className="flex w-full max-w-[720px] gap-3">
         <textarea
-          ref={textareaRef}
-          className="w-full resize-none rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-5 py-4 text-base text-gray-900 dark:text-white placeholder-gray-400 focus:border-gray-400 focus:outline-none overflow-hidden"
+          className="flex-1 h-[44px] resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-4 py-2 text-base text-gray-900 dark:text-white placeholder-gray-400 focus:border-gray-400 focus:outline-none overflow-y-auto"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           placeholder="输入消息..."
-          rows={1}
         />
-        
-        {text.trim().length > 0 ? (
-          <button
-            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-            onClick={handleSend}
-            title="发送"
-          >
-            <Send className="h-5 w-5" />
-          </button>
-        ) : null}
+
+        <button
+          className="flex h-[44px] w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSend}
+          disabled={!text.trim()}
+          title="发送"
+        >
+          <Send className="h-5 w-5" />
+        </button>
       </div>
     </div>
   );

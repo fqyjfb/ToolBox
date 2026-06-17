@@ -4,6 +4,7 @@ export function parseChatContent(content: string): ChatMessage[] {
   const lines = content.split('\n');
   const messages: ChatMessage[] = [];
   let currentDate = '';
+  let currentMessage: { id: string; textLines: string[]; timestamp: string; date: string; done: boolean } | null = null;
 
   for (const line of lines) {
     const dateMatch = line.match(/^#### (.+)$/);
@@ -12,16 +13,53 @@ export function parseChatContent(content: string): ChatMessage[] {
       continue;
     }
 
-    const msgMatch = line.match(/^- \[([ xX])\] `(\d{2}:\d{2})` (.+)$/);
+    const msgMatch = line.match(/^- \[([ xX])\] `(\d{2}:\d{2})` (.*)$/);
     if (msgMatch) {
-      messages.push({
+      if (currentMessage) {
+        messages.push({
+          id: currentMessage.id,
+          text: currentMessage.textLines.join('\n'),
+          timestamp: currentMessage.timestamp,
+          date: currentMessage.date,
+          done: currentMessage.done,
+        });
+      }
+      currentMessage = {
         id: generateMessageId(msgMatch[2], msgMatch[3]),
-        text: msgMatch[3],
+        textLines: [msgMatch[3]],
         timestamp: msgMatch[2],
         date: currentDate || new Date().toDateString(),
         done: msgMatch[1] === 'x' || msgMatch[1] === 'X',
-      });
+      };
+      continue;
     }
+
+    const continuationMatch = line.match(/^  (.*)$/);
+    if (continuationMatch && currentMessage) {
+      currentMessage.textLines.push(continuationMatch[1]);
+      continue;
+    }
+
+    if (currentMessage && line.trim() === '') {
+      messages.push({
+        id: currentMessage.id,
+        text: currentMessage.textLines.join('\n'),
+        timestamp: currentMessage.timestamp,
+        date: currentMessage.date,
+        done: currentMessage.done,
+      });
+      currentMessage = null;
+    }
+  }
+
+  if (currentMessage) {
+    messages.push({
+      id: currentMessage.id,
+      text: currentMessage.textLines.join('\n'),
+      timestamp: currentMessage.timestamp,
+      date: currentMessage.date,
+      done: currentMessage.done,
+    });
   }
 
   return messages;
@@ -42,7 +80,11 @@ export function generateChatContent(messages: ChatMessage[]): string {
     if (content) content += '\n';
     content += `#### ${date}\n`;
     msgs.forEach(msg => {
-      content += `- [${msg.done ? 'x' : ' '}] \`${msg.timestamp}\` ${msg.text}\n`;
+      const lines = msg.text.split('\n');
+      content += `- [${msg.done ? 'x' : ' '}] \`${msg.timestamp}\` ${lines[0]}\n`;
+      for (let i = 1; i < lines.length; i++) {
+        content += `  ${lines[i]}\n`;
+      }
     });
   });
 

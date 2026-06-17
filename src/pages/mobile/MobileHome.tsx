@@ -136,18 +136,20 @@ const MobileHome: React.FC = () => {
 
   return (
     <>
-      <section className="mb-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex flex-wrap gap-1.5 mb-3">
+      <section style={{ marginBottom: 'var(--space-3)' }}>
+        <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}>
+          <div className="flex flex-wrap" style={{ gap: 'var(--space-1-5)', marginBottom: 'var(--space-2)' }}>
             {searchTypes.map((type) => (
               <button
                 key={type.id}
                 onClick={() => setActiveSearchType(type.id)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                  activeSearchType === type.id
-                    ? 'bg-gray-800 dark:bg-gray-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}
+                className="font-medium transition-all rounded-full"
+                style={{
+                  padding: 'var(--space-1) var(--space-3)',
+                  fontSize: 'var(--text-xs)',
+                  backgroundColor: activeSearchType === type.id ? 'var(--color-text-primary)' : 'var(--color-bg-tertiary)',
+                  color: activeSearchType === type.id ? 'var(--color-bg-primary)' : 'var(--color-text-secondary)',
+                }}
               >
                 {type.name}
               </button>
@@ -155,77 +157,90 @@ const MobileHome: React.FC = () => {
           </div>
           
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute top-1/2 -translate-y-1/2 w-4 h-4" style={{ left: 'var(--space-2)', color: 'var(--color-text-tertiary)' }} />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && performSearch()}
               placeholder={searchTypes.find(t => t.id === activeSearchType)?.placeholder || '搜索...'}
-              className="w-full px-10 py-3 bg-gray-50 dark:bg-gray-700 rounded-xl text-gray-800 dark:text-white placeholder-gray-400 outline-none border border-gray-200 dark:border-gray-600 text-sm"
+              className="w-full outline-none border rounded-xl"
+              style={{
+                paddingLeft: 'var(--space-9)',
+                paddingRight: 'var(--space-4)',
+                paddingTop: 'var(--space-2)',
+                paddingBottom: 'var(--space-2)',
+                backgroundColor: 'var(--color-bg-tertiary)',
+                fontSize: 'var(--text-xs)',
+                color: 'var(--color-text-primary)',
+                borderColor: 'var(--color-border)',
+              }}
             />
           </div>
         </div>
       </section>
 
       {weatherData && (
-        <section className="mb-4">
+        <section style={{ marginBottom: 'var(--space-3)' }}>
           <button
             onClick={() => handleToolClick('/tools/weather')}
-            className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-4"
+            className="w-full shadow-sm flex items-center"
+            style={{ gap: 'var(--space-4)', backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}
           >
             <div>
               {getWeatherIcon(weatherData.weather?.condition || '')}
             </div>
             <div className="flex-1">
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-gray-800 dark:text-white">
+              <div className="flex items-baseline" style={{ gap: 'var(--space-1)' }}>
+                <span className="font-bold" style={{ fontSize: 'var(--text-2xl)', color: 'var(--color-text-primary)' }}>
                   {weatherData.weather?.temperature ?? '--'}
                 </span>
-                <span className="text-gray-500 dark:text-gray-400">°C</span>
+                <span style={{ color: 'var(--color-text-tertiary)' }}>°C</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center" style={{ gap: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
                 <span>{weatherData.location?.city || '未知城市'}</span>
                 <span>·</span>
                 <span>{weatherData.weather?.condition || '未知'}</span>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <ChevronRight className="w-5 h-5" style={{ color: 'var(--color-text-tertiary)' }} />
           </button>
         </section>
       )}
 
-      <section className="mb-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-yellow-500" />
-              <h2 className="font-semibold text-gray-800 dark:text-white">快捷工具</h2>
+      <section style={{ marginBottom: 'var(--space-3)' }}>
+        <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
+            <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
+              <Zap className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+              <h2 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>快捷工具</h2>
             </div>
             <button
-              onClick={() => navigate('/tools')}
-              className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-0.5"
-            >
-              更多 <ChevronRight className="w-3 h-3" />
+                onClick={() => navigate('/tools')}
+                className="flex items-center"
+                style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
+              >
+                更多 <ChevronRight className="w-3 h-3" />
             </button>
           </div>
           
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3" style={{ gap: 'var(--space-2)' }}>
             {quickTools.map((tool) => {
               const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
               return (
                 <button
                   key={tool.id}
                   onClick={() => handleToolClick(tool.path)}
-                  className="flex flex-col items-center gap-1.5 p-2"
+                  className="flex flex-col items-center"
+                  style={{ gap: 'var(--space-1)', padding: 'var(--space-2)' }}
                 >
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: tool.color }}
+                    className="rounded-xl flex items-center justify-center"
+                    style={{ width: 'calc(var(--space-5) * 1.4)', height: 'calc(var(--space-5) * 1.4)', backgroundColor: tool.color }}
                   >
                     <IconComponent className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-xs text-gray-700 dark:text-gray-300">{tool.name}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>{tool.name}</span>
                 </button>
               );
             })}
@@ -233,82 +248,86 @@ const MobileHome: React.FC = () => {
         </div>
       </section>
 
-      <section className="mb-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-800 dark:text-white">60秒速览</h2>
+      <section style={{ marginBottom: 'var(--space-3)' }}>
+        <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
+            <h2 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>60秒速览</h2>
             <button
               onClick={() => navigate('/news')}
-              className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-0.5"
+              className="flex items-center"
+              style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
             >
               更多 <ChevronRight className="w-3 h-3" />
             </button>
           </div>
           
           {sixtySecondsData?.length ? (
-            <div className="space-y-2">
+            <div style={{ gap: 'var(--space-2)' }}>
               {sixtySecondsData.map((news, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                  className="flex items-start rounded-lg"
+                  style={{ gap: 'var(--space-2)', padding: 'var(--space-2)', backgroundColor: 'var(--color-bg-tertiary)' }}
                   onClick={() => navigate('/news')}
                 >
-                  <span className="flex-shrink-0 w-5 h-5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full flex items-center justify-center text-xs font-medium">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)' }}>
                     {index + 1}
                   </span>
-                  <p className="text-xs text-gray-700 dark:text-gray-300 flex-1">{news}</p>
+                  <p className="flex-1" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>{news}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center py-4">
-              <div className="flex gap-1.5">
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            <div className="flex items-center justify-center" style={{ padding: 'var(--space-4)' }}>
+              <div className="flex" style={{ gap: 'var(--space-1-5)' }}>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)' }}></div>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: 'var(--duration-bounce-delay)' }}></div>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: 'calc(var(--duration-bounce-delay) * 2)' }}></div>
               </div>
             </div>
           )}
         </div>
       </section>
 
-      <section className="mb-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-800 dark:text-white">科技资讯</h2>
+      <section style={{ marginBottom: 'var(--space-3)' }}>
+        <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
+            <h2 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>科技资讯</h2>
             <button
               onClick={() => navigate('/news')}
-              className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-0.5"
+              className="flex items-center"
+              style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
             >
               更多 <ChevronRight className="w-3 h-3" />
             </button>
           </div>
           
           {itNewsData?.length ? (
-            <div className="space-y-3">
+            <div style={{ gap: 'var(--space-3)' }}>
               {itNewsData.map((news, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3"
+                  className="flex items-center"
+                  style={{ gap: 'var(--space-3)' }}
                   onClick={() => window.open(news.link, '_blank')}
                 >
                   <div className="flex-1">
-                    <h3 className="text-sm font-medium text-gray-800 dark:text-white line-clamp-2">{news.title}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                    <h3 className="font-medium line-clamp-2" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-primary)' }}>{news.title}</h3>
+                    <p className="flex items-center" style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>
                       <Clock className="w-3 h-3" />
                       {news.created}
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                  <ChevronRight className="w-4 h-4" style={{ color: 'var(--color-text-tertiary)' }} />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center py-4">
-              <div className="flex gap-1.5">
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            <div className="flex items-center justify-center" style={{ padding: 'var(--space-4)' }}>
+              <div className="flex" style={{ gap: 'var(--space-1-5)' }}>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)' }}></div>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: 'var(--duration-bounce-delay)' }}></div>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: 'calc(var(--duration-bounce-delay) * 2)' }}></div>
               </div>
             </div>
           )}
@@ -316,39 +335,41 @@ const MobileHome: React.FC = () => {
       </section>
 
       <section>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-800 dark:text-white">AI 资讯</h2>
+        <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
+            <h2 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>AI 资讯</h2>
             <button
               onClick={() => navigate('/news')}
-              className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-0.5"
+              className="flex items-center"
+              style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
             >
               更多 <ChevronRight className="w-3 h-3" />
             </button>
           </div>
           
           {aiNewsData?.length ? (
-            <div className="space-y-3">
+            <div style={{ gap: 'var(--space-3)' }}>
               {aiNewsData.map((news, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3"
+                  className="flex items-center"
+                  style={{ gap: 'var(--space-3)' }}
                   onClick={() => window.open(news.link, '_blank')}
                 >
                   <div className="flex-1">
-                    <h3 className="text-sm font-medium text-gray-800 dark:text-white line-clamp-2">{news.title}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{news.source}</p>
+                    <h3 className="font-medium line-clamp-2" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-primary)' }}>{news.title}</h3>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>{news.source}</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                  <ChevronRight className="w-4 h-4" style={{ color: 'var(--color-text-tertiary)' }} />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center py-4">
-              <div className="flex gap-1.5">
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            <div className="flex items-center justify-center" style={{ padding: 'var(--space-4)' }}>
+              <div className="flex" style={{ gap: 'var(--space-1-5)' }}>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)' }}></div>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: 'var(--duration-bounce-delay)' }}></div>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: 'calc(var(--duration-bounce-delay) * 2)' }}></div>
               </div>
             </div>
           )}

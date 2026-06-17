@@ -77,6 +77,8 @@
   --space-6: 32px;
   --space-7: 48px;
   --space-8: 64px;
+  --space-9: 36px;
+  --space-10: 40px;
   
   --space-0-5: 2px;
   --space-1-5: 4px;
@@ -142,6 +144,7 @@
   --duration-modal: 0.18s;
   --duration-toast: 5s;
   --duration-transition: 0.25s;
+  --duration-bounce-delay: 0.15s;
 
   /* 按钮渐变已移除，改用实心填充 */
   --color-button-primary: #275D7E;
@@ -266,6 +269,7 @@
   --duration-modal: 0.18s;
   --duration-toast: 5s;
   --duration-transition: 0.25s;
+  --duration-bounce-delay: 0.15s;
 
   /* 按钮渐变已移除，改用实心填充 */
   --color-button-primary: #275D7E;
