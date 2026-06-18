@@ -143,6 +143,7 @@ export default function AIChatPage() {
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const [thinkingExpanded, setThinkingExpanded] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const [toolOptions, setToolOptions] = useState<ToolOptions>({
     imageModel: 'agnes-image-2.1-flash',
@@ -248,6 +249,15 @@ export default function AIChatPage() {
 
     addMessage(conversationId, userMessage);
     setEditingContent('');
+    scrollToBottom();
+
+    setIsLoading(true);
+
+    if (dbConversationId) {
+      addMessageToDb(admin.id, dbConversationId, 'user', content).catch((error) => {
+        console.error('保存用户消息失败:', error);
+      });
+    }
 
     try {
       let resultContent = '';
@@ -290,14 +300,6 @@ export default function AIChatPage() {
         default:
           await handleChatCompletion(conversationId, content, userMessage, dbConversationId);
           break;
-      }
-
-      if (dbConversationId) {
-        try {
-          await addMessageToDb(admin.id, dbConversationId, 'user', content);
-        } catch (error) {
-          console.error('保存用户消息失败:', error);
-        }
       }
     } catch (error) {
       console.error('Error:', error);
@@ -755,11 +757,13 @@ export default function AIChatPage() {
   };
 
   return (
-    <div className="flex h-full overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {(
-        <div className="max-w-[210px] flex flex-col bg-white dark:bg-gray-800">
-          <div className="p-3">
-            <div className="flex items-center justify-between">
+    <div className="flex h-full overflow-hidden bg-gray-50 dark:bg-gray-900" style={{ height: typeof window !== 'undefined' ? '90vh' : '90%' }}>
+      <div className={`flex flex-col bg-white dark:bg-gray-800 transition-all duration-300 min-h-0 overflow-hidden ${
+        sidebarCollapsed ? 'w-14' : 'max-w-[210px] md:max-w-[240px]'
+      }`}>
+        <div className="p-3 flex items-center justify-between">
+          {!sidebarCollapsed && (
+            <>
               <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">对话</h2>
               <div className="flex items-center gap-1">
                 <button
@@ -784,26 +788,58 @@ export default function AIChatPage() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
+            </>
+          )}
+          {sidebarCollapsed && (
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={() => navigate('/tools/ai-chat/history')}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+                title="历史记录"
+              >
+                <History className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => navigate('/tools/ai-chat/roles')}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+                title="角色预设"
+              >
+                <Sparkles className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleNewConversation}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+                title="新对话"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
-          </div>
+          )}
+        </div>
 
-          <div className="flex-1 overflow-y-auto">
-            {conversations.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                暂无对话
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {conversations.map((conv) => (
-                  <div
-                    key={conv.id}
-                    onClick={() => selectConversation(conv.id)}
-                    className={`relative p-3 cursor-pointer transition-colors group ${
-                      activeConversationId === conv.id
-                        ? 'bg-primary/10 text-primary'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
+        <div className="flex-1 overflow-y-auto">
+          {conversations.length === 0 ? (
+            <div className={`p-4 text-center ${sidebarCollapsed ? 'hidden' : ''}`}>
+              <p className="text-gray-500 dark:text-gray-400">暂无对话</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {conversations.map((conv) => (
+                <div
+                  key={conv.id}
+                  onClick={() => selectConversation(conv.id)}
+                  className={`relative cursor-pointer transition-colors group ${
+                    activeConversationId === conv.id
+                      ? 'bg-primary/10 text-primary'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  } ${sidebarCollapsed ? 'p-2 flex justify-center' : 'p-3'}`}
+                  title={sidebarCollapsed ? conv.title : undefined}
+                >
+                  {sidebarCollapsed ? (
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm font-medium truncate">
+                      {conv.title.charAt(0)}
+                    </div>
+                  ) : (
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{conv.title}</p>
@@ -822,18 +858,34 @@ export default function AIChatPage() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 min-w-0">
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="p-2 border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
+          title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
+        >
+          {sidebarCollapsed ? (
+            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 min-w-0 min-h-0 overflow-hidden">
         {(activeConversation || activeConversationId) ? (
           <>
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-3">
               <div className="max-w-4xl mx-auto">
                 {activeConversation?.messages.map((message) => {
                   const mediaUrlMatch = message.content.match(/!\[.*?\]\((https?:\/\/[^)]+)\)/);
@@ -843,10 +895,10 @@ export default function AIChatPage() {
 
                   if (isUser) {
                     return (
-                      <div key={message.id} className="flex justify-end mb-4">
+                      <div key={message.id} className="flex justify-end mb-3">
                         <div className="max-w-[75%]">
                           {editingMessage === message.id ? (
-                            <div className="px-4.5 py-3 rounded-2xl shadow-sm bg-primary rounded-tr-md">
+                            <div className="px-3 py-2 rounded-xl shadow-sm bg-primary rounded-tr-md">
                               <textarea
                                 value={editingContent}
                                 onChange={(e) => setEditingContent(e.target.value)}
@@ -870,13 +922,13 @@ export default function AIChatPage() {
                               </div>
                             </div>
                           ) : (
-                            <div className="px-4.5 py-3 rounded-2xl shadow-sm bg-primary text-white rounded-tr-md break-words">
+                            <div className="px-3 py-2 rounded-xl shadow-sm bg-primary text-white rounded-tr-md break-words">
                               <p className="text-sm leading-relaxed whitespace-pre-wrap">
                                 {message.content}
                               </p>
                             </div>
                           )}
-                          <div className="flex items-center gap-2 mt-1.5 justify-end">
+                          <div className="flex items-center gap-2 mt-1 justify-end">
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {new Date(message.created_at || Date.now()).toLocaleTimeString('zh-CN')}
                             </span>
@@ -911,11 +963,11 @@ export default function AIChatPage() {
                   }
 
                   return (
-                    <div key={message.id} className="flex justify-start mb-4">
+                    <div key={message.id} className="flex justify-start mb-3">
                       <div className="w-full">
-                        <div className="px-4.5 py-3 rounded-2xl shadow-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-md break-words">
+                        <div className="px-3 py-2 rounded-xl shadow-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-md break-words">
                           {message.thinking && (
-                            <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                               <button
                                 onClick={() => setThinkingExpanded(!thinkingExpanded)}
                                 className="flex items-center gap-2 w-full mb-2"
@@ -1190,9 +1242,9 @@ export default function AIChatPage() {
               </div>
             )}
 
-            <div className="p-4 bg-white dark:bg-gray-800">
+            <div className="p-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
               <div className="max-w-4xl mx-auto">
-                <div className="rounded-2xl bg-gray-100 dark:bg-gray-700 shadow-sm">
+                <div className="rounded-xl bg-gray-100 dark:bg-gray-700 shadow-sm">
                   {(activeTool === 'image' && referenceImages.length > 0) && (
                     <div className="flex items-center gap-2 px-3 pt-3">
                       {referenceImages.map((img, index) => (
