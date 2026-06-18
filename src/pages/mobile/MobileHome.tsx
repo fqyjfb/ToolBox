@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Zap, Sun, Cloud, CloudRain, CloudSnow, Clock, ChevronRight } from 'lucide-react';
 import { hotNewsApi } from '../../services/hotNews';
 import { loadHomeTools, type HomeToolItem } from '../../utils/homeTools';
-import type { ItNewsItem, AiNewsItem } from '../../types/hotNews';
+import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../../types/hotNews';
 import { apiService } from '../../services/api';
 import { isWeb } from '../../utils/environment';
 import { getWeatherCity } from '../../utils/weatherLocation';
@@ -54,33 +54,45 @@ const MobileHome: React.FC = () => {
   const [sixtySecondsData, setSixtySecondsData] = useState<string[] | null>(null);
   const [itNewsData, setItNewsData] = useState<ItNewsItem[] | null>(null);
   const [aiNewsData, setAiNewsData] = useState<AiNewsItem[] | null>(null);
+  const [todayInHistoryData, setTodayInHistoryData] = useState<TodayInHistoryItem[] | null>(null);
   const [weatherData, setWeatherData] = useState<WeatherInfo | null>(null);
+
+  const [expandedNews, setExpandedNews] = useState<string | null>(null);
 
   const fetchSixtySeconds = useCallback(async () => {
     try {
       const data = await hotNewsApi.getSixtySecondsData();
       if (data) {
-        setSixtySecondsData(data.data.news.slice(0, 4));
+        setSixtySecondsData(data.data.news);
       }
-    } catch {}
+    } catch { /* ignore */ }
   }, []);
 
   const fetchItNews = useCallback(async () => {
     try {
       const data = await hotNewsApi.getItNews();
       if (data) {
-        setItNewsData(data.data.slice(0, 4));
+        setItNewsData(data.data);
       }
-    } catch {}
+    } catch { /* ignore */ }
   }, []);
 
   const fetchAiNews = useCallback(async () => {
     try {
       const data = await hotNewsApi.getAiNews();
       if (data) {
-        setAiNewsData(data.data.news.slice(0, 4));
+        setAiNewsData(data.data.news);
       }
-    } catch {}
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchTodayInHistory = useCallback(async () => {
+    try {
+      const data = await hotNewsApi.getTodayInHistory();
+      if (data) {
+        setTodayInHistoryData(data.data.items);
+      }
+    } catch { /* ignore */ }
   }, []);
 
   const fetchWeather = useCallback(async () => {
@@ -96,7 +108,7 @@ const MobileHome: React.FC = () => {
       if (data?.data) {
         setWeatherData(data.data);
       }
-    } catch {}
+    } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
@@ -104,9 +116,10 @@ const MobileHome: React.FC = () => {
       fetchSixtySeconds();
       fetchItNews();
       fetchAiNews();
+      fetchTodayInHistory();
       fetchWeather();
     }, 0);
-  }, [fetchSixtySeconds, fetchItNews, fetchAiNews, fetchWeather]);
+  }, [fetchSixtySeconds, fetchItNews, fetchAiNews, fetchTodayInHistory, fetchWeather]);
 
   const performSearch = () => {
     const query = searchQuery.trim();
@@ -252,23 +265,25 @@ const MobileHome: React.FC = () => {
         <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
             <h2 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>60秒速览</h2>
-            <button
-              onClick={() => navigate('/news')}
-              className="flex items-center"
-              style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
-            >
-              更多 <ChevronRight className="w-3 h-3" />
-            </button>
+            {sixtySecondsData && sixtySecondsData.length > 4 && (
+              <button
+                onClick={() => setExpandedNews(expandedNews === 'sixtySeconds' ? null : 'sixtySeconds')}
+                className="flex items-center"
+                style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
+              >
+                {expandedNews === 'sixtySeconds' ? '收起' : '更多'}
+                <ChevronRight className={`w-3 h-3 transition-transform ${expandedNews === 'sixtySeconds' ? 'rotate-90' : ''}`} />
+              </button>
+            )}
           </div>
           
           {sixtySecondsData?.length ? (
             <div style={{ gap: 'var(--space-2)' }}>
-              {sixtySecondsData.map((news, index) => (
+              {(expandedNews === 'sixtySeconds' ? sixtySecondsData : sixtySecondsData.slice(0, 4)).map((news, index) => (
                 <div
                   key={index}
                   className="flex items-start rounded-lg"
                   style={{ gap: 'var(--space-2)', padding: 'var(--space-2)', backgroundColor: 'var(--color-bg-tertiary)' }}
-                  onClick={() => navigate('/news')}
                 >
                   <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)' }}>
                     {index + 1}
@@ -293,18 +308,21 @@ const MobileHome: React.FC = () => {
         <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
             <h2 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>科技资讯</h2>
-            <button
-              onClick={() => navigate('/news')}
-              className="flex items-center"
-              style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
-            >
-              更多 <ChevronRight className="w-3 h-3" />
-            </button>
+            {itNewsData && itNewsData.length > 4 && (
+              <button
+                onClick={() => setExpandedNews(expandedNews === 'itNews' ? null : 'itNews')}
+                className="flex items-center"
+                style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
+              >
+                {expandedNews === 'itNews' ? '收起' : '更多'}
+                <ChevronRight className={`w-3 h-3 transition-transform ${expandedNews === 'itNews' ? 'rotate-90' : ''}`} />
+              </button>
+            )}
           </div>
           
           {itNewsData?.length ? (
             <div style={{ gap: 'var(--space-3)' }}>
-              {itNewsData.map((news, index) => (
+              {(expandedNews === 'itNews' ? itNewsData : itNewsData.slice(0, 4)).map((news, index) => (
                 <div
                   key={index}
                   className="flex items-center"
@@ -334,22 +352,75 @@ const MobileHome: React.FC = () => {
         </div>
       </section>
 
+      <section style={{ marginBottom: 'var(--space-3)' }}>
+        <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
+            <h2 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>历史今天</h2>
+            {todayInHistoryData && todayInHistoryData.length > 4 && (
+              <button
+                onClick={() => setExpandedNews(expandedNews === 'todayInHistory' ? null : 'todayInHistory')}
+                className="flex items-center"
+                style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
+              >
+                {expandedNews === 'todayInHistory' ? '收起' : '更多'}
+                <ChevronRight className={`w-3 h-3 transition-transform ${expandedNews === 'todayInHistory' ? 'rotate-90' : ''}`} />
+              </button>
+            )}
+          </div>
+          
+          {todayInHistoryData?.length ? (
+            <div style={{ gap: 'var(--space-2)' }}>
+              {(expandedNews === 'todayInHistory' ? todayInHistoryData : todayInHistoryData.slice(0, 4)).map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-start rounded-lg"
+                  style={{ gap: 'var(--space-2)', padding: 'var(--space-2)', backgroundColor: 'var(--color-bg-tertiary)' }}
+                  onClick={() => item.link && window.open(item.link, '_blank')}
+                >
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)' }}>
+                    {index + 1}
+                  </span>
+                  <div className="flex-1">
+                    <p className="font-medium" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-primary)' }}>{item.title}</p>
+                    {item.description && (
+                      <p className="line-clamp-2" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>{item.description}</p>
+                    )}
+                  </div>
+                  {item.link && <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-text-tertiary)' }} />}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center" style={{ padding: 'var(--space-4)' }}>
+              <div className="flex" style={{ gap: 'var(--space-1-5)' }}>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)' }}></div>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: 'var(--duration-bounce-delay)' }}></div>
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: 'calc(var(--duration-bounce-delay) * 2)' }}></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
       <section>
         <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
             <h2 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>AI 资讯</h2>
-            <button
-              onClick={() => navigate('/news')}
-              className="flex items-center"
-              style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
-            >
-              更多 <ChevronRight className="w-3 h-3" />
-            </button>
+            {aiNewsData && aiNewsData.length > 4 && (
+              <button
+                onClick={() => setExpandedNews(expandedNews === 'aiNews' ? null : 'aiNews')}
+                className="flex items-center"
+                style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
+              >
+                {expandedNews === 'aiNews' ? '收起' : '更多'}
+                <ChevronRight className={`w-3 h-3 transition-transform ${expandedNews === 'aiNews' ? 'rotate-90' : ''}`} />
+              </button>
+            )}
           </div>
           
           {aiNewsData?.length ? (
             <div style={{ gap: 'var(--space-3)' }}>
-              {aiNewsData.map((news, index) => (
+              {(expandedNews === 'aiNews' ? aiNewsData : aiNewsData.slice(0, 4)).map((news, index) => (
                 <div
                   key={index}
                   className="flex items-center"

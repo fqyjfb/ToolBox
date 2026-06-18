@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { Settings as SettingsIcon, Keyboard, Circle, Database, Scan, FileText, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Keyboard, Circle, Database, Scan, FileText, RefreshCw, Sparkles } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
@@ -19,7 +19,8 @@ import {
   FloatWindowTab,
   StorageTab,
   SyncTab,
-  LogMonitorTab
+  LogMonitorTab,
+  AgnesTab
 } from '../../components/settings';
 const OcrTab = isElectron() ? lazy(() => import('../../components/settings/OcrTab')) : null;
 import './Settings.css';
@@ -369,6 +370,7 @@ const Settings: React.FC = () => {
     { id: 'shortcuts' as const, label: '快捷键设置', icon: Keyboard },
     { id: 'floatWindow' as const, label: '悬浮窗设置', icon: Circle },
     ...(isElectron() ? [{ id: 'ocr' as const, label: 'OCR设置', icon: Scan }] : []),
+    { id: 'agnes' as const, label: 'Agnes AI', icon: Sparkles },
     { id: 'logMonitor' as const, label: '日志监控', icon: FileText }
   ];
 
@@ -457,6 +459,8 @@ const Settings: React.FC = () => {
             onNotificationToggle={handleNotificationToggle}
           />
         )}
+
+        {activeTab === 'agnes' && <AgnesTab />}
       </div>
     </div>
   );

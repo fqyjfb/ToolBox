@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 /* eslint-disable react-refresh/only-export-components */
-export type SearchPageType = 'cloud-clipboard' | 'quick-reply' | 'todo' | 'account' | null;
+export type SearchPageType = 'cloud-clipboard' | 'quick-reply' | 'todo' | 'account' | 'nav' | null;
 
 interface NavSearchContextType {
   searchQuery: string;

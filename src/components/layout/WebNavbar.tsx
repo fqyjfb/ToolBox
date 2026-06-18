@@ -1,10 +1,14 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, ClipboardList, User } from 'lucide-react';
+import { Menu, X, LogOut, ClipboardList, User, Sparkles, Search } from 'lucide-react';
 import { useAuth } from '../../store/AuthStore';
+import { useNavSearch } from '../../contexts/NavSearchContext';
+
+const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/quick-reply', '/tools/cloud-clipboard', '/tools/account', '/nav'];
 
 const navItems = [
   { path: '/', label: '首页' },
+  { path: '/tools/ai-chat', label: 'AI助手', icon: Sparkles },
   { path: '/news', label: '热点资讯' },
   { path: '/nav', label: '网址导航' },
   { path: '/tools', label: '工具库' },
@@ -16,7 +20,15 @@ const WebNavbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { isAuthenticated, logout, admin } = useAuth();
+  const { searchQuery, setSearchQuery, handleSearch, clearSearch, performSearch } = useNavSearch();
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const showSearch = SEARCH_ENABLED_PATHS.some(path => location.pathname.startsWith(path));
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    handleSearch(query);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -75,24 +87,64 @@ const WebNavbar: React.FC = () => {
             />
             <h1 className="font-bold shine-text" style={{ fontSize: 'var(--text-sm)' }}>ToolBox</h1>
           </div>
-          
+
+          {showSearch && (
+            <div className="hidden md:flex mx-4" style={{ width: '220px' }}>
+              <div className="relative w-full">
+                <input
+                  placeholder="搜索..."
+                  className="w-full px-3 py-1.5 pr-9 rounded-lg text-sm outline-none"
+                  name="search"
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && performSearch()}
+                  style={{
+                    backgroundColor: 'var(--color-bg-tertiary)',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border)',
+                    fontSize: 'var(--text-xs)',
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-7 top-1/2 transform -translate-y-1/2"
+                    style={{ color: 'var(--color-text-tertiary)' }}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                <button
+                  onClick={performSearch}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                  style={{ color: 'var(--color-text-tertiary)' }}
+                >
+                  <Search className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
           <nav className="hidden md:flex items-center" style={{ gap: 'var(--space-1)' }}>
             {navItems.map((item) => (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`font-medium rounded-lg transition-all nav-item ${
+                className={`font-medium rounded-lg transition-all nav-item flex items-center ${
                   isActive(item.path)
                     ? 'active'
                     : ''
                 }`}
                 style={{
+                  gap: item.icon ? 'var(--space-1)' : '0',
                   padding: 'var(--space-1-5) var(--space-3)',
                   fontSize: 'var(--text-xs)',
                   color: isActive(item.path) ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                   backgroundColor: isActive(item.path) ? 'var(--color-bg-tertiary)' : 'transparent',
                 }}
               >
+                {item.icon && <item.icon className="w-4 h-4" />}
                 {item.label}
               </button>
             ))}
@@ -200,14 +252,16 @@ const WebNavbar: React.FC = () => {
               <button
                 key={item.path}
                 onClick={() => { navigate(item.path); setIsMenuOpen(false); }}
-                className="w-full text-left font-medium rounded-lg transition-colors"
+                className="w-full text-left font-medium rounded-lg transition-colors flex items-center"
                 style={{
+                  gap: item.icon ? 'var(--space-2)' : '0',
                   padding: 'var(--space-1-5) var(--space-3)',
                   fontSize: 'var(--text-xs)',
                   color: isActive(item.path) ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                   backgroundColor: isActive(item.path) ? 'var(--color-bg-tertiary)' : 'transparent',
                 }}
               >
+                {item.icon && <item.icon className="w-4 h-4" />}
                 {item.label}
               </button>
             ))}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Globe, Wrench, Zap, Key, Crown, FileText } from 'lucide-react';
+import { Home, Globe, Wrench, Zap, Key, Crown, FileText, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../../store/AuthStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { isElectron } from '../../utils/environment';
@@ -27,6 +27,7 @@ const Sidebar: React.FC = () => {
     if (path === '/news') return 'news';
     if (path === '/nav') return 'nav';
     if (path.startsWith('/tools/notes')) return 'notes';
+    if (path.startsWith('/tools/ai-chat')) return 'ai-chat';
     if (path === '/tools') return 'tools';
     if (path.startsWith('/admin')) return 'admin';
     return 'home';
@@ -40,6 +41,12 @@ const Sidebar: React.FC = () => {
       title: '首页',
       icon: <Home className="w-6 h-6" />,
       path: '/',
+    },
+    {
+      id: 'ai-chat',
+      title: 'AI助手',
+      icon: <Sparkles className="w-6 h-6" />,
+      path: '/tools/ai-chat',
     },
     {
       id: 'nav',

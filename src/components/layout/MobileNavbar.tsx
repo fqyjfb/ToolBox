@@ -1,10 +1,14 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Compass, Wrench, User, LogOut, ClipboardList, Link, Clipboard, MessageSquare } from 'lucide-react';
+import { Menu, X, Home, Compass, Wrench, User, LogOut, ClipboardList, Link, Clipboard, MessageSquare, Sparkles, Search } from 'lucide-react';
 import { useAuth } from '../../store/AuthStore';
+import { useNavSearch } from '../../contexts/NavSearchContext';
+
+const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/quick-reply', '/tools/cloud-clipboard', '/tools/account', '/nav'];
 
 const bottomNavItems = [
   { icon: Home, label: '首页', path: '/' },
+  { icon: Sparkles, label: 'AI助手', path: '/tools/ai-chat' },
   { icon: Compass, label: '资讯', path: '/news' },
   { icon: Wrench, label: '工具', path: '/tools' },
   { icon: User, label: '我的', path: '/login' },
@@ -16,7 +20,15 @@ const MobileNavbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { isAuthenticated, logout } = useAuth();
+  const { searchQuery, setSearchQuery, handleSearch, clearSearch, performSearch } = useNavSearch();
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const showSearch = SEARCH_ENABLED_PATHS.some(path => location.pathname.startsWith(path));
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    handleSearch(query);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -81,7 +93,45 @@ const MobileNavbar: React.FC = () => {
               />
               <span className="font-bold shine-text" style={{ fontSize: 'var(--text-sm)' }}>ToolBox</span>
             </div>
-            
+
+            {showSearch && (
+              <div className="mx-3" style={{ width: '200px', maxWidth: 'calc(100vw - 160px)' }}>
+                <div className="relative">
+                  <input
+                    placeholder="搜索..."
+                    className="w-full px-3 py-1.5 pr-9 rounded-lg text-sm outline-none"
+                    name="search"
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && performSearch()}
+                    style={{
+                      backgroundColor: 'var(--color-bg-tertiary)',
+                      color: 'var(--color-text-primary)',
+                      border: '1px solid var(--color-border)',
+                      fontSize: 'var(--text-xs)',
+                    }}
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute right-7 top-1/2 transform -translate-y-1/2"
+                      style={{ color: 'var(--color-text-tertiary)' }}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                  <button
+                    onClick={performSearch}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                    style={{ color: 'var(--color-text-tertiary)' }}
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="relative">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -174,8 +224,8 @@ const MobileNavbar: React.FC = () => {
           {bottomNavItems.map((item, index) => (
             <button
               key={item.path}
-              onClick={index === 3 ? handleUserButtonClick : () => navigate(item.path)}
-              onContextMenu={index === 3 ? handleUserButtonRightClick : undefined}
+              onClick={index === 4 ? handleUserButtonClick : () => navigate(item.path)}
+              onContextMenu={index === 4 ? handleUserButtonRightClick : undefined}
               className={`flex flex-col items-center transition-colors relative bottom-nav-active`}
               style={{
                 gap: '2px',
@@ -185,7 +235,7 @@ const MobileNavbar: React.FC = () => {
             >
               <item.icon className="w-5 h-5" />
               <span className="font-medium" style={{ fontSize: 'var(--text-xs)' }}>{item.label}</span>
-              {index === 3 && (
+              {index === 4 && (
                 <span
                   className="absolute cursor-pointer transition-transform hover:scale-110"
                   style={{

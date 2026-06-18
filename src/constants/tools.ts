@@ -41,4 +41,6 @@ export const ALL_TOOLS: ToolInfo[] = [
   { id: 'hex-decode', name: 'HEX解码', path: '/tools/hex-decode', color: '#b91c1c', iconName: 'Binary' },
   { id: 'ocr', name: 'OCR文字识别', path: '/tools/ocr', color: '#0d9488', iconName: 'Scan' },
   { id: 'file-manager', name: '文件管理', path: '/tools/file-manager', color: '#059669', iconName: 'Folder' },
+  { id: 'ai-chat', name: 'AI助手', path: '/tools/ai-chat', color: '#8b5cf6', iconName: 'Sparkles' },
+  { id: 'font-generator', name: '字体生成', path: '/tools/font-generator', color: '#f59e0b', iconName: 'Type' },
 ];

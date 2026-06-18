@@ -34,7 +34,7 @@ const WeatherCard: React.FC = () => {
   const [showDetail, setShowDetail] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-  const cityRef = useRef(localStorage.getItem('weatherCity') || '南京');
+  const [city, setCity] = useState(localStorage.getItem('weatherCity') || '南京');
   const cardRef = useRef<HTMLDivElement>(null);
 
   const fetchWeather = useCallback(async () => {
@@ -42,15 +42,14 @@ const WeatherCard: React.FC = () => {
     setError('');
 
     try {
-      const currentCity = cityRef.current;
-      const data = await apiService.getWeather(currentCity);
+      const data = await apiService.getWeather(city);
       if (data?.data) {
         setWeatherData(data.data);
       } else {
         setError('获取天气失败');
       }
 
-      const forecastData = await apiService.getWeatherForecast(currentCity, 4);
+      const forecastData = await apiService.getWeatherForecast(city, 4);
       if (forecastData?.data?.daily_forecast) {
         setForecast(forecastData.data.daily_forecast.slice(1));
       }
@@ -59,7 +58,7 @@ const WeatherCard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [city]);
 
   useEffect(() => {
     const initializeCity = async () => {
@@ -70,7 +69,7 @@ const WeatherCard: React.FC = () => {
       }
       
       if (detectedCity) {
-        cityRef.current = detectedCity;
+        setCity(detectedCity);
       }
       
       setIsInitialized(true);
@@ -83,7 +82,7 @@ const WeatherCard: React.FC = () => {
 
   useEffect(() => {
     if (isInitialized) {
-      fetchWeather();
+      setTimeout(() => fetchWeather(), 0);
     }
   }, [isInitialized, fetchWeather]);
 
@@ -142,7 +141,7 @@ const WeatherCard: React.FC = () => {
     backgroundColor: colors[0],
   };
 
-  const WeatherDetailPopup = () => {
+  const renderWeatherDetailPopup = () => {
     if (!showDetail) return null;
     
     return createPortal(
@@ -262,26 +261,27 @@ const WeatherCard: React.FC = () => {
           onMouseEnter={() => setShowDetail(true)}
           onMouseLeave={() => setShowDetail(false)}
         >
-          <div className="h-full flex flex-col items-center justify-center gap-2 p-3">
-            <div className="text-center">
-              <h2 className="text-sm font-semibold text-white">
-                {weatherData?.location?.city || cityRef.current}
+          <div className="h-full flex items-center gap-1.5 p-1.5">
+            <div className="flex flex-col items-center">
+              {getWeatherIcon(weatherData?.weather?.condition || '', 'sm', 'text-white')}
+              <div className="text-base font-semibold text-white">
+                {weatherData?.weather?.temperature || '--'}°
+              </div>
+            </div>
+            
+            <div className="flex flex-col justify-center">
+              <h2 className="text-[10px] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[50px]">
+                {weatherData?.location?.city || city}
               </h2>
-              <p className="text-xs text-white/70">{formatDate(currentTime)}</p>
+              <p className="text-[9px] text-white/70">{formatDate(currentTime)}</p>
+              <p className="text-[9px] text-white/70">
+                {weatherData?.weather?.condition || '未知'}
+              </p>
             </div>
-            
-            {getWeatherIcon(weatherData?.weather?.condition || '', 'lg', 'text-white')}
-            
-            <div className="text-2xl font-semibold text-white">
-              {weatherData?.weather?.temperature || '--'}°
-            </div>
-            <p className="text-xs text-white/70">
-              {weatherData?.weather?.condition || '未知'}
-            </p>
           </div>
         </div>
       </div>
-      <WeatherDetailPopup />
+      {renderWeatherDetailPopup()}
     </>
   );
 };

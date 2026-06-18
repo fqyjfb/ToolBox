@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Droplets, Gauge, Sun, Cloud, CloudSun, CloudRain, CloudSnow, Wind, Clock, MapPin, AlertTriangle, Search } from 'lucide-react';
 import { apiService } from '../../../services/api';
@@ -16,22 +16,21 @@ const WeatherPage: React.FC = () => {
   const [error, setError] = useState('');
   const [searchCity, setSearchCity] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
-  const cityRef = useRef(localStorage.getItem('weatherCity') || '南京');
+  const [city, setCity] = useState(localStorage.getItem('weatherCity') || '南京');
 
   const fetchWeather = useCallback(async () => {
     setLoading(true);
     setError('');
 
     try {
-      const currentCity = cityRef.current;
-      const data = await apiService.getWeather(currentCity);
+      const data = await apiService.getWeather(city);
       if (data?.data) {
         setWeatherData(data.data);
       } else {
         setError('获取天气失败');
       }
 
-      const forecastData = await apiService.getWeatherForecast(currentCity, 7);
+      const forecastData = await apiService.getWeatherForecast(city, 7);
       if (forecastData?.data?.daily_forecast) {
         setDailyForecast(forecastData.data.daily_forecast);
       }
@@ -44,13 +43,12 @@ const WeatherPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [city]);
 
   const handleSearchCity = () => {
     if (searchCity.trim()) {
-      cityRef.current = searchCity.trim();
+      setCity(searchCity.trim());
       setSearchCity('');
-      fetchWeather();
     }
   };
 
@@ -73,7 +71,7 @@ const WeatherPage: React.FC = () => {
       }
       
       if (detectedCity) {
-        cityRef.current = detectedCity;
+        setCity(detectedCity);
       }
       
       setIsInitialized(true);
@@ -84,7 +82,7 @@ const WeatherPage: React.FC = () => {
 
   useEffect(() => {
     if (isInitialized) {
-      fetchWeather();
+      setTimeout(() => fetchWeather(), 0);
     }
   }, [isInitialized, fetchWeather]);
 
@@ -278,7 +276,7 @@ const WeatherPage: React.FC = () => {
               title="点击进入设置页面修改城市"
             >
               <MapPin className="w-4 h-4 opacity-80" />
-              <span className="text-sm opacity-80">{weatherData.location?.city || cityRef.current}</span>
+              <span className="text-sm opacity-80">{weatherData.location?.city || city}</span>
             </button>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -304,8 +302,8 @@ const WeatherPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex gap-4">
-            <div className="w-1/4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="w-full md:w-1/4">
               <div className="flex items-center gap-3">
                 <div className="text-center">
                   {getLargeWeatherIcon(weatherData.weather?.condition || '')}
@@ -315,13 +313,6 @@ const WeatherPage: React.FC = () => {
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl font-bold">{weatherData.weather?.temperature ?? '--'}</span>
                     <span className="text-base opacity-80">°C</span>
-                    {weatherData.air_quality && (
-                      <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs ${getAQIBgColor(weatherData.air_quality.level)} ${getAQIColor(weatherData.air_quality.level)}`}>
-                        <Gauge className="w-3 h-3" />
-                        <span>{getAQILevelText(weatherData.air_quality.level)}</span>
-                        <span className="opacity-70">AQI {weatherData.air_quality.aqi}</span>
-                      </div>
-                    )}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs opacity-70">
@@ -330,12 +321,19 @@ const WeatherPage: React.FC = () => {
                     <span className="text-xs opacity-70">|</span>
                     <span className="text-xs opacity-70">湿度 {weatherData.weather?.humidity ?? '--'}%</span>
                   </div>
+                  {weatherData.air_quality && (
+                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs mt-1 ${getAQIBgColor(weatherData.air_quality.level)} ${getAQIColor(weatherData.air_quality.level)}`}>
+                      <Gauge className="w-3 h-3" />
+                      <span>{getAQILevelText(weatherData.air_quality.level)}</span>
+                      <span className="opacity-70">AQI {weatherData.air_quality.aqi}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
             
             {weatherData.life_indices && weatherData.life_indices.length > 0 && (
-              <div className="flex-1 flex flex-col justify-end">
+              <div className="w-full md:flex-1 md:flex md:flex-col md:justify-end">
                 <h3 className="text-xs font-semibold opacity-80 mb-1">生活指数</h3>
                 <div className="flex flex-wrap gap-1">
                   {weatherData.life_indices.map((index, idx) => (

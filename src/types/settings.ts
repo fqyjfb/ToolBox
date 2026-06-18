@@ -24,7 +24,7 @@ export interface FloatConfigItem {
   path?: string;
 }
 
-export type SettingsTab = 'general' | 'storage' | 'sync' | 'quickLaunch' | 'notifications' | 'shortcuts' | 'floatWindow' | 'ocr' | 'logMonitor';
+export type SettingsTab = 'general' | 'storage' | 'sync' | 'quickLaunch' | 'notifications' | 'shortcuts' | 'floatWindow' | 'ocr' | 'agnes' | 'logMonitor';
 
 export interface NotificationSettings {
   errors: boolean;

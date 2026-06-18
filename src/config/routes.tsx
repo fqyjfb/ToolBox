@@ -53,6 +53,10 @@ const HexDecodePage = React.lazy(() => import('../pages/tools/hex-decode'));
 const WeatherPage = React.lazy(() => import('../pages/tools/weather'));
 const OcrPage = React.lazy(() => import('../pages/tools/ocr/OcrWrapper'));
 const FileManagerPage = React.lazy(() => import('../pages/tools/file-manager'));
+const AIChatPage = React.lazy(() => import('../pages/tools/ai-chat'));
+const FontGeneratorPage = React.lazy(() => import('../pages/tools/font-generator'));
+const AgnesHistoryPage = React.lazy(() => import('../pages/tools/ai-chat/HistoryPage'));
+const AgnesRolePresetsPage = React.lazy(() => import('../pages/tools/ai-chat/RolePresetsPage'));
 
 const AdminDashboardPage = React.lazy(() => import('../pages/admin'));
 const AdminWebsitesPage = React.lazy(() => import('../pages/admin/websites'));
@@ -70,6 +74,10 @@ export const desktopRoutes: RouteConfig[] = [
   { path: '/settings', element: <Settings /> },
   { path: '/about', element: <About /> },
   { path: '/tools/weather', element: <WeatherPage /> },
+  { path: '/tools/ai-chat', element: <AIChatPage /> },
+  { path: '/tools/font-generator', element: <FontGeneratorPage /> },
+  { path: '/tools/ai-chat/history', element: <AgnesHistoryPage /> },
+  { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage /> },
   { path: '/logs', element: <LogsPage /> },
 ];
 
@@ -85,6 +93,10 @@ export const webRoutes: RouteConfig[] = [
   { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
   { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
   { path: '/tools/weather', element: <WeatherPage /> },
+  { path: '/tools/ai-chat', element: <AIChatPage />, requiresAuth: true },
+  { path: '/tools/font-generator', element: <FontGeneratorPage />, requiresAuth: true },
+  { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
+  { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
 ];
 
 export const mobileRoutes: RouteConfig[] = [
@@ -99,6 +111,10 @@ export const mobileRoutes: RouteConfig[] = [
   { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
   { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
   { path: '/tools/weather', element: <WeatherPage /> },
+  { path: '/tools/ai-chat', element: <AIChatPage />, requiresAuth: true },
+  { path: '/tools/font-generator', element: <FontGeneratorPage />, requiresAuth: true },
+  { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
+  { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
 ];
 
 export const publicRoutes: RouteConfig[] = desktopRoutes;
@@ -137,6 +153,10 @@ export const protectedRoutes: RouteConfig[] = [
   { path: '/tools/hex-decode', element: <HexDecodePage />, requiresAuth: true },
   { path: '/tools/ocr', element: <OcrPage />, requiresAuth: true },
   { path: '/tools/file-manager', element: <FileManagerPage />, requiresAuth: true },
+  { path: '/tools/ai-chat', element: <AIChatPage />, requiresAuth: true },
+  { path: '/tools/font-generator', element: <FontGeneratorPage />, requiresAuth: true },
+  { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
+  { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
 ];
 
 export const adminRoutes: RouteConfig[] = [

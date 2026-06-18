@@ -9,3 +9,4 @@ export { default as StorageTab } from './StorageTab';
 export { default as SyncTab } from './SyncTab';
 export { default as OcrTab } from './OcrTab';
 export { default as LogMonitorTab } from './LogMonitorTab';
+export { default as AgnesTab } from './AgnesTab';
