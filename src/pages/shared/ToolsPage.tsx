@@ -148,18 +148,18 @@ const ToolsPage = () => {
   };
 
   return (
-    <div className="h-full overflow-auto" style={{ backgroundColor: 'var(--color-card)', padding: 'var(--space-6)' }}>
-      <div className="tools-page-content">
-        <div style={{ marginBottom: 'var(--space-6)' }}>
-          <h2 className="font-semibold mb-4" style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)' }}>我的工具</h2>
+    <div className="h-full flex flex-col p-6 overflow-hidden bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col h-full overflow-auto">
+        <div className="p-6">
+          <h2 className="font-semibold mb-4 text-lg text-gray-800 dark:text-gray-200">我的工具</h2>
           <div className="tools-grid-wrapper">
             {myTools.map(renderToolCard)}
           </div>
         </div>
 
         {isDesktop && (
-          <div>
-            <h2 className="font-semibold" style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)' }}>实用工具</h2>
+          <div className="p-6 pt-0">
+            <h2 className="font-semibold mb-4 text-lg text-gray-800 dark:text-gray-200">实用工具</h2>
             <div className="tools-grid-wrapper">
               {newTools.map(renderToolCard)}
             </div>

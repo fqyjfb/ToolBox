@@ -8,6 +8,7 @@ import type { Message, Conversation, VideoTask, ImageResult } from '../../../typ
 import { Send, ImageIcon, Video, RefreshCw, Plus, X, Wand2, Sparkles, Layers, Film, Trash2, Copy, Download, History, Edit3, FileText, Link2, Check } from 'lucide-react';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
+import { isElectron } from '../../../utils/environment';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -757,9 +758,9 @@ export default function AIChatPage() {
   };
 
   return (
-    <div className="flex h-full overflow-hidden bg-gray-50 dark:bg-gray-900" style={{ height: typeof window !== 'undefined' ? '90vh' : '90%' }}>
-      <div className={`flex flex-col bg-white dark:bg-gray-800 transition-all duration-300 min-h-0 overflow-hidden ${
-        sidebarCollapsed ? 'w-14' : 'max-w-[210px] md:max-w-[240px]'
+    <div className={`flex ${isElectron() ? 'h-full' : 'h-[calc(100vh-120px)] md:h-[calc(100vh-100px)]'} overflow-hidden bg-gray-50 dark:bg-gray-900`}>
+      <div className={`flex flex-col bg-white dark:bg-gray-800 transition-all duration-300 min-h-0 overflow-hidden flex-shrink-0 ${
+        sidebarCollapsed ? 'w-14' : 'w-[180px] md:w-[200px]'
       }`}>
         <div className="p-3 flex items-center justify-between">
           {!sidebarCollapsed && (
@@ -817,7 +818,7 @@ export default function AIChatPage() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-hide">
           {conversations.length === 0 ? (
             <div className={`p-4 text-center ${sidebarCollapsed ? 'hidden' : ''}`}>
               <p className="text-gray-500 dark:text-gray-400">暂无对话</p>
@@ -867,9 +868,8 @@ export default function AIChatPage() {
 
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="p-2 border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
-          title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
-        >
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
+          title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}>
           {sidebarCollapsed ? (
             <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -885,7 +885,7 @@ export default function AIChatPage() {
       <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 min-w-0 min-h-0 overflow-hidden">
         {(activeConversation || activeConversationId) ? (
           <>
-            <div className="flex-1 overflow-y-auto p-3">
+            <div className="flex-1 overflow-y-auto p-3 scrollbar-hide">
               <div className="max-w-4xl mx-auto">
                 {activeConversation?.messages.map((message) => {
                   const mediaUrlMatch = message.content.match(/!\[.*?\]\((https?:\/\/[^)]+)\)/);
@@ -1059,8 +1059,7 @@ export default function AIChatPage() {
                                   <img
                                     src={src}
                                     alt={alt}
-                                    className="max-w-xs rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 object-contain hover:opacity-90 transition-opacity cursor-pointer"
-                                    style={{ maxHeight: '200px' }}
+                                    className="max-w-xs max-h-[200px] rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 object-contain hover:opacity-90 transition-opacity cursor-pointer"
                                     onClick={() => {
                                       setPreviewImageUrl(src || '');
                                       setShowImageModal(true);
@@ -1242,7 +1241,7 @@ export default function AIChatPage() {
               </div>
             )}
 
-            <div className="p-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+            <div className="p-2 bg-white dark:bg-gray-800">
               <div className="max-w-4xl mx-auto">
                 <div className="rounded-xl bg-gray-100 dark:bg-gray-700 shadow-sm">
                   {(activeTool === 'image' && referenceImages.length > 0) && (
@@ -1364,8 +1363,7 @@ export default function AIChatPage() {
                         : '输入消息...'
                     }
                     disabled={isLoading}
-                    className="w-full px-4 py-3 resize-none focus:outline-none text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 bg-transparent"
-                    style={{ minHeight: '48px', maxHeight: '140px' }}
+                    className="w-full px-4 py-3 resize-none focus:outline-none text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 bg-transparent min-h-[48px] max-h-[140px]"
                   />
 
                   <div className="flex items-center justify-between px-3 py-2">

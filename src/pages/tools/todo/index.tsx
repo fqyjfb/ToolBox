@@ -697,12 +697,11 @@ const TodoManagerPage: React.FC = () => {
               {COLOR_OPTIONS.map((color) => (
                 <div
                   key={color}
-                  className={`w-7 h-7 rounded-full cursor-pointer border-2 transition-all ${
+                  className={`w-7 h-7 rounded-full cursor-pointer border-2 transition-all bg-[${color}] ${
                     newCategoryColor === color
                       ? 'border-white scale-110'
                       : 'border-transparent hover:scale-105'
                   }`}
-                  style={{ backgroundColor: color }}
                   onClick={() => setNewCategoryColor(color)}
                 />
               ))}
