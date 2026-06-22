@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig(({ mode }) => {
   const isElectron = mode === 'electron';
@@ -60,4 +60,4 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1000,
     },
   };
-})
+});

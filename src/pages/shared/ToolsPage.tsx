@@ -73,7 +73,7 @@ const ToolsPage = () => {
   const newTools = useMemo(() => {
     const toolIds = isDesktop ? [...BASE_TOOLS_IDS, 'notes'] : BASE_TOOLS_IDS;
     return ALL_TOOLS
-      .filter(tool => !toolIds.includes(tool.id) && (isElectron() || tool.id !== 'ocr'))
+      .filter(tool => !toolIds.includes(tool.id) && (isElectron() || tool.id !== 'ocr') && (isDesktop || tool.id !== 'notes'))
       .map(tool => ({
         ...tool,
         icon: iconMap[tool.iconName] || Clipboard,
