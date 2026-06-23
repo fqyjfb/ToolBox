@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle, Download } from 'lucide-react';
+import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle } from 'lucide-react';
 import ContextMenu, { ContextMenuItem } from '@/components/ui/ContextMenu';
 
 export interface FileTreeNode {
@@ -29,7 +29,6 @@ interface NotesSidebarProps {
   loading: boolean;
   isChatMode: boolean;
   onToggleChatMode: () => void;
-  onExportFile?: (filePath: string, format: 'pdf' | 'docx') => void;
 }
 
 const FileTreeItem: React.FC<{
@@ -267,7 +266,6 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   loading,
   isChatMode,
   onToggleChatMode,
-  onExportFile,
 }) => {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -421,38 +419,6 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
       });
       items.push({
         id: 'divider1',
-        divider: true,
-      });
-    }
-    
-    if (contextMenu.node.type === 'file' && window.electron) {
-      items.push({
-        id: 'export',
-        label: '导出',
-        icon: <Download className="w-4 h-4" />,
-        subMenu: [
-          {
-            id: 'export-pdf',
-            label: 'PDF',
-            icon: <FileText className="w-4 h-4" />,
-            onClick: () => {
-              onExportFile?.(contextMenu.node.path, 'pdf');
-              setContextMenu(null);
-            },
-          },
-          {
-            id: 'export-word',
-            label: 'Word',
-            icon: <FileText className="w-4 h-4" />,
-            onClick: () => {
-              onExportFile?.(contextMenu.node.path, 'docx');
-              setContextMenu(null);
-            },
-          },
-        ],
-      });
-      items.push({
-        id: 'divider-export',
         divider: true,
       });
     }

@@ -1,8 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { FileCode, Copy, Trash2, FileText, Download, Upload, Eye, Edit3, Save, FileDown, LayoutTemplate, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, Code, Minus, Bold, Italic, Strikethrough, Link, Image, Table, GitBranch, Hash } from 'lucide-react';
+import { FileCode, Copy, Trash2, FileText, Download, Upload, Eye, Edit3, Save, LayoutTemplate, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, Code, Minus, Bold, Italic, Strikethrough, Link, Image, Table, GitBranch, Hash } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 
 const MarkdownToWechatPage: React.FC = () => {
@@ -225,41 +223,6 @@ console.log(theme);
       ]
     },
   ];
-
-  const handleExportPDF = useCallback(async () => {
-    if (!previewRef.current) {
-      addToast({ message: '无法找到预览区域', type: 'error' });
-      return;
-    }
-
-    addToast({ message: '正在生成 PDF...', type: 'info' });
-
-    try {
-      const canvas = await html2canvas(previewRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height],
-      });
-
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-
-      const pdfFileName = fileName.replace('.md', '.pdf');
-      pdf.save(pdfFileName);
-
-      addToast({ message: `PDF 文件已导出: ${pdfFileName}`, type: 'success' });
-    } catch (error) {
-      console.error('PDF 导出失败:', error);
-      addToast({ message: 'PDF 导出失败，请重试', type: 'error' });
-    }
-  }, [fileName, addToast]);
 
   const parseTables = (md: string): string => {
     const lines = md.split('\n');
@@ -601,9 +564,6 @@ console.log(theme);
           </button>
           <button onClick={handleFileDownload} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="导出 Markdown">
             <Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
-          <button onClick={handleExportPDF} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="导出 PDF">
-            <FileDown className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
           <button onClick={handleInsertTemplate} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="插入模板">
             <LayoutTemplate className="w-5 h-5 text-gray-600 dark:text-gray-400" />
