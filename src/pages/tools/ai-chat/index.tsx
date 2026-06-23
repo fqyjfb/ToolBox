@@ -144,7 +144,7 @@ export default function AIChatPage() {
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const [thinkingExpanded, setThinkingExpanded] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const [toolOptions, setToolOptions] = useState<ToolOptions>({
     imageModel: 'agnes-image-2.1-flash',

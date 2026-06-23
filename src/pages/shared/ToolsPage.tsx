@@ -10,6 +10,7 @@ import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import { HomeToolItem, loadHomeTools, replaceHomeTool } from '../../utils/homeTools';
 import { ALL_TOOLS } from '../../constants/tools';
 import { isElectron } from '../../utils/environment';
+import { useSidebarStore } from '../../store/sidebarStore';
 import './ToolsPage.css';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -53,6 +54,7 @@ const BASE_TOOLS_IDS = ['todo', 'quick-reply', 'cloud-clipboard', 'account', 'we
 const ToolsPage = () => {
   const navigate = useNavigate();
   const isDesktop = isElectron();
+  const { pinnedToolIds, addPinnedTool, removePinnedTool } = useSidebarStore();
   
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuX, setContextMenuX] = useState(0);
@@ -104,8 +106,22 @@ const ToolsPage = () => {
     }
   }, [selectedTool]);
 
+  const handleToggleSidebarTool = useCallback(() => {
+    if (selectedTool) {
+      if (pinnedToolIds.includes(selectedTool.id)) {
+        removePinnedTool(selectedTool.id);
+      } else {
+        addPinnedTool(selectedTool.id);
+      }
+      setContextMenuOpen(false);
+      setSelectedTool(null);
+    }
+  }, [selectedTool, pinnedToolIds, addPinnedTool, removePinnedTool]);
+
   const getContextMenuItems = (): ContextMenuItem[] => {
     const homeTools = loadHomeTools();
+    const isPinned = selectedTool ? pinnedToolIds.includes(selectedTool.id) : false;
+    
     return [
       {
         id: 'replace-home-tool',
@@ -116,7 +132,9 @@ const ToolsPage = () => {
           onClick: () => handleReplaceHomeTool(index),
         })),
       },
-      { id: 'divider', divider: true },
+      { id: 'divider-1', divider: true },
+      { id: 'toggle-sidebar', label: isPinned ? '移出侧边栏' : '加入侧边栏', onClick: handleToggleSidebarTool },
+      { id: 'divider-2', divider: true },
       {
         id: 'open',
         label: '打开工具',
@@ -133,14 +151,23 @@ const ToolsPage = () => {
 
   const renderToolCard = (tool: typeof myTools[0]) => {
     const Icon = tool.icon;
+    const isPinned = pinnedToolIds.includes(tool.id);
+    
     return (
       <div
         key={tool.id}
-        className="tools-grid-item"
+        className={`tools-grid-item ${isPinned ? 'ring-2 ring-blue-500/30' : ''}`}
         style={{ backgroundColor: tool.color }}
         onClick={() => navigate(tool.path)}
         onContextMenu={(e) => handleContextMenu(e, tool)}
       >
+        {isPinned && (
+          <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
+            <svg className="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+            </svg>
+          </div>
+        )}
         <Icon className="tools-grid-item-icon" />
         <span className="tools-grid-item-name" style={{ color: tool.textColor }}>{tool.name}</span>
       </div>

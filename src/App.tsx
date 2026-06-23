@@ -16,6 +16,7 @@ import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes, R
 const LogsPage = React.lazy(() => import('./pages/logs/index'));
 import { isElectron } from './utils/environment';
 import { usePreloadTools } from './hooks/usePreloadTools';
+import { RecentToolsHandler } from './hooks/useRecentTools';
 
 // 路由保护组件
 const ProtectedRoute: React.FC<{
@@ -162,7 +163,6 @@ function App() {
   const isAdmin = admin && (admin.role === 'super' || admin.role === 'normal');
   const { setVisible, setPosition } = useSidebarStore();
 
-  // 预加载常用工具页面
   usePreloadTools();
 
   useEffect(() => {
@@ -281,6 +281,7 @@ function App() {
       <NavSearchProvider>
         <Router>
           {isDesktopApp && !isStandaloneLogWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
+          <RecentToolsHandler />
           <Routes>
             <Route
               path="/*"

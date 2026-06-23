@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useThemeStore } from '../../store/themeStore';
-import { useAuth, useAuthStore } from '../../store/AuthStore';
-import { Minus, Maximize2, X, Search, X as XIcon, Menu, LogOut, Bell, User, Settings, Info } from 'lucide-react';
+import { Minus, Maximize2, X, Search, X as XIcon, Bell } from 'lucide-react';
 import { useNavSearch } from '../../contexts/NavSearchContext';
+import { useThemeStore } from '../../store/themeStore';
+import { useSidebarStore } from '../../store/sidebarStore';
 import { useTodoNotification } from '../../contexts/TodoNotificationContext';
 import { isElectron } from '../../utils/environment';
-import Tooltip from '../ui/Tooltip';
 import Breadcrumb from '../ui/Breadcrumb';
 import './Content.css';
 
@@ -17,33 +16,14 @@ interface ContentProps {
 
 const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
   const isDesktop = isElectron();
-  const { isDark, toggleTheme } = useThemeStore();
   const { searchQuery, setSearchQuery, performSearch, clearSearch, handleSearch } = useNavSearch();
-  const { pendingCount } = useTodoNotification();
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { isDark, toggleTheme } = useThemeStore();
+  const { isCollapsed, toggleSidebar } = useSidebarStore();
+  const { pendingCount } = useTodoNotification();
 
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showMainMenu, setShowMainMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const mainMenuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-      if (mainMenuRef.current && !mainMenuRef.current.contains(event.target as Node)) {
-        setShowMainMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const showSearch = ['/launch', '/nav', '/tools', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/account', '/tools/ocr', '/tools/file-manager', '/tools/profile'].includes(location.pathname);
 
@@ -52,37 +32,15 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
     handleSearch(query);
   };
 
-  const handleUserButtonClick = () => {
-    if (isAuthenticated) {
-      navigate('/tools/profile');
-    } else {
-      navigate('/login');
-    }
-  };
-
-  const handleUserButtonRightClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isAuthenticated) {
-      setShowUserMenu(true);
-    }
-  };
-
-  const handleStatusDotClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isAuthenticated) {
-      logout();
-    }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    setShowUserMenu(false);
-  };
-
   return (
     <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white ${className}`} style={{ overflowX: 'hidden' }}>
       <div className="px-6 py-2.5 flex items-center justify-between" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+          <button className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-300/50 dark:hover:bg-gray-600/50 transition-colors" onClick={toggleSidebar} title={isCollapsed ? '展开侧边栏' : '收起侧边栏'}>
+            <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
           <Breadcrumb />
         </div>
         <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
@@ -100,145 +58,48 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
                   style={{ height: '32px' } as React.CSSProperties}
                 />
                 {searchQuery && (
-                    <button
-                      onClick={clearSearch}
-                      className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out"
-                    >
-                      <XIcon size={14} />
-                    </button>
+                  <button onClick={clearSearch} className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out">
+                    <XIcon size={14} />
+                  </button>
                 )}
-                <button
-                  onClick={performSearch}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out"
-                >
+                <button onClick={performSearch} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out">
                   <Search size={16} />
                 </button>
               </div>
             )}
-            <label className="switch">
-              <span className="sun"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g fill="#ffd43b"><circle r="5" cy="12" cx="12"></circle><path d="m21 13h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm-17 0h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm13.66-5.66a1 1 0 0 1 -.66-.29 1 1 0 0 1 0-1.41l.71-.71a1 1 0 1 1 1.41 1.41l-.71.71a1 1 0 0 1 -.75.29zm-12.02 12.02a1 1 0 0 1 -.71-.29 1 1 0 0 1 0-1.41l.71-.66a1 1 0 0 1 1.41 1.41l-.71.71a1 1 0 0 1 -.7.24zm6.36-14.36a1 1 0 0 1 -1-1v-1a1 1 0 0 1 2 0v1a1 1 0 0 1 -1 1zm0 17a1 1 0 0 1 -1-1v-1a1 1 0 0 1 2 0v1a1 1 0 0 1 -1 1zm-5.66-14.66a1 1 0 0 1 -.7-.29l-.71-.71a1 1 0 0 1 1.41-1.41l.71.71a1 1 0 0 1 0 1.41 1 1 0 0 1 -.71.29zm12.02 12.02a1 1 0 0 1 -.7-.29l-.66-.71a1 1 0 0 1 1.36-1.36l.71.71a1 1 0 0 1 0 1.41 1 1 0 0 1 -.71.24z"></path></g></svg></span>
-              <span className="moon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="m223.5 32c-123.5 0-223.5 100.3-223.5 224s100 224 223.5 224c60.6 0 115.5-24.2 155.8-63.4 5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6-96.9 0-175.5-78.8-175.5-176 0-65.8 36-123.1 89.3-153.3 6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"></path></svg></span>
-              <input
-                type="checkbox"
-                className="input"
-                checked={isDark}
-                onChange={toggleTheme}
-              />
-              <span className="slider"></span>
-            </label>
-            <div className="relative">
-              <Tooltip title={isAuthenticated ? '个人信息' : '登录'}>
-                <button
-                  onClick={handleUserButtonClick}
-                  onContextMenu={handleUserButtonRightClick}
-                  className="relative p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
-                >
-                  {isAuthenticated ? (
-                    <User className="w-5 h-5" />
-                  ) : (
-                    <svg viewBox="0 0 24 24" fill="currentColor" height={18} width={18} xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2c2.757 0 5 2.243 5 5.001 0 2.756-2.243 5-5 5s-5-2.244-5-5c0-2.758 2.243-5.001 5-5.001zm0-2c-3.866 0-7 3.134-7 7.001 0 3.865 3.134 7 7 7s7-3.135 7-7c0-3.867-3.134-7.001-7-7.001zm6.369 13.353c-.497.498-1.057.931-1.658 1.302 2.872 1.874 4.378 5.083 4.972 7.346h-19.387c.572-2.29 2.058-5.503 4.973-7.358-.603-.374-1.162-.811-1.658-1.312-4.258 3.072-5.611 8.506-5.611 10.669h24c0-2.142-1.44-7.557-5.631-10.647z" />
-                    </svg>
-                  )}
-                  <span
-                    className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer transition-transform hover:scale-110 ${
-                      isAuthenticated ? 'bg-green-500' : 'bg-gray-400'
-                    }`}
-                    onClick={handleStatusDotClick}
-                    title={isAuthenticated ? '退出' : '登录'}
-                  />
-                </button>
-              </Tooltip>
-              
-              {showUserMenu && (
-                <div
-                  ref={menuRef}
-                  className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-32"
-                >
-                  <button
-                    onClick={() => { navigate('/tools/profile'); setShowUserMenu(false); }}
-                    className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                  >
-                    <User className="w-4 h-4" />
-                    个人信息
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    退出登录
-                  </button>
-                </div>
+
+            <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300" onClick={toggleTheme} title={isDark ? '浅色模式' : '深色模式'}>
+              {isDark ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
               )}
-            </div>
-            <Tooltip title="待办事项">
-              <button
-                className="relative p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
-                onClick={() => navigate('/tools/todo')}
-              >
-                <Bell className="w-5 h-5" />
-                {pendingCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-2xs font-bold rounded-full flex items-center justify-center">
-                    {pendingCount > 9 ? '9+' : pendingCount}
-                  </span>
-                )}
-              </button>
-            </Tooltip>
-            {isDesktop && (
-              <div className="relative" ref={mainMenuRef}>
-                <button
-                  className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
-                  onClick={() => setShowMainMenu(!showMainMenu)}
-                >
-                  <Menu className="w-5 h-5" />
-                </button>
-                {showMainMenu && (
-                  <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-32">
-                    <button
-                      onClick={() => { navigate('/settings'); setShowMainMenu(false); }}
-                      className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                    >
-                      <Settings className="w-4 h-4" />
-                      设置
-                    </button>
-                    <button
-                      onClick={() => { navigate('/about'); setShowMainMenu(false); }}
-                      className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                    >
-                      <Info className="w-4 h-4" />
-                      关于
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+            </button>
+
+            <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 relative" onClick={() => navigate('/tools/todo')} title="待办事项">
+              <Bell className="w-4 h-4" />
+              {pendingCount > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                  {pendingCount > 9 ? '9+' : pendingCount}
+                </span>
+              )}
+            </button>
+
             {isDesktop && (
               <>
-                <Tooltip title="最小化">
-                  <button
-                    className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
-                    onClick={() => window.electron?.minimize()}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                <Tooltip title="最大化">
-                  <button
-                    className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5"
-                    onClick={() => window.electron?.maximize()}
-                  >
-                    <Maximize2 className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                <Tooltip title="关闭">
-                  <button
-                    className="p-1.5 rounded-lg hover:bg-red-200 dark:hover:bg-red-900 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 hover:-translate-y-0.5"
-                    onClick={() => window.electron?.close()}
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </Tooltip>
+                <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5" onClick={() => window.electron?.minimize()}>
+                  <Minus className="w-4 h-4" />
+                </button>
+                <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5" onClick={() => window.electron?.maximize()}>
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+                <button className="p-1.5 rounded-lg hover:bg-red-200 dark:hover:bg-red-900 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 hover:-translate-y-0.5" onClick={() => window.electron?.close()}>
+                  <X className="w-4 h-4" />
+                </button>
               </>
             )}
           </div>
