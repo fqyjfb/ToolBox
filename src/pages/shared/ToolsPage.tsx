@@ -175,8 +175,7 @@ const ToolsPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-6 overflow-hidden bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col h-full overflow-auto">
+    <div className="h-full flex flex-col p-4 overflow-hidden">
         <div className="p-6">
           <h2 className="font-semibold mb-4 text-lg text-gray-800 dark:text-gray-200">我的工具</h2>
           <div className="tools-grid-wrapper">
@@ -192,7 +191,6 @@ const ToolsPage = () => {
             </div>
           </div>
         )}
-      </div>
 
       {isDesktop && (
         <ContextMenu

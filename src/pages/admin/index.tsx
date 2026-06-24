@@ -7,7 +7,7 @@ const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full p-6">
+    <div className="h-full flex flex-col p-4 overflow-hidden">
       <div className="admin-cards">
         <div className="admin-card admin-card-large" onClick={() => navigate('/admin/websites')}>
           <div className="icon-wrapper">

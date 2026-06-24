@@ -435,10 +435,9 @@ const CloudClipboardPage: React.FC = () => {
 
   return (
     <div 
-      className="h-full flex flex-col p-6 overflow-hidden"
+      className="h-full flex flex-col p-4 overflow-hidden"
       onContextMenu={(e) => handleContextMenu(e, 'empty')}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col h-full">
         <div className="mb-4 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 flex-wrap">
@@ -668,7 +667,6 @@ const CloudClipboardPage: React.FC = () => {
             />
           )}
         </Modal>
-      </div>
 
       <ContextMenu
         isOpen={contextMenu.isOpen}

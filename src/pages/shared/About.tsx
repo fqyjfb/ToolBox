@@ -80,8 +80,7 @@ const About: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+    <div className="h-full flex flex-col p-4 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
             <img src="./favicon.png" alt="ToolBox Logo" className="w-12 h-12 mr-4" />
@@ -150,7 +149,6 @@ const About: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };

@@ -433,8 +433,7 @@ const AccountManagerPage: React.FC = () => {
 
   return (
     <>
-      <div className="h-full flex flex-col p-6 overflow-hidden">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col h-full">
+      <div className="h-full flex flex-col p-4 overflow-hidden">
           <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
             <div className="flex items-center justify-between">
               <DndContext
@@ -486,7 +485,6 @@ const AccountManagerPage: React.FC = () => {
 
           <div className="flex-1 overflow-hidden p-6">
           {renderPanel()}
-        </div>
         </div>
       </div>
     </>

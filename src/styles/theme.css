@@ -592,10 +592,7 @@ body {
     "c a"
     "d e";
   gap: 15px;
-  padding: 24px;
-  background: var(--color-card);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md);
+  padding: 0;
 }
 
 .admin-card-large {

@@ -196,8 +196,7 @@ const ExchangePage: React.FC = () => {
   }, [exchangeData, fromCurrency, toCurrency, fromAmount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="p-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+    <div className="h-full flex flex-col p-4 overflow-hidden">
         <div className="flex justify-end items-center mb-3">
           <div className="flex items-center space-x-2">
             <div className="flex items-center space-x-1 text-xs text-gray-600 dark:text-gray-400">
@@ -359,7 +358,6 @@ const ExchangePage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

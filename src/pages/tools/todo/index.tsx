@@ -485,12 +485,11 @@ const TodoManagerPage: React.FC = () => {
 
   return (
     <div 
-      className="h-full flex flex-col p-6 overflow-hidden"
+      className="h-full flex flex-col p-4 overflow-hidden"
       onContextMenu={(e) => handleContextMenu(e, 'empty')}
       onClick={() => {}}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col h-full">
-        <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">我的待办事项</h3>
@@ -602,7 +601,6 @@ const TodoManagerPage: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
 
       <Modal
         isOpen={showAddTodoModal}
