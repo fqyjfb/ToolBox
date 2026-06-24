@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Zap, FileText, Clock, User, Settings, Info, X, Grid3X3 } from 'lucide-react';
+import { Home, Zap, FileText, Clock, User, Settings, Info, X, Grid3X3, LayoutDashboard } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -16,11 +16,8 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const isDesktop = isElectron();
 
-  const { isCollapsed, pinnedToolIds, removePinnedTool, reorderPinnedTools } = useSidebarStore();
+  const { isCollapsed, isVisible, pinnedToolIds, removePinnedTool, reorderPinnedTools } = useSidebarStore();
   const { admin, isAuthenticated } = useAuthStore();
-
-  const isVisible = useSidebarStore((s) => s.isVisible);
-  if (!isVisible) return null;
 
   const isActive = (path: string) => location.pathname === path;
   const isStartsWith = (prefix: string) => location.pathname.startsWith(prefix);
@@ -53,6 +50,8 @@ const Sidebar: React.FC = () => {
       }
     }
   };
+
+  if (!isVisible) return null;
 
   return (
     <aside className={`sidebar-root ${isCollapsed ? 'collapsed' : 'expanded'}`} style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
@@ -117,7 +116,7 @@ const Sidebar: React.FC = () => {
         <div className={`flex items-center gap-1 px-1 ${isCollapsed ? 'flex-col' : ''}`}>
           <SidebarBottomButton icon={<User className="w-4 h-4" />} title={isAuthenticated ? '个人信息' : '登录'} onClick={() => navigate(isAuthenticated ? '/tools/profile' : '/login')} />
           {admin && (admin.role === 'super' || admin.role === 'normal') && (
-            <SidebarBottomButton icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} title="管理" onClick={() => navigate('/admin')} />
+            <SidebarBottomButton icon={<LayoutDashboard className="w-4 h-4" />} title="管理" onClick={() => navigate('/admin')} />
           )}
           <SidebarBottomButton icon={<Settings className="w-4 h-4" />} title="设置" onClick={() => navigate('/settings')} />
           <SidebarBottomButton icon={<Info className="w-4 h-4" />} title="关于" onClick={() => navigate('/about')} />

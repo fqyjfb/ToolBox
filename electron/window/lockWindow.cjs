@@ -35,8 +35,8 @@ const createLockWindow = () => {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
-  const windowWidth = 300;
-  const windowHeight = 400;
+  const windowWidth = 360;
+  const windowHeight = 280;
   const x = Math.floor((width - windowWidth) / 2);
   const y = Math.floor((height - windowHeight) / 2);
 

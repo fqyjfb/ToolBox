@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Minus, Maximize2, X, Search, X as XIcon, Bell } from 'lucide-react';
+import { Minus, Maximize2, X, Search, X as XIcon, Bell, Settings } from 'lucide-react';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useThemeStore } from '../../store/themeStore';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -87,6 +87,9 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
                   {pendingCount > 9 ? '9+' : pendingCount}
                 </span>
               )}
+            </button>
+            <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300" onClick={() => navigate('/settings')} title="设置">
+              <Settings className="w-4 h-4" />
             </button>
 
             {isDesktop && (
