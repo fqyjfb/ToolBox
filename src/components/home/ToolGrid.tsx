@@ -98,4 +98,4 @@ const ToolGrid: React.FC<ToolGridProps> = ({ tools, onToolClick }) => {
   );
 };
 
-export default ToolGrid;
+export default React.memo(ToolGrid);

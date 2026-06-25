@@ -47,6 +47,7 @@ const OcrPage: React.FC = () => {
   const [installResult, setInstallResult] = useState<{ success: boolean; output: string; error?: string } | null>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     checkOcrStatus();
@@ -227,7 +228,9 @@ const OcrPage: React.FC = () => {
     setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
   };
 
-  const performOcr = async (imageBase64: string) => {
+  const performOcr = useCallback(async (imageBase64: string) => {
+    const currentRequestId = ++requestIdRef.current;
+
     setLoading(true);
     setOcrResult('');
     setOcrBlocks([]);
@@ -236,6 +239,10 @@ const OcrPage: React.FC = () => {
 
     try {
       const result = await window.electron?.ocr?.recognize(imageBase64);
+
+      if (currentRequestId !== requestIdRef.current) {
+        return;
+      }
 
       if (result && result.success) {
         setOcrResult(result.text);
@@ -248,15 +255,25 @@ const OcrPage: React.FC = () => {
         setOcrResult('');
       }
     } catch (error) {
+      if (currentRequestId !== requestIdRef.current) {
+        return;
+      }
       console.error('OCR识别失败:', error);
       addToast({ type: 'error', message: 'OCR识别失败，请检查服务是否正常' });
     } finally {
-      setLoading(false);
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [addToast, saveToHistory]);
 
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
+      if (loading) {
+        addToast({ type: 'info', message: '正在识别中，请稍候...' });
+        return;
+      }
+
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -274,7 +291,7 @@ const OcrPage: React.FC = () => {
 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [ocrStatus?.available, addToast, handleImageUpload]);
+  }, [loading, addToast, handleImageUpload]);
 
   const handleCopy = async () => {
     const textToCopy = isEditing ? editableResult : ocrResult;

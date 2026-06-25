@@ -67,6 +67,9 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [weatherCity, setWeatherCity] = useState(() => 
+    localStorage.getItem('weatherCity') || '无锡'
+  );
 
   interface LockStatus {
     lockPassword?: string;
@@ -138,10 +141,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
       const response = await fetch('http://demo.ip-api.com/json/?lang=zh-CN');
       const data = await response.json();
       if (data.status === 'success') {
-        const input = document.getElementById('weatherCityInput') as HTMLInputElement;
-        if (input) {
-          input.value = data.city;
-        }
+        setWeatherCity(data.city);
         addToast({ type: 'success', message: `已定位到 ${data.city}` });
       } else {
         addToast({ type: 'error', message: '定位失败，请重试' });
@@ -159,8 +159,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   };
 
   const handleWeatherCitySave = () => {
-    const input = document.getElementById('weatherCityInput') as HTMLInputElement;
-    const city = input.value.trim();
+    const city = weatherCity.trim();
     if (city) {
       localStorage.setItem('weatherCity', city);
       addToast({ type: 'success', message: `天气城市已设置为 ${city}` });
@@ -244,8 +243,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
           <div className="flex items-center gap-2">
             <input
               type="text"
-              id="weatherCityInput"
-              defaultValue={localStorage.getItem('weatherCity') || '南京'}
+              value={weatherCity}
+              onChange={(e) => setWeatherCity(e.target.value)}
               placeholder="请输入城市名称"
               className="w-28 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
             />

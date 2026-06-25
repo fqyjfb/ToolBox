@@ -1,3 +1,5 @@
+import { logEncryptionOperation } from '../services/loggerService';
+
 const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY;
 const IV_LENGTH = 16;
 
@@ -9,6 +11,15 @@ const getEncryptionKey = (): string => {
     throw new Error('加密密钥长度不足，至少需要16个字符');
   }
   return ENCRYPTION_KEY;
+};
+
+export const validateEncryptionKey = (): boolean => {
+  try {
+    getEncryptionKey();
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const checkPasswordStrength = (password: string): { strength: 'weak' | 'medium' | 'strong', message: string } => {
@@ -62,6 +73,7 @@ const getKey = async (): Promise<CryptoKey> => {
 };
 
 export const encrypt = async (text: string): Promise<string> => {
+  const startTime = Date.now();
   try {
     const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
     const key = await getKey();
@@ -73,16 +85,20 @@ export const encrypt = async (text: string): Promise<string> => {
     );
     
     const encryptedArray = new Uint8Array(encrypted);
+    logEncryptionOperation('encrypt', Date.now() - startTime, true);
     return uint8ArrayToBase64(iv) + ':' + uint8ArrayToBase64(encryptedArray);
   } catch (error) {
+    logEncryptionOperation('encrypt', Date.now() - startTime, false);
     console.error('Encryption error:', error);
     throw new Error('加密失败');
   }
 };
 
 export const decrypt = async (text: string): Promise<string> => {
+  const startTime = Date.now();
   try {
     if (!text || !text.includes(':')) {
+      logEncryptionOperation('decrypt', Date.now() - startTime, true);
       return text;
     }
     const textParts = text.split(':');
@@ -96,8 +112,10 @@ export const decrypt = async (text: string): Promise<string> => {
       encryptedText as BufferSource
     );
     
+    logEncryptionOperation('decrypt', Date.now() - startTime, true);
     return new TextDecoder().decode(decrypted);
   } catch (error) {
+    logEncryptionOperation('decrypt', Date.now() - startTime, false);
     console.error('Decryption error:', error);
     return text;
   }

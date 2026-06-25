@@ -26,6 +26,30 @@ export interface ExchangeRateResult {
   data?: Record<string, unknown>;
 }
 
+const WEATHER_CACHE_TTL = 15 * 60 * 1000;
+
+const getCachedWeather = <T>(city: string, type: 'weather' | 'forecast'): T | null => {
+  const cacheKey = `weather_${type}_${city}`;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      if (Date.now() - parsed.timestamp < WEATHER_CACHE_TTL) {
+        return parsed.data;
+      }
+    } catch {}
+  }
+  return null;
+};
+
+const setCachedWeather = <T>(city: string, type: 'weather' | 'forecast', data: T): void => {
+  const cacheKey = `weather_${type}_${city}`;
+  localStorage.setItem(cacheKey, JSON.stringify({
+    timestamp: Date.now(),
+    data,
+  }));
+};
+
 export const apiService = {
   async getExchangeRates(): Promise<ExchangeRateResult> {
     const data = await baseApi.fetch<ExchangeRateResult>('/exchange-rate');
@@ -57,6 +81,11 @@ export const apiService = {
   },
 
   async getWeather(city: string): Promise<WeatherData> {
+    const cached = getCachedWeather<WeatherData>(city, 'weather');
+    if (cached) {
+      return cached;
+    }
+    
     const encodedCity = encodeURIComponent(city);
     const data = await baseApi.fetch<WeatherData>(`/weather?query=${encodedCity}`);
 
@@ -65,6 +94,7 @@ export const apiService = {
     }
 
     if (data.code === 200) {
+      setCachedWeather(city, 'weather', data);
       return data;
     } else {
       throw new Error(data.message || '获取天气数据失败');
@@ -72,6 +102,11 @@ export const apiService = {
   },
 
   async getWeatherForecast(city: string, days: number = 4): Promise<ForecastData> {
+    const cached = getCachedWeather<ForecastData>(city, 'forecast');
+    if (cached) {
+      return cached;
+    }
+    
     const encodedCity = encodeURIComponent(city);
     const data = await baseApi.fetch<ForecastData>(`/weather/forecast?query=${encodedCity}&days=${days}`);
 
@@ -80,6 +115,7 @@ export const apiService = {
     }
 
     if (data.code === 200) {
+      setCachedWeather(city, 'forecast', data);
       return data;
     } else {
       throw new Error(data.message || '获取天气预报失败');

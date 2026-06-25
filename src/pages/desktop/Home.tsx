@@ -6,7 +6,6 @@ import { websiteService } from '../../services/WebsiteService';
 import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps } from '../../utils/quickLaunch';
 import { loadHomeTools } from '../../utils/homeTools';
 import { isElectron } from '../../utils/environment';
-import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../../types/hotNews';
 import SearchBar from '../../components/home/SearchBar';
 import FavoritesBar, { Bookmark } from '../../components/home/FavoritesBar';
 import ToolGrid from '../../components/home/ToolGrid';
@@ -21,18 +20,6 @@ const Home: React.FC = () => {
   const [sixtySecondsData, setSixtySecondsData] = useState<string[] | null>(null);
   const [sixtySecondsLoading, setSixtySecondsLoading] = useState(false);
   const [sixtySecondsError, setSixtySecondsError] = useState('');
-
-  const [todayInHistoryData, setTodayInHistoryData] = useState<TodayInHistoryItem[] | null>(null);
-  const [todayInHistoryLoading, setTodayInHistoryLoading] = useState(false);
-  const [todayInHistoryError, setTodayInHistoryError] = useState('');
-
-  const [itNewsData, setItNewsData] = useState<ItNewsItem[] | null>(null);
-  const [itNewsLoading, setItNewsLoading] = useState(false);
-  const [itNewsError, setItNewsError] = useState('');
-
-  const [aiNewsData, setAiNewsData] = useState<AiNewsItem[] | null>(null);
-  const [aiNewsLoading, setAiNewsLoading] = useState(false);
-  const [aiNewsError, setAiNewsError] = useState('');
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [favorites, setFavorites] = useState<Bookmark[]>(() => {
@@ -77,60 +64,6 @@ const Home: React.FC = () => {
       setSixtySecondsError('网络错误，请检查网络连接后重试');
     } finally {
       setSixtySecondsLoading(false);
-    }
-  }, []);
-
-  const fetchTodayInHistory = useCallback(async () => {
-    setTodayInHistoryLoading(true);
-    setTodayInHistoryError('');
-    
-    try {
-      const data = await hotNewsApi.getTodayInHistory();
-      if (data) {
-        setTodayInHistoryData(data.data.items);
-      } else {
-        setTodayInHistoryError('获取数据失败，请稍后重试');
-      }
-    } catch {
-      setTodayInHistoryError('网络错误，请检查网络连接后重试');
-    } finally {
-      setTodayInHistoryLoading(false);
-    }
-  }, []);
-
-  const fetchItNews = useCallback(async () => {
-    setItNewsLoading(true);
-    setItNewsError('');
-    
-    try {
-      const data = await hotNewsApi.getItNews();
-      if (data) {
-        setItNewsData(data.data);
-      } else {
-        setItNewsError('获取数据失败，请稍后重试');
-      }
-    } catch {
-      setItNewsError('网络错误，请检查网络连接后重试');
-    } finally {
-      setItNewsLoading(false);
-    }
-  }, []);
-
-  const fetchAiNews = useCallback(async () => {
-    setAiNewsLoading(true);
-    setAiNewsError('');
-    
-    try {
-      const data = await hotNewsApi.getAiNews();
-      if (data) {
-        setAiNewsData(data.data.news);
-      } else {
-        setAiNewsError('获取数据失败，请稍后重试');
-      }
-    } catch {
-      setAiNewsError('网络错误，请检查网络连接后重试');
-    } finally {
-      setAiNewsLoading(false);
     }
   }, []);
 
@@ -217,14 +150,11 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     fetchSixtySeconds();
-    fetchTodayInHistory();
-    fetchItNews();
-    fetchAiNews();
     checkAuth();
     if (isDesktop) {
       fetchHomeQuickLaunchApps();
     }
-  }, [fetchSixtySeconds, fetchTodayInHistory, fetchItNews, fetchAiNews, checkAuth, fetchHomeQuickLaunchApps, isDesktop]);
+  }, [fetchSixtySeconds, checkAuth, fetchHomeQuickLaunchApps, isDesktop]);
 
   useEffect(() => {
     if (shouldFetchFavorites) {
@@ -275,19 +205,7 @@ const Home: React.FC = () => {
             sixtySecondsLoading={sixtySecondsLoading}
             sixtySecondsError={sixtySecondsError}
             sixtySecondsData={sixtySecondsData}
-            historyLoading={todayInHistoryLoading}
-            historyError={todayInHistoryError}
-            historyData={todayInHistoryData}
-            itNewsLoading={itNewsLoading}
-            itNewsError={itNewsError}
-            itNewsData={itNewsData}
-            aiNewsLoading={aiNewsLoading}
-            aiNewsError={aiNewsError}
-            aiNewsData={aiNewsData}
             onRetrySixtySeconds={fetchSixtySeconds}
-            onRetryHistory={fetchTodayInHistory}
-            onRetryItNews={fetchItNews}
-            onRetryAiNews={fetchAiNews}
           />
         </div>
 
@@ -299,4 +217,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default React.memo(Home);

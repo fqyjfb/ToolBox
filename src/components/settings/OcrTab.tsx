@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Scan, CheckCircle, AlertCircle, RefreshCw, Play, Square, HelpCircle, FolderOpen, Wifi, Clock, RotateCw, Save, Search } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
+import Modal from '../ui/Modal';
 import { useToastStore } from '../../store/toastStore';
 import { logError } from '../../services/loggerService';
 
@@ -506,111 +507,83 @@ const OcrTab: React.FC = () => {
         </div>
       </div>
 
-      {showDiagnoseModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-lg mx-4">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200">OCR 服务诊断结果</h3>
-              <button
-                onClick={() => setShowDiagnoseModal(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                ×
-              </button>
+      <Modal
+        isOpen={showDiagnoseModal}
+        onClose={() => setShowDiagnoseModal(false)}
+        title="OCR 服务诊断结果"
+        showCancel={false}
+        showConfirm={false}
+        size="lg"
+      >
+        <div className="max-h-96 overflow-auto">
+          {isDiagnosing ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="w-6 h-6 animate-spin text-primary mr-3" />
+              <span className="text-gray-600 dark:text-gray-400">正在运行诊断...</span>
             </div>
-            <div className="p-4 max-h-96 overflow-auto">
-              {isDiagnosing ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="w-6 h-6 animate-spin text-primary mr-3" />
-                  <span className="text-gray-600 dark:text-gray-400">正在运行诊断...</span>
+          ) : diagnoseResult ? (
+            <div className="space-y-4">
+              <div className={`p-3 rounded-lg text-sm ${diagnoseResult.success ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
+                {diagnoseResult.success ? '✓ 诊断通过，未发现问题' : '✗ 诊断完成，发现问题'}
+              </div>
+              {diagnoseResult.output && (
+                <div className="bg-gray-100 dark:bg-gray-900 p-3 rounded-lg">
+                  <pre className="text-xs font-mono whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                    {diagnoseResult.output}
+                  </pre>
                 </div>
-              ) : diagnoseResult ? (
-                <div className="space-y-4">
-                  <div className={`p-3 rounded-lg text-sm ${diagnoseResult.success ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
-                    {diagnoseResult.success ? '✓ 诊断通过，未发现问题' : '✗ 诊断完成，发现问题'}
-                  </div>
-                  {diagnoseResult.output && (
-                    <div className="bg-gray-100 dark:bg-gray-900 p-3 rounded-lg">
-                      <pre className="text-xs font-mono whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                        {diagnoseResult.output}
-                      </pre>
-                    </div>
-                  )}
-                  {diagnoseResult.error && (
-                    <div className="bg-error/10 p-3 rounded-lg">
-                      <div className="text-xs font-medium text-error mb-1">错误信息:</div>
-                      <pre className="text-xs font-mono text-error">
-                        {diagnoseResult.error}
-                      </pre>
-                    </div>
-                  )}
+              )}
+              {diagnoseResult.error && (
+                <div className="bg-error/10 p-3 rounded-lg">
+                  <div className="text-xs font-medium text-error mb-1">错误信息:</div>
+                  <pre className="text-xs font-mono text-error">
+                    {diagnoseResult.error}
+                  </pre>
                 </div>
-              ) : null}
+              )}
             </div>
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-              <button
-                onClick={() => setShowDiagnoseModal(false)}
-                className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-sm rounded-md transition-colors"
-              >
-                关闭
-              </button>
-            </div>
-          </div>
+          ) : null}
         </div>
-      )}
+      </Modal>
 
-      {showInstallModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-lg mx-4">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200">安装 Python 依赖</h3>
-              <button
-                onClick={() => setShowInstallModal(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                ×
-              </button>
+      <Modal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+        title="安装 Python 依赖"
+        showCancel={false}
+        showConfirm={false}
+        size="lg"
+      >
+        <div className="max-h-96 overflow-auto">
+          {isInstalling ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="w-6 h-6 animate-spin text-primary mr-3" />
+              <span className="text-gray-600 dark:text-gray-400">正在安装依赖，这可能需要几分钟...</span>
             </div>
-            <div className="p-4 max-h-96 overflow-auto">
-              {isInstalling ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="w-6 h-6 animate-spin text-primary mr-3" />
-                  <span className="text-gray-600 dark:text-gray-400">正在安装依赖，这可能需要几分钟...</span>
+          ) : installResult ? (
+            <div className="space-y-4">
+              <div className={`p-3 rounded-lg text-sm ${installResult.success ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
+                {installResult.success ? '✓ 依赖安装成功！' : '✗ 依赖安装失败'}
+              </div>
+              {installResult.output && (
+                <div className="bg-gray-100 dark:bg-gray-900 p-3 rounded-lg">
+                  <pre className="text-xs font-mono whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                    {installResult.output}
+                  </pre>
                 </div>
-              ) : installResult ? (
-                <div className="space-y-4">
-                  <div className={`p-3 rounded-lg text-sm ${installResult.success ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
-                    {installResult.success ? '✓ 依赖安装成功！' : '✗ 依赖安装失败'}
-                  </div>
-                  {installResult.output && (
-                    <div className="bg-gray-100 dark:bg-gray-900 p-3 rounded-lg">
-                      <pre className="text-xs font-mono whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                        {installResult.output}
-                      </pre>
-                    </div>
-                  )}
-                  {installResult.error && (
-                    <div className="bg-error/10 p-3 rounded-lg">
-                      <div className="text-xs font-medium text-error mb-1">错误信息:</div>
-                      <pre className="text-xs font-mono text-error">
-                        {installResult.error}
-                      </pre>
-                    </div>
-                  )}
+              )}
+              {installResult.error && (
+                <div className="bg-error/10 p-3 rounded-lg">
+                  <div className="text-xs font-medium text-error mb-1">错误信息:</div>
+                  <pre className="text-xs font-mono text-error">
+                    {installResult.error}
+                  </pre>
                 </div>
-              ) : null}
+              )}
             </div>
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-              <button
-                onClick={() => setShowInstallModal(false)}
-                className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-sm rounded-md transition-colors"
-              >
-                关闭
-              </button>
-            </div>
-          </div>
+          ) : null}
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

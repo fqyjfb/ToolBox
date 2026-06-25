@@ -174,6 +174,7 @@ export const syncManager = {
         id: string;
         updated_at: string;
         user_id: string;
+        [key: string]: unknown;
       }
 
       const localData = await offlineStorage.queryByUser<SyncItem>(storeName, userId);

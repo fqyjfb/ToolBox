@@ -278,6 +278,8 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      backgroundThrottling: false,
+      nativeWindowOpen: true,
     },
   });
 
@@ -309,15 +311,17 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   }
 
   mainWindow.webContents.on('did-finish-load', () => {
-    if (showOnReady) {
-      mainWindow.show();
-    }
-    initShortcuts();
-    startAutoLock();
+    setTimeout(() => {
+      if (showOnReady) {
+        mainWindow.show();
+      }
+      initShortcuts();
+      startAutoLock();
 
-    if (onReadyCallback) {
-      onReadyCallback();
-    }
+      if (onReadyCallback) {
+        onReadyCallback();
+      }
+    }, 100);
   });
 
   mainWindow.on('closed', () => {
@@ -713,6 +717,14 @@ Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
       return { code: success ? 0 : -1, msg: message, data: shortcuts[index] };
     }
     return { code: -1, msg: '快捷键不存在' };
+  });
+
+  ipcMain.handle('reset-shortcuts', () => {
+    const { defaultShortcuts } = require('../lib/config.cjs');
+    const newShortcuts = [...defaultShortcuts];
+    saveShortcuts(newShortcuts);
+    initShortcuts();
+    return { code: 0, msg: '已恢复默认快捷键' };
   });
 
   ipcMain.handle('get-version', async () => {

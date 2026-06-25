@@ -277,4 +277,4 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ className = '' }) => {
   );
 };
 
-export default MoyuCard;
+export default React.memo(MoyuCard);

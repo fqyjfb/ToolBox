@@ -256,3 +256,7 @@ export function logInfo(message: string, context?: string): void {
 export function logDebug(message: string, context?: string): void {
   loggerService.debug(message, context);
 }
+
+export const logEncryptionOperation = (operation: 'encrypt' | 'decrypt', duration: number, success: boolean) => {
+  logInfo(`加密操作: ${operation}, 耗时: ${duration}ms, 成功: ${success}`, 'CryptoService');
+};

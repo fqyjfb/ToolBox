@@ -1,46 +1,9 @@
 import { supabase } from './supabase'
 import type { Category, Bookmark } from '../types/website'
 import { logError, logInfo } from './loggerService'
+import { cacheService } from './cacheService'
 
-// 简单的缓存实现
-class CacheService {
-  private cache: Map<string, { data: unknown; timestamp: number }> = new Map()
-  private defaultExpiry = 5 * 60 * 1000 // 5分钟
-
-  get<T>(key: string): T | null {
-    const item = this.cache.get(key)
-    if (!item) return null
-
-    const now = Date.now()
-    if (now - item.timestamp > this.defaultExpiry) {
-      this.cache.delete(key)
-      return null
-    }
-
-    return item.data as T
-  }
-
-  set(key: string, data: unknown) {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now()
-    })
-  }
-
-  clearByPrefix(prefix: string) {
-    for (const key of this.cache.keys()) {
-      if (key.startsWith(prefix)) {
-        this.cache.delete(key)
-      }
-    }
-  }
-
-  clear() {
-    this.cache.clear()
-  }
-}
-
-const cacheService = new CacheService()
+const CACHE_TTL = 5 * 60 * 1000
 
 // 辅助函数：关联分类信息到书签
 async function attachCategoriesToBookmarks(bookmarks: Bookmark[], cachedCategories?: Category[]): Promise<Bookmark[]> {
@@ -93,7 +56,7 @@ export function buildCategoryTreeFromData(categories: Category[]): Category[] {
 export const websiteService = {
   // 分类相关
   async getCategories(options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<Category[]> {
-    const cacheKey = 'categories_all'
+    const cacheKey = 'website_categories_all'
     
     // 检查缓存
     if (!options?.forceRefresh) {
@@ -117,8 +80,7 @@ export const websiteService = {
 
       const categories = data as Category[] || []
 
-      // 设置缓存
-      cacheService.set(cacheKey, categories)
+      cacheService.set(cacheKey, categories, CACHE_TTL, 'website')
 
       return categories
     } catch (error) {
@@ -132,7 +94,7 @@ export const websiteService = {
   },
 
   async getCategoryById(id: string): Promise<Category | null> {
-    const cacheKey = `category_${id}`
+    const cacheKey = `website_category_${id}`
     
     // 检查缓存
     const cachedData = cacheService.get<Category>(cacheKey)
@@ -154,9 +116,8 @@ export const websiteService = {
 
       const category = data as Category || null
 
-      // 设置缓存
       if (category) {
-        cacheService.set(cacheKey, category)
+        cacheService.set(cacheKey, category, CACHE_TTL, 'website')
       }
 
       return category
@@ -170,38 +131,13 @@ export const websiteService = {
     }
   },
 
-  // 构建分类树结构
   buildCategoryTree(categories: Category[]): Category[] {
-    const categoryMap = new Map<string, Category>()
-    const rootCategories: Category[] = []
-    
-    // 初始化分类映射
-    categories.forEach(category => {
-      // 确保每个分类都有children属性
-      const categoryWithChildren = { ...category, children: [] }
-      categoryMap.set(category.id, categoryWithChildren)
-    })
-    
-    // 构建嵌套结构
-    categoryMap.forEach(category => {
-      if (!category.parent_id) {
-        // 根分类
-        rootCategories.push(category)
-      } else {
-        // 子分类，添加到父分类的children数组中
-        const parent = categoryMap.get(category.parent_id)
-        if (parent) {
-          parent.children?.push(category)
-        }
-      }
-    })
-    
-    return rootCategories
+    return buildCategoryTreeFromData(categories)
   },
 
   // 书签相关
   async getPublicBookmarks(options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<Bookmark[]> {
-    const cacheKey = 'bookmarks_public'
+    const cacheKey = 'website_bookmarks_public'
     
     // 检查缓存
     if (!options?.forceRefresh) {
@@ -227,8 +163,7 @@ export const websiteService = {
       // 关联分类信息，使用已获取的分类数据
       const bookmarksWithCategories = await attachCategoriesToBookmarks(bookmarksResult.data || [], categoriesResult)
       
-      // 设置缓存
-      cacheService.set(cacheKey, bookmarksWithCategories)
+      cacheService.set(cacheKey, bookmarksWithCategories, CACHE_TTL, 'website')
       
       return bookmarksWithCategories
     } catch (error) {
@@ -269,8 +204,7 @@ export const websiteService = {
         return false
       }
 
-      // 清除收藏相关缓存
-      cacheService.clearByPrefix(`favorites_user_${user.id}`)
+      cacheService.clearByCategory('website')
 
       logInfo(`添加收藏成功: 书签ID=${bookmarkId}`, 'WebsiteService')
       return true
@@ -299,8 +233,7 @@ export const websiteService = {
         return false
       }
       
-      // 清除收藏相关缓存
-      cacheService.clearByPrefix(`favorites_user_${user.id}`)
+      cacheService.clearByCategory('website')
       
       logInfo(`移除收藏成功: 书签ID=${bookmarkId}`, 'WebsiteService')
       return true
@@ -318,7 +251,7 @@ export const websiteService = {
         return []
       }
 
-      const cacheKey = `favorites_user_${user.id}`;
+      const cacheKey = `website_favorites_user_${user.id}`;
       
       // 检查缓存
       if (!options?.forceRefresh) {
@@ -337,8 +270,7 @@ export const websiteService = {
       if (error) throw error
       
       if (!favorites || favorites.length === 0) {
-        // 设置空缓存，避免重复请求
-        cacheService.set(cacheKey, [])
+        cacheService.set(cacheKey, [], CACHE_TTL, 'website')
         return []
       }
       
@@ -360,8 +292,7 @@ export const websiteService = {
         is_favorite: true
       }))
       
-      // 设置缓存
-      cacheService.set(cacheKey, bookmarksWithFavoriteFlag)
+      cacheService.set(cacheKey, bookmarksWithFavoriteFlag, CACHE_TTL, 'website')
       
       return bookmarksWithFavoriteFlag
     } catch (error) {
@@ -464,9 +395,7 @@ export const websiteService = {
       
       if (error) throw error
       
-      // 清除缓存
-      cacheService.clearByPrefix('admin_bookmarks')
-      cacheService.clearByPrefix('bookmarks_public')
+      cacheService.clearByCategory('website')
       
       return data as Bookmark
     } catch (error) {
@@ -488,9 +417,7 @@ export const websiteService = {
       
       if (error) throw error
       
-      // 清除缓存
-      cacheService.clearByPrefix('admin_bookmarks')
-      cacheService.clearByPrefix('bookmarks_public')
+      cacheService.clearByCategory('website')
       
       return true
     } catch (error) {
@@ -509,10 +436,7 @@ export const websiteService = {
       
       if (error) throw error
       
-      // 清除缓存
-      cacheService.clearByPrefix('admin_bookmarks')
-      cacheService.clearByPrefix('bookmarks_public')
-      cacheService.clearByPrefix('favorites_user')
+      cacheService.clearByCategory('website')
       
       return true
     } catch (error) {
@@ -536,8 +460,7 @@ export const websiteService = {
       
       if (error) throw error
       
-      // 清除缓存
-      cacheService.clearByPrefix('categories')
+      cacheService.clearByCategory('website')
       
       return data as Category
     } catch (error) {
@@ -559,8 +482,7 @@ export const websiteService = {
       
       if (error) throw error
       
-      // 清除缓存
-      cacheService.clearByPrefix('categories')
+      cacheService.clearByCategory('website')
       
       return true
     } catch (error) {
@@ -588,9 +510,7 @@ export const websiteService = {
       
       if (error) throw error
       
-      // 清除缓存
-      cacheService.clearByPrefix('categories')
-      cacheService.clearByPrefix('admin_bookmarks')
+      cacheService.clearByCategory('website')
       
       return true
     } catch (error) {

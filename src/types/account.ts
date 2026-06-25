@@ -1,3 +1,7 @@
+import { ListResponse } from './common';
+
+export type { ListResponse };
+
 export interface Shop {
   id: string;
   user_id: string;
@@ -196,11 +200,6 @@ export interface GeneralAccountRequest {
   security_question: string;
   security_answer: string;
   notes: string;
-}
-
-export interface ListResponse<T> {
-  list: T[];
-  total: number;
 }
 
 export interface PlatformVisibility {

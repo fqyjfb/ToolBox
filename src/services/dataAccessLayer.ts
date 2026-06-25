@@ -2,6 +2,9 @@ import { supabase } from './supabase'
 import { offlineStorage } from './offlineStorage'
 import { StorageLocation, SyncMetadata } from '../types/offline'
 import { logError, logInfo } from './loggerService'
+import { BaseEntity } from '../types/common'
+
+type CreateInput<T extends BaseEntity> = Omit<T, keyof BaseEntity>
 
 class StorageContext {
   private userId: string = ''
@@ -198,9 +201,9 @@ class StorageContext {
     }
   }
 
-  async create<T extends { id: string; user_id: string }>(
+  async create<T extends BaseEntity>(
     table: string,
-    data: Omit<T, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+    data: CreateInput<T>
   ): Promise<T> {
     const record = {
       ...data,
@@ -208,7 +211,7 @@ class StorageContext {
       user_id: this.userId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    } as unknown as T
+    } as T
 
     await offlineStorage.put(table, record)
 
@@ -228,7 +231,7 @@ class StorageContext {
     return record
   }
 
-  async update<T extends { id: string; updated_at: string }>(
+  async update<T extends BaseEntity>(
     table: string,
     id: string,
     data: Partial<T>

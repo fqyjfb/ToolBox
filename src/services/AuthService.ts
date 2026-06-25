@@ -2,6 +2,54 @@ import { AuthResponse, LoginRequest, Admin, RegisterRequest } from '../types/aut
 import { supabase } from './supabase'
 import { logError, logInfo } from './loggerService'
 
+const parseStoredAdmin = (): Admin | null => {
+  const storedAdmin = localStorage.getItem('admin')
+  if (!storedAdmin) return null
+
+  try {
+    return JSON.parse(storedAdmin)
+  } catch {
+    return null
+  }
+}
+
+const validateAdminRole = (role: string | null | undefined): boolean => {
+  return !!role && (role === 'super' || role === 'normal')
+}
+
+interface AuthUser {
+  id: string
+  email?: string
+  created_at?: string
+  user_metadata?: { name?: string; phone?: string }
+}
+
+const buildAdminFromProfile = (authUser: AuthUser, role: string): Admin => {
+  return {
+    id: authUser.id,
+    username: authUser.email || '',
+    role: role as 'super' | 'normal',
+    createdAt: authUser.created_at || '',
+    name: authUser.user_metadata?.name || '',
+    email: authUser.email || '',
+    phone: authUser.user_metadata?.phone || ''
+  }
+}
+
+const fetchUserRole = async (userId: string): Promise<string | null> => {
+  try {
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+
+    if (error || !profiles || profiles.length === 0) return null
+    return profiles[0].role || null
+  } catch {
+    return null
+  }
+}
+
 export const authService = {
   // 登录
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
@@ -78,9 +126,6 @@ export const authService = {
               phone: data.user.user_metadata?.phone || ''
             }
 
-            // 保存到localStorage
-            localStorage.setItem('admin', JSON.stringify(admin))
-
             logInfo(`用户登录成功: ${data.user.email}`, 'AuthService')
 
             return {
@@ -134,29 +179,15 @@ export const authService = {
   // 获取当前管理员信息
   getCurrentAdmin: async (): Promise<{ success: boolean; data?: Admin }> => {
     try {
-      // 1. 优先从localStorage获取管理员信息
-      const storedAdmin = localStorage.getItem('admin')
-      let parsedStoredAdmin: Admin | null = null
+      const parsedStoredAdmin = parseStoredAdmin()
 
-      if (storedAdmin) {
-        try {
-          parsedStoredAdmin = JSON.parse(storedAdmin)
-        } catch {
-          localStorage.removeItem('admin')
-          return { success: false }
-        }
-      }
-
-      // 2. 验证Supabase会话
       let isSessionValid = false
-      let authUser = null
+      let authUser: AuthUser | null = null
 
       try {
         const { data, error } = await supabase.auth.getUser()
         if (error) {
-          // 只有特定的致命错误才清除管理员数据
           if (error.code === 'auth/invalid-session' || error.code === 'auth/session-expired') {
-            localStorage.removeItem('admin')
             return { success: false }
           }
         } else {
@@ -167,7 +198,6 @@ export const authService = {
         // 网络错误或其他非致命错误，不清除管理员数据
       }
 
-      // 3. 如果会话无效且有存储的管理员数据，尝试刷新会话
       if (!isSessionValid && parsedStoredAdmin) {
         try {
           const { data, error } = await supabase.auth.refreshSession()
@@ -175,82 +205,38 @@ export const authService = {
             authUser = data.user
             isSessionValid = true
           } else {
-            // 刷新会话失败，清除管理员数据
-            localStorage.removeItem('admin')
             return { success: false }
           }
         } catch {
-          // 刷新会话失败，清除管理员数据
-          localStorage.removeItem('admin')
           return { success: false }
         }
       }
 
-      // 4. 如果会话无效且没有存储的管理员数据，返回失败
       if (!isSessionValid && !parsedStoredAdmin) {
         return { success: false }
       }
 
-      // 5. 会话有效，尝试获取最新管理员数据
       if (authUser) {
-        // 尝试从数据库获取角色信息
-        try {
-          const { data: profiles, error } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', authUser.id)
-          
-          if (error) {
-            // 角色获取失败，清除管理员数据
-            localStorage.removeItem('admin')
-            return { success: false }
-          } else if (profiles && profiles.length > 0) {
-            // 检查是否具有管理员角色
-            const role = profiles[0].role
-            if (!role || (role !== 'super' && role !== 'normal')) {
-              // 没有管理员角色，清除管理员数据
-              localStorage.removeItem('admin')
-              return { success: false }
-            }
-            
-            // 构建管理员对象
-            const admin: Admin = {
-              id: authUser.id,
-              username: authUser.email || '',
-              role: role as 'super' | 'normal',
-              createdAt: authUser.created_at,
-              name: authUser.user_metadata?.name || '',
-              email: authUser.email || '',
-              phone: authUser.user_metadata?.phone || ''
-            }
+        const role = await fetchUserRole(authUser.id)
 
-            // 保存到localStorage
-            localStorage.setItem('admin', JSON.stringify(admin))
-            return { success: true, data: admin }
-          } else {
-            // 没有找到用户角色信息，清除管理员数据
-            localStorage.removeItem('admin')
-            return { success: false }
-          }
-        } catch {
-          // 角色获取失败，清除管理员数据
-          localStorage.removeItem('admin')
+        if (!role) {
           return { success: false }
         }
+
+        if (!validateAdminRole(role)) {
+          return { success: false }
+        }
+
+        const admin = buildAdminFromProfile(authUser, role)
+        return { success: true, data: admin }
       }
 
-      // 6. 会话无效但有存储的管理员数据，返回失败
       if (parsedStoredAdmin) {
-        // 会话无效，即使有存储的管理员数据也不能返回成功
         return { success: false }
       }
 
       return { success: false }
     } catch (error) {
-      // 只有严重错误才清除管理员数据
-      if (error instanceof Error && (error.message.includes('invalid') || error.message.includes('expired'))) {
-        localStorage.removeItem('admin')
-      }
       return { success: false }
     }
   },
@@ -279,14 +265,9 @@ export const authService = {
         }
       }
 
-      // 无论signOut是否成功，都清除localStorage
-      localStorage.removeItem('admin')
-      
       logInfo('用户登出成功', 'AuthService')
       return { success: true }
     } catch {
-      // 不返回失败，确保登出流程能够完成
-      localStorage.removeItem('admin')
       return { success: true }
     }
   },
@@ -383,8 +364,6 @@ export const authService = {
         } catch (error) {
           logError('保存用户到users表失败', 'AuthService', error as Error)
         }
-
-        localStorage.setItem('admin', JSON.stringify(admin))
 
         logInfo(`用户注册成功: ${userData.email}`, 'AuthService')
 

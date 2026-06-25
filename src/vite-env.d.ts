@@ -171,6 +171,7 @@ declare interface Window {
     openUserDataFolder: () => Promise<{ success: boolean }>;
     getShortcuts: () => Promise<ShortcutItem[]>;
     updateShortcut: (shortcut: ShortcutItem & { flag?: boolean }) => Promise<UpdateResult>;
+    resetShortcuts: () => Promise<UpdateResult>;
     getVersion: () => Promise<AppVersionInfo>;
     downloadUpdate: (url: string) => Promise<DownloadResult>;
     installUpdate: (filePath: string) => Promise<UpdateResult>;

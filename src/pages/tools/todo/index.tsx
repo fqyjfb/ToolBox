@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Plus, Edit, Trash2, Tag, CheckSquare, FolderOpen } from 'lucide-react';
+import { Plus, FolderOpen } from 'lucide-react';
 import { todoServiceWrapper, Todo, TodoCategory, CreateTodoRequest, CreateTodoCategoryRequest } from '../../../services/TodoService';
 import { useAuthStore } from '../../../store/AuthStore';
-import { useToastStore } from '../../../store/toastStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
-import { useTodoNotification } from '../../../contexts/TodoNotificationContext';
-import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
-import Modal from '../../../components/ui/Modal';
+import ContextMenu from '../../../components/ui/ContextMenu';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import TodoCard from '../../../components/ui/TodoCard';
 import { debounce } from '../../../utils';
+import { useTodoOperations } from './useTodoOperations';
+import { useCategoryOperations } from './useCategoryOperations';
+import { useTodoContextMenu } from './useTodoContextMenu';
+import TodoFormModal from './TodoFormModal';
+import CategoryFormModal from './CategoryFormModal';
 
 function formatDateTimeForInput(dateTimeStr: string): string {
   if (!dateTimeStr) return '';
@@ -51,22 +53,9 @@ function formatDateTimeForInput(dateTimeStr: string): string {
   return trimmed;
 }
 
-const COLOR_OPTIONS = [
-  '#3B82F6',
-  '#F97316',
-  '#A855F7',
-  '#EF4444',
-  '#10B981',
-  '#EC4899',
-  '#06B6D4',
-  '#84CC16',
-];
-
 const TodoManagerPage: React.FC = () => {
   const admin = useAuthStore((state) => state.admin);
-  const addToast = useToastStore((state) => state.addToast);
   const { searchQuery, isSearchActive } = useNavSearch();
-  const { refreshCount } = useTodoNotification();
 
   const [todos, setTodos] = useState<Todo[]>([]);
   const [categories, setCategories] = useState<TodoCategory[]>([]);
@@ -77,19 +66,6 @@ const TodoManagerPage: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<TodoCategory | null>(null);
   const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
   const [newCategoryName, setNewCategoryName] = useState('');
-
-  const [contextMenu, setContextMenu] = useState<{
-    isOpen: boolean;
-    x: number;
-    y: number;
-    type: 'item' | 'category' | 'empty';
-    targetId?: string;
-  }>({
-    isOpen: false,
-    x: 0,
-    y: 0,
-    type: 'empty'
-  });
 
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -103,17 +79,20 @@ const TodoManagerPage: React.FC = () => {
     onConfirm: () => {}
   });
 
-  const [newTodo, setNewTodo] = useState({
+  const [newTodo, setNewTodo] = useState<CreateTodoRequest & { category_id: string | null }>({
     title: '',
     description: '',
     due_date: '',
-    priority: '中' as '高' | '中' | '低',
-    status: '待办' as '待办' | '进行中' | '已完成' | '已取消',
-    category_id: null as string | null
+    priority: '中',
+    status: '待办',
+    category_id: null
   });
 
-  // 防抖加载待办事项
   const debouncedLoadTodosRef = useRef<(() => void) | null>(null);
+
+  const { createTodo, updateTodo, toggleComplete, deleteTodo } = useTodoOperations();
+  const { createCategory, updateCategory, deleteCategory } = useCategoryOperations();
+  const { contextMenu, handleContextMenu, handleCloseContextMenu, getContextMenuItems } = useTodoContextMenu();
 
   const loadTodos = useCallback(async () => {
     if (!admin) return;
@@ -147,28 +126,21 @@ const TodoManagerPage: React.FC = () => {
     };
   }, []);
 
-  // 初始化防抖函数
   useEffect(() => {
     debouncedLoadTodosRef.current = debounce(() => {
       loadTodos();
     }, 300);
   }, [loadTodos]);
 
-  // 搜索查询变化时防抖加载
   useEffect(() => {
     if (debouncedLoadTodosRef.current) {
       debouncedLoadTodosRef.current();
     }
     return () => {
       if (debouncedLoadTodosRef.current) {
-        // debounce 内部已处理清理
       }
     };
   }, [searchQuery, isSearchActive]);
-
-  const handleCloseContextMenu = useCallback(() => {
-    setContextMenu(prev => ({ ...prev, isOpen: false }));
-  }, []);
 
   const todosByCategory = useMemo(() => {
     const grouped: Record<string, Todo[]> = {};
@@ -195,6 +167,17 @@ const TodoManagerPage: React.FC = () => {
   const inProgressCount = todos.filter(t => !t.is_completed).length;
   const completedCount = todos.filter(t => t.is_completed).length;
 
+  const resetNewTodo = useCallback(() => {
+    setNewTodo({
+      title: '',
+      description: '',
+      due_date: '',
+      priority: '中',
+      status: '待办',
+      category_id: null
+    });
+  }, []);
+
   const handleAddTodo = async () => {
     if (!admin || !newTodo.title.trim()) return;
 
@@ -207,43 +190,24 @@ const TodoManagerPage: React.FC = () => {
       category_id: newTodo.category_id
     };
 
-    const result = await todoServiceWrapper.todo.createTodo(admin.id, todoData);
-    if (result.success) {
+    const success = await createTodo(todoData);
+    if (success) {
       resetNewTodo();
       setShowAddTodoModal(false);
-      addToast({ message: '任务添加成功', type: 'success' });
-      refreshCount();
       loadTodos();
-    } else {
-      addToast({ message: '添加任务失败', type: 'error' });
     }
   };
 
-  const resetNewTodo = useCallback(() => {
-    setNewTodo({
-      title: '',
-      description: '',
-      due_date: '',
-      priority: '中',
-      status: '待办',
-      category_id: null
-    });
-  }, []);
-
-  const handleToggleComplete = useCallback(async (id: string) => {
+  const handleToggleCompleteLocal = useCallback(async (id: string) => {
     if (!admin) return;
     const todo = todos.find(t => t.id === id);
     if (!todo) return;
 
-    const result = await todoServiceWrapper.todo.updateTodoStatus(admin.id, id, !todo.is_completed);
-    if (result.success) {
-      addToast({ message: todo.is_completed ? '任务已取消完成' : '任务已完成', type: 'success' });
-      refreshCount();
+    const success = await toggleComplete(id, !todo.is_completed);
+    if (success) {
       loadTodos();
-    } else {
-      addToast({ message: '更新任务状态失败', type: 'error' });
     }
-  }, [admin, todos, addToast, refreshCount, loadTodos]);
+  }, [admin, todos, toggleComplete, loadTodos]);
 
   const handleEditTodo = useCallback((todo: Todo) => {
     setEditingTodo(todo);
@@ -271,30 +235,21 @@ const TodoManagerPage: React.FC = () => {
       category_id: newTodo.category_id
     };
 
-    const result = await todoServiceWrapper.todo.updateTodo(admin.id, editingTodo.id, todoData);
-    if (result.success) {
+    const success = await updateTodo(editingTodo.id, todoData);
+    if (success) {
       setEditingTodo(null);
       resetNewTodo();
       setShowAddTodoModal(false);
-      addToast({ message: '任务修改成功', type: 'success' });
-      refreshCount();
       loadTodos();
-    } else {
-      addToast({ message: '修改任务失败', type: 'error' });
     }
   };
 
-  const handleDeleteTodo = useCallback(async (id: string) => {
-    if (!admin) return;
-    const result = await todoServiceWrapper.todo.deleteTodo(admin.id, id);
-    if (result.success) {
-      addToast({ message: '任务删除成功', type: 'success' });
-      refreshCount();
+  const handleDeleteTodoLocal = useCallback(async (id: string) => {
+    const success = await deleteTodo(id);
+    if (success) {
       loadTodos();
-    } else {
-      addToast({ message: '删除任务失败', type: 'error' });
     }
-  }, [admin, addToast, refreshCount, loadTodos]);
+  }, [deleteTodo, loadTodos]);
 
   const handleAddCategory = async () => {
     if (!admin || !newCategoryName.trim()) return;
@@ -305,15 +260,12 @@ const TodoManagerPage: React.FC = () => {
       parent_id: null
     };
 
-    const result = await todoServiceWrapper.category.createCategory(admin.id, categoryData);
-    if (result.success) {
+    const success = await createCategory(categoryData);
+    if (success) {
       setNewCategoryName('');
       setNewCategoryColor('#3B82F6');
       setShowCategoryModal(false);
-      addToast({ message: '分类添加成功', type: 'success' });
       loadTodos();
-    } else {
-      addToast({ message: '添加分类失败', type: 'error' });
     }
   };
 
@@ -333,40 +285,21 @@ const TodoManagerPage: React.FC = () => {
       parent_id: null
     };
 
-    const result = await todoServiceWrapper.category.updateCategory(admin.id, editingCategory.id, categoryData);
-    if (result.success) {
+    const success = await updateCategory(editingCategory.id, categoryData);
+    if (success) {
       setEditingCategory(null);
       setNewCategoryName('');
       setShowCategoryModal(false);
-      addToast({ message: '分类修改成功', type: 'success' });
       loadTodos();
-    } else {
-      addToast({ message: '修改分类失败', type: 'error' });
     }
   };
 
-  const handleDeleteCategory = useCallback(async (id: string) => {
-    if (!admin) return;
-    const result = await todoServiceWrapper.category.deleteCategory(admin.id, id);
-    if (result.success) {
-      addToast({ message: '分类删除成功', type: 'success' });
+  const handleDeleteCategoryLocal = useCallback(async (id: string) => {
+    const success = await deleteCategory(id);
+    if (success) {
       loadTodos();
-    } else {
-      addToast({ message: '删除分类失败', type: 'error' });
     }
-  }, [admin, addToast, loadTodos]);
-
-  const handleContextMenu = useCallback((e: React.MouseEvent, type: 'item' | 'category' | 'empty', targetId?: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({
-      isOpen: true,
-      x: e.clientX,
-      y: e.clientY,
-      type,
-      targetId
-    });
-  }, []);
+  }, [deleteCategory, loadTodos]);
 
   const handleOpenConfirmDialog = useCallback((title: string, message: string, onConfirm: () => void) => {
     setConfirmDialog({
@@ -381,87 +314,6 @@ const TodoManagerPage: React.FC = () => {
   const handleCloseConfirmDialog = useCallback(() => {
     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
   }, []);
-
-  const getContextMenuItems = useCallback((): ContextMenuItem[] => {
-    if (contextMenu.type === 'item' && contextMenu.targetId) {
-      const item = todos.find(i => i.id === contextMenu.targetId);
-      if (!item) return [];
-      
-      return [
-        {
-          id: 'edit',
-          label: '编辑',
-          icon: <Edit className="w-4 h-4" />,
-          onClick: () => handleEditTodo(item)
-        },
-        {
-          id: 'toggle',
-          label: item.is_completed ? '标记为未完成' : '标记为完成',
-          icon: <CheckSquare className={`w-4 h-4 ${item.is_completed ? 'fill-current' : ''}`} />,
-          onClick: () => {
-            handleToggleComplete(item.id);
-            handleCloseContextMenu();
-          }
-        },
-        { id: 'divider1', label: '', divider: true },
-        {
-          id: 'delete',
-          label: '删除',
-          icon: <Trash2 className="w-4 h-4" />,
-          onClick: () => handleOpenConfirmDialog('删除确认', '确定要删除这个任务吗？', () => handleDeleteTodo(item.id))
-        }
-      ];
-    }
-
-    if (contextMenu.type === 'category' && contextMenu.targetId) {
-      const category = categories.find(c => c.id === contextMenu.targetId);
-      if (!category) return [];
-      
-      return [
-        {
-          id: 'edit',
-          label: '编辑',
-          icon: <Edit className="w-4 h-4" />,
-          onClick: () => {
-            handleEditCategory(category);
-            handleCloseContextMenu();
-          }
-        },
-        { id: 'divider1', label: '', divider: true },
-        {
-          id: 'delete',
-          label: '删除',
-          icon: <Trash2 className="w-4 h-4" />,
-          onClick: () => handleOpenConfirmDialog('删除确认', '确定要删除这个分类吗？', () => handleDeleteCategory(category.id))
-        }
-      ];
-    }
-
-    if (contextMenu.type === 'empty') {
-      return [
-        {
-          id: 'add-todo',
-          label: '添加任务',
-          icon: <Plus className="w-4 h-4" />,
-          onClick: () => {
-            setShowAddTodoModal(true);
-            handleCloseContextMenu();
-          }
-        },
-        {
-          id: 'add-category',
-          label: '添加分类',
-          icon: <Tag className="w-4 h-4" />,
-          onClick: () => {
-            setShowCategoryModal(true);
-            handleCloseContextMenu();
-          }
-        }
-      ];
-    }
-
-    return [];
-  }, [contextMenu.type, contextMenu.targetId, todos, categories, handleEditTodo, handleToggleComplete, handleDeleteTodo, handleEditCategory, handleDeleteCategory, handleCloseContextMenu, handleOpenConfirmDialog]);
 
   const handleCloseAddTodoModal = () => {
     setShowAddTodoModal(false);
@@ -480,6 +332,20 @@ const TodoManagerPage: React.FC = () => {
     setNewTodo(prev => ({ ...prev, category_id: categoryId }));
     setShowAddTodoModal(true);
   }, [resetNewTodo]);
+
+  const contextMenuItems = useMemo(() => getContextMenuItems(
+    todos,
+    categories,
+    handleEditTodo,
+    handleToggleCompleteLocal,
+    handleDeleteTodoLocal,
+    handleEditCategory,
+    handleDeleteCategoryLocal,
+    handleOpenConfirmDialog,
+    handleCloseContextMenu,
+    () => setShowAddTodoModal(true),
+    () => setShowCategoryModal(true)
+  ), [todos, categories, handleEditTodo, handleToggleCompleteLocal, handleDeleteTodoLocal, handleEditCategory, handleDeleteCategoryLocal, handleOpenConfirmDialog, handleCloseContextMenu, getContextMenuItems]);
 
   if (!admin) return null;
 
@@ -559,11 +425,11 @@ const TodoManagerPage: React.FC = () => {
                     todos={todosByCategory[category.id]}
                     color={category.color || '#3B82F6'}
                     onContextMenu={handleContextMenu}
-                    onToggleComplete={handleToggleComplete}
+                    onToggleComplete={handleToggleCompleteLocal}
                     onEditTodo={handleEditTodo}
-                    onDeleteTodo={handleDeleteTodo}
+                    onDeleteTodo={handleDeleteTodoLocal}
                     onEditCategory={handleEditCategory}
-                    onDeleteCategory={handleDeleteCategory}
+                    onDeleteCategory={handleDeleteCategoryLocal}
                     onOpenConfirmDialog={handleOpenConfirmDialog}
                     onAddTodo={handleAddTodoWithCategory}
                     categories={categories}
@@ -578,11 +444,11 @@ const TodoManagerPage: React.FC = () => {
                   todos={todosByCategory['uncategorized']}
                   color="#6B7280"
                   onContextMenu={handleContextMenu}
-                  onToggleComplete={handleToggleComplete}
+                  onToggleComplete={handleToggleCompleteLocal}
                   onEditTodo={handleEditTodo}
-                  onDeleteTodo={handleDeleteTodo}
+                  onDeleteTodo={handleDeleteTodoLocal}
                   onEditCategory={handleEditCategory}
-                  onDeleteCategory={handleDeleteCategory}
+                  onDeleteCategory={handleDeleteCategoryLocal}
                   onOpenConfirmDialog={handleOpenConfirmDialog}
                   onAddTodo={handleAddTodoWithCategory}
                   categories={categories}
@@ -602,143 +468,37 @@ const TodoManagerPage: React.FC = () => {
           )}
         </div>
 
-      <Modal
+      <TodoFormModal
         isOpen={showAddTodoModal}
         onClose={handleCloseAddTodoModal}
-        title={editingTodo ? '编辑任务' : '添加新任务'}
-        confirmText={editingTodo ? '保存' : '添加'}
+        editingTodo={editingTodo}
+        newTodo={newTodo}
+        categories={categories}
+        onNewTodoChange={setNewTodo}
         onConfirm={editingTodo ? handleSaveEdit : handleAddTodo}
-        confirmDisabled={!newTodo.title.trim()}
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">任务标题 *</label>
-            <input
-              type="text"
-              value={newTodo.title}
-              onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
-              placeholder="输入任务标题"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类</label>
-            <select
-              value={newTodo.category_id || ''}
-              onChange={(e) => setNewTodo({ ...newTodo, category_id: e.target.value || null })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">未分类</option>
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">优先级</label>
-              <select
-                value={newTodo.priority}
-                onChange={(e) => setNewTodo({ ...newTodo, priority: e.target.value as '高' | '中' | '低' })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-              >
-                <option value="高">高</option>
-                <option value="中">中</option>
-                <option value="低">低</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">截止日期</label>
-              <input
-                type="datetime-local"
-                value={newTodo.due_date ? formatDateTimeForInput(newTodo.due_date) : ''}
-                onChange={(e) => setNewTodo({ ...newTodo, due_date: e.target.value.replace('T', ' ') })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">描述</label>
-            <textarea
-              value={newTodo.description}
-              onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
-              placeholder="输入任务描述"
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-        </div>
-      </Modal>
+        formatDateTimeForInput={formatDateTimeForInput}
+      />
 
-      <Modal
+      <CategoryFormModal
         isOpen={showCategoryModal}
         onClose={handleCloseCategoryModal}
-        title={editingCategory ? '编辑分类' : '新建分类'}
-        confirmText={editingCategory ? '保存' : '创建'}
+        editingCategory={editingCategory}
+        newCategoryName={newCategoryName}
+        newCategoryColor={newCategoryColor}
+        categories={categories}
+        onNewCategoryNameChange={setNewCategoryName}
+        onNewCategoryColorChange={setNewCategoryColor}
         onConfirm={editingCategory ? handleSaveCategoryEdit : handleAddCategory}
-        confirmDisabled={!newCategoryName.trim()}
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类名称 *</label>
-            <input
-              type="text"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="输入分类名称"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">颜色</label>
-            <div className="flex gap-2 flex-wrap">
-              {COLOR_OPTIONS.map((color) => (
-                <div
-                  key={color}
-                  className={`w-7 h-7 rounded-full cursor-pointer border-2 transition-all bg-[${color}] ${
-                    newCategoryColor === color
-                      ? 'border-white scale-110'
-                      : 'border-transparent hover:scale-105'
-                  }`}
-                  onClick={() => setNewCategoryColor(color)}
-                />
-              ))}
-            </div>
-          </div>
-          {categories.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">现有分类</h3>
-              <div className="space-y-2">
-                {categories.map(category => (
-                  <div key={category.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-                    <span className="text-sm text-gray-800 dark:text-white">{category.name}</span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditCategory(category)}
-                        className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenConfirmDialog('删除确认', '确定要删除这个分类吗？', () => handleDeleteCategory(category.id))}
-                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </Modal>
+        onEditCategory={handleEditCategory}
+        onDeleteCategory={handleDeleteCategoryLocal}
+        onOpenConfirmDialog={handleOpenConfirmDialog}
+      />
 
       <ContextMenu
         isOpen={contextMenu.isOpen}
         x={contextMenu.x}
         y={contextMenu.y}
-        items={getContextMenuItems()}
+        items={contextMenuItems}
         onClose={handleCloseContextMenu}
       />
 

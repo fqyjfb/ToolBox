@@ -8,8 +8,10 @@ import LoadingSpinner from './components/ui/LoadingSpinner';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/AuthStore';
 import { useSidebarStore } from './store/sidebarStore';
+import { useSyncStore } from './store/syncStore';
 import { logError, logInfo } from './services/loggerService';
 import { syncManager } from './services/syncManager';
+import { validateEncryptionKey } from './utils/crypto';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes, RouteConfig } from './config/routes';
@@ -155,6 +157,7 @@ const isMobile = (): boolean => {
 
 function App() {
   const { isDark, setTheme } = useThemeStore();
+  const { setLastSyncTime, setStorageLocation, setSyncEnabled, setSyncModules, setSyncOnStartupEnabled } = useSyncStore();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const admin = useAuthStore((state) => state.admin);
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -206,9 +209,17 @@ function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        await useAuthStore.getState().getCurrentAdmin();
+        if (validateEncryptionKey()) {
+          logInfo('加密密钥加载成功', 'App');
+        } else {
+          logError('加密密钥加载失败，请检查 VITE_ENCRYPTION_KEY 环境变量', 'App');
+        }
+        
+        useAuthStore.getState().getCurrentAdmin().catch(() => {
+          logError('初始化认证状态失败', 'App');
+        });
       } catch (error) {
-        logError('初始化认证状态失败', 'App', error as Error);
+        logError('初始化失败', 'App', error as Error);
       } finally {
         setIsInitialized(true);
       }
@@ -220,30 +231,34 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated || !admin?.id) return;
 
-    const performSync = async () => {
-      const storageLocation = useThemeStore.getState().storageLocation;
-      const syncEnabled = useThemeStore.getState().syncEnabled;
-
-      if (storageLocation !== 'cloud' || !syncEnabled) {
-        return;
-      }
-
+    const loadSyncMetadata = async () => {
       try {
-        const hasUpdates = await syncManager.hasCloudUpdates(admin.id);
-        if (!hasUpdates) {
-          return;
+        const metadata = await syncManager.getSyncMetadata(admin.id);
+        if (metadata) {
+          setSyncEnabled(metadata.syncEnabled);
+          setStorageLocation(metadata.storageLocation);
+          if (metadata.syncModules && metadata.syncModules.length > 0) {
+            const validKeys = ['account', 'todo', 'quickReply', 'clipboard'] as const;
+            setSyncModules(metadata.syncModules.filter(m => validKeys.includes(m.key)));
+          }
+          if (metadata.lastSyncTime !== '1970-01-01T00:00:00Z') {
+            setLastSyncTime(metadata.lastSyncTime);
+          }
+          setSyncOnStartupEnabled(metadata.syncOnStartupEnabled ?? true);
         }
-        
-        await syncManager.syncAll(admin.id, true);
-        useThemeStore.getState().setLastSyncTime(new Date().toISOString());
-        logInfo('静默同步完成', 'App');
       } catch (error) {
-        logError('静默同步失败', 'App', error as Error);
+        logError('加载同步配置失败', 'App', error as Error);
       }
     };
 
-    performSync();
-  }, [isAuthenticated, admin?.id]);
+    loadSyncMetadata();
+
+    const timer = setTimeout(() => {
+      syncManager.syncOnStartup(admin.id);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, admin?.id, setSyncEnabled, setStorageLocation, setSyncModules, setLastSyncTime, setSyncOnStartupEnabled]);
 
   if (!isInitialized || isLoading) {
     return (

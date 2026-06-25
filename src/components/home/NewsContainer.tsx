@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import { openUrl } from '../../services/browserService';
+import { hotNewsApi } from '../../services/hotNews';
 import type { TodayInHistoryItem, ItNewsItem, AiNewsItem } from '../../types/hotNews';
 
 interface NewsItem {
@@ -16,22 +17,7 @@ interface NewsContainerProps {
   sixtySecondsError: string;
   sixtySecondsData: string[] | null;
   
-  historyLoading: boolean;
-  historyError: string;
-  historyData: TodayInHistoryItem[] | null;
-  
-  itNewsLoading: boolean;
-  itNewsError: string;
-  itNewsData: ItNewsItem[] | null;
-  
-  aiNewsLoading: boolean;
-  aiNewsError: string;
-  aiNewsData: AiNewsItem[] | null;
-  
   onRetrySixtySeconds: () => void;
-  onRetryHistory: () => void;
-  onRetryItNews: () => void;
-  onRetryAiNews: () => void;
 }
 
 type TabType = 'news' | 'history' | 'it' | 'ai';
@@ -40,21 +26,21 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
   sixtySecondsLoading,
   sixtySecondsError,
   sixtySecondsData,
-  historyLoading,
-  historyError,
-  historyData,
-  itNewsLoading,
-  itNewsError,
-  itNewsData,
-  aiNewsLoading,
-  aiNewsError,
-  aiNewsData,
-  onRetrySixtySeconds,
-  onRetryHistory,
-  onRetryItNews,
-  onRetryAiNews
+  onRetrySixtySeconds
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('news');
+  
+  const [historyData, setHistoryData] = useState<TodayInHistoryItem[] | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
+  
+  const [itNewsData, setItNewsData] = useState<ItNewsItem[] | null>(null);
+  const [itNewsLoading, setItNewsLoading] = useState(false);
+  const [itNewsError, setItNewsError] = useState('');
+  
+  const [aiNewsData, setAiNewsData] = useState<AiNewsItem[] | null>(null);
+  const [aiNewsLoading, setAiNewsLoading] = useState(false);
+  const [aiNewsError, setAiNewsError] = useState('');
 
   const tabs = [
     { id: 'news' as TabType, label: '热点' },
@@ -62,6 +48,76 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
     { id: 'it' as TabType, label: 'IT资讯' },
     { id: 'ai' as TabType, label: 'AI快报' }
   ];
+
+  const fetchHistoryData = useCallback(async () => {
+    if (historyData) return;
+    setHistoryLoading(true);
+    setHistoryError('');
+    try {
+      const data = await hotNewsApi.getTodayInHistory();
+      if (data) {
+        setHistoryData(data.data.items);
+      } else {
+        setHistoryError('获取数据失败');
+      }
+    } catch {
+      setHistoryError('网络错误');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [historyData]);
+
+  const fetchItNewsData = useCallback(async () => {
+    if (itNewsData) return;
+    setItNewsLoading(true);
+    setItNewsError('');
+    try {
+      const data = await hotNewsApi.getItNews();
+      if (data) {
+        setItNewsData(data.data);
+      } else {
+        setItNewsError('获取数据失败');
+      }
+    } catch {
+      setItNewsError('网络错误');
+    } finally {
+      setItNewsLoading(false);
+    }
+  }, [itNewsData]);
+
+  const fetchAiNewsData = useCallback(async () => {
+    if (aiNewsData) return;
+    setAiNewsLoading(true);
+    setAiNewsError('');
+    try {
+      const data = await hotNewsApi.getAiNews();
+      if (data) {
+        setAiNewsData(data.data.news);
+      } else {
+        setAiNewsError('获取数据失败');
+      }
+    } catch {
+      setAiNewsError('网络错误');
+    } finally {
+      setAiNewsLoading(false);
+    }
+  }, [aiNewsData]);
+
+  const handleTabChange = useCallback((tabId: TabType) => {
+    setActiveTab(tabId);
+    
+    switch (tabId) {
+      case 'history':
+        fetchHistoryData();
+        break;
+      case 'it':
+        fetchItNewsData();
+        break;
+      case 'ai':
+        fetchAiNewsData();
+        break;
+    }
+  }, [fetchHistoryData, fetchItNewsData, fetchAiNewsData]);
 
   const getTabData = (): {
     loading: boolean;
@@ -86,7 +142,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
             link: item.link,
             description: item.description
           })) || null,
-          onRetry: onRetryHistory
+          onRetry: fetchHistoryData
         };
       case 'it':
         return {
@@ -97,7 +153,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
             link: item.link,
             description: item.description
           })) || null,
-          onRetry: onRetryItNews
+          onRetry: fetchItNewsData
         };
       case 'ai':
         return {
@@ -109,7 +165,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
             description: item.detail,
             source: item.source
           })) || null,
-          onRetry: onRetryAiNews
+          onRetry: fetchAiNewsData
         };
       default:
         return { loading: false, error: '', data: null, onRetry: () => {} };
@@ -119,7 +175,23 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
   const { loading, error, data, onRetry } = getTabData();
 
   const handleRefresh = () => {
-    onRetry();
+    switch (activeTab) {
+      case 'news':
+        onRetrySixtySeconds();
+        break;
+      case 'history':
+        setHistoryData(null);
+        fetchHistoryData();
+        break;
+      case 'it':
+        setItNewsData(null);
+        fetchItNewsData();
+        break;
+      case 'ai':
+        setAiNewsData(null);
+        fetchAiNewsData();
+        break;
+    }
   };
 
   return (
@@ -129,7 +201,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 activeTab === tab.id
                   ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
@@ -189,4 +261,4 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
   );
 };
 
-export default NewsContainer;
+export default React.memo(NewsContainer);

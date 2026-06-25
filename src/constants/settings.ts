@@ -83,3 +83,33 @@ export const FLOAT_TYPE_OPTIONS = [
 ];
 
 export const DEFAULT_WINDOW_SIZE = { width: 1024, height: 800 };
+
+export const PAGINATION = {
+  DEFAULT_PAGE: 1,
+  DEFAULT_PAGE_SIZE: 10,
+  MAX_PAGE_SIZE: 100,
+};
+
+export const CACHE = {
+  DEFAULT_TTL: 5 * 60 * 1000,
+  CATEGORIES_TTL: 10 * 60 * 1000,
+};
+
+export const TODO = {
+  DEFAULT_PRIORITY: '中' as const,
+  DEFAULT_STATUS: '待办' as const,
+};
+
+export const SYNC = {
+  BATCH_SIZE: 20,
+  BATCH_DELAY: 100,
+};
+
+export const OCR = {
+  MAX_HISTORY_COUNT: 20,
+};
+
+export const AI_CHAT = {
+  MAX_REFERENCE_IMAGES: 4,
+  MAX_MESSAGE_HISTORY: 50,
+};

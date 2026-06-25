@@ -1,11 +1,6 @@
 import { getDataAccessLayer } from './dataAccessLayer'
 import { logError, logInfo } from './loggerService'
-
-interface ServiceResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
-}
+import { ServiceResponse, BaseEntity } from '../types/common'
 
 interface ListOptions {
   filters?: Record<string, unknown>
@@ -18,7 +13,7 @@ interface SearchOptions {
   range?: { from: number; to: number }
 }
 
-export class BaseService<T extends { id: string; user_id: string; created_at: string; updated_at: string }> {
+export class BaseService<T extends BaseEntity> {
   protected tableName: string
   protected serviceName: string
 

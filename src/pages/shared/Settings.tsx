@@ -127,8 +127,7 @@ const Settings: React.FC = () => {
     loadQuickLaunchApps();
   }, [loadSettings, loadShortcuts, loadFloatConfig, loadQuickLaunchApps]);
 
-
-
+  
   // Event handlers
   const handleAutostartToggle = async (enabled: boolean) => {
     try {
@@ -290,6 +289,26 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleResetShortcuts = async () => {
+    try {
+      if (window.electron) {
+        const result = await window.electron.resetShortcuts();
+        if (result.code === 0) {
+          loadShortcuts();
+          addToast({ type: 'success', message: '已恢复默认快捷键' });
+        } else {
+          addToast({ type: 'error', message: result.msg });
+        }
+      } else {
+        setShortcuts(DEFAULT_SHORTCUTS);
+        addToast({ type: 'success', message: '已恢复默认快捷键' });
+      }
+    } catch (error) {
+      logError('Failed to reset shortcuts', 'Settings', error as Error);
+      addToast({ type: 'error', message: '重置快捷键失败' });
+    }
+  };
+
   const handleFloatConfigUpdate = (index: number, config: FloatConfigItem) => {
     const newConfig = [...floatConfig];
     newConfig[index] = config;
@@ -434,6 +453,7 @@ const Settings: React.FC = () => {
           <ShortcutsTab
             shortcuts={shortcuts}
             onUpdateShortcut={handleUpdateShortcut}
+            onResetShortcuts={handleResetShortcuts}
           />
         )}
 

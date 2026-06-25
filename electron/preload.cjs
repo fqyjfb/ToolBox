@@ -62,6 +62,7 @@ contextBridge.exposeInMainWorld('electron', {
   openUserDataFolder: () => ipcRenderer.invoke('open-user-data-folder'),
   getShortcuts: () => ipcRenderer.invoke('get-shortcuts'),
   updateShortcut: (shortcut) => ipcRenderer.invoke('update-shortcut', shortcut),
+  resetShortcuts: () => ipcRenderer.invoke('reset-shortcuts'),
   getVersion: () => ipcRenderer.invoke('get-version'),
   downloadUpdate: (url) => ipcRenderer.invoke('download-update', url),
   installUpdate: (filePath) => ipcRenderer.invoke('install-update', filePath),
