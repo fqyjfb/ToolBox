@@ -2,6 +2,20 @@ import { create } from 'zustand';
 import type { Conversation, ImageResult, VideoTask, Message, RolePreset, FontGenerationTask } from '../types/agnes';
 import { agnesLocalStorage } from '../services/agnesLocalStorage';
 import { logError, logInfo } from '../services/loggerService';
+import {
+  deleteMessage,
+  deleteConversation,
+  deleteImageTask,
+  deleteVideoTask,
+  deleteFontTask,
+  deleteRolePreset,
+  getUserConversations,
+  getRolePresets,
+  getUserImageHistory,
+  getUserVideoTasks,
+  getUserFontTasks,
+  getConversationMessages,
+} from '../services/AgnesService';
 
 const defaultRolePresets: RolePreset[] = [
   {
@@ -208,9 +222,8 @@ export const useAgnesStore = create<AgnesState>((set) => ({
       if (!uuidRegex.test(messageId)) {
         return;
       }
-      const { deleteMessage: deleteMessageDb } = await import('../services/AgnesService');
       try {
-        await deleteMessageDb(userId, messageId);
+        await deleteMessage(userId, messageId);
         logInfo(`消息已同步删除: ${messageId}`, 'agnesStore');
       } catch (error) {
         logError('删除消息失败:', 'agnesStore', error as Error);
@@ -230,9 +243,8 @@ export const useAgnesStore = create<AgnesState>((set) => ({
       if (!uuidRegex.test(id)) {
         return;
       }
-      const { deleteConversation: deleteConversationDb } = await import('../services/AgnesService');
       try {
-        await deleteConversationDb(userId, id);
+        await deleteConversation(userId, id);
         logInfo(`对话已同步删除: ${id}`, 'agnesStore');
       } catch (error) {
         logError('删除对话失败', 'agnesStore', error as Error);
@@ -288,9 +300,8 @@ export const useAgnesStore = create<AgnesState>((set) => ({
 
     if (userId) {
       agnesLocalStorage.deleteImage(userId, imageId);
-      const { deleteImageTask: deleteImageTaskDb } = await import('../services/AgnesService');
       try {
-        await deleteImageTaskDb(userId, imageId);
+        await deleteImageTask(userId, imageId);
         logInfo(`图片任务已同步删除: ${imageId}`, 'agnesStore');
       } catch (error) {
         logError('删除图片任务失败', 'agnesStore', error as Error);
@@ -324,9 +335,8 @@ export const useAgnesStore = create<AgnesState>((set) => ({
 
     if (userId) {
       agnesLocalStorage.deleteVideoTask(userId, taskId);
-      const { deleteVideoTask: deleteVideoTaskDb } = await import('../services/AgnesService');
       try {
-        await deleteVideoTaskDb(userId, taskId);
+        await deleteVideoTask(userId, taskId);
         logInfo(`视频任务已同步删除: ${taskId}`, 'agnesStore');
       } catch (error) {
         logError('删除视频任务失败', 'agnesStore', error as Error);
@@ -367,9 +377,8 @@ export const useAgnesStore = create<AgnesState>((set) => ({
 
     if (userId) {
       agnesLocalStorage.deleteFontTask(userId, taskId);
-      const { deleteFontTask: deleteFontTaskDb } = await import('../services/AgnesService');
       try {
-        await deleteFontTaskDb(userId, taskId);
+        await deleteFontTask(userId, taskId);
         logInfo(`字体任务已同步删除: ${taskId}`, 'agnesStore');
       } catch (error) {
         logError('删除字体任务失败', 'agnesStore', error as Error);
@@ -403,9 +412,8 @@ export const useAgnesStore = create<AgnesState>((set) => ({
     }));
 
     if (userId) {
-      const { deleteRolePreset: deleteRolePresetDb } = await import('../services/AgnesService');
       try {
-        await deleteRolePresetDb(userId, id);
+        await deleteRolePreset(userId, id);
         logInfo(`角色预设已同步删除: ${id}`, 'agnesStore');
       } catch (error) {
         logError('删除角色预设失败', 'agnesStore', error as Error);
@@ -423,8 +431,6 @@ export const useAgnesStore = create<AgnesState>((set) => ({
   },
 
   loadFromDatabase: async (userId: string) => {
-    const { getUserConversations, getRolePresets, getUserImageHistory, getUserVideoTasks, getUserFontTasks, getConversationMessages } = await import('../services/AgnesService');
-
     // 优先从本地存储读取数据
     const localConversations = agnesLocalStorage.getConversations(userId);
     const localImageHistory = agnesLocalStorage.getImageHistory(userId);
