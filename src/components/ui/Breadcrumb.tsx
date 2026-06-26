@@ -55,6 +55,7 @@ const routeLabelMap: Record<string, string> = {
   '/tools/font-generator': '字体生成器',
   '/tools/ai-chat': 'AI助手',
   '/tools/ai-chat/history': '历史记录',
+  '/tools/color-palette': '调色板',
   '/tools/ai-chat/roles': '角色预设',
   '/logs': '日志',
   '/admin': '管理控制台',

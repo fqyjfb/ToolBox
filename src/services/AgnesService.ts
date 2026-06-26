@@ -448,6 +448,23 @@ export async function saveRolePreset(userId: string, preset: Omit<RolePreset, 'i
   return data;
 }
 
+// 更新角色预设
+export async function updateRolePresetInDb(userId: string, presetId: string, updates: Partial<RolePreset>) {
+  const { error } = await supabase
+    .from('role_presets')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', presetId)
+    .eq('user_id', userId);
+
+  if (error) {
+    logError('更新角色预设失败', 'RolePresetService', error);
+    throw error;
+  }
+}
+
 // 更新对话标题
 export async function updateConversationTitle(userId: string, conversationId: string, title: string) {
   const { error } = await supabase

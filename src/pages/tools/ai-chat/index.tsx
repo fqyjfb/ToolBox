@@ -5,12 +5,15 @@ import { createChatCompletion, generateImage, createVideoTask } from '../../../s
 import { createConversation, addMessage as addMessageToDb, createImageTask, createVideoTask as createVideoTaskRecord } from '../../../services/AgnesService';
 import { agnesLocalStorage } from '../../../services/agnesLocalStorage';
 import type { Message, Conversation, VideoTask, ImageResult } from '../../../types/agnes';
-import { Send, ImageIcon, Video, RefreshCw, Plus, X, Wand2, Sparkles, Layers, Film, Trash2, Copy, Download, History, Edit3, FileText, Link2, Check } from 'lucide-react';
+import { Send, ImageIcon, Video, RefreshCw, Plus, X, Wand2, Sparkles, Layers, Film, Trash2, Copy, Download, History, Edit3, FileText, Link2, Check, Pencil, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
 import { isElectron } from '../../../utils/environment';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -117,6 +120,7 @@ export default function AIChatPage() {
     addConversation,
     selectConversation,
     updateConversationId,
+    updateConversationTitle,
     addMessage,
     updateMessage,
     deleteMessage,
@@ -145,6 +149,32 @@ export default function AIChatPage() {
   const [editingContent, setEditingContent] = useState('');
   const [thinkingExpanded, setThinkingExpanded] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    x: number;
+    y: number;
+    type: 'conversation' | 'sidebar';
+    conversationId: string | null;
+  }>({
+    isOpen: false,
+    x: 0,
+    y: 0,
+    type: 'sidebar',
+    conversationId: null,
+  });
+
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renamingConversationId, setRenamingConversationId] = useState<string | null>(null);
+  const [renameTitle, setRenameTitle] = useState('');
+
+  const [confirmDelete, setConfirmDelete] = useState<{
+    isOpen: boolean;
+    conversationId: string | null;
+  }>({
+    isOpen: false,
+    conversationId: null,
+  });
 
   const [toolOptions, setToolOptions] = useState<ToolOptions>({
     imageModel: 'agnes-image-2.1-flash',
@@ -187,6 +217,117 @@ export default function AIChatPage() {
     setEditingContent('');
   };
 
+  const handleConversationContextMenu = (e: React.MouseEvent, conversationId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      isOpen: true,
+      x: e.clientX,
+      y: e.clientY,
+      type: 'conversation',
+      conversationId,
+    });
+  };
+
+  const handleSidebarContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      isOpen: true,
+      x: e.clientX,
+      y: e.clientY,
+      type: 'sidebar',
+      conversationId: null,
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu({
+      isOpen: false,
+      x: 0,
+      y: 0,
+      type: 'sidebar',
+      conversationId: null,
+    });
+  };
+
+  const handleRename = () => {
+    if (!contextMenu.conversationId) return;
+    const conv = conversations.find((c) => c.id === contextMenu.conversationId);
+    if (conv) {
+      setRenamingConversationId(conv.id);
+      setRenameTitle(conv.title);
+      setShowRenameModal(true);
+    }
+    handleCloseContextMenu();
+  };
+
+  const handleConfirmRename = () => {
+    if (!renamingConversationId || !renameTitle.trim()) return;
+    updateConversationTitle(renamingConversationId, renameTitle.trim());
+    if (admin) {
+      agnesLocalStorage.updateConversation(admin.id, renamingConversationId, { title: renameTitle.trim() });
+    }
+    setShowRenameModal(false);
+    setRenamingConversationId(null);
+    setRenameTitle('');
+  };
+
+  const handleDeleteFromContextMenu = () => {
+    if (!contextMenu.conversationId) return;
+    setConfirmDelete({
+      isOpen: true,
+      conversationId: contextMenu.conversationId,
+    });
+    handleCloseContextMenu();
+  };
+
+  const handleConfirmDelete = () => {
+    if (!confirmDelete.conversationId) return;
+    deleteConversation(confirmDelete.conversationId, admin?.id);
+    setConfirmDelete({
+      isOpen: false,
+      conversationId: null,
+    });
+  };
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    handleCloseContextMenu();
+  };
+
+  const contextMenuItems: ContextMenuItem[] = contextMenu.type === 'conversation'
+    ? [
+        {
+          id: 'rename',
+          label: '重命名',
+          icon: <Pencil className="w-4 h-4" />,
+          onClick: handleRename,
+        },
+        {
+          id: 'delete',
+          label: '删除',
+          icon: <Trash2 className="w-4 h-4" />,
+          onClick: handleDeleteFromContextMenu,
+          className: 'text-red-500',
+        },
+        { id: 'divider', divider: true },
+        {
+          id: 'toggleSidebar',
+          label: sidebarCollapsed ? '展开' : '折叠',
+          icon: sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />,
+          onClick: handleToggleSidebar,
+        },
+      ]
+    : [
+        {
+          id: 'toggleSidebar',
+          label: sidebarCollapsed ? '展开' : '折叠',
+          icon: sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />,
+          onClick: handleToggleSidebar,
+        },
+      ];
+
   const handleSendMessage = async (content: string) => {
     if (!content.trim() || !admin || isLoading) return;
 
@@ -223,9 +364,14 @@ export default function AIChatPage() {
         const createdConversation = await createConversation(admin.id, title, activeRolePresetId || undefined);
         if (createdConversation && createdConversation.id) {
           dbConversationId = createdConversation.id;
-          updateConversationId(conversationId, dbConversationId);
+          // 更新 conversationId 变量为数据库返回的 ID
+          conversationId = dbConversationId;
+          // 立即更新 activeConversationId 为数据库返回的 ID
+          selectConversation(dbConversationId);
+          // 将临时ID映射到数据库ID
+          updateConversationId(newConversation.id, dbConversationId);
           // 更新本地存储中的对话ID
-          agnesLocalStorage.updateConversation(admin.id, conversationId, { id: dbConversationId });
+          agnesLocalStorage.updateConversation(admin.id, newConversation.id, { id: dbConversationId });
         }
       } catch (error) {
         console.error('创建对话失败:', error);
@@ -238,7 +384,7 @@ export default function AIChatPage() {
         });
       }
     } else {
-      dbConversationId = conversationId;
+      dbConversationId = activeConversationId;
     }
 
     const userMessage: Message = {
@@ -322,7 +468,8 @@ export default function AIChatPage() {
 
   const handleChatCompletion = async (conversationId: string, _content: string, userMessage: Message, dbConversationId?: string | null): Promise<string> => {
     const conv = conversations.find((c) => c.id === conversationId);
-    const activePresetData = rolePresets.find((p) => p.id === activeRolePresetId);
+    const rolePresetId = conv?.role_preset_id || activeRolePresetId;
+    const activePresetData = rolePresets.find((p) => p.id === rolePresetId);
 
     let messagesWithUser: Array<{ role: string; content: string }> = conv
       ? [...conv.messages.map(m => ({ role: m.role, content: m.content })), { role: userMessage.role, content: userMessage.content }]
@@ -744,11 +891,32 @@ export default function AIChatPage() {
     setEditingContent(content);
   };
 
-  const handleSaveEdit = () => {
-    if (editingMessage && editingContent.trim() && activeConversationId) {
-      updateMessage(activeConversationId, editingMessage, editingContent);
-      setEditingMessage(null);
-      setEditingContent('');
+  const handleSaveEdit = async () => {
+    if (!editingMessage || !editingContent.trim() || !activeConversationId || !admin) return;
+
+    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (!conv) return;
+
+    const messageIndex = conv.messages.findIndex((m) => m.id === editingMessage);
+    if (messageIndex < 0) return;
+
+    const editedContent = editingContent.trim();
+
+    // 删除该消息及之后的所有消息
+    const messagesToDelete = conv.messages.slice(messageIndex);
+    for (const msg of messagesToDelete) {
+      deleteMessage(activeConversationId, msg.id, admin.id);
+    }
+
+    setEditingMessage(null);
+    setEditingContent('');
+
+    // 重新发送编辑后的内容
+    setIsLoading(true);
+    try {
+      await handleSendMessage(editedContent);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -759,9 +927,12 @@ export default function AIChatPage() {
 
   return (
     <div className={`flex ${isElectron() ? 'h-full' : 'h-[calc(100vh-120px)] md:h-[calc(100vh-100px)]'} overflow-hidden bg-gray-50 dark:bg-gray-900`}>
-      <div className={`flex flex-col bg-white dark:bg-gray-800 transition-all duration-300 min-h-0 overflow-hidden flex-shrink-0 ${
-        sidebarCollapsed ? 'w-14' : 'w-[180px] md:w-[200px]'
-      }`}>
+      <div 
+        className={`flex flex-col bg-white dark:bg-gray-800 transition-all duration-300 min-h-0 overflow-hidden flex-shrink-0 ${
+          sidebarCollapsed ? 'w-14' : 'w-[180px] md:w-[200px]'
+        }`}
+        onContextMenu={handleSidebarContextMenu}
+      >
         <div className="p-3 flex items-center justify-between">
           {!sidebarCollapsed && (
             <>
@@ -829,6 +1000,7 @@ export default function AIChatPage() {
                 <div
                   key={conv.id}
                   onClick={() => selectConversation(conv.id)}
+                  onContextMenu={(e) => handleConversationContextMenu(e, conv.id)}
                   className={`relative cursor-pointer transition-colors group ${
                     activeConversationId === conv.id
                       ? 'bg-primary/10 text-primary'
@@ -851,7 +1023,10 @@ export default function AIChatPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteConversation(conv.id, admin?.id);
+                          setConfirmDelete({
+                            isOpen: true,
+                            conversationId: conv.id,
+                          });
                         }}
                         className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
                         title="删除对话"
@@ -871,13 +1046,9 @@ export default function AIChatPage() {
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
           title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}>
           {sidebarCollapsed ? (
-            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
+            <PanelLeft className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           ) : (
-            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
+            <PanelLeftClose className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           )}
         </button>
       </div>
@@ -1630,6 +1801,47 @@ export default function AIChatPage() {
           </div>
         )}
       </div>
+
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        items={contextMenuItems}
+        onClose={handleCloseContextMenu}
+      />
+
+      <Modal
+        isOpen={showRenameModal}
+        onClose={() => setShowRenameModal(false)}
+        title="重命名对话"
+        confirmText="保存"
+        onConfirm={handleConfirmRename}
+        confirmDisabled={!renameTitle.trim()}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">对话名称</label>
+            <input
+              type="text"
+              value={renameTitle}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:border-primary"
+              placeholder="输入对话名称"
+              autoFocus
+            />
+          </div>
+        </div>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmDelete.isOpen}
+        title="确认删除"
+        message="确定要删除这个对话吗？此操作无法撤销。"
+        confirmText="删除"
+        cancelText="取消"
+        onConfirm={handleConfirmDelete}
+        onClose={() => setConfirmDelete({ isOpen: false, conversationId: null })}
+      />
     </div>
   );
 }

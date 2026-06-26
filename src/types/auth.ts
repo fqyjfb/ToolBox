@@ -1,4 +1,16 @@
-// 管理员数据模型
+export interface User {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  phone?: string;
+  memberLevel: '普通' | 'VIP' | 'SVIP';
+  vipExpireAt?: string;
+  isBanned: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface Admin {
   id: string;
   username: string;
@@ -9,23 +21,21 @@ export interface Admin {
   phone?: string;
 }
 
-// 认证响应模型
 export interface AuthResponse {
   success: boolean;
   data?: {
     token: string;
-    admin: Admin;
+    user: User;
+    admin?: Admin;
   };
   message?: string;
 }
 
-// 登录请求模型
 export interface LoginRequest {
   username: string;
   password: string;
 }
 
-// 注册请求模型
 export interface RegisterRequest {
   username: string;
   email: string;

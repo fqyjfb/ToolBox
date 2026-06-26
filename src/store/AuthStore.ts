@@ -1,33 +1,56 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { Admin, LoginRequest, RegisterRequest } from '../types/auth'
+import { Admin, LoginRequest, RegisterRequest, User } from '../types/auth'
 import { authService } from '../services/AuthService'
 import { logError } from '../services/loggerService'
 import { getDataAccessLayer } from '../services/dataAccessLayer'
 
 interface AuthState {
+  user: User | null
   admin: Admin | null
   isAuthenticated: boolean
+  isAdmin: boolean
   isLoading: boolean
   error: string | null
   login: (credentials: LoginRequest) => Promise<void>
   register: (userData: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
-  getCurrentAdmin: () => Promise<void>
-  updateAdminProfile: (data: { id: string; name?: string; email?: string; phone?: string; password?: string }) => Promise<boolean>
+  getCurrentUser: () => Promise<void>
+  updateUserProfile: (data: { id: string; name?: string; email?: string; phone?: string; password?: string }) => Promise<boolean>
 }
 
 const authStorage = {
   getItem: (key: string): string | null => {
     if (key === 'auth') {
+      const storedUser = localStorage.getItem('user')
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser)
+          return JSON.stringify({
+            state: {
+              user,
+              admin: user.role ? { ...user, role: user.role as 'super' | 'normal' } : null,
+              isAuthenticated: true,
+              isAdmin: !!(user.role && (user.role === 'super' || user.role === 'normal')),
+              isLoading: false,
+              error: null
+            },
+            version: 0
+          })
+        } catch {
+          return null
+        }
+      }
       const storedAdmin = localStorage.getItem('admin')
       if (storedAdmin) {
         try {
           const admin = JSON.parse(storedAdmin)
           return JSON.stringify({
             state: {
+              user: null,
               admin,
               isAuthenticated: true,
+              isAdmin: admin.role === 'super' || admin.role === 'normal',
               isLoading: false,
               error: null
             },
@@ -45,8 +68,13 @@ const authStorage = {
     if (key === 'auth') {
       try {
         const parsed = JSON.parse(value)
-        if (parsed.state && parsed.state.admin) {
-          localStorage.setItem('admin', JSON.stringify(parsed.state.admin))
+        if (parsed.state) {
+          if (parsed.state.user) {
+            localStorage.setItem('user', JSON.stringify(parsed.state.user))
+          }
+          if (parsed.state.admin) {
+            localStorage.setItem('admin', JSON.stringify(parsed.state.admin))
+          }
         }
       } catch {
         localStorage.setItem(key, value)
@@ -58,6 +86,7 @@ const authStorage = {
 
   removeItem: (key: string): void => {
     if (key === 'auth') {
+      localStorage.removeItem('user')
       localStorage.removeItem('admin')
     } else {
       localStorage.removeItem(key)
@@ -68,8 +97,10 @@ const authStorage = {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
+      user: null,
       admin: null,
-      isAuthenticated: !!localStorage.getItem('admin'),
+      isAuthenticated: !!localStorage.getItem('user') || !!localStorage.getItem('admin'),
+      isAdmin: false,
       isLoading: false,
       error: null,
 
@@ -78,12 +109,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authService.login(credentials);
           if (response.success && response.data) {
-            const dal = getDataAccessLayer(response.data.admin.id);
-            await dal.init(response.data.admin.id);
+            const dal = getDataAccessLayer(response.data.user.id);
+            await dal.init(response.data.user.id);
 
             set({
-              admin: response.data.admin,
+              user: response.data.user,
+              admin: response.data.admin || null,
               isAuthenticated: true,
+              isAdmin: !!response.data.admin,
               isLoading: false
             });
           } else {
@@ -101,12 +134,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authService.register(userData);
           if (response.success && response.data) {
-            const dal = getDataAccessLayer(response.data.admin.id);
-            await dal.init(response.data.admin.id);
+            const dal = getDataAccessLayer(response.data.user.id);
+            await dal.init(response.data.user.id);
 
             set({
-              admin: response.data.admin,
+              user: response.data.user,
+              admin: response.data.admin || null,
               isAuthenticated: true,
+              isAdmin: !!response.data.admin,
               isLoading: false
             });
           } else {
@@ -121,70 +156,81 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          await authService.logout()
+          await authService.logout();
           set({
+            user: null,
             admin: null,
-            isAuthenticated: false
-          })
+            isAuthenticated: false,
+            isAdmin: false
+          });
         } catch (err) {
           logError('登出失败', 'AuthStore', err as Error);
           set({
+            user: null,
             admin: null,
-            isAuthenticated: false
-          })
+            isAuthenticated: false,
+            isAdmin: false
+          });
         }
       },
 
-      getCurrentAdmin: async () => {
+      getCurrentUser: async () => {
         if (get().isLoading) return;
 
         set({ isLoading: true });
         try {
-          const response = await authService.getCurrentAdmin();
+          const response = await authService.getCurrentUser();
           if (response.success && response.data) {
             const dal = getDataAccessLayer(response.data.id);
             await dal.init(response.data.id);
 
             set({
-              admin: response.data,
+              user: response.data,
+              admin: response.admin || null,
               isAuthenticated: true,
+              isAdmin: !!response.admin,
               isLoading: false
             });
           } else {
             set({
+              user: null,
               admin: null,
               isAuthenticated: false,
+              isAdmin: false,
               isLoading: false
             });
           }
         } catch (error) {
-          logError('获取当前管理员信息失败', 'AuthStore', error instanceof Error ? error : undefined);
+          logError('获取当前用户信息失败', 'AuthStore', error instanceof Error ? error : undefined);
           set({
+            user: null,
             admin: null,
             isAuthenticated: false,
+            isAdmin: false,
             isLoading: false
           });
         }
       },
 
-      updateAdminProfile: async (data: { id: string; name?: string; email?: string; phone?: string; password?: string }) => {
+      updateUserProfile: async (data: { id: string; name?: string; email?: string; phone?: string; password?: string }) => {
         try {
-          const response = await authService.updateAdminProfile(data)
+          const response = await authService.updateAdminProfile(data);
           if (response.success) {
-            const currentAdmin = get().admin
-            if (currentAdmin) {
+            const currentUser = get().user;
+            if (currentUser) {
               set({
-                admin: {
-                  ...currentAdmin,
-                  ...data
+                user: {
+                  ...currentUser,
+                  ...(data.name && { name: data.name }),
+                  ...(data.phone && { phone: data.phone })
                 }
-              })
+              });
             }
-            return true
+            return true;
           }
-          return false
+          return false;
         } catch {
-          return false
+          return false;
         }
       }
     }),
@@ -197,8 +243,8 @@ export const useAuthStore = create<AuthState>()(
 
 export const useAuth = () => useAuthStore()
 
+export const useAuthUser = () => useAuthStore((state) => state.user)
 export const useAuthAdmin = () => useAuthStore((state) => state.admin)
-
 export const useAuthStatus = () => useAuthStore(
-  (state) => [state.isAuthenticated, state.isLoading]
+  (state) => [state.isAuthenticated, state.isLoading, state.isAdmin]
 )

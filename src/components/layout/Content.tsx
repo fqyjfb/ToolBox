@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Minus, Maximize2, X, Search, X as XIcon, Bell, Settings } from 'lucide-react';
+import { Minus, Maximize2, X, Search, X as XIcon, Bell, Settings, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useThemeStore } from '../../store/themeStore';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -37,9 +37,11 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
       <div className="px-6 py-2.5 flex items-center justify-between" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <button className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-300/50 dark:hover:bg-gray-600/50 transition-colors" onClick={toggleSidebar} title={isCollapsed ? '展开侧边栏' : '收起侧边栏'}>
-            <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            {isCollapsed ? (
+              <PanelLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            )}
           </button>
           <Breadcrumb />
         </div>

@@ -24,10 +24,11 @@ import { RecentToolsHandler } from './hooks/useRecentTools';
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
   isAuthenticated: boolean;
+  requiresAdmin?: boolean;
   isAdmin?: boolean;
-}> = ({ children, isAuthenticated, isAdmin }) => {
+}> = ({ children, isAuthenticated, requiresAdmin, isAdmin }) => {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (isAdmin === false) return <Navigate to="/" replace />;
+  if (requiresAdmin && !isAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
@@ -52,11 +53,11 @@ const renderRoutes = (
       path={route.path}
       element={
         route.requiresAdmin ? (
-          <ProtectedRoute isAuthenticated={isAuthenticated} isAdmin={isAdmin}>
+          <ProtectedRoute isAuthenticated={isAuthenticated} requiresAdmin={route.requiresAdmin} isAdmin={isAdmin}>
             {route.element}
           </ProtectedRoute>
         ) : route.requiresAuth ? (
-          <ProtectedRoute isAuthenticated={isAuthenticated} isAdmin={isAdmin}>
+          <ProtectedRoute isAuthenticated={isAuthenticated} requiresAdmin={route.requiresAdmin}>
             {route.element}
           </ProtectedRoute>
         ) : (
@@ -159,11 +160,11 @@ function App() {
   const { isDark, setTheme } = useThemeStore();
   const { setLastSyncTime, setStorageLocation, setSyncEnabled, setSyncModules, setSyncOnStartupEnabled } = useSyncStore();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const admin = useAuthStore((state) => state.admin);
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = useAuthStore((state) => state.isAdmin);
   const isLoading = useAuthStore((state) => state.isLoading);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const isAdmin = admin && (admin.role === 'super' || admin.role === 'normal');
   const { setVisible, setPosition } = useSidebarStore();
 
   usePreloadTools();
@@ -215,7 +216,7 @@ function App() {
           logError('加密密钥加载失败，请检查 VITE_ENCRYPTION_KEY 环境变量', 'App');
         }
         
-        useAuthStore.getState().getCurrentAdmin().catch(() => {
+        useAuthStore.getState().getCurrentUser().catch(() => {
           logError('初始化认证状态失败', 'App');
         });
       } catch (error) {
@@ -229,11 +230,11 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated || !admin?.id) return;
+    if (!isAuthenticated || !user?.id) return;
 
     const loadSyncMetadata = async () => {
       try {
-        const metadata = await syncManager.getSyncMetadata(admin.id);
+        const metadata = await syncManager.getSyncMetadata(user.id);
         if (metadata) {
           setSyncEnabled(metadata.syncEnabled);
           setStorageLocation(metadata.storageLocation);
@@ -254,11 +255,11 @@ function App() {
     loadSyncMetadata();
 
     const timer = setTimeout(() => {
-      syncManager.syncOnStartup(admin.id);
+      syncManager.syncOnStartup(user.id);
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated, admin?.id, setSyncEnabled, setStorageLocation, setSyncModules, setLastSyncTime, setSyncOnStartupEnabled]);
+  }, [isAuthenticated, user?.id, setSyncEnabled, setStorageLocation, setSyncModules, setLastSyncTime, setSyncOnStartupEnabled]);
 
   if (!isInitialized || isLoading) {
     return (

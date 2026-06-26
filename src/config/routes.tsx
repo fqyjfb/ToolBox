@@ -56,13 +56,14 @@ const OcrPage = React.lazy(() => import('../pages/tools/ocr/OcrWrapper'));
 const FileManagerPage = React.lazy(() => import('../pages/tools/file-manager'));
 const AIChatPage = React.lazy(() => import('../pages/tools/ai-chat'));
 const FontGeneratorPage = React.lazy(() => import('../pages/tools/font-generator'));
+const ColorPalettePage = React.lazy(() => import('../pages/tools/color-palette'));
 const AgnesHistoryPage = React.lazy(() => import('../pages/tools/ai-chat/HistoryPage'));
 const AgnesRolePresetsPage = React.lazy(() => import('../pages/tools/ai-chat/RolePresetsPage'));
 
 const AdminDashboardPage = React.lazy(() => import('../pages/admin'));
 const AdminWebsitesPage = React.lazy(() => import('../pages/admin/websites'));
 const AdminUsersPage = React.lazy(() => import('../pages/admin/users'));
-const AdminUserEditPage = React.lazy(() => import('../pages/admin/user-edit'));
+
 const AdminToolsPage = React.lazy(() => import('../pages/admin/tools'));
 const AdminDatabasePage = React.lazy(() => import('../pages/admin/database'));
 
@@ -78,6 +79,7 @@ export const desktopRoutes: RouteConfig[] = [
   { path: '/tools/weather', element: <WeatherPage /> },
   { path: '/tools/ai-chat', element: <AIChatPage /> },
   { path: '/tools/font-generator', element: <FontGeneratorPage /> },
+  { path: '/tools/color-palette', element: <ColorPalettePage /> },
   { path: '/tools/ai-chat/history', element: <AgnesHistoryPage /> },
   { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage /> },
   { path: '/logs', element: <LogsPage /> },
@@ -97,6 +99,7 @@ export const webRoutes: RouteConfig[] = [
   { path: '/tools/weather', element: <WeatherPage /> },
   { path: '/tools/ai-chat', element: <AIChatPage />, requiresAuth: true },
   { path: '/tools/font-generator', element: <FontGeneratorPage />, requiresAuth: true },
+  { path: '/tools/color-palette', element: <ColorPalettePage />, requiresAuth: true },
   { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
   { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
 ];
@@ -115,6 +118,7 @@ export const mobileRoutes: RouteConfig[] = [
   { path: '/tools/weather', element: <WeatherPage /> },
   { path: '/tools/ai-chat', element: <AIChatPage />, requiresAuth: true },
   { path: '/tools/font-generator', element: <FontGeneratorPage />, requiresAuth: true },
+  { path: '/tools/color-palette', element: <ColorPalettePage />, requiresAuth: true },
   { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
   { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
 ];
@@ -157,6 +161,7 @@ export const protectedRoutes: RouteConfig[] = [
   { path: '/tools/file-manager', element: <FileManagerPage />, requiresAuth: true },
   { path: '/tools/ai-chat', element: <AIChatPage />, requiresAuth: true },
   { path: '/tools/font-generator', element: <FontGeneratorPage />, requiresAuth: true },
+  { path: '/tools/color-palette', element: <ColorPalettePage />, requiresAuth: true },
   { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
   { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
 ];
@@ -165,7 +170,6 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/admin', element: <AdminDashboardPage />, requiresAdmin: true },
   { path: '/admin/websites', element: <AdminWebsitesPage />, requiresAdmin: true },
   { path: '/admin/users', element: <AdminUsersPage />, requiresAdmin: true },
-  { path: '/admin/users/edit/:id', element: <AdminUserEditPage />, requiresAdmin: true },
   { path: '/admin/tools', element: <AdminToolsPage />, requiresAdmin: true },
   { path: '/admin/database', element: <AdminDatabasePage />, requiresAdmin: true },
 ];

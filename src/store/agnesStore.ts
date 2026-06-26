@@ -130,7 +130,18 @@ export const useAgnesStore = create<AgnesState>((set) => ({
   },
 
   selectConversation: (id) => {
-    set({ activeConversationId: id });
+    set((state) => {
+      const conv = state.conversations.find((c) => c.id === id);
+      if (conv) {
+        return {
+          activeConversationId: id,
+          activeRolePresetId: conv.role_preset_id || null,
+        };
+      }
+      return {
+        activeConversationId: id,
+      };
+    });
   },
 
   updateConversationId: (oldId, newId) => {

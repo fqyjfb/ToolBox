@@ -5,14 +5,14 @@ import { useToastStore } from '../../../store/toastStore';
 import { useNavigate } from 'react-router-dom';
 
 const ProfilePage: React.FC = () => {
-  const { admin, updateAdminProfile, logout } = useAuthStore();
+  const { user, updateUserProfile, logout } = useAuthStore();
   const addToast = useToastStore((state) => state.addToast);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: admin?.name || '',
-    email: admin?.email || '',
-    phone: admin?.phone || '',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
     password: '',
     confirmPassword: ''
   });
@@ -47,7 +47,7 @@ const ProfilePage: React.FC = () => {
 
     try {
       const updateData: { id: string; name?: string; email?: string; phone?: string; password?: string } = {
-        id: admin!.id
+        id: user!.id
       };
 
       if (field === 'name' && formData.name.trim()) {
@@ -67,7 +67,7 @@ const ProfilePage: React.FC = () => {
         if (formData.password) updateData.password = formData.password;
       }
 
-      const success = await updateAdminProfile(updateData);
+      const success = await updateUserProfile(updateData);
       
       if (success) {
         addToast({ message: '更新成功', type: 'success' });
@@ -110,7 +110,7 @@ const ProfilePage: React.FC = () => {
     navigate('/login');
   };
 
-  if (!admin) {
+  if (!user) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center text-gray-500 dark:text-gray-400">
@@ -141,7 +141,7 @@ const ProfilePage: React.FC = () => {
             <div className="flex items-center gap-3 px-3 py-2   ">
               <User className="w-4 h-4 text-gray-400 shrink-0" />
               <span className="text-xs text-gray-500 dark:text-gray-400 w-16 shrink-0">用户名</span>
-              <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{admin.username}</span>
+              <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{user.username}</span>
             </div>
 
             <div className=" px-3 py-1.5 ">
@@ -164,7 +164,7 @@ const ProfilePage: React.FC = () => {
                   <button onClick={() => handleSave('name')} className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors">
                     <Check className="w-4 h-4" />
                   </button>
-                  <button onClick={() => { setEditingField(null); setFormData(prev => ({ ...prev, name: admin?.name || '' })); }} className="p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
+                  <button onClick={() => { setEditingField(null); setFormData(prev => ({ ...prev, name: user?.name || '' })); }} className="p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
                     <X className="w-4 h-4" />
                   </button>
                 </>
@@ -194,7 +194,7 @@ const ProfilePage: React.FC = () => {
                   <button onClick={() => handleSave('email')} className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors">
                     <Check className="w-4 h-4" />
                   </button>
-                  <button onClick={() => { setEditingField(null); setFormData(prev => ({ ...prev, email: admin?.email || '' })); }} className="p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
+                  <button onClick={() => { setEditingField(null); setFormData(prev => ({ ...prev, email: user?.email || '' })); }} className="p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
                     <X className="w-4 h-4" />
                   </button>
                 </>
@@ -224,7 +224,7 @@ const ProfilePage: React.FC = () => {
                   <button onClick={() => handleSave('phone')} className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors">
                     <Check className="w-4 h-4" />
                   </button>
-                  <button onClick={() => { setEditingField(null); setFormData(prev => ({ ...prev, phone: admin?.phone || '' })); }} className="p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
+                  <button onClick={() => { setEditingField(null); setFormData(prev => ({ ...prev, phone: user?.phone || '' })); }} className="p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
                     <X className="w-4 h-4" />
                   </button>
                 </>

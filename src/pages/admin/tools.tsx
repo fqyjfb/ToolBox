@@ -123,16 +123,13 @@ const ToolsPage: React.FC = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState('')
   const [activeTab, setActiveTab] = useState<'tools' | 'categories'>('tools')
   
-  // 删除确认对话框状态
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [toolToDelete, setToolToDelete] = useState<Tool | null>(null)
   
-  // 右键菜单状态
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tool: Tool } | null>(null)
 
   const { addToast } = useToastStore()
 
-  // 查询分类数据
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['toolCategories'],
     queryFn: () => toolService.getCategories(),
@@ -149,7 +146,6 @@ const ToolsPage: React.FC = () => {
     return mainCategory?.children || []
   }
 
-  // 查询工具列表
   const { data: toolsData, isLoading: toolsLoading } = useQuery({
     queryKey: ['tools', filterCategory, searchTerm, currentPage, pageSize],
     queryFn: () => toolService.getTools(filterCategory, searchTerm, currentPage, pageSize),
@@ -159,7 +155,6 @@ const ToolsPage: React.FC = () => {
   const totalItems = useMemo(() => toolsData?.count || 0, [toolsData?.count])
   const loading = categoriesLoading || toolsLoading
 
-  // 添加工具 mutation
   const addToolMutation = useMutation({
     mutationFn: (toolData: Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'category_name'>) => 
       toolService.addTool(toolData),
@@ -172,7 +167,6 @@ const ToolsPage: React.FC = () => {
     },
   })
 
-  // 更新工具 mutation
   const updateToolMutation = useMutation({
     mutationFn: ({ id, toolData }: { id: string; toolData: Partial<Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'category_name'>> }) =>
       toolService.updateTool(id, toolData),
@@ -185,7 +179,6 @@ const ToolsPage: React.FC = () => {
     },
   })
 
-  // 删除工具 mutation
   const deleteToolMutation = useMutation({
     mutationFn: (id: string) => toolService.deleteTool(id),
     onSuccess: () => {
@@ -197,7 +190,6 @@ const ToolsPage: React.FC = () => {
     },
   })
 
-  // 添加分类 mutation
   const addCategoryMutation = useMutation({
     mutationFn: ({ name, parentId }: { name: string; parentId: string | null }) =>
       toolService.addCategory(name, parentId),
@@ -207,7 +199,6 @@ const ToolsPage: React.FC = () => {
     },
   })
 
-  // 更新分类 mutation
   const updateCategoryMutation = useMutation({
     mutationFn: ({ categoryId, name }: { categoryId: string; name: string }) =>
       toolService.updateCategory(categoryId, name),
@@ -217,7 +208,6 @@ const ToolsPage: React.FC = () => {
     },
   })
 
-  // 删除分类 mutation
   const deleteCategoryMutation = useMutation({
     mutationFn: (categoryId: string) => toolService.deleteCategory(categoryId),
     onSuccess: () => {
@@ -410,201 +400,197 @@ const ToolsPage: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col p-6 overflow-hidden">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col h-full">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setActiveTab('tools')}
-                className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
-                  activeTab === 'tools'
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
-              >
-                工具列表
-              </button>
-              <button
-                onClick={() => setActiveTab('categories')}
-                className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
-                  activeTab === 'categories'
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
-              >
-                分类管理
-              </button>
-            </div>
-            {activeTab === 'tools' && (
-              <div className="flex flex-col sm:flex-row sm:gap-2">
-                <div className="relative max-w-[200px] w-full">
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="搜索工具..."
-                    className="w-full px-3 py-1.5 pr-24 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => {
-                        setSearchTerm('')
-                        setCurrentPage(1)
-                      }}
-                      className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      title="清空搜索"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                  <button
-                    onClick={handleSearchSubmit}
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                    title="搜索"
-                  >
-                    <Search size={16} />
-                  </button>
-                </div>
-                <button
-                  onClick={handleAddTool}
-                  className="p-1.5 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md transition-colors"
-                  title="添加工具"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-            )}
-            
+    <div className="h-full flex flex-col p-4 overflow-hidden">
+      <div className="p-6 flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">工具管理</h1>
+        {activeTab === 'tools' && (
+          <button
+            onClick={handleAddTool}
+            className="flex items-center gap-1 px-2 py-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 text-xs font-medium transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            添加工具
+          </button>
+        )}
+      </div>
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('tools')}
+              className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
+                activeTab === 'tools'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+            >
+              工具列表
+            </button>
+            <button
+              onClick={() => setActiveTab('categories')}
+              className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
+                activeTab === 'categories'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+            >
+              分类管理
+            </button>
           </div>
-        </div>
-
-        <div className="flex-1 overflow-auto">
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <LoadingSpinner />
-            </div>
-          ) : activeTab === 'tools' ? (
-            <div className="p-4">
-              <div className="flex flex-wrap gap-2 mb-4">
-                <button
-                  onClick={() => handleCategoryFilterChange('')}
-                  className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                    !filterCategory
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  全部
-                </button>
-                {categoryTree.map(mainCategory => (
-                  <div key={mainCategory.id} className="relative">
-                    <button
-                      onClick={() => handleCategoryFilterChange(mainCategory.id)}
-                      className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                        filterCategory === mainCategory.id
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {mainCategory.name}
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">图标</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">名称</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">分类</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">网盘类型</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">状态</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {tools.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                          暂无工具数据
-                        </td>
-                      </tr>
-                    ) : (
-                      tools.map(tool => (
-                        <tr 
-                          key={tool.id} 
-                          className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                          onContextMenu={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setContextMenu({ x: e.clientX, y: e.clientY, tool })
-                          }}
-                        >
-                          <td className="px-4 py-3">
-                            <img
-                              src={proxyImageUrl(tool.icon_url || '')}
-                              alt={tool.title}
-                              className="w-8 h-8 rounded-md object-cover"
-                              onError={(e) => handleImageError(e, tool.icon_url || '')}
-                            />
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            <span className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer" onClick={() => openUrl(tool.download_url)}>
-                              {tool.title}
-                              <ExternalLink size={14} />
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">{tool.category_name || '-'}</span>
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            <span className={`px-2 py-0.5 text-xs rounded-full ${
-                              tool.网盘类型 === '夸克' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                              tool.网盘类型 === '百度' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {tool.网盘类型}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            <Switch
-                              checked={tool.is_active}
-                              onChange={() => handleToolToggleActive(tool.id, tool.is_active)}
-                            />
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">
-                <Pagination
-                  currentPage={currentPage}
-                  total={totalItems}
-                  pageSize={pageSize}
-                  onPageChange={setCurrentPage}
-                  onPageSizeChange={handlePageSizeChange}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="p-4">
-              <CategoryManager
-                categories={categoryTree as CategoryItem[]}
-                selectedCategory={null}
-                onSelectCategory={() => {}}
-                onAddCategory={handleAddCategory}
-                onDeleteCategory={handleDeleteCategory}
-                onUpdateCategory={handleUpdateCategory}
+          {activeTab === 'tools' && (
+            <div className="relative max-w-[200px] w-full">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onKeyDown={handleKeyDown}
+                placeholder="搜索工具..."
+                className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('')
+                    setCurrentPage(1)
+                  }}
+                  className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  title="清空搜索"
+                >
+                  <X size={12} />
+                </button>
+              )}
+              <button
+                onClick={handleSearchSubmit}
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                title="搜索"
+              >
+                <Search size={14} />
+              </button>
             </div>
           )}
         </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <LoadingSpinner />
+          </div>
+        ) : activeTab === 'tools' ? (
+          <>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <button
+                onClick={() => handleCategoryFilterChange('')}
+                className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                  !filterCategory
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                全部
+              </button>
+              {categoryTree.map(mainCategory => (
+                <div key={mainCategory.id} className="relative">
+                  <button
+                    onClick={() => handleCategoryFilterChange(mainCategory.id)}
+                    className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                      filterCategory === mainCategory.id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {mainCategory.name}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">图标</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">名称</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">分类</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">网盘类型</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">状态</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {tools.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                        暂无工具数据
+                      </td>
+                    </tr>
+                  ) : (
+                    tools.map(tool => (
+                      <tr 
+                        key={tool.id} 
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                        onContextMenu={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setContextMenu({ x: e.clientX, y: e.clientY, tool })
+                        }}
+                      >
+                        <td className="px-4 py-3">
+                          <img
+                            src={proxyImageUrl(tool.icon_url || '')}
+                            alt={tool.title}
+                            className="w-8 h-8 rounded-md object-cover"
+                            onError={(e) => handleImageError(e, tool.icon_url || '')}
+                          />
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer" onClick={() => openUrl(tool.download_url)}>
+                            {tool.title}
+                            <ExternalLink size={14} />
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{tool.category_name || '-'}</span>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                            tool.网盘类型 === '夸克' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            tool.网盘类型 === '百度' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                            {tool.网盘类型}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <Switch
+                            checked={tool.is_active}
+                            onChange={() => handleToolToggleActive(tool.id, tool.is_active)}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+              <Pagination
+                currentPage={currentPage}
+                total={totalItems}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </div>
+          </>
+        ) : (
+          <CategoryManager
+            categories={categoryTree as CategoryItem[]}
+            selectedCategory={null}
+            onSelectCategory={() => {}}
+            onAddCategory={handleAddCategory}
+            onDeleteCategory={handleDeleteCategory}
+            onUpdateCategory={handleUpdateCategory}
+          />
+        )}
       </div>
 
       {(isAddModalOpen || isEditModalOpen) && (
@@ -620,12 +606,12 @@ const ToolsPage: React.FC = () => {
         >
           <form className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">分类</label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <select
                   value={selectedMainCategory}
                   onChange={(e) => handleMainCategoryChange(e.target.value)}
-                  className="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
                 >
                   <option value="">选择主分类</option>
                   {getMainCategories().map(category => (
@@ -635,7 +621,7 @@ const ToolsPage: React.FC = () => {
                 <select
                   value={selectedSubCategory}
                   onChange={(e) => handleSubCategoryChange(e.target.value)}
-                  className="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
                 >
                   <option value="">选择子分类</option>
                   {getSubCategories(selectedMainCategory).map(category => (
@@ -646,14 +632,14 @@ const ToolsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">工具名称</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">工具名称</label>
               <input
                 type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                className={`w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm ${
-                  errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                className={`w-full px-2 py-1 border rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs ${
+                  errors.title ? 'border-red-400 focus:border-red-400' : 'border-gray-200 dark:border-gray-500'
                 }`}
                 placeholder="请输入工具名称"
               />
@@ -661,26 +647,26 @@ const ToolsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">描述</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">描述</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm resize-none"
+                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs resize-none"
                 rows={3}
                 placeholder="请输入工具描述"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">下载地址</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">下载地址</label>
               <input
                 type="text"
                 name="download_url"
                 value={formData.download_url}
                 onChange={handleChange}
-                className={`w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm ${
-                  errors.download_url ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                className={`w-full px-2 py-1 border rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs ${
+                  errors.download_url ? 'border-red-400 focus:border-red-400' : 'border-gray-200 dark:border-gray-500'
                 }`}
                 placeholder="请输入下载链接"
               />
@@ -688,12 +674,12 @@ const ToolsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">网盘类型</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">网盘类型</label>
               <select
                 name="网盘类型"
                 value={formData.网盘类型}
                 onChange={handleChange}
-                className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
               >
                 <option value="夸克">夸克网盘</option>
                 <option value="百度">百度网盘</option>
@@ -702,13 +688,13 @@ const ToolsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">图标链接</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">图标链接</label>
               <input
                 type="text"
                 name="icon_url"
                 value={formData.icon_url}
                 onChange={handleChange}
-                className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
                 placeholder="请输入图标URL"
               />
             </div>
@@ -721,7 +707,7 @@ const ToolsPage: React.FC = () => {
                 onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <label className="ml-2 text-sm text-gray-700 dark:text-gray-300">启用</label>
+              <label className="ml-2 text-sm text-gray-600 dark:text-gray-400">启用</label>
             </div>
           </form>
         </Modal>

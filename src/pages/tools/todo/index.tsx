@@ -54,7 +54,7 @@ function formatDateTimeForInput(dateTimeStr: string): string {
 }
 
 const TodoManagerPage: React.FC = () => {
-  const admin = useAuthStore((state) => state.admin);
+  const user = useAuthStore((state) => state.user);
   const { searchQuery, isSearchActive } = useNavSearch();
 
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -95,9 +95,9 @@ const TodoManagerPage: React.FC = () => {
   const { contextMenu, handleContextMenu, handleCloseContextMenu, getContextMenuItems } = useTodoContextMenu();
 
   const loadTodos = useCallback(async () => {
-    if (!admin) return;
+    if (!user) return;
 
-    const categoriesResult = await todoServiceWrapper.category.getCategories(admin.id);
+    const categoriesResult = await todoServiceWrapper.category.getCategories(user.id);
     if (categoriesResult.success) {
       setCategories(categoriesResult.data || []);
     }
@@ -106,15 +106,15 @@ const TodoManagerPage: React.FC = () => {
     const finalSearchQuery = isSearchActive && searchQuery.trim() ? searchQuery.trim() : undefined;
 
     if (finalSearchQuery) {
-      todosResult = await todoServiceWrapper.todo.searchTodos(admin.id, finalSearchQuery, 1, 100);
+      todosResult = await todoServiceWrapper.todo.searchTodos(user.id, finalSearchQuery, 1, 100);
     } else {
-      todosResult = await todoServiceWrapper.todo.getTodos(admin.id, undefined, 1, 100);
+      todosResult = await todoServiceWrapper.todo.getTodos(user.id, undefined, 1, 100);
     }
 
     if (todosResult.success && todosResult.data) {
       setTodos(todosResult.data.data || []);
     }
-  }, [admin, isSearchActive, searchQuery]);
+  }, [user, isSearchActive, searchQuery]);
 
   useEffect(() => {
     const handleOpenAddTodo = () => {
@@ -179,7 +179,7 @@ const TodoManagerPage: React.FC = () => {
   }, []);
 
   const handleAddTodo = async () => {
-    if (!admin || !newTodo.title.trim()) return;
+    if (!user || !newTodo.title.trim()) return;
 
     const todoData: CreateTodoRequest = {
       title: newTodo.title,
@@ -199,7 +199,7 @@ const TodoManagerPage: React.FC = () => {
   };
 
   const handleToggleCompleteLocal = useCallback(async (id: string) => {
-    if (!admin) return;
+    if (!user) return;
     const todo = todos.find(t => t.id === id);
     if (!todo) return;
 
@@ -207,7 +207,7 @@ const TodoManagerPage: React.FC = () => {
     if (success) {
       loadTodos();
     }
-  }, [admin, todos, toggleComplete, loadTodos]);
+  }, [user, todos, toggleComplete, loadTodos]);
 
   const handleEditTodo = useCallback((todo: Todo) => {
     setEditingTodo(todo);
@@ -224,7 +224,7 @@ const TodoManagerPage: React.FC = () => {
   }, [handleCloseContextMenu]);
 
   const handleSaveEdit = async () => {
-    if (!admin || !editingTodo || !newTodo.title.trim()) return;
+    if (!user || !editingTodo || !newTodo.title.trim()) return;
 
     const todoData: CreateTodoRequest = {
       title: newTodo.title,
@@ -252,7 +252,7 @@ const TodoManagerPage: React.FC = () => {
   }, [deleteTodo, loadTodos]);
 
   const handleAddCategory = async () => {
-    if (!admin || !newCategoryName.trim()) return;
+    if (!user || !newCategoryName.trim()) return;
 
     const categoryData: CreateTodoCategoryRequest = {
       name: newCategoryName,
@@ -277,7 +277,7 @@ const TodoManagerPage: React.FC = () => {
   }, []);
 
   const handleSaveCategoryEdit = async () => {
-    if (!admin || !editingCategory || !newCategoryName.trim()) return;
+    if (!user || !editingCategory || !newCategoryName.trim()) return;
 
     const categoryData: CreateTodoCategoryRequest = {
       name: newCategoryName,
@@ -347,7 +347,7 @@ const TodoManagerPage: React.FC = () => {
     () => setShowCategoryModal(true)
   ), [todos, categories, handleEditTodo, handleToggleCompleteLocal, handleDeleteTodoLocal, handleEditCategory, handleDeleteCategoryLocal, handleOpenConfirmDialog, handleCloseContextMenu, getContextMenuItems]);
 
-  if (!admin) return null;
+  if (!user) return null;
 
   return (
     <div 

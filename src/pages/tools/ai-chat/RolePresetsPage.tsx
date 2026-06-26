@@ -4,6 +4,7 @@ import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
 import type { RolePreset } from '../../../types/agnes';
 import { Plus, Trash2, Edit2, X, Check, Sparkles } from 'lucide-react';
+import { saveRolePreset, updateRolePresetInDb } from '../../../services/AgnesService';
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -28,16 +29,17 @@ const RolePresetsPage: React.FC = () => {
   const [newPreset, setNewPreset] = useState<Partial<RolePreset>>(defaultNewPreset);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const handleSavePreset = () => {
+  const handleSavePreset = async () => {
     if (!newPreset.name?.trim() || !newPreset.system_prompt?.trim()) {
       addToast({ type: 'error', message: '请填写角色名称和系统提示词' });
       return;
     }
 
+    const presetId = generateId();
     const preset: RolePreset = {
-      id: generateId(),
+      id: presetId,
       user_id: admin?.id,
-      preset_id: generateId(),
+      preset_id: presetId,
       name: newPreset.name,
       description: newPreset.description || '',
       system_prompt: newPreset.system_prompt,
@@ -49,22 +51,60 @@ const RolePresetsPage: React.FC = () => {
       updated_at: new Date().toISOString(),
     };
 
+    // 先添加到本地状态
     addRolePreset(preset);
     setNewPreset(defaultNewPreset);
     setShowAddForm(false);
-    addToast({ type: 'success', message: '角色预设创建成功' });
+
+    // 异步保存到数据库
+    if (admin?.id) {
+      try {
+        await saveRolePreset(admin.id, {
+          preset_id: preset.preset_id,
+          name: preset.name,
+          description: preset.description,
+          system_prompt: preset.system_prompt,
+          format: preset.format,
+          icon: preset.icon,
+          is_default: preset.is_default,
+          is_system: preset.is_system,
+        });
+        addToast({ type: 'success', message: '角色预设创建成功' });
+      } catch (error) {
+        console.error('保存角色预设到数据库失败:', error);
+        addToast({ type: 'error', message: '角色预设已创建，但同步保存失败' });
+      }
+    } else {
+      addToast({ type: 'success', message: '角色预设创建成功' });
+    }
   };
 
-  const handleUpdatePreset = (id: string) => {
+  const handleUpdatePreset = async (id: string) => {
     const preset = rolePresets.find(p => p.id === id);
     if (!preset) return;
 
+    // 先更新本地状态的时间戳
     updateRolePreset(id, {
       updated_at: new Date().toISOString(),
     });
-
     setEditingId(null);
-    addToast({ type: 'success', message: '角色预设更新成功' });
+
+    // 异步更新数据库（仅更新用户创建的预设，系统预设不更新数据库）
+    if (admin?.id && !preset.is_system) {
+      try {
+        await updateRolePresetInDb(admin.id, id, {
+          name: preset.name,
+          description: preset.description,
+          system_prompt: preset.system_prompt,
+        });
+        addToast({ type: 'success', message: '角色预设更新成功' });
+      } catch (error) {
+        console.error('更新角色预设到数据库失败:', error);
+        addToast({ type: 'error', message: '角色预设已更新，但同步保存失败' });
+      }
+    } else {
+      addToast({ type: 'success', message: '角色预设更新成功' });
+    }
   };
 
   const handleDeletePreset = (id: string) => {

@@ -17,7 +17,7 @@ const Sidebar: React.FC = () => {
   const isDesktop = isElectron();
 
   const { isCollapsed, isVisible, pinnedToolIds, removePinnedTool, reorderPinnedTools } = useSidebarStore();
-  const { admin, isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isAdmin } = useAuthStore();
 
   const isActive = (path: string) => location.pathname === path;
   const isStartsWith = (prefix: string) => location.pathname.startsWith(prefix);
@@ -115,7 +115,7 @@ const Sidebar: React.FC = () => {
         {!isCollapsed && <div className="sidebar-divider" />}
         <div className={`flex items-center gap-1 px-1 ${isCollapsed ? 'flex-col' : ''}`}>
           <SidebarBottomButton icon={<User className="w-4 h-4" />} title={isAuthenticated ? '个人信息' : '登录'} onClick={() => navigate(isAuthenticated ? '/tools/profile' : '/login')} />
-          {admin && (admin.role === 'super' || admin.role === 'normal') && (
+          {isAdmin && (
             <SidebarBottomButton icon={<LayoutDashboard className="w-4 h-4" />} title="管理" onClick={() => navigate('/admin')} />
           )}
           <SidebarBottomButton icon={<Settings className="w-4 h-4" />} title="设置" onClick={() => navigate('/settings')} />
