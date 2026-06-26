@@ -183,6 +183,43 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
         .w-markdown-editor .vditor-wysiwyg code {
           color: ${theme === 'dark' ? '#c9d1d9' : '#24292e'};
         }
+        .w-markdown-editor .vditor-content .code-block-wrapper {
+          margin: 0.5rem 0;
+          border-radius: 0.375rem;
+          overflow: hidden;
+        }
+        .w-markdown-editor .vditor-content .code-block-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.375rem 1rem;
+          background: ${theme === 'dark' ? '#374151' : '#e5e7eb'};
+          border-bottom: 1px solid ${theme === 'dark' ? '#4b5563' : '#d1d5db'};
+        }
+        .w-markdown-editor .vditor-content .code-block-language {
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: ${theme === 'dark' ? '#d1d5db' : '#4b5563'};
+          text-transform: capitalize;
+        }
+        .w-markdown-editor .vditor-content .code-block-copy {
+          padding: 0.125rem 0.5rem;
+          background: transparent;
+          border: none;
+          border-radius: 0.25rem;
+          font-size: 0.75rem;
+          color: ${theme === 'dark' ? '#9ca3af' : '#6b7280'};
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .w-markdown-editor .vditor-content .code-block-copy:hover {
+          color: ${theme === 'dark' ? '#e5e7eb' : '#374151'};
+          background: ${theme === 'dark' ? '#4b5563' : '#d1d5db'};
+        }
+        .w-markdown-editor .vditor-content .code-block-wrapper pre {
+          margin: 0 !important;
+          border-radius: 0 !important;
+        }
       `;
       document.head.appendChild(styleEl);
 
@@ -199,6 +236,52 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
           });
         }
       });
+
+      const wrapCodeBlocks = () => {
+        const contentContainer = containerRef.current?.querySelector('.vditor-content');
+        if (!contentContainer) return;
+
+        const preElements = contentContainer.querySelectorAll('pre');
+        preElements.forEach((pre) => {
+          if (pre.parentElement?.classList.contains('code-block-wrapper')) return;
+
+          const codeElement = pre.querySelector('code');
+          let language = '';
+          if (codeElement) {
+            const className = codeElement.className || '';
+            const match = className.match(/language-([\w\u4e00-\u9fa5]+)/);
+            language = match ? match[1] : '';
+          }
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'code-block-wrapper';
+
+          const header = document.createElement('div');
+          header.className = 'code-block-header';
+
+          const languageSpan = document.createElement('span');
+          languageSpan.className = 'code-block-language';
+          languageSpan.textContent = language || '代码';
+
+          const copyButton = document.createElement('button');
+          copyButton.className = 'code-block-copy';
+          copyButton.textContent = '复制';
+          copyButton.onclick = () => {
+            navigator.clipboard.writeText(pre.textContent || '');
+          };
+
+          header.appendChild(languageSpan);
+          header.appendChild(copyButton);
+
+          wrapper.appendChild(header);
+          wrapper.appendChild(pre.cloneNode(true));
+          pre.replaceWith(wrapper);
+        });
+      };
+
+      if (mode === 'sv') {
+        wrapCodeBlocks();
+      }
     };
 
     const handleContainerClick = (e: MouseEvent) => {

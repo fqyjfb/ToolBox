@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
+import PopupMenu from '../../../components/ui/PopupMenu';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 function generateId(): string {
@@ -874,6 +875,20 @@ export default function AIChatPage() {
     }
   };
 
+  const handleDownloadContent = (content: string, format: 'txt' | 'md') => {
+    const ext = format === 'txt' ? 'txt' : 'md';
+    const type = format === 'txt' ? 'text/plain' : 'text/markdown';
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-response-${Date.now()}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleCopyUrl = async (messageId: string, url: string) => {
     try {
       await navigator.clipboard.writeText(url);
@@ -1174,18 +1189,22 @@ export default function AIChatPage() {
                               code: ({ className, children }) => {
                                 const content = String(children);
                                 const isBlock = className !== undefined || content.includes('\n');
+                                const language = className?.match(/language-([\w\u4e00-\u9fa5]+)/)?.[1] || '';
                                 if (isBlock) {
                                   return (
                                     <div className="overflow-x-auto">
-                                      <div className="relative bg-gray-900 rounded-lg my-2">
-                                        <button
-                                          onClick={() => navigator.clipboard.writeText(content)}
-                                          className="absolute top-2 right-2 flex items-center justify-center rounded transition-all text-gray-500 hover:text-white"
-                                          title="复制代码"
-                                        >
-                                          <Copy className="w-4 h-4" />
-                                        </button>
-                                        <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm break-all whitespace-pre-wrap">
+                                      <div className="relative my-2">
+                                        <div className="flex items-center justify-between px-4 py-1.5 bg-gray-200 dark:bg-gray-700 rounded-t-lg border-b border-gray-300 dark:border-gray-600">
+                                          <span className="text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">{language || '文本'}</span>
+                                          <button
+                                            onClick={() => navigator.clipboard.writeText(content)}
+                                            className="flex items-center justify-center rounded transition-all text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                            title="复制代码"
+                                          >
+                                            <Copy className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                        <pre className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 text-sm break-all whitespace-pre-wrap rounded-b-lg">
                                           <code>{children}</code>
                                         </pre>
                                       </div>
@@ -1248,6 +1267,29 @@ export default function AIChatPage() {
                             {new Date(message.created_at || Date.now()).toLocaleTimeString('zh-CN')}
                           </span>
                           <div className="flex items-center gap-1">
+                            <PopupMenu
+                              trigger={
+                                <button
+                                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                  title="下载"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              }
+                              items={[
+                                {
+                                  id: 'download-txt',
+                                  label: 'TXT',
+                                  onClick: () => handleDownloadContent(message.content, 'txt'),
+                                },
+                                {
+                                  id: 'download-md',
+                                  label: 'Markdown',
+                                  onClick: () => handleDownloadContent(message.content, 'md'),
+                                },
+                              ]}
+                              position="top-right"
+                            />
                             <button
                               onClick={() => handleCopyMarkdown(message.id, message.content)}
                               className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200 ${

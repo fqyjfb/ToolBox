@@ -11,9 +11,10 @@ interface PopupMenuProps {
   trigger: React.ReactNode;
   items: MenuItem[];
   title?: string;
+  position?: 'bottom-right' | 'top-right';
 }
 
-const PopupMenu: React.FC<PopupMenuProps> = ({ trigger, items, title }) => {
+const PopupMenu: React.FC<PopupMenuProps> = ({ trigger, items, title, position = 'bottom-right' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -36,7 +37,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ trigger, items, title }) => {
   };
 
   return (
-    <div className="popup-menu-container auth-popup" ref={menuRef}>
+    <div className="popup-menu-container" ref={menuRef}>
       <div
         className="popup-menu-trigger"
         onClick={() => setIsOpen(!isOpen)}
@@ -45,7 +46,10 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ trigger, items, title }) => {
         {trigger}
       </div>
       {isOpen && (
-        <div className="popup-menu-window">
+        <div 
+          className="popup-menu-window"
+          style={position === 'top-right' ? { bottom: 'calc(100% + 10px)', top: 'auto' } : {}}
+        >
           {title && <legend className="popup-menu-title">{title}</legend>}
           <ul className="popup-menu-list">
             {items.map((item) => (
