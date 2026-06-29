@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
+import './WMarkdownEditor.css';
 import { openUrl } from '../../services/browserService';
 import { logError } from '../../services/loggerService';
+import { isElectron } from '../../utils/environment';
 
 export interface WMarkdownEditorProps {
   value: string;
@@ -39,6 +41,7 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
   const vditorRef = useRef<Vditor | null>(null);
   const isReadyRef = useRef(false);
   const lastValueRef = useRef(value);
+  const beforePreviewRef = useRef<string>('');
 
   const handleLinkClick = useCallback((e: MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -56,7 +59,13 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const electronEnv = isElectron();
+    const cdnPath = electronEnv
+      ? './vditor'
+      : 'https://cdn.jsdelivr.net/npm/vditor';
+
     const vditor = new Vditor(containerRef.current, {
+      cdn: cdnPath,
       height,
       minHeight,
       placeholder,
@@ -76,7 +85,10 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
       ],
       cache: { enable: false },
       preview: {
-        theme: { current: theme === 'dark' ? 'dark' : 'light' },
+        theme: {
+          current: theme === 'dark' ? 'dark' : 'light',
+          path: electronEnv ? `${cdnPath}/dist/css/content-theme` : undefined,
+        },
         hljs: {
           enable: true,
           lineNumber: true,
@@ -91,6 +103,7 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
           ':+1:': '👍', ':-1:': '👎', ':smile:': '😄',
           ':tada:': '🎉', ':heart:': '❤️', ':rocket:': '🚀',
         },
+        emojiPath: electronEnv ? `${cdnPath}/dist/images/emoji` : undefined,
       },
       upload: {
         handler: async (files: File[]) => {
@@ -118,111 +131,6 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
     });
 
     const applyToolbarTipFix = () => {
-      const styleEl = document.createElement('style');
-      styleEl.id = 'vditor-tip-fix';
-      styleEl.textContent = `
-        .w-markdown-editor {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-        }
-        .w-markdown-editor > div:first-child {
-          flex-shrink: 0;
-        }
-        .w-markdown-editor .vditor-toolbar {
-          position: relative;
-          z-index: 10;
-        }
-        .w-markdown-editor .vditor-toolbar__item {
-          position: relative;
-        }
-        .w-markdown-editor .vditor-toolbar__tip {
-          position: fixed !important;
-          z-index: 99999 !important;
-          margin: 0 !important;
-          padding: 4px 10px !important;
-          background: rgba(0, 0, 0, 0.9) !important;
-          color: #ffffff !important;
-          border-radius: 4px !important;
-          font-size: 12px !important;
-          white-space: nowrap !important;
-          pointer-events: none !important;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-          border: none !important;
-        }
-        .w-markdown-editor .vditor-toolbar__tip::before {
-          display: none !important;
-        }
-        .w-markdown-editor .vditor-toolbar__tip::after {
-          content: '';
-          position: absolute;
-          top: -6px;
-          left: 50%;
-          transform: translateX(-50%);
-          border-left: 6px solid transparent;
-          border-right: 6px solid transparent;
-          border-bottom: 6px solid rgba(0, 0, 0, 0.9);
-        }
-        .w-markdown-editor .vditor-content {
-          flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-        }
-        .w-markdown-editor .vditor-ir,
-        .w-markdown-editor .vditor-sv,
-        .w-markdown-editor .vditor-wysiwyg {
-          height: 100%;
-        }
-        .w-markdown-editor .vditor-ir pre,
-        .w-markdown-editor .vditor-sv pre,
-        .w-markdown-editor .vditor-wysiwyg pre {
-          background-color: ${theme === 'dark' ? '#0d1117' : '#f6f8fa'};
-        }
-        .w-markdown-editor .vditor-ir code,
-        .w-markdown-editor .vditor-sv code,
-        .w-markdown-editor .vditor-wysiwyg code {
-          color: ${theme === 'dark' ? '#c9d1d9' : '#24292e'};
-        }
-        .w-markdown-editor .vditor-content .code-block-wrapper {
-          margin: 0.5rem 0;
-          border-radius: 0.375rem;
-          overflow: hidden;
-        }
-        .w-markdown-editor .vditor-content .code-block-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.375rem 1rem;
-          background: ${theme === 'dark' ? '#374151' : '#e5e7eb'};
-          border-bottom: 1px solid ${theme === 'dark' ? '#4b5563' : '#d1d5db'};
-        }
-        .w-markdown-editor .vditor-content .code-block-language {
-          font-size: 0.75rem;
-          font-weight: 500;
-          color: ${theme === 'dark' ? '#d1d5db' : '#4b5563'};
-          text-transform: capitalize;
-        }
-        .w-markdown-editor .vditor-content .code-block-copy {
-          padding: 0.125rem 0.5rem;
-          background: transparent;
-          border: none;
-          border-radius: 0.25rem;
-          font-size: 0.75rem;
-          color: ${theme === 'dark' ? '#9ca3af' : '#6b7280'};
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .w-markdown-editor .vditor-content .code-block-copy:hover {
-          color: ${theme === 'dark' ? '#e5e7eb' : '#374151'};
-          background: ${theme === 'dark' ? '#4b5563' : '#d1d5db'};
-        }
-        .w-markdown-editor .vditor-content .code-block-wrapper pre {
-          margin: 0 !important;
-          border-radius: 0 !important;
-        }
-      `;
-      document.head.appendChild(styleEl);
-
       const toolbarItems = containerRef.current?.querySelectorAll('.vditor-toolbar__item');
       toolbarItems?.forEach((item) => {
         const tip = item.querySelector('.vditor-toolbar__tip');
@@ -237,7 +145,7 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
         }
       });
 
-      const wrapCodeBlocks = () => {
+      if (mode === 'sv') {
         const contentContainer = containerRef.current?.querySelector('.vditor-content');
         if (!contentContainer) return;
 
@@ -277,12 +185,99 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
           wrapper.appendChild(pre.cloneNode(true));
           pre.replaceWith(wrapper);
         });
-      };
-
-      if (mode === 'sv') {
-        wrapCodeBlocks();
       }
     };
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleModeChange = () => {
+      const contentElement = containerRef.current?.querySelector('.vditor-content');
+      if (!contentElement) return;
+
+      const isPreviewMode = contentElement.classList.contains('vditor-sv');
+      const isEditMode = contentElement.classList.contains('vditor-ir') || contentElement.classList.contains('vditor-wysiwyg');
+
+      if (isPreviewMode) {
+        beforePreviewRef.current = vditor.getValue();
+      } else if (isEditMode) {
+        const currentValue = vditor.getValue();
+        if (!currentValue && beforePreviewRef.current) {
+          vditor.setValue(beforePreviewRef.current);
+          lastValueRef.current = beforePreviewRef.current;
+          onChange(beforePreviewRef.current);
+        } else if (!currentValue && value) {
+          vditor.setValue(value);
+          lastValueRef.current = value;
+          onChange(value);
+        } else if (currentValue !== lastValueRef.current) {
+          lastValueRef.current = currentValue;
+          onChange(currentValue);
+        }
+      }
+
+      if (contentElement.classList.contains('vditor-sv')) {
+        setTimeout(() => {
+          const contentContainer = containerRef.current?.querySelector('.vditor-content');
+          if (!contentContainer) return;
+          const preElements = contentContainer.querySelectorAll('pre');
+          preElements.forEach((pre) => {
+            if (pre.parentElement?.classList.contains('code-block-wrapper')) return;
+            const codeElement = pre.querySelector('code');
+            let language = '';
+            if (codeElement) {
+              const className = codeElement.className || '';
+              const match = className.match(/language-([\w\u4e00-\u9fa5]+)/);
+              language = match ? match[1] : '';
+            }
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-block-wrapper';
+            const header = document.createElement('div');
+            header.className = 'code-block-header';
+            const languageSpan = document.createElement('span');
+            languageSpan.className = 'code-block-language';
+            languageSpan.textContent = language || '代码';
+            const copyButton = document.createElement('button');
+            copyButton.className = 'code-block-copy';
+            copyButton.textContent = '复制';
+            copyButton.onclick = () => {
+              navigator.clipboard.writeText(pre.textContent || '');
+            };
+            header.appendChild(languageSpan);
+            header.appendChild(copyButton);
+            wrapper.appendChild(header);
+            wrapper.appendChild(pre.cloneNode(true));
+            pre.replaceWith(wrapper);
+          });
+        }, 100);
+      }
+    };
+
+    const observeModeChange = () => {
+      const observer = new MutationObserver((mutations) => {
+        let shouldHandle = false;
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+            const target = mutation.target as HTMLElement;
+            if (target.classList.contains('vditor-sv') ||
+              target.classList.contains('vditor-ir') ||
+              target.classList.contains('vditor-wysiwyg')) {
+              shouldHandle = true;
+            }
+          }
+        });
+        if (shouldHandle) {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(handleModeChange, 50);
+        }
+      });
+      const contentElement = containerRef.current?.querySelector('.vditor-content');
+      if (contentElement) {
+        observer.observe(contentElement, { attributes: true, attributeFilter: ['class'] });
+      }
+      return observer;
+    };
+
+    const modeObserver = observeModeChange();
 
     const handleContainerClick = (e: MouseEvent) => {
       handleLinkClick(e);
@@ -302,11 +297,10 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
     vditorRef.current = vditor;
 
     return () => {
+      modeObserver.disconnect();
+      if (debounceTimer) clearTimeout(debounceTimer);
       document.removeEventListener('keydown', handleKeyDown);
       currentContainer?.removeEventListener('click', handleContainerClick, true);
-
-      const styleEl = document.getElementById('vditor-tip-fix');
-      if (styleEl) styleEl.remove();
 
       try {
         vditorRef.current?.destroy();
@@ -314,7 +308,7 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
       vditorRef.current = null;
       isReadyRef.current = false;
     };
-  }, [value, onChange, onSave, placeholder, height, minHeight, readonly, mode, theme, onFocus, onBlur, onUpload, handleLinkClick]);
+  }, [onChange, onSave, placeholder, height, minHeight, readonly, mode, theme, onFocus, onBlur, onUpload, handleLinkClick]);
 
   useEffect(() => {
     if (!vditorRef.current || !isReadyRef.current) return;
@@ -332,6 +326,29 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
       (vditorRef.current as unknown as { enable: () => void }).enable();
     }
   }, [readonly]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const isDark = theme === 'dark';
+
+    root.style.setProperty('--vditor-bg-color', isDark ? '#0d1117' : '#ffffff');
+    root.style.setProperty('--vditor-text-color', isDark ? '#c9d1d9' : '#24292e');
+    root.style.setProperty('--vditor-text-color-secondary', isDark ? '#9ca3af' : '#6b7280');
+    root.style.setProperty('--vditor-code-bg', isDark ? '#0d1117' : '#f6f8fa');
+    root.style.setProperty('--vditor-header-bg', isDark ? '#374151' : '#e5e7eb');
+    root.style.setProperty('--vditor-border-color', isDark ? '#4b5563' : '#d1d5db');
+    root.style.setProperty('--vditor-hover-bg', isDark ? '#4b5563' : '#d1d5db');
+
+    return () => {
+      root.style.removeProperty('--vditor-bg-color');
+      root.style.removeProperty('--vditor-text-color');
+      root.style.removeProperty('--vditor-text-color-secondary');
+      root.style.removeProperty('--vditor-code-bg');
+      root.style.removeProperty('--vditor-header-bg');
+      root.style.removeProperty('--vditor-border-color');
+      root.style.removeProperty('--vditor-hover-bg');
+    };
+  }, [theme]);
 
   return (
     <div

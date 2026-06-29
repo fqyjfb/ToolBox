@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { Settings as SettingsIcon, Keyboard, Circle, Database, Scan, FileText, RefreshCw, Sparkles } from 'lucide-react';
+import { Settings as SettingsIcon, Keyboard, Circle, Database, Scan, FileText, RefreshCw, Sparkles, PanelLeft } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
@@ -29,8 +29,8 @@ const Settings: React.FC = () => {
   const addToast = useToastStore(state => state.addToast);
   const { isVisible: isMenuVisible, position: leftMenuPosition, setVisible, setPosition } = useSidebarStore();
 
-  // State management
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [browserMode, setBrowserMode] = useState<'internal' | 'external'>('internal');
   const [autostartEnabled, setAutostartEnabled] = useState(false);
   const [autoLockEnabled, setAutoLockEnabled] = useState(false);
@@ -394,94 +394,111 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 h-full overflow-hidden">
-      <div className="settings-scroll-container">
-        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+    <div className="flex h-full overflow-hidden">
+      <aside
+        className="flex-shrink-0 flex flex-col bg-white dark:bg-gray-900 transition-all duration-200"
+        style={{ width: sidebarCollapsed ? '48px' : '145px' }}
+      >
+        <div className="flex flex-col flex-1 py-2 overflow-y-auto scrollbar-hide">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-2 text-sm font-medium transition-colors flex items-center gap-2 ${
+              className={`flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors mx-1 rounded-lg ${
                 activeTab === tab.id
-                  ? 'text-primary border-b-2 border-primary bg-gray-50 dark:bg-gray-700/50'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  ? 'text-primary bg-blue-50 dark:bg-blue-900/30'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
+              title={tab.label}
             >
-              <tab.icon size={14} />
-              {tab.label}
+              <tab.icon size={16} className="flex-shrink-0" />
+              {!sidebarCollapsed && <span className="truncate">{tab.label}</span>}
             </button>
           ))}
         </div>
+        <div className="border-t border-gray-200 dark:border-gray-700 p-2">
+          <button
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
+          >
+            <PanelLeft size={16} className="flex-shrink-0" />
+            {!sidebarCollapsed && <span className="truncate">收起</span>}
+          </button>
+        </div>
+      </aside>
 
-        {/* Tab content */}
-        {activeTab === 'general' && (
-          <GeneralTab
-            autostartEnabled={autostartEnabled}
-            isEdgeAdsorption={isEdgeAdsorption}
-            isMemoryOptimizationEnabled={isMemoryOptimizationEnabled}
-            isFloatWindowEnabled={isFloatWindowEnabled}
-            isMenuVisible={isMenuVisible}
-            leftMenuPosition={leftMenuPosition}
-            defaultWindowSize={defaultWindowSize}
-            browserMode={browserMode}
-            autoLockEnabled={autoLockEnabled}
-            autoLockTimeout={autoLockTimeout}
-            onAutostartToggle={handleAutostartToggle}
-            onEdgeAdsorptionChange={handleEdgeAdsorptionChange}
-            onMemoryOptimizationChange={handleMemoryOptimizationChange}
-            onFloatWindowChange={handleFloatWindowChange}
-            onMenuVisibleChange={handleMenuVisibleChange}
-            onMenuPositionChange={handleMenuPositionChange}
-            onWindowSizeChange={handleWindowSizeChange}
-            onBrowserModeChange={handleBrowserModeChange}
-            onAutoLockChange={handleAutoLockChange}
-            onAutoLockTimeoutChange={handleAutoLockTimeoutChange}
-          />
-        )}
+      <main className="flex-1 overflow-hidden">
+        <div className="settings-scroll-container">
+          {activeTab === 'general' && (
+            <GeneralTab
+              autostartEnabled={autostartEnabled}
+              isEdgeAdsorption={isEdgeAdsorption}
+              isMemoryOptimizationEnabled={isMemoryOptimizationEnabled}
+              isFloatWindowEnabled={isFloatWindowEnabled}
+              isMenuVisible={isMenuVisible}
+              leftMenuPosition={leftMenuPosition}
+              defaultWindowSize={defaultWindowSize}
+              browserMode={browserMode}
+              autoLockEnabled={autoLockEnabled}
+              autoLockTimeout={autoLockTimeout}
+              onAutostartToggle={handleAutostartToggle}
+              onEdgeAdsorptionChange={handleEdgeAdsorptionChange}
+              onMemoryOptimizationChange={handleMemoryOptimizationChange}
+              onFloatWindowChange={handleFloatWindowChange}
+              onMenuVisibleChange={handleMenuVisibleChange}
+              onMenuPositionChange={handleMenuPositionChange}
+              onWindowSizeChange={handleWindowSizeChange}
+              onBrowserModeChange={handleBrowserModeChange}
+              onAutoLockChange={handleAutoLockChange}
+              onAutoLockTimeoutChange={handleAutoLockTimeoutChange}
+            />
+          )}
 
-        {activeTab === 'storage' && (
-          <StorageTab
-            onClearCache={handleClearCache}
-            btnLoading={btnLoading}
-            btnText={btnText}
-          />
-        )}
+          {activeTab === 'storage' && (
+            <StorageTab
+              onClearCache={handleClearCache}
+              btnLoading={btnLoading}
+              btnText={btnText}
+            />
+          )}
 
-        {activeTab === 'sync' && <SyncTab />}
+          {activeTab === 'sync' && <SyncTab />}
 
-        {activeTab === 'shortcuts' && (
-          <ShortcutsTab
-            shortcuts={shortcuts}
-            onUpdateShortcut={handleUpdateShortcut}
-            onResetShortcuts={handleResetShortcuts}
-          />
-        )}
+          {activeTab === 'shortcuts' && (
+            <ShortcutsTab
+              shortcuts={shortcuts}
+              onUpdateShortcut={handleUpdateShortcut}
+              onResetShortcuts={handleResetShortcuts}
+            />
+          )}
 
-        {activeTab === 'floatWindow' && (
-          <FloatWindowTab
-            floatConfig={floatConfig}
-            quickLaunchApps={quickLaunchApps}
-            onFloatConfigUpdate={handleFloatConfigUpdate}
-            onSaveFloatConfig={handleSaveFloatConfig}
-            onResetFloatConfig={handleResetFloatConfig}
-          />
-        )}
+          {activeTab === 'floatWindow' && (
+            <FloatWindowTab
+              floatConfig={floatConfig}
+              quickLaunchApps={quickLaunchApps}
+              onFloatConfigUpdate={handleFloatConfigUpdate}
+              onSaveFloatConfig={handleSaveFloatConfig}
+              onResetFloatConfig={handleResetFloatConfig}
+            />
+          )}
 
-        {activeTab === 'ocr' && OcrTab && (
-          <Suspense fallback={<div className="flex items-center justify-center py-8">加载中...</div>}>
-            <OcrTab />
-          </Suspense>
-        )}
+          {activeTab === 'ocr' && OcrTab && (
+            <Suspense fallback={<div className="flex items-center justify-center py-8">加载中...</div>}>
+              <OcrTab />
+            </Suspense>
+          )}
 
-        {activeTab === 'logMonitor' && (
-          <LogMonitorTab
-            notifications={notifications}
-            onNotificationToggle={handleNotificationToggle}
-          />
-        )}
+          {activeTab === 'logMonitor' && (
+            <LogMonitorTab
+              notifications={notifications}
+              onNotificationToggle={handleNotificationToggle}
+            />
+          )}
 
-        {activeTab === 'agnes' && <AgnesTab />}
-      </div>
+          {activeTab === 'agnes' && <AgnesTab />}
+        </div>
+      </main>
     </div>
   );
 };

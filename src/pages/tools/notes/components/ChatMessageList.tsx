@@ -43,7 +43,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto px-6 py-6"
+      className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin"
       onClick={(e) => {
         if (!((e.target as HTMLElement).closest('.chat-message'))) {
           onToggleSelection('');

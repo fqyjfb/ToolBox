@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FileText, Save, Edit3 } from 'lucide-react';
+import { FileText, Save, Edit3, PanelLeft } from 'lucide-react';
 import WMarkdownEditor from '@/components/WMarkdownEditor';
 import { useThemeStore } from '@/store/themeStore';
 
@@ -18,6 +18,8 @@ interface NotesEditorProps {
   content: string;
   onContentChange: (content: string) => void;
   onSave: (content: string) => Promise<boolean>;
+  sidebarVisible?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 const NotesEditor: React.FC<NotesEditorProps> = ({
@@ -25,6 +27,8 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   content,
   onContentChange,
   onSave,
+  sidebarVisible = true,
+  onToggleSidebar,
 }) => {
   const { isDark } = useThemeStore();
   const [isDirty, setIsDirty] = useState(false);
@@ -32,6 +36,14 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   const lastSavedContentRef = useRef(content);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentFilePathRef = useRef<string | null>(null);
+
+  const handleUpload = useCallback(async (_file: File) => {
+    const filePath = await window.electron?.selectFile();
+    if (filePath) {
+      return `file:///${filePath.replace(/\\/g, '/')}`;
+    }
+    return '';
+  }, []);
 
   useEffect(() => {
     const filePath = selectedFile?.path ?? null;
@@ -106,10 +118,19 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   }
 
   return (
-    <section className="flex flex-1 flex-col bg-white dark:bg-gray-900">
+    <section className="flex flex-1 flex-col bg-white dark:bg-gray-900 min-w-0">
       <div className="relative z-10 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-2">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm">
+            {onToggleSidebar && (
+              <button
+                className="rounded p-1 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                onClick={onToggleSidebar}
+                title={sidebarVisible ? '隐藏列表' : '显示列表'}
+              >
+                <PanelLeft className="h-4 w-4" />
+              </button>
+            )}
             <FileText className="h-5 w-5 text-blue-500" />
             <span className="font-medium text-gray-900 dark:text-white">
               {selectedFile.name}
@@ -151,11 +172,12 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
         </button>
       </div>
 
-      <div className="relative flex-1 min-h-0">
+      <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
         <WMarkdownEditor
           value={content}
           onChange={handleContentChange}
           onSave={handleSave}
+          onUpload={handleUpload}
           mode="ir"
           height="100%"
           placeholder="开始编写您的笔记..."

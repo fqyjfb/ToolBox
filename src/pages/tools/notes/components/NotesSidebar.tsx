@@ -81,6 +81,7 @@ const FileTreeItem: React.FC<{
         style={{ paddingLeft: `${12 + depth * 16}px` }}
         onClick={handleClick}
         onContextMenu={(e) => onContextMenu(e, node)}
+        title={node.path}
       >
         {node.type === 'folder' && (
           <ChevronRight
@@ -456,9 +457,8 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   };
 
   return (
-    <aside className="flex h-full w-64 flex-shrink-0 flex-col border-r border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900">
+    <aside className="flex h-full w-48 flex-shrink-0 flex-col border-r border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900">
       <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-600 p-3">
-        <span className="text-sm font-medium text-gray-900 dark:text-white">笔记列表</span>
         <div className="flex items-center gap-1">
           <button
             className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
@@ -507,7 +507,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide">
         <div
           className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 mb-2 transition-colors ${
             isChatMode

@@ -33,6 +33,9 @@ doc/
 # Build output
 dist-electron/
 
+# Vditor assets
+public/vditor/
+
 # TypeScript build info
 *.tsbuildinfo
 

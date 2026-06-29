@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { PanelLeft } from 'lucide-react';
 import { useNotes } from '@/hooks/useNotes';
 import { useChatNotes } from './hooks/useChatNotes';
 import FolderSelectModal from './components/FolderSelectModal';
@@ -8,9 +9,15 @@ import NotesEditor from './components/NotesEditor';
 import { ChatMessageList } from './components/ChatMessageList';
 import { ChatInput } from './components/ChatInput';
 
+const SIDEBAR_VISIBLE_KEY = 'notes_sidebar_visible';
+
 const NotesPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const chatModeParam = searchParams.get('chatMode');
+  const [sidebarVisible, setSidebarVisible] = useState(() => {
+    const stored = localStorage.getItem(SIDEBAR_VISIBLE_KEY);
+    return stored === null ? true : stored === 'true';
+  });
   const {
     hasRootPath,
     rootPath,
@@ -63,6 +70,12 @@ const NotesPage: React.FC = () => {
     setIsChatMode(!isChatMode);
   };
 
+  const handleToggleSidebar = () => {
+    const newValue = !sidebarVisible;
+    setSidebarVisible(newValue);
+    localStorage.setItem(SIDEBAR_VISIBLE_KEY, String(newValue));
+  };
+
   const handleSelectFile = (file: typeof selectedFile) => {
     if (file) {
       setIsChatMode(false);
@@ -81,31 +94,42 @@ const NotesPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <main className="flex flex-1 overflow-hidden">
-        <NotesSidebar
-          fileTree={fileTree}
-          selectedFile={selectedFile}
-          onSelectFile={handleSelectFile}
-          onToggleFolder={toggleFolderExpand}
-          onCreateFolder={createFolder}
-          onCreateFolderForce={createFolderForce}
-          onCreateNote={createNote}
-          onCreateNoteForce={createNoteForce}
-          onRenameItem={renameItem}
-          onDeleteItem={deleteItem}
-          onRefresh={refreshFileTree}
-          onRebuildIndex={rebuildIndex}
-          onChangeFolder={changeFolder}
-          loading={loading}
-          isChatMode={isChatMode}
-          onToggleChatMode={handleToggleChatMode}
-        />
+        {sidebarVisible && (
+          <NotesSidebar
+            fileTree={fileTree}
+            selectedFile={selectedFile}
+            onSelectFile={handleSelectFile}
+            onToggleFolder={toggleFolderExpand}
+            onCreateFolder={createFolder}
+            onCreateFolderForce={createFolderForce}
+            onCreateNote={createNote}
+            onCreateNoteForce={createNoteForce}
+            onRenameItem={renameItem}
+            onDeleteItem={deleteItem}
+            onRefresh={refreshFileTree}
+            onRebuildIndex={rebuildIndex}
+            onChangeFolder={changeFolder}
+            loading={loading}
+            isChatMode={isChatMode}
+            onToggleChatMode={handleToggleChatMode}
+          />
+        )}
 
         {isChatMode ? (
           <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-gray-900">
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-white">聊天记录</h2>
-                <p className="text-xs text-gray-400">快速记录想法，稍后整理</p>
+              <div className="flex items-center gap-2">
+                <button
+                  className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={handleToggleSidebar}
+                  title={sidebarVisible ? '隐藏列表' : '显示列表'}
+                >
+                  <PanelLeft className="h-4 w-4" />
+                </button>
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white">聊天记录</h2>
+                  <p className="text-xs text-gray-400">快速记录想法，稍后整理</p>
+                </div>
               </div>
               {selectedMessages.length > 0 && (
                 <button
@@ -133,6 +157,8 @@ const NotesPage: React.FC = () => {
             content={fileContent}
             onContentChange={updateFileContent}
             onSave={saveFile}
+            sidebarVisible={sidebarVisible}
+            onToggleSidebar={handleToggleSidebar}
           />
         )}
       </main>

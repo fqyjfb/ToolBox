@@ -1,0 +1,131 @@
+.w-markdown-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.w-markdown-editor > div:first-child {
+  flex-shrink: 0;
+}
+
+.w-markdown-editor .vditor-toolbar {
+  position: relative;
+  z-index: 10;
+}
+
+.w-markdown-editor .vditor-toolbar__tip {
+  position: fixed !important;
+  z-index: 99999 !important;
+  margin: 0 !important;
+  padding: 4px 10px !important;
+  background: rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  border: none !important;
+}
+
+.w-markdown-editor .vditor-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.w-markdown-editor .vditor-ir,
+.w-markdown-editor .vditor-sv,
+.w-markdown-editor .vditor-wysiwyg {
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.w-markdown-editor .vditor-ir pre,
+.w-markdown-editor .vditor-sv pre,
+.w-markdown-editor .vditor-wysiwyg pre,
+.w-markdown-editor .vditor-reset pre {
+  background-color: var(--vditor-code-bg);
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-x: hidden !important;
+}
+
+.w-markdown-editor .vditor-ir code,
+.w-markdown-editor .vditor-sv code,
+.w-markdown-editor .vditor-wysiwyg code,
+.w-markdown-editor .vditor-reset code {
+  color: var(--vditor-text-color);
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.w-markdown-editor .vditor-content .code-block-wrapper {
+  margin: 0.5rem 0;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.w-markdown-editor .vditor-content .code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 1rem;
+  background: var(--vditor-header-bg);
+  border-bottom: 1px solid var(--vditor-border-color);
+}
+
+.w-markdown-editor .vditor-content .code-block-language {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--vditor-text-color);
+  text-transform: capitalize;
+}
+
+.w-markdown-editor .vditor-content .code-block-copy {
+  padding: 0.125rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--vditor-text-color-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.w-markdown-editor .vditor-content .code-block-copy:hover {
+  color: var(--vditor-text-color);
+  background: var(--vditor-hover-bg);
+}
+
+.w-markdown-editor .vditor-content .code-block-wrapper pre {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-x: hidden !important;
+}
+
+.w-markdown-editor .vditor-content .code-block-wrapper code {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.w-markdown-editor .vditor-content pre {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-x: hidden !important;
+}
+
+.w-markdown-editor .vditor-content code {
+  word-break: break-word !important;
+}

@@ -214,7 +214,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
       <input
         ref={fileInputRef}
         type="file"
@@ -253,127 +253,125 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
         cancelText="取消"
       />
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 flex items-center justify-center text-blue-600">
-              <HardDrive size={16} />
-            </div>
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">存储使用情况</h2>
-            {(showWarning || showDanger) && (
-              <AlertTriangle size={16} className={`ml-2 ${showDanger ? 'text-red-500' : 'text-yellow-500'}`} />
-            )}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+            <HardDrive size={16} />
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowClearUserDataConfirm(true)}
-              disabled={isClearingUserData || !admin?.id}
-              className="flex items-center px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isClearingUserData ? (
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              ) : (
-                <Trash2 className="w-3 h-3 mr-1" />
-              )}
-              清空数据
-            </button>
-            <button
-              onClick={() => setShowExportConfirm(true)}
-              disabled={isExporting || !admin?.id}
-              className="flex items-center px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isExporting ? (
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              ) : (
-                <Download className="w-3 h-3 mr-1" />
-              )}
-              导出
-            </button>
-            <button
-              onClick={handleFileSelect}
-              disabled={isImporting || !admin?.id}
-              className="flex items-center px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isImporting ? (
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              ) : (
-                <Upload className="w-3 h-3 mr-1" />
-              )}
-              导入
-            </button>
-            <button
-              onClick={() => { 
-                refreshStorageInfo(); 
-                if (admin?.id) refreshStorageStats(admin.id); 
-              }}
-              disabled={isLoading || isStatsLoading}
-              className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              title="刷新统计"
-            >
-              {isLoading || isStatsLoading ? (
-                <Loader2 className="w-3 h-3 text-gray-500 animate-spin" />
-              ) : (
-                <Database className="w-3 h-3 text-gray-500" />
-              )}
-            </button>
-          </div>
-        </div>
-        <div className="p-4">
-          <div className="mb-4">
-            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-              <span>已使用空间</span>
-              <span>{formatBytes(storageUsed)} / {formatBytes(storageQuota)}</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-              <div
-                className={`h-1.5 rounded-full transition-all ${
-                  showDanger ? 'bg-red-500' : showWarning ? 'bg-yellow-500' : 'bg-primary'
-                }`}
-                style={{ width: `${storageQuota > 0 ? storageUsagePercent * 100 : 0}%` }}
-              />
-            </div>
-            {showWarning && (
-              <p className={`text-xs mt-2 ${showDanger ? 'text-red-500' : 'text-yellow-500'}`}>
-                {showDanger ? '存储空间即将用尽，请及时清理！' : '建议清理不需要的数据以释放空间'}
-              </p>
-            )}
-          </div>
-          
-          <div className="grid grid-cols-6 gap-2">
-            {statItems.map(item => {
-              if (item.platformKey && platformVisibility && !platformVisibility[item.platformKey]) {
-                return null;
-              }
-              return (
-                <div key={item.key} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{item.label}</div>
-                  <div className={`text-sm font-semibold ${item.color}`}>
-                    {isStatsLoading ? <Loader2 className="w-4 h-4 inline animate-spin" /> : item.count}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          {isClearingUserData && (
-            <div className="mt-4">
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                <span>清理进度</span>
-                <span>{clearProgressMessage}</span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
-                <div
-                  className="bg-primary h-1 rounded-full transition-all"
-                  style={{ width: `${clearProgress}%` }}
-                />
-              </div>
-            </div>
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">存储使用情况</h2>
+          {(showWarning || showDanger) && (
+            <AlertTriangle size={16} className={`ml-2 ${showDanger ? 'text-red-500' : 'text-yellow-500'}`} />
           )}
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowClearUserDataConfirm(true)}
+            disabled={isClearingUserData || !admin?.id}
+            className="flex items-center px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isClearingUserData ? (
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+            ) : (
+              <Trash2 className="w-3 h-3 mr-1" />
+            )}
+            清空数据
+          </button>
+          <button
+            onClick={() => setShowExportConfirm(true)}
+            disabled={isExporting || !admin?.id}
+            className="flex items-center px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isExporting ? (
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+            ) : (
+              <Download className="w-3 h-3 mr-1" />
+            )}
+            导出
+          </button>
+          <button
+            onClick={handleFileSelect}
+            disabled={isImporting || !admin?.id}
+            className="flex items-center px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isImporting ? (
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+            ) : (
+              <Upload className="w-3 h-3 mr-1" />
+            )}
+            导入
+          </button>
+          <button
+            onClick={() => { 
+              refreshStorageInfo(); 
+              if (admin?.id) refreshStorageStats(admin.id); 
+            }}
+            disabled={isLoading || isStatsLoading}
+            className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            title="刷新统计"
+          >
+            {isLoading || isStatsLoading ? (
+              <Loader2 className="w-3 h-3 text-gray-500 animate-spin" />
+            ) : (
+              <Database className="w-3 h-3 text-gray-500" />
+            )}
+          </button>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="mb-4">
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+            <span>已使用空间</span>
+            <span>{formatBytes(storageUsed)} / {formatBytes(storageQuota)}</span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+            <div
+              className={`h-1.5 rounded-full transition-all ${
+                showDanger ? 'bg-red-500' : showWarning ? 'bg-yellow-500' : 'bg-primary'
+              }`}
+              style={{ width: `${storageQuota > 0 ? storageUsagePercent * 100 : 0}%` }}
+            />
+          </div>
+          {showWarning && (
+            <p className={`text-xs mt-2 ${showDanger ? 'text-red-500' : 'text-yellow-500'}`}>
+              {showDanger ? '存储空间即将用尽，请及时清理！' : '建议清理不需要的数据以释放空间'}
+            </p>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-6 gap-2">
+          {statItems.map(item => {
+            if (item.platformKey && platformVisibility && !platformVisibility[item.platformKey]) {
+              return null;
+            }
+            return (
+              <div key={item.key} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400">{item.label}</div>
+                <div className={`text-sm font-semibold ${item.color}`}>
+                  {isStatsLoading ? <Loader2 className="w-4 h-4 inline animate-spin" /> : item.count}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {isClearingUserData && (
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>清理进度</span>
+              <span>{clearProgressMessage}</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+              <div
+                className="bg-primary h-1 rounded-full transition-all"
+                style={{ width: `${clearProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 flex items-center justify-center text-blue-600">
               <BarChart3 size={16} />
@@ -448,8 +446,8 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-800">
           <div className="w-5 h-5 flex items-center justify-center text-orange-600">
             <Trash2 size={16} />
           </div>
