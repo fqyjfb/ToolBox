@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
 
 export interface Toast {
   id: string;
@@ -14,12 +15,8 @@ interface ToastStore {
 }
 
 const isErrorNotificationsEnabled = (): boolean => {
-  try {
-    const stored = localStorage.getItem('toolbox_notification_errors');
-    return stored !== 'false';
-  } catch {
-    return true;
-  }
+  const stored = localStorageService.getString(STORAGE_KEYS.NOTIFICATION_ERRORS);
+  return stored !== 'false';
 };
 
 export const useToastStore = create<ToastStore>((set) => ({

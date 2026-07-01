@@ -8,6 +8,7 @@ import { apiService } from '../../services/api';
 import { isWeb } from '../../utils/environment';
 import { getWeatherCity } from '../../utils/weatherLocation';
 import type { WeatherInfo } from '../../types/weather';
+import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Phone: React.lazy(() => import('lucide-react').then(m => ({ default: m.Phone }))),
@@ -97,7 +98,7 @@ const MobileHome: React.FC = () => {
 
   const fetchWeather = useCallback(async () => {
     try {
-      let city = localStorage.getItem('weatherCity');
+      let city = localStorageService.getString(STORAGE_KEYS.WEATHER_CITY);
       if (!city && isWeb()) {
         city = await getWeatherCity();
       }

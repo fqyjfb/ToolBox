@@ -1,3 +1,5 @@
+import { localStorageService, STORAGE_KEYS } from '../services/localStorageService';
+
 export interface HomeToolItem {
   id: string;
   name: string;
@@ -6,8 +8,6 @@ export interface HomeToolItem {
   textColor: string;
   iconName: string;
 }
-
-const HOME_TOOLS_KEY = 'homeTools';
 
 export const defaultHomeTools: HomeToolItem[] = [
   { id: 'cloud-clipboard', name: '云剪贴板', path: '/tools/cloud-clipboard', color: '#67aaf7', textColor: '#fff', iconName: 'Clipboard' },
@@ -20,28 +20,23 @@ export const defaultHomeTools: HomeToolItem[] = [
 ];
 
 export const loadHomeTools = (): HomeToolItem[] => {
-  const savedTools = localStorage.getItem(HOME_TOOLS_KEY);
-  if (savedTools) {
-    try {
-      const parsedTools = JSON.parse(savedTools);
-      if (parsedTools.length < defaultHomeTools.length) {
-        const updatedTools = [...parsedTools];
-        for (let i = parsedTools.length; i < defaultHomeTools.length; i++) {
-          updatedTools.push(defaultHomeTools[i]);
-        }
-        saveHomeTools(updatedTools);
-        return updatedTools;
+  const savedTools = localStorageService.get<HomeToolItem[]>(STORAGE_KEYS.HOME_TOOLS, []);
+  if (savedTools.length > 0) {
+    if (savedTools.length < defaultHomeTools.length) {
+      const updatedTools = [...savedTools];
+      for (let i = savedTools.length; i < defaultHomeTools.length; i++) {
+        updatedTools.push(defaultHomeTools[i]);
       }
-      return parsedTools;
-    } catch {
-      return [...defaultHomeTools];
+      saveHomeTools(updatedTools);
+      return updatedTools;
     }
+    return savedTools;
   }
   return [...defaultHomeTools];
 };
 
 export const saveHomeTools = (tools: HomeToolItem[]): void => {
-  localStorage.setItem(HOME_TOOLS_KEY, JSON.stringify(tools));
+  localStorageService.set(STORAGE_KEYS.HOME_TOOLS, tools);
 };
 
 export const replaceHomeTool = (index: number, newTool: HomeToolItem): boolean => {

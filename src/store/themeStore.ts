@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
 
 interface ThemeStore {
   isDark: boolean;
@@ -7,25 +8,16 @@ interface ThemeStore {
 }
 
 const getInitialTheme = (): boolean => {
-  try {
-    const storedTheme = localStorage.getItem('toolbox_theme');
-    if (storedTheme === 'dark') {
-      return true;
-    }
-    const legacyTheme = localStorage.getItem('theme-isDark');
-    return legacyTheme ? JSON.parse(legacyTheme) : false;
-  } catch (error) {
-    console.error('Error reading theme from localStorage:', error);
-    return false;
+  const storedTheme = localStorageService.getString(STORAGE_KEYS.THEME);
+  if (storedTheme === 'dark') {
+    return true;
   }
+  const legacyTheme = localStorageService.getString('theme-isDark');
+  return legacyTheme ? JSON.parse(legacyTheme) : false;
 };
 
 const applyTheme = (isDark: boolean) => {
-  try {
-    localStorage.setItem('toolbox_theme', isDark ? 'dark' : 'light');
-  } catch (error) {
-    console.error('Error saving theme to localStorage:', error);
-  }
+  localStorageService.setString(STORAGE_KEYS.THEME, isDark ? 'dark' : 'light');
   if (isDark) {
     document.documentElement.classList.add('dark');
     document.body.classList.add('dark');

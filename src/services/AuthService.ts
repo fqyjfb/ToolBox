@@ -1,16 +1,12 @@
 import { AuthResponse, LoginRequest, Admin, RegisterRequest, User } from '../types/auth'
 import { supabase } from './supabase'
 import { logError, logInfo } from './loggerService'
+import { localStorageService, STORAGE_KEYS } from './localStorageService'
 
 const parseStoredUser = (): User | null => {
-  const storedUser = localStorage.getItem('user')
+  const storedUser = localStorageService.get<User>(STORAGE_KEYS.USER, null as unknown as User)
   if (!storedUser) return null
-
-  try {
-    return JSON.parse(storedUser)
-  } catch {
-    return null
-  }
+  return storedUser
 }
 
 interface AuthUser {

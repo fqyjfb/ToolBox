@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clipboard, Plus, Trash2, Edit, ClipboardPaste, Tag } from 'lucide-react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { quickReplyService } from '../../../services/QuickReplyService';
 import { QuickReplyCategory, QuickReply } from '../../../types/quickReply';
 import { useAuthStore } from '../../../store/AuthStore';
@@ -14,6 +17,46 @@ import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Pagination from '../../../components/ui/Pagination';
 
+const SortableCategoryButton: React.FC<{
+  category: QuickReplyCategory;
+  isSelected: boolean;
+  onClick: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+}> = ({ category, isSelected, onClick, onContextMenu }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+    scale: isDragging ? 1.05 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="cursor-grab active:cursor-grabbing"
+    >
+      <button
+        onClick={onClick}
+        onContextMenu={onContextMenu}
+        className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex items-center gap-1 ${
+          isSelected
+            ? 'bg-gray-800 text-white'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        <Tag size={12} />
+        {category.name}
+      </button>
+    </div>
+  );
+};
+
 const QuickReplyPage: React.FC = () => {
   const navigate = useNavigate();
   const admin = useAuthStore((state) => state.admin);
@@ -21,6 +64,17 @@ const QuickReplyPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
   const { searchQuery, isSearchActive } = useNavSearch();
   const [categories, setCategories] = useState<QuickReplyCategory[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [newQuickReplyContent, setNewQuickReplyContent] = useState<string>('');
@@ -83,11 +137,30 @@ const QuickReplyPage: React.FC = () => {
       setCategories(categoriesData);
     } catch (error) {
       logError('Error loading categories', 'QuickReplyPage', error as Error);
-      addToast({ message: '加载分类失败', type: 'error' });
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = categories.findIndex(c => c.id === active.id);
+      const newIndex = categories.findIndex(c => c.id === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newCategories = arrayMove(categories, oldIndex, newIndex);
+        setCategories(newCategories);
+        if (admin) {
+          quickReplyService.updateCategoryOrder(admin.id, newCategories.map(c => c.id))
+            .catch(error => {
+              logError('Error updating category order', 'QuickReplyPage', error as Error);
+              addToast({ message: '更新分类排序失败', type: 'error' });
+            });
+        }
+      }
+    }
+  }, [categories, admin, addToast]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -446,21 +519,25 @@ const QuickReplyPage: React.FC = () => {
               >
                 全部
               </button>
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  onContextMenu={(e) => handleContextMenu(e, 'category', category.id)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex items-center gap-1 ${
-                    selectedCategory === category.id 
-                      ? 'bg-gray-800 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  <Tag size={12} />
-                  {category.name}
-                </button>
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {categories.map((category) => (
+                      <SortableCategoryButton
+                        key={category.id}
+                        category={category}
+                        isSelected={selectedCategory === category.id}
+                        onClick={() => setSelectedCategory(category.id)}
+                        onContextMenu={(e) => handleContextMenu(e, 'category', category.id)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
               <button
                 onClick={() => setShowAddCategoryModal(true)}
                 className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"

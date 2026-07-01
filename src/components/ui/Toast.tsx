@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useToastStore } from '../../store/toastStore';
 import { X, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
 
@@ -108,4 +108,4 @@ const Toast: React.FC = () => {
   );
 };
 
-export default Toast;
+export default React.memo(Toast);

@@ -6,6 +6,7 @@ import { isWeb } from '../../utils/environment';
 import { getWeatherCity } from '../../utils/weatherLocation';
 import type { WeatherInfo, DailyForecast } from '../../types/weather';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
 
 const getWeatherIcon = (condition: string, size: 'sm' | 'md' | 'lg' = 'md', color?: string) => {
   const lowerCondition = condition.toLowerCase();
@@ -34,7 +35,7 @@ const WeatherCard: React.FC = () => {
   const [showDetail, setShowDetail] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-  const [city, setCity] = useState(localStorage.getItem('weatherCity') || '南京');
+  const [city, setCity] = useState(localStorageService.getString(STORAGE_KEYS.WEATHER_CITY) || '无锡');
   const cardRef = useRef<HTMLDivElement>(null);
 
   const fetchWeather = useCallback(async () => {
@@ -62,7 +63,7 @@ const WeatherCard: React.FC = () => {
 
   useEffect(() => {
     const initializeCity = async () => {
-      let detectedCity = localStorage.getItem('weatherCity');
+      let detectedCity = localStorageService.getString(STORAGE_KEYS.WEATHER_CITY);
       
       if (!detectedCity && isWeb()) {
         detectedCity = await getWeatherCity();
@@ -290,4 +291,4 @@ const WeatherCard: React.FC = () => {
   );
 };
 
-export default WeatherCard;
+export default React.memo(WeatherCard);

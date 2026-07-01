@@ -2,22 +2,17 @@ const { BrowserWindow, dialog, screen, shell } = require('electron');
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
-const crypto = require('crypto');
 const { execFile } = require('child_process');
 const { loadSettings, saveSettings } = require('../lib/config.cjs');
 const ShortcutManager = require('../lib/shortcutManager.cjs');
 const notesService = require('../services/notesService.cjs');
 const { getFloatWindow } = require('./floatWindow.cjs');
+const { getFileIcon, isSupportedFileType, getShortcutTarget, getCacheFilePath } = require('../lib/iconExtractor.cjs');
 
 let mainWindow = null;
 let memoryCleanupTimer = null;
 let autoLockTimer = null;
 let lastActivityTime = Date.now();
-
-const iconCacheFolder = path.join(require('electron').app.getPath('userData'), 'icon-cache');
-if (!fs.existsSync(iconCacheFolder)) {
-  fs.mkdirSync(iconCacheFolder, { recursive: true });
-}
 
 const shortcutManager = new ShortcutManager();
 
@@ -113,19 +108,6 @@ const shortcutFunctions = {
       require('./lockWindow.cjs').lockOrPrompt();
     }
   },
-};
-
-const generateCacheFileName = (filePath) => {
-  return crypto.createHash('sha1').update(filePath).digest('hex');
-};
-
-const getCacheFilePath = (filePath) => {
-  return path.join(iconCacheFolder, `${generateCacheFileName(filePath)}.png`);
-};
-
-const isSupportedFileType = (filePath) => {
-  const extensions = ['.lnk', '.url', '.appref-ms', '.exe'];
-  return extensions.some(ext => filePath.toLowerCase().endsWith(ext));
 };
 
 const initShortcuts = () => {
@@ -448,33 +430,6 @@ const registerIpcHandlers = () => {
 
   const logger = require('../logs/logger.cjs');
 
-  const getShortcutTarget = (shortcutPath) => {
-    return new Promise((resolve) => {
-      const escapedPath = shortcutPath.replace(/\\/g, '\\\\').replace(/"/g, '`"');
-      const psScript = `
-        $Shell = New-Object -ComObject WScript.Shell
-        try {
-          $Shortcut = $Shell.CreateShortcut("${escapedPath}")
-          $TargetPath = $Shortcut.TargetPath
-          if ($TargetPath -and (Test-Path -Path $TargetPath -PathType Leaf)) {
-            Write-Output $TargetPath
-          } else {
-            Write-Output "${escapedPath}"
-          }
-        } catch {
-          Write-Output "${escapedPath}"
-        }
-      `;
-      execFile('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-Command', psScript], { timeout: 5000 }, (error, stdout) => {
-        if (stdout?.trim()) {
-          resolve(stdout.trim());
-        } else {
-          resolve(shortcutPath);
-        }
-      });
-    });
-  };
-
   const normalizePath = (inputPath) => {
     if (!inputPath) return null;
     
@@ -529,74 +484,12 @@ const registerIpcHandlers = () => {
   });
 
   ipcMain.handle('get-file-icon', async (event, filePath) => {
-    if (!filePath) return null;
-    const cacheFilePath = getCacheFilePath(filePath);
-    if (fs.existsSync(cacheFilePath)) {
-      try {
-        const buffer = fs.readFileSync(cacheFilePath);
-        return buffer.toString('base64');
-      } catch (e) {}
-    }
-    if (!isSupportedFileType(filePath)) return null;
-    const result = await getIconViaPowerShell(filePath, cacheFilePath);
-    return result || null;
+    return await getFileIcon(filePath);
   });
 
-  const getIconViaPowerShell = async (filePath, cacheFilePath) => {
-    return new Promise((resolve) => {
-      const psScript = `
-function Get-Shortcut-Target {
-    param([string]$ShortcutFilePath)
-    try {
-        $Shell = New-Object -ComObject WScript.Shell
-        $Shortcut = $Shell.CreateShortcut($ShortcutFilePath)
-        $TargetPath = $Shortcut.TargetPath
-        $IconLocation = $Shortcut.IconLocation
-        $lastComma = $IconLocation.LastIndexOf(",")
-        if ($lastComma -gt -1) {
-            $IconPath = $IconLocation.Substring(0, $lastComma).Trim()
-        } else {
-            $IconPath = $IconLocation.Trim()
-        }
-        if ($IconPath -and (Test-Path -Path $IconPath -PathType Leaf)) {
-            return $IconPath
-        }
-        if (Test-Path -Path $TargetPath -PathType Leaf) {
-            return $TargetPath
-        } else {
-            return $ShortcutFilePath
-        }
-    } catch {
-        return $ShortcutFilePath
-    }
-}
-function Get-Associated-Icon {
-    param([string]$InFilePath, [string]$OutFilePath)
-    $ErrorActionPreference = "SilentlyContinue"
-    Add-Type -AssemblyName System.Drawing
-    if ($InFilePath.EndsWith(".lnk")) {
-        $InFilePath = Get-Shortcut-Target -ShortcutFilePath $InFilePath
-    }
-    $Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($InFilePath)
-    if ($null -ne $Icon) {
-        $Icon.ToBitmap().Save($OutFilePath, [System.Drawing.Imaging.ImageFormat]::Png)
-        Write-Output 'success'
-    }
-}
-Get-Associated-Icon -InFilePath "${filePath}" -OutFilePath "${cacheFilePath}"
-      `;
-      execFile('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-Command', psScript], { timeout: 15000 }, (error, stdout) => {
-        if (stdout?.trim() === 'success' && fs.existsSync(cacheFilePath)) {
-          try {
-            const buffer = fs.readFileSync(cacheFilePath);
-            resolve(buffer.toString('base64'));
-            return;
-          } catch (e) {}
-        }
-        resolve(null);
-      });
-    });
-  };
+  ipcMain.handle('file-exists', (event, filePath) => {
+    return fs.existsSync(filePath);
+  });
 
   ipcMain.handle('get-autostart-status', () => {
     const settings = require('electron').app.getLoginItemSettings();

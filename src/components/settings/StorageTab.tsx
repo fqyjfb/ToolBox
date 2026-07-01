@@ -9,6 +9,7 @@ import { offlineStorage } from '../../services/offlineStorage';
 import { formatBytes } from '../../utils';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import { PlatformVisibility } from '../../types/account';
+import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 
 interface StorageTabProps {
   onClearCache: () => void;
@@ -65,13 +66,9 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   }, [admin?.id, refreshIconCacheStats, refreshStorageInfo, refreshStorageStats]);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('account_platform_visibility');
-      if (saved) {
-        setPlatformVisibility(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error('Failed to load platform visibility:', e);
+    const saved = localStorageService.get<PlatformVisibility>(STORAGE_KEYS.PLATFORM_VISIBILITY, null as unknown as PlatformVisibility);
+    if (saved) {
+      setPlatformVisibility(saved);
     }
   }, []);
 

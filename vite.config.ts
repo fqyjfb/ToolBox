@@ -39,9 +39,6 @@ export default defineConfig(({ mode }) => {
               if (['vditor', 'react-markdown', 'remark-gfm'].some(pkg => id.includes(pkg))) {
                 return 'vendor-editor';
               }
-              if (['jspdf', 'html2canvas'].some(pkg => id.includes(pkg))) {
-                return 'vendor-pdf';
-              }
               if (['lucide-react', 'styled-components'].some(pkg => id.includes(pkg))) {
                 return 'vendor-ui';
               }

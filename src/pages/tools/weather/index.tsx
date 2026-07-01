@@ -6,6 +6,7 @@ import { isWeb } from '../../../utils/environment';
 import { getWeatherCity } from '../../../utils/weatherLocation';
 import type { WeatherInfo, DailyForecast, HourlyForecast } from '../../../types/weather';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 
 const WeatherPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const WeatherPage: React.FC = () => {
   const [error, setError] = useState('');
   const [searchCity, setSearchCity] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
-  const [city, setCity] = useState(localStorage.getItem('weatherCity') || '南京');
+  const [city, setCity] = useState(localStorageService.getString(STORAGE_KEYS.WEATHER_CITY) || '南京');
 
   const fetchWeather = useCallback(async () => {
     setLoading(true);
@@ -64,7 +65,7 @@ const WeatherPage: React.FC = () => {
 
   useEffect(() => {
     const initializeCity = async () => {
-      let detectedCity = localStorage.getItem('weatherCity');
+      let detectedCity = localStorageService.getString(STORAGE_KEYS.WEATHER_CITY);
       
       if (!detectedCity && isWeb()) {
         detectedCity = await getWeatherCity();

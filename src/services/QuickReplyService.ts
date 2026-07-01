@@ -9,7 +9,7 @@ const categoryService = {
     try {
       const dal = getDataAccessLayer(userId)
       const { data } = await dal.list<QuickReplyCategory>('quick_reply_categories', {
-        orderBy: { column: 'created_at', ascending: true }
+        orderBy: { column: 'order', ascending: true }
       })
 
       const buildTree = (categories: QuickReplyCategory[], parentId: string | null = null): QuickReplyCategory[] => {
@@ -31,10 +31,15 @@ const categoryService = {
   async createCategory(userId: string, request: { name: string; parent_id?: string | null }) {
     try {
       const dal = getDataAccessLayer(userId)
+      const parentId = request.parent_id || null
+      const { data: categories } = await dal.list<QuickReplyCategory>('quick_reply_categories')
+      const siblingCategories = categories.filter(c => c.parent_id === parentId)
+      const maxOrder = siblingCategories.length > 0 ? Math.max(...siblingCategories.map(c => c.order || 0)) : 0
+      
       const data = await dal.create<QuickReplyCategory>('quick_reply_categories', {
         name: request.name,
-        parent_id: request.parent_id || null,
-        order: 0
+        parent_id: parentId,
+        order: maxOrder + 1
       })
       logInfo(`创建快捷回复分类成功: ${request.name}`, 'QuickReplyService')
       return data
@@ -54,6 +59,21 @@ const categoryService = {
       return data
     } catch (error) {
       logError('更新快捷回复分类失败', 'QuickReplyService', error as Error)
+      throw error
+    }
+  },
+
+  async updateCategoryOrder(userId: string, orderedIds: string[]): Promise<void> {
+    try {
+      const dal = getDataAccessLayer(userId)
+      for (let i = 0; i < orderedIds.length; i++) {
+        await dal.update<QuickReplyCategory>('quick_reply_categories', orderedIds[i], {
+          order: i + 1
+        })
+      }
+      logInfo(`更新快捷回复分类排序成功`, 'QuickReplyService')
+    } catch (error) {
+      logError('更新快捷回复分类排序失败', 'QuickReplyService', error as Error)
       throw error
     }
   },

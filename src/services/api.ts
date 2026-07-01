@@ -1,4 +1,5 @@
 import { baseApi } from './baseApi';
+import { localStorageService } from './localStorageService';
 import type { WeatherData, ForecastData } from '../types/weather';
 
 export interface TranslateResult {
@@ -28,26 +29,26 @@ export interface ExchangeRateResult {
 
 const WEATHER_CACHE_TTL = 15 * 60 * 1000;
 
+interface WeatherCache<T> {
+  timestamp: number;
+  data: T;
+}
+
 const getCachedWeather = <T>(city: string, type: 'weather' | 'forecast'): T | null => {
   const cacheKey = `weather_${type}_${city}`;
-  const cached = localStorage.getItem(cacheKey);
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.timestamp < WEATHER_CACHE_TTL) {
-        return parsed.data;
-      }
-    } catch {}
+  const cached = localStorageService.get<WeatherCache<T>>(cacheKey, null as unknown as WeatherCache<T>);
+  if (cached && Date.now() - cached.timestamp < WEATHER_CACHE_TTL) {
+    return cached.data;
   }
   return null;
 };
 
 const setCachedWeather = <T>(city: string, type: 'weather' | 'forecast', data: T): void => {
   const cacheKey = `weather_${type}_${city}`;
-  localStorage.setItem(cacheKey, JSON.stringify({
+  localStorageService.set<WeatherCache<T>>(cacheKey, {
     timestamp: Date.now(),
     data,
-  }));
+  });
 };
 
 export const apiService = {

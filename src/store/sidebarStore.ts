@@ -1,10 +1,9 @@
 import { create } from 'zustand';
-
-const STORAGE_KEY = 'sidebar-storage-v1';
+import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorageService.getString(STORAGE_KEYS.SIDEBAR);
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
@@ -18,7 +17,7 @@ function loadState() {
 }
 
 function saveState(state: Partial<SidebarStore>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+  localStorageService.setString(STORAGE_KEYS.SIDEBAR, JSON.stringify({
     pinnedToolIds: state.pinnedToolIds,
     recentToolIds: state.recentToolIds,
     isCollapsed: state.isCollapsed,

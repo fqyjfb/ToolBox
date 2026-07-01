@@ -1,4 +1,5 @@
-import { logError, logInfo } from './loggerService';
+import { logInfo } from './loggerService';
+import { localStorageService } from './localStorageService';
 import type { Conversation, ImageResult, VideoTask, FontGenerationTask, RolePreset } from '../types/agnes';
 
 const STORAGE_KEYS = {
@@ -28,138 +29,53 @@ function getStorageKey(userId: string, key: string): string {
   return `${key}_${userId}`;
 }
 
-function safeJsonParse<T>(value: string | null, defaultValue: T): T {
-  if (!value) return defaultValue;
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return defaultValue;
-  }
-}
-
-function safeJsonStringify(value: unknown): string {
-  return JSON.stringify(value);
-}
-
 export const agnesLocalStorage = {
-  // 保存对话列表
   saveConversations(userId: string, conversations: Conversation[]): void {
-    try {
-      localStorage.setItem(getStorageKey(userId, STORAGE_KEYS.CONVERSATIONS), safeJsonStringify(conversations));
-    } catch (error) {
-      logError('保存对话列表到本地存储失败', 'agnesLocalStorage', error as Error);
-    }
+    localStorageService.set(getStorageKey(userId, STORAGE_KEYS.CONVERSATIONS), conversations);
   },
 
-  // 获取对话列表
   getConversations(userId: string): Conversation[] {
-    try {
-      const data = localStorage.getItem(getStorageKey(userId, STORAGE_KEYS.CONVERSATIONS));
-      return safeJsonParse<Conversation[]>(data, []);
-    } catch (error) {
-      logError('从本地存储读取对话列表失败', 'agnesLocalStorage', error as Error);
-      return [];
-    }
+    return localStorageService.get<Conversation[]>(getStorageKey(userId, STORAGE_KEYS.CONVERSATIONS), []);
   },
 
-  // 保存图片历史
   saveImageHistory(userId: string, history: ImageResult[]): void {
-    try {
-      localStorage.setItem(getStorageKey(userId, STORAGE_KEYS.IMAGE_HISTORY), safeJsonStringify(history));
-    } catch (error) {
-      logError('保存图片历史到本地存储失败', 'agnesLocalStorage', error as Error);
-    }
+    localStorageService.set(getStorageKey(userId, STORAGE_KEYS.IMAGE_HISTORY), history);
   },
 
-  // 获取图片历史
   getImageHistory(userId: string): ImageResult[] {
-    try {
-      const data = localStorage.getItem(getStorageKey(userId, STORAGE_KEYS.IMAGE_HISTORY));
-      return safeJsonParse<ImageResult[]>(data, []);
-    } catch (error) {
-      logError('从本地存储读取图片历史失败', 'agnesLocalStorage', error as Error);
-      return [];
-    }
+    return localStorageService.get<ImageResult[]>(getStorageKey(userId, STORAGE_KEYS.IMAGE_HISTORY), []);
   },
 
-  // 保存视频任务
   saveVideoTasks(userId: string, tasks: VideoTask[]): void {
-    try {
-      localStorage.setItem(getStorageKey(userId, STORAGE_KEYS.VIDEO_TASKS), safeJsonStringify(tasks));
-    } catch (error) {
-      logError('保存视频任务到本地存储失败', 'agnesLocalStorage', error as Error);
-    }
+    localStorageService.set(getStorageKey(userId, STORAGE_KEYS.VIDEO_TASKS), tasks);
   },
 
-  // 获取视频任务
   getVideoTasks(userId: string): VideoTask[] {
-    try {
-      const data = localStorage.getItem(getStorageKey(userId, STORAGE_KEYS.VIDEO_TASKS));
-      return safeJsonParse<VideoTask[]>(data, []);
-    } catch (error) {
-      logError('从本地存储读取视频任务失败', 'agnesLocalStorage', error as Error);
-      return [];
-    }
+    return localStorageService.get<VideoTask[]>(getStorageKey(userId, STORAGE_KEYS.VIDEO_TASKS), []);
   },
 
-  // 保存字体任务
   saveFontTasks(userId: string, tasks: FontGenerationTask[]): void {
-    try {
-      localStorage.setItem(getStorageKey(userId, STORAGE_KEYS.FONT_TASKS), safeJsonStringify(tasks));
-    } catch (error) {
-      logError('保存字体任务到本地存储失败', 'agnesLocalStorage', error as Error);
-    }
+    localStorageService.set(getStorageKey(userId, STORAGE_KEYS.FONT_TASKS), tasks);
   },
 
-  // 获取字体任务
   getFontTasks(userId: string): FontGenerationTask[] {
-    try {
-      const data = localStorage.getItem(getStorageKey(userId, STORAGE_KEYS.FONT_TASKS));
-      return safeJsonParse<FontGenerationTask[]>(data, []);
-    } catch (error) {
-      logError('从本地存储读取字体任务失败', 'agnesLocalStorage', error as Error);
-      return [];
-    }
+    return localStorageService.get<FontGenerationTask[]>(getStorageKey(userId, STORAGE_KEYS.FONT_TASKS), []);
   },
 
-  // 保存角色预设
   saveRolePresets(userId: string, presets: RolePreset[]): void {
-    try {
-      localStorage.setItem(getStorageKey(userId, STORAGE_KEYS.ROLE_PRESETS), safeJsonStringify(presets));
-    } catch (error) {
-      logError('保存角色预设到本地存储失败', 'agnesLocalStorage', error as Error);
-    }
+    localStorageService.set(getStorageKey(userId, STORAGE_KEYS.ROLE_PRESETS), presets);
   },
 
-  // 获取角色预设
   getRolePresets(userId: string): RolePreset[] {
-    try {
-      const data = localStorage.getItem(getStorageKey(userId, STORAGE_KEYS.ROLE_PRESETS));
-      return safeJsonParse<RolePreset[]>(data, []);
-    } catch (error) {
-      logError('从本地存储读取角色预设失败', 'agnesLocalStorage', error as Error);
-      return [];
-    }
+    return localStorageService.get<RolePreset[]>(getStorageKey(userId, STORAGE_KEYS.ROLE_PRESETS), []);
   },
 
-  // 保存同步状态
   saveSyncStatus(userId: string, status: SyncStatus): void {
-    try {
-      localStorage.setItem(getStorageKey(userId, STORAGE_KEYS.SYNC_STATUS), safeJsonStringify(status));
-    } catch (error) {
-      logError('保存同步状态失败', 'agnesLocalStorage', error as Error);
-    }
+    localStorageService.set(getStorageKey(userId, STORAGE_KEYS.SYNC_STATUS), status);
   },
 
-  // 获取同步状态
   getSyncStatus(userId: string): SyncStatus {
-    try {
-      const data = localStorage.getItem(getStorageKey(userId, STORAGE_KEYS.SYNC_STATUS));
-      return safeJsonParse<SyncStatus>(data, { lastSyncTime: '', pendingOperations: [] });
-    } catch (error) {
-      logError('从本地存储读取同步状态失败', 'agnesLocalStorage', error as Error);
-      return { lastSyncTime: '', pendingOperations: [] };
-    }
+    return localStorageService.get<SyncStatus>(getStorageKey(userId, STORAGE_KEYS.SYNC_STATUS), { lastSyncTime: '', pendingOperations: [] });
   },
 
   // 添加待同步操作
@@ -194,16 +110,11 @@ export const agnesLocalStorage = {
     this.saveSyncStatus(userId, status);
   },
 
-  // 清除用户所有本地数据
   clearUserData(userId: string): void {
-    try {
-      Object.values(STORAGE_KEYS).forEach(key => {
-        localStorage.removeItem(getStorageKey(userId, key));
-      });
-      logInfo(`已清除用户 ${userId} 的 Agnes 本地数据`, 'agnesLocalStorage');
-    } catch (error) {
-      logError('清除用户本地数据失败', 'agnesLocalStorage', error as Error);
-    }
+    Object.values(STORAGE_KEYS).forEach(key => {
+      localStorageService.remove(getStorageKey(userId, key));
+    });
+    logInfo(`已清除用户 ${userId} 的 Agnes 本地数据`, 'agnesLocalStorage');
   },
 
   // 添加单个对话到本地存储

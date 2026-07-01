@@ -253,6 +253,7 @@ const registerFloatIpcHandlers = () => {
       }
       callback();
     };
+
     const menu = Menu.buildFromTemplate([
       {
         label: '主窗口',

@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { QuickLaunchCategory, QuickLaunchItem, addHomeQuickLaunchApp, isAppInHomeQuickLaunch, loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps } from '../../utils/quickLaunch';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useToastStore } from '../../store/toastStore';
+import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
 import Modal from '../../components/ui/Modal';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import { logDebug, logInfo, logWarn } from '../../services/loggerService';
@@ -118,7 +119,7 @@ const QuickLaunch: React.FC = () => {
     type: 'empty'
   });
   const [iconSize, setIconSize] = useState<'small' | 'medium'>(() => {
-    const saved = localStorage.getItem('quickLaunchIconSize');
+    const saved = localStorageService.getString(STORAGE_KEYS.QUICK_LAUNCH_ICON_SIZE);
     return (saved === 'small' || saved === 'medium') ? saved : 'medium';
   });
   const [isDragOver, setIsDragOver] = useState(false);
@@ -136,22 +137,14 @@ const QuickLaunch: React.FC = () => {
   );
 
   useEffect(() => {
-    const savedApps = localStorage.getItem('quickLaunchApps');
-    if (savedApps) {
-      try {
-        setTimeout(() => setApps(JSON.parse(savedApps)), 0);
-      } catch {
-        setTimeout(() => setApps([]), 0);
-      }
+    const savedApps = localStorageService.get<QuickLaunchItem[]>(STORAGE_KEYS.QUICK_LAUNCH_APPS, []);
+    if (savedApps.length > 0) {
+      setTimeout(() => setApps(savedApps), 0);
     }
 
-    const savedCategories = localStorage.getItem('quickLaunchCategories');
-    if (savedCategories) {
-      try {
-        setTimeout(() => setCategories(JSON.parse(savedCategories)), 0);
-      } catch {
-        setTimeout(() => setCategories([]), 0);
-      }
+    const savedCategories = localStorageService.get<QuickLaunchCategory[]>(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, []);
+    if (savedCategories.length > 0) {
+      setTimeout(() => setCategories(savedCategories), 0);
     } else {
       const defaultCategories: QuickLaunchCategory[] = [
         { id: '1', name: '常用', color: 'var(--color-category-1)' },
@@ -159,20 +152,20 @@ const QuickLaunch: React.FC = () => {
         { id: '3', name: '设计', color: 'var(--color-category-3)' },
       ];
       setTimeout(() => setCategories(defaultCategories), 0);
-      localStorage.setItem('quickLaunchCategories', JSON.stringify(defaultCategories));
+      localStorageService.set(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, defaultCategories);
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('quickLaunchIconSize', iconSize);
+    localStorageService.setString(STORAGE_KEYS.QUICK_LAUNCH_ICON_SIZE, iconSize);
   }, [iconSize]);
 
   useEffect(() => {
-    localStorage.setItem('quickLaunchApps', JSON.stringify(apps));
+    localStorageService.set(STORAGE_KEYS.QUICK_LAUNCH_APPS, apps);
   }, [apps]);
 
   useEffect(() => {
-    localStorage.setItem('quickLaunchCategories', JSON.stringify(categories));
+    localStorageService.set(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, categories);
   }, [categories]);
 
   useEffect(() => {
@@ -360,6 +353,26 @@ const QuickLaunch: React.FC = () => {
     handleCloseContextMenu();
   }, [handleCloseContextMenu]);
 
+  const handleRemoveInvalidApps = useCallback(async () => {
+    const invalidAppIds: string[] = [];
+    
+    for (const app of apps) {
+      const exists = await window.electron?.fileExists(app.path);
+      if (!exists) {
+        invalidAppIds.push(app.id);
+      }
+    }
+    
+    if (invalidAppIds.length > 0) {
+      setApps(prev => prev.filter(app => !invalidAppIds.includes(app.id)));
+      addToast({ type: 'success', message: `已移除 ${invalidAppIds.length} 个失效应用` });
+    } else {
+      addToast({ type: 'info', message: '所有应用均有效，无需清理' });
+    }
+    
+    handleCloseContextMenu();
+  }, [apps, addToast, handleCloseContextMenu]);
+
   const handleRename = useCallback((app: QuickLaunchItem) => {
     setEditingApp(app);
     setShowEditDialog(true);
@@ -514,7 +527,7 @@ const QuickLaunch: React.FC = () => {
         },
         {
           id: 'move-to-category',
-          label: '移动到分组',
+          label: '移动',
           icon: <Folder className="w-4 h-4" />,
           subMenu: categories.map((category) => ({
             id: `category-${category.id}`,
@@ -540,14 +553,14 @@ const QuickLaunch: React.FC = () => {
       return [
         {
           id: 'edit',
-          label: '编辑名称',
+          label: '编辑',
           icon: <Edit2 className="w-4 h-4" />,
           onClick: () => handleEditCategory(category)
         },
         { id: 'divider1', divider: true },
         {
           id: 'delete',
-          label: '删除分类',
+          label: '删除',
           icon: <Trash2 className="w-4 h-4" />,
           onClick: () => handleDeleteCategory(category.id)
         }
@@ -573,8 +586,14 @@ const QuickLaunch: React.FC = () => {
       if (apps.length > 0) {
         items.push({ id: 'divider1', divider: true });
         items.push({
+          id: 'remove-invalid',
+          label: '移除失效',
+          icon: <Trash2 className="w-4 h-4" />,
+          onClick: handleRemoveInvalidApps
+        });
+        items.push({
           id: 'clear-all',
-          label: '清空全部',
+          label: '清空',
           icon: <Trash2 className="w-4 h-4" />,
           onClick: handleClearAll
         });
@@ -584,7 +603,7 @@ const QuickLaunch: React.FC = () => {
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, apps, categories, handleLaunch, handleRename, handleMoveToCategory, handleRemove, handleEditCategory, handleDeleteCategory, handleAddApp, handleAddCategory, handleClearAll, handleCloseContextMenu]);
+  }, [contextMenu.type, contextMenu.targetId, apps, categories, handleLaunch, handleRename, handleMoveToCategory, handleRemove, handleEditCategory, handleDeleteCategory, handleAddApp, handleAddCategory, handleClearAll, handleRemoveInvalidApps, handleCloseContextMenu]);
 
   return (
     <div

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logError } from '../services/loggerService';
-
-const LAST_OPENED_FILE_KEY = 'notes_last_opened_file';
+import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
 
 export interface FileTreeNode {
   id: string;
@@ -107,7 +106,7 @@ export function useNotes(): UseNotesReturn {
             const tree = await window.electron.notes.getFileTree();
             setFileTree(tree);
 
-            const lastOpenedFile = localStorage.getItem(LAST_OPENED_FILE_KEY);
+            const lastOpenedFile = localStorageService.getString(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
             if (lastOpenedFile) {
               const fileNode = findFileInTree(lastOpenedFile, tree);
               if (fileNode) {
@@ -126,7 +125,7 @@ export function useNotes(): UseNotesReturn {
                   }
                 }
               } else {
-                localStorage.removeItem(LAST_OPENED_FILE_KEY);
+                localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
               }
             }
           }
@@ -221,7 +220,7 @@ export function useNotes(): UseNotesReturn {
       if (result.success && result.content !== undefined) {
         setFileContent(result.content);
         setSelectedFile(file);
-        localStorage.setItem(LAST_OPENED_FILE_KEY, file.path);
+        localStorageService.setString(STORAGE_KEYS.NOTES_LAST_OPENED_FILE, file.path);
       } else {
         setError(result.error || '读取文件失败');
       }
@@ -411,7 +410,7 @@ export function useNotes(): UseNotesReturn {
                 id: newFilePath,
                 path: newFilePath,
               });
-              localStorage.setItem(LAST_OPENED_FILE_KEY, newFilePath);
+              localStorageService.setString(STORAGE_KEYS.NOTES_LAST_OPENED_FILE, newFilePath);
             }
           }
 
@@ -441,7 +440,7 @@ export function useNotes(): UseNotesReturn {
           if (selectedFile?.path === itemPath) {
             setSelectedFile(null);
             setFileContent('');
-            localStorage.removeItem(LAST_OPENED_FILE_KEY);
+            localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
           }
 
           return true;
@@ -495,7 +494,7 @@ export function useNotes(): UseNotesReturn {
 
       setSelectedFile(null);
       setFileContent('');
-      localStorage.removeItem(LAST_OPENED_FILE_KEY);
+      localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
 
       const result = await window.electron.notes.selectFolder();
 

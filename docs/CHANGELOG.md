@@ -1,5 +1,22 @@
 # 更新日志
 
+## v2.3.9
+
+- 移除未使用的测试依赖：@testing-library/jest-dom、@testing-library/react、vitest
+- 减少 node_modules 体积
+- 优化项目依赖结构，提升安装和构建速度
+- 清理 Vite 配置中冗余的 chunk 配置（jspdf、html2canvas）
+- 为高频渲染组件添加 React.memo 缓存：Toast、WeatherCard、Sidebar、TodoPage
+- 创建 localStorageService 统一封装本地存储操作，提供错误处理和键名管理
+- 替换项目中所有直接 localStorage 调用为 localStorageService，实现本地存储统一管理
+- 添加全局错误边界组件 ErrorBoundary，提升应用稳定性
+- 开发 usePerformanceMonitor 性能监控钩子，用于监控组件渲染性能
+- 修复多个 TypeScript 类型错误，确保类型安全
+- 快启动功能新增"移除失效"菜单项，自动检测并清理路径无效的应用程序
+- 新增 fileExists IPC 接口，支持前端检查文件路径有效性
+- 云剪贴板/快捷回复功能分组新增拖拽排序功能，支持通过拖拽调整分类顺序
+- ClipboardService 和 QuickReplyService 新增 updateCategoryOrder 方法，支持分类排序持久化
+
 ## v2.3.8
 
 - 记事本功能核心修复：修复预览模式切换回编辑模式后内容空白的问题

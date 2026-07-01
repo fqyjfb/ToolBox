@@ -8,14 +8,13 @@ import NotesSidebar from './components/NotesSidebar';
 import NotesEditor from './components/NotesEditor';
 import { ChatMessageList } from './components/ChatMessageList';
 import { ChatInput } from './components/ChatInput';
-
-const SIDEBAR_VISIBLE_KEY = 'notes_sidebar_visible';
+import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 
 const NotesPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const chatModeParam = searchParams.get('chatMode');
   const [sidebarVisible, setSidebarVisible] = useState(() => {
-    const stored = localStorage.getItem(SIDEBAR_VISIBLE_KEY);
+    const stored = localStorageService.getString(STORAGE_KEYS.NOTES_SIDEBAR_VISIBLE);
     return stored === null ? true : stored === 'true';
   });
   const {
@@ -73,7 +72,7 @@ const NotesPage: React.FC = () => {
   const handleToggleSidebar = () => {
     const newValue = !sidebarVisible;
     setSidebarVisible(newValue);
-    localStorage.setItem(SIDEBAR_VISIBLE_KEY, String(newValue));
+    localStorageService.setString(STORAGE_KEYS.NOTES_SIDEBAR_VISIBLE, String(newValue));
   };
 
   const handleSelectFile = (file: typeof selectedFile) => {

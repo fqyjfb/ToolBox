@@ -513,4 +513,4 @@ const TodoManagerPage: React.FC = () => {
   );
 };
 
-export default TodoManagerPage;
+export default React.memo(TodoManagerPage);

@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('electron', {
   selectFile: () => ipcRenderer.invoke('select-file'),
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   getFileIcon: (path) => ipcRenderer.invoke('get-file-icon', path),
+  fileExists: (path) => ipcRenderer.invoke('file-exists', path),
   scanDesktopApps: () => ipcRenderer.invoke('scan-desktop-apps'),
   getDroppedFiles: (fileDataList) => ipcRenderer.invoke('get-dropped-files', fileDataList),
   getFileOrFolderPath: (item) => {

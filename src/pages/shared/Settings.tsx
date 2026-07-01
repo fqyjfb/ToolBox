@@ -12,6 +12,7 @@ import {
 } from '../../types/settings';
 import { DEFAULT_SHORTCUTS, DEFAULT_WINDOW_SIZE } from '../../constants/settings';
 import { logError } from '../../services/loggerService';
+import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 import { isElectron } from '../../utils/environment';
 import {
   GeneralTab,
@@ -36,7 +37,7 @@ const Settings: React.FC = () => {
   const [autoLockEnabled, setAutoLockEnabled] = useState(false);
   const [autoLockTimeout, setAutoLockTimeout] = useState(600);
   const [notifications, setNotifications] = useState<NotificationSettings>(() => {
-    const saved = localStorage.getItem('toolbox_notification_errors');
+    const saved = localStorageService.getString(STORAGE_KEYS.NOTIFICATION_ERRORS);
     return {
       errors: saved !== 'false'
     };
@@ -116,7 +117,7 @@ const Settings: React.FC = () => {
 
   // Initialize data
   useEffect(() => {
-    const savedBrowserMode = localStorage.getItem('toolbox_browser_mode') as 'internal' | 'external';
+    const savedBrowserMode = localStorageService.getString(STORAGE_KEYS.BROWSER_MODE) as 'internal' | 'external';
     if (savedBrowserMode) {
       setBrowserMode(savedBrowserMode);
     }
@@ -146,7 +147,7 @@ const Settings: React.FC = () => {
     setNotifications(prev => {
       const newValue = !prev[key];
       if (key === 'errors') {
-        localStorage.setItem('toolbox_notification_errors', String(newValue));
+        localStorageService.setString(STORAGE_KEYS.NOTIFICATION_ERRORS, String(newValue));
       }
       return { ...prev, [key]: newValue };
     });
@@ -233,10 +234,10 @@ const Settings: React.FC = () => {
     setBtnLoading(true);
     setBtnText('正在清除缓存');
     try {
-      const quickLaunchApps = localStorage.getItem('quickLaunchApps');
-      const quickLaunchCategories = localStorage.getItem('quickLaunchCategories');
-      const homeTools = localStorage.getItem('homeTools');
-      const homeQuickLaunchApps = localStorage.getItem('homeQuickLaunchApps');
+      const quickLaunchApps = localStorageService.getString(STORAGE_KEYS.QUICK_LAUNCH_APPS);
+      const quickLaunchCategories = localStorageService.getString(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES);
+      const homeTools = localStorageService.getString(STORAGE_KEYS.HOME_TOOLS);
+      const homeQuickLaunchApps = localStorageService.getString(STORAGE_KEYS.HOME_QUICK_LAUNCH);
 
       if (!window.electron) {
         addToast({ type: 'error', message: '无法访问Electron API' });
@@ -251,10 +252,10 @@ const Settings: React.FC = () => {
       const result = await window.electron.clearCache();
 
       if (result && result.code === 0) {
-        if (quickLaunchApps) localStorage.setItem('quickLaunchApps', quickLaunchApps);
-        if (quickLaunchCategories) localStorage.setItem('quickLaunchCategories', quickLaunchCategories);
-        if (homeTools) localStorage.setItem('homeTools', homeTools);
-        if (homeQuickLaunchApps) localStorage.setItem('homeQuickLaunchApps', homeQuickLaunchApps);
+        if (quickLaunchApps) localStorageService.setString(STORAGE_KEYS.QUICK_LAUNCH_APPS, quickLaunchApps);
+        if (quickLaunchCategories) localStorageService.setString(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, quickLaunchCategories);
+        if (homeTools) localStorageService.setString(STORAGE_KEYS.HOME_TOOLS, homeTools);
+        if (homeQuickLaunchApps) localStorageService.setString(STORAGE_KEYS.HOME_QUICK_LAUNCH, homeQuickLaunchApps);
         addToast({ type: 'success', message: '缓存已清除' });
       } else {
         const errorMsg = result?.msg || '清除缓存失败';
@@ -351,7 +352,7 @@ const Settings: React.FC = () => {
   const handleBrowserModeChange = (value: string) => {
     const mode = value as 'internal' | 'external';
     setBrowserMode(mode);
-    localStorage.setItem('toolbox_browser_mode', mode);
+    localStorageService.setString(STORAGE_KEYS.BROWSER_MODE, mode);
     addToast({ type: 'success', message: `浏览器设置已更新为${mode === 'internal' ? '程序弹窗' : '默认浏览器'}` });
   };
 

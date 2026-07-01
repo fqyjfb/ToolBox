@@ -159,6 +159,7 @@ declare interface Window {
     selectFile: () => Promise<string | null>;
     selectFolder: () => Promise<string | null>;
     getFileIcon: (path: string) => Promise<string | null>;
+    fileExists: (path: string) => Promise<boolean>;
     scanDesktopApps: () => Promise<DesktopAppInfo[]>;
     getDroppedFiles: (filePaths: string[]) => Promise<string[]>;
     getFileOrFolderPath: (item: File) => Promise<string | undefined>;

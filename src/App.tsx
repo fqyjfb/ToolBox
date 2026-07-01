@@ -5,6 +5,7 @@ import WebLayout from './components/layout/WebLayout';
 import MobileLayout from './components/layout/MobileLayout';
 import Toast from './components/ui/Toast';
 import LoadingSpinner from './components/ui/LoadingSpinner';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/AuthStore';
 import { useSidebarStore } from './store/sidebarStore';
@@ -293,33 +294,35 @@ function App() {
   const LayoutComponent = getLayoutComponent();
 
   return (
-    <TodoNotificationProvider>
-      <NavSearchProvider>
-        <Router>
-          {isDesktopApp && !isStandaloneLogWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
-          <RecentToolsHandler />
-          <Routes>
-            <Route
-              path="/*"
-              element={
-                <>
-                  {isStandaloneLogWindow() ? (
-                    <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
-                      <Routes>
-                        <Route path="/logs" element={<LogsPage />} />
-                      </Routes>
-                    </Suspense>
-                  ) : (
-                    renderRoutes(currentRoutes, isAuthenticated, isAdmin || false, LayoutComponent)
-                  )}
-                  <Toast />
-                </>
-              }
-            />
-          </Routes>
-        </Router>
-      </NavSearchProvider>
-    </TodoNotificationProvider>
+    <ErrorBoundary>
+      <TodoNotificationProvider>
+        <NavSearchProvider>
+          <Router>
+            {isDesktopApp && !isStandaloneLogWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
+            <RecentToolsHandler />
+            <Routes>
+              <Route
+                path="/*"
+                element={
+                  <>
+                    {isStandaloneLogWindow() ? (
+                      <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
+                        <Routes>
+                          <Route path="/logs" element={<LogsPage />} />
+                        </Routes>
+                      </Suspense>
+                    ) : (
+                      renderRoutes(currentRoutes, isAuthenticated, isAdmin || false, LayoutComponent)
+                    )}
+                    <Toast />
+                  </>
+                }
+              />
+            </Routes>
+          </Router>
+        </NavSearchProvider>
+      </TodoNotificationProvider>
+    </ErrorBoundary>
   );
 }
 

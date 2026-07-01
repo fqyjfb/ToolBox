@@ -113,3 +113,15 @@ export const AI_CHAT = {
   MAX_REFERENCE_IMAGES: 4,
   MAX_MESSAGE_HISTORY: 50,
 };
+
+export const QUICK_PANEL_EDGE_OPTIONS = [
+  { value: 'left', label: '左边缘' },
+  { value: 'right', label: '右边缘' },
+  { value: 'top', label: '上边缘' },
+];
+
+export const QUICK_PANEL_ITEM_TYPE_LABELS: Record<string, string> = {
+  app: '应用',
+  url: '网址',
+  folder: '文件夹',
+};

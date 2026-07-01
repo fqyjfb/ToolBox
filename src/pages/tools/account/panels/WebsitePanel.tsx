@@ -18,6 +18,7 @@ import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
 import PasswordInput from '../../../../components/forms/PasswordInput';
 import { logError } from '../../../../services/loggerService';
 import { openUrl } from '../../../../services/browserService';
+import { localStorageService, STORAGE_KEYS } from '../../../../services/localStorageService';
 
 const findCategoryById = (catList: WebsiteAccountCategory[], targetId: string): WebsiteAccountCategory | undefined => {
   for (const cat of catList) {
@@ -150,7 +151,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
           .filter(cat => cat.parent_id === null)
           .map(cat => cat.id);
         
-        localStorage.setItem(`websiteAccountCategoryOrder_${userId}`, JSON.stringify(mainCategoryIds));
+        localStorageService.set(`${STORAGE_KEYS.WEBSITE_ACCOUNT_CATEGORY_ORDER}_${userId}`, mainCategoryIds);
         
         return newCategories;
       });
@@ -188,26 +189,21 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       setLoading(true);
       const response = await websiteAccountService.getCategories(userId);
       
-      const savedOrder = localStorage.getItem(`websiteAccountCategoryOrder_${userId}`);
+      const savedOrder = localStorageService.get<string[]>(`${STORAGE_KEYS.WEBSITE_ACCOUNT_CATEGORY_ORDER}_${userId}`, []);
       let sortedCategories = response;
       
-      if (savedOrder) {
-        try {
-          const order = JSON.parse(savedOrder);
-          const sortedMainCategories: WebsiteAccountCategory[] = [];
-          const remainingMainCategories: WebsiteAccountCategory[] = [...response];
-          
-          for (const id of order) {
-            const index = remainingMainCategories.findIndex(c => c.id === id);
-            if (index !== -1) {
-              sortedMainCategories.push(remainingMainCategories.splice(index, 1)[0]);
-            }
+      if (savedOrder.length > 0) {
+        const sortedMainCategories: WebsiteAccountCategory[] = [];
+        const remainingMainCategories: WebsiteAccountCategory[] = [...response];
+        
+        for (const id of savedOrder) {
+          const index = remainingMainCategories.findIndex(c => c.id === id);
+          if (index !== -1) {
+            sortedMainCategories.push(remainingMainCategories.splice(index, 1)[0]);
           }
-          
-          sortedCategories = [...sortedMainCategories, ...remainingMainCategories];
-        } catch {
-          logError('Failed to parse saved category order', 'WebsitePanel');
         }
+        
+        sortedCategories = [...sortedMainCategories, ...remainingMainCategories];
       }
       
       setCategories(sortedCategories);

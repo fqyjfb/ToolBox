@@ -1,3 +1,5 @@
+import { localStorageService, STORAGE_KEYS } from '../services/localStorageService';
+
 const IP_API_URL = 'http://demo.ip-api.com/json/?lang=zh-CN';
 
 export interface IpLocationResponse {
@@ -33,7 +35,7 @@ export const getCurrentCity = async (): Promise<string> => {
 };
 
 export const getWeatherCity = async (): Promise<string> => {
-  const savedCity = localStorage.getItem('weatherCity');
+  const savedCity = localStorageService.getString(STORAGE_KEYS.WEATHER_CITY);
   
   if (savedCity) {
     return savedCity;

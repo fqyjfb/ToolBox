@@ -6,6 +6,7 @@ import Modal from '../ui/Modal';
 import { WindowSize } from '../../types/settings';
 import { useToastStore } from '../../store/toastStore';
 import { useThemeStore } from '../../store/themeStore';
+import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
 
 interface GeneralTabProps {
   autostartEnabled: boolean;
@@ -68,7 +69,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [weatherCity, setWeatherCity] = useState(() => 
-    localStorage.getItem('weatherCity') || '无锡'
+    localStorageService.getString(STORAGE_KEYS.WEATHER_CITY) || '无锡'
   );
 
   interface LockStatus {
@@ -161,7 +162,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   const handleWeatherCitySave = () => {
     const city = weatherCity.trim();
     if (city) {
-      localStorage.setItem('weatherCity', city);
+      localStorageService.setString(STORAGE_KEYS.WEATHER_CITY, city);
       addToast({ type: 'success', message: `天气城市已设置为 ${city}` });
     }
   };

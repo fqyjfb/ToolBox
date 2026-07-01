@@ -7,7 +7,7 @@ export const clipboardService = {
     try {
       const dal = getDataAccessLayer(userId)
       const { data } = await dal.list<ClipboardCategory>('clipboard_categories', {
-        orderBy: { column: 'created_at', ascending: true }
+        orderBy: { column: 'order', ascending: true }
       })
 
       return data
@@ -20,8 +20,12 @@ export const clipboardService = {
   async createCategory(userId: string, request: { name: string }): Promise<ClipboardCategory> {
     try {
       const dal = getDataAccessLayer(userId)
+      const { data: categories } = await dal.list<ClipboardCategory>('clipboard_categories')
+      const maxOrder = categories.length > 0 ? Math.max(...categories.map(c => c.order || 0)) : 0
+      
       const data = await dal.create<ClipboardCategory>('clipboard_categories', {
-        name: request.name
+        name: request.name,
+        order: maxOrder + 1
       })
       logInfo(`创建剪贴板分类成功: ${request.name}`, 'ClipboardService')
       return data
@@ -41,6 +45,21 @@ export const clipboardService = {
       return data
     } catch (error) {
       logError('更新剪贴板分类失败', 'ClipboardService', error as Error)
+      throw error
+    }
+  },
+
+  async updateCategoryOrder(userId: string, orderedIds: string[]): Promise<void> {
+    try {
+      const dal = getDataAccessLayer(userId)
+      for (let i = 0; i < orderedIds.length; i++) {
+        await dal.update<ClipboardCategory>('clipboard_categories', orderedIds[i], {
+          order: i + 1
+        })
+      }
+      logInfo(`更新剪贴板分类排序成功`, 'ClipboardService')
+    } catch (error) {
+      logError('更新剪贴板分类排序失败', 'ClipboardService', error as Error)
       throw error
     }
   },

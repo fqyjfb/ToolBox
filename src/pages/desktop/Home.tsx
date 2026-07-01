@@ -6,6 +6,7 @@ import { websiteService } from '../../services/WebsiteService';
 import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps } from '../../utils/quickLaunch';
 import { loadHomeTools } from '../../utils/homeTools';
 import { isElectron } from '../../utils/environment';
+import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
 import SearchBar from '../../components/home/SearchBar';
 import FavoritesBar, { Bookmark } from '../../components/home/FavoritesBar';
 import ToolGrid from '../../components/home/ToolGrid';
@@ -23,14 +24,9 @@ const Home: React.FC = () => {
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [favorites, setFavorites] = useState<Bookmark[]>(() => {
-    const cached = localStorage.getItem('homeFavorites');
+    const cached = localStorageService.get<{ favorites: Bookmark[]; timestamp: number }>(STORAGE_KEYS.HOME_FAVORITES, null as unknown as { favorites: Bookmark[]; timestamp: number });
     if (cached) {
-      try {
-        const data = JSON.parse(cached);
-        return data.favorites || [];
-      } catch {
-        return [];
-      }
+      return cached.favorites || [];
     }
     return [];
   });
@@ -82,13 +78,12 @@ const Home: React.FC = () => {
     const now = Date.now();
     const cacheExpiry = 5 * 60 * 1000;
     
-    const cached = localStorage.getItem('homeFavorites');
-    const cachedData = cached ? JSON.parse(cached) : null;
-    const cachedTimestamp = cachedData?.timestamp || 0;
+    const cached = localStorageService.get<{ favorites: Bookmark[]; timestamp: number }>(STORAGE_KEYS.HOME_FAVORITES, null as unknown as { favorites: Bookmark[]; timestamp: number });
+    const cachedTimestamp = cached?.timestamp || 0;
     
-    if (!forceRefresh && cachedData?.favorites && (now - cachedTimestamp) < cacheExpiry) {
-      if (favorites.length === 0 && cachedData.favorites.length > 0) {
-        setFavorites(cachedData.favorites);
+    if (!forceRefresh && cached?.favorites && (now - cachedTimestamp) < cacheExpiry) {
+      if (favorites.length === 0 && cached.favorites.length > 0) {
+        setFavorites(cached.favorites);
       }
       return;
     }
@@ -96,15 +91,15 @@ const Home: React.FC = () => {
     try {
       const userFavorites = await websiteService.getFavorites();
       setFavorites(userFavorites);
-      localStorage.setItem('homeFavorites', JSON.stringify({
+      localStorageService.set(STORAGE_KEYS.HOME_FAVORITES, {
         favorites: userFavorites,
         timestamp: now
-      }));
+      });
     } catch {
-      if (!cachedData?.favorites || cachedData.favorites.length === 0) {
+      if (!cached?.favorites || cached.favorites.length === 0) {
         setFavorites([]);
       } else if (favorites.length === 0) {
-        setFavorites(cachedData.favorites);
+        setFavorites(cached.favorites);
       }
     }
   }, [isAuthenticated, favorites.length]);
@@ -129,10 +124,10 @@ const Home: React.FC = () => {
 
   const handleFavoritesReorder = useCallback((reorderedFavorites: Bookmark[]) => {
     setFavorites(reorderedFavorites);
-    localStorage.setItem('homeFavorites', JSON.stringify({
+    localStorageService.set(STORAGE_KEYS.HOME_FAVORITES, {
       favorites: reorderedFavorites,
       timestamp: Date.now()
-    }));
+    });
   }, []);
 
   const handleQuickLaunchReorder = useCallback((reorderedApps: QuickLaunchItem[]) => {
@@ -161,7 +156,7 @@ const Home: React.FC = () => {
       fetchFavorites();
     } else if (!isAuthenticated) {
       setFavorites([]);
-      localStorage.removeItem('homeFavorites');
+      localStorageService.remove(STORAGE_KEYS.HOME_FAVORITES);
     }
   }, [shouldFetchFavorites, isAuthenticated, fetchFavorites]);
 

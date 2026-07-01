@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../store/AuthStore'
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
 import { authService } from '../../services/AuthService'
+import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService'
 import './LoginPage.css'
 
 const LoginPage: React.FC = () => {
@@ -43,9 +44,9 @@ const LoginPage: React.FC = () => {
       navigate('/')
     }
     
-    const savedUsername = localStorage.getItem('toolbox_username')
-    const savedPassword = localStorage.getItem('toolbox_password')
-    const lastLoginTime = localStorage.getItem('toolbox_last_login_time')
+    const savedUsername = localStorageService.getString(STORAGE_KEYS.USERNAME)
+    const savedPassword = localStorageService.getString(STORAGE_KEYS.PASSWORD)
+    const lastLoginTime = localStorageService.getString(STORAGE_KEYS.LAST_LOGIN_TIME)
     
     const TWO_DAYS_IN_MS = 2 * 24 * 60 * 60 * 1000
     const now = Date.now()
@@ -58,8 +59,8 @@ const LoginPage: React.FC = () => {
         if (now - lastLogin <= TWO_DAYS_IN_MS) {
           setTimeout(() => setLoginForm(prev => ({ ...prev, password: savedPassword, rememberMe: true })), 0);
         } else {
-          localStorage.removeItem('toolbox_password')
-          localStorage.removeItem('toolbox_last_login_time')
+          localStorageService.remove(STORAGE_KEYS.PASSWORD)
+          localStorageService.remove(STORAGE_KEYS.LAST_LOGIN_TIME)
         }
       }
     }
@@ -128,13 +129,13 @@ const LoginPage: React.FC = () => {
     if (isLoginFormValid) {
       await login({ username: loginForm.email, password: loginForm.password })
       
-      localStorage.setItem('toolbox_username', loginForm.email)
+      localStorageService.setString(STORAGE_KEYS.USERNAME, loginForm.email)
       if (loginForm.rememberMe) {
-        localStorage.setItem('toolbox_password', loginForm.password)
-        localStorage.setItem('toolbox_last_login_time', Date.now().toString())
+        localStorageService.setString(STORAGE_KEYS.PASSWORD, loginForm.password)
+        localStorageService.setString(STORAGE_KEYS.LAST_LOGIN_TIME, Date.now().toString())
       } else {
-        localStorage.removeItem('toolbox_password')
-        localStorage.removeItem('toolbox_last_login_time')
+        localStorageService.remove(STORAGE_KEYS.PASSWORD)
+        localStorageService.remove(STORAGE_KEYS.LAST_LOGIN_TIME)
       }
     }
   }

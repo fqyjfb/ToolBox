@@ -4,8 +4,7 @@ import ToggleSwitch from './ToggleSwitch';
 import Modal from '../ui/Modal';
 import { useToastStore } from '../../store/toastStore';
 import { logError } from '../../services/loggerService';
-
-const OCR_SETTINGS_KEY = 'ocr_settings';
+import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 
 const DEFAULT_OCR_SETTINGS = {
   httpPort: 8766,
@@ -56,28 +55,18 @@ const OcrTab: React.FC = () => {
   }, []);
 
   const loadSettings = () => {
-    try {
-      const saved = localStorage.getItem(OCR_SETTINGS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSettings({ ...DEFAULT_OCR_SETTINGS, ...parsed });
-      }
-    } catch (error) {
-      logError('加载OCR设置失败', 'OcrTab', error as Error);
+    const saved = localStorageService.get<OcrSettings>(STORAGE_KEYS.OCR_SETTINGS, null as unknown as OcrSettings);
+    if (saved) {
+      setSettings({ ...DEFAULT_OCR_SETTINGS, ...saved });
     }
   };
 
   const saveSettings = useCallback((newSettings: OcrSettings) => {
-    try {
-      localStorage.setItem(OCR_SETTINGS_KEY, JSON.stringify(newSettings));
-      setSettings(newSettings);
-      setHasUnsavedChanges(false);
-      window.dispatchEvent(new CustomEvent('ocr-settings-changed', { detail: newSettings }));
-      addToast({ type: 'success', message: 'OCR设置已保存' });
-    } catch (error) {
-      logError('保存OCR设置失败', 'OcrTab', error as Error);
-      addToast({ type: 'error', message: '保存设置失败' });
-    }
+    localStorageService.set(STORAGE_KEYS.OCR_SETTINGS, newSettings);
+    setSettings(newSettings);
+    setHasUnsavedChanges(false);
+    window.dispatchEvent(new CustomEvent('ocr-settings-changed', { detail: newSettings }));
+    addToast({ type: 'success', message: 'OCR设置已保存' });
   }, [addToast]);
 
   const handleSettingChange = <K extends keyof OcrSettings>(key: K, value: OcrSettings[K]) => {

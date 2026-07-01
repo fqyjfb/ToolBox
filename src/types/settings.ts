@@ -24,7 +24,7 @@ export interface FloatConfigItem {
   path?: string;
 }
 
-export type SettingsTab = 'general' | 'storage' | 'sync' | 'quickLaunch' | 'notifications' | 'shortcuts' | 'floatWindow' | 'ocr' | 'agnes' | 'logMonitor';
+export type SettingsTab = 'general' | 'storage' | 'sync' | 'quickLaunch' | 'notifications' | 'shortcuts' | 'floatWindow' | 'quickPanel' | 'ocr' | 'agnes' | 'logMonitor';
 
 export interface NotificationSettings {
   errors: boolean;
@@ -33,4 +33,26 @@ export interface NotificationSettings {
 export interface WindowSize {
   width: number;
   height: number;
+}
+
+export interface QuickPanelItem {
+  id: string;
+  type: 'app' | 'url' | 'folder';
+  name: string;
+  icon: string;
+  action: string;
+  color: string;
+  order: number;
+}
+
+export interface QuickPanelPosition {
+  edge: 'left' | 'right' | 'top';
+  x: number;
+  y: number;
+}
+
+export interface QuickPanelConfig {
+  isEnabled: number;
+  position: QuickPanelPosition;
+  items: QuickPanelItem[];
 }

@@ -5,6 +5,7 @@ import { OcrHistoryItem } from '../../../types/ocr';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Modal from '../../../components/ui/Modal';
 import { logError } from '../../../services/loggerService';
+import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 
 interface OcrServiceStatus {
   available: boolean;
@@ -16,7 +17,6 @@ interface OcrServiceStatus {
   uptime?: number;
 }
 
-const OCR_HISTORY_KEY = 'ocr_history';
 const MAX_HISTORY_COUNT = 20;
 
 interface OcrBlock {
@@ -174,13 +174,9 @@ const OcrPage: React.FC = () => {
   };
 
   const loadHistory = () => {
-    try {
-      const saved = localStorage.getItem(OCR_HISTORY_KEY);
-      if (saved) {
-        setHistory(JSON.parse(saved));
-      }
-    } catch (error) {
-      console.error('加载历史记录失败:', error);
+    const saved = localStorageService.get<OcrHistoryItem[]>(STORAGE_KEYS.OCR_HISTORY, []);
+    if (saved.length > 0) {
+      setHistory(saved);
     }
   };
 
@@ -195,11 +191,7 @@ const OcrPage: React.FC = () => {
     const newHistory = [newItem, ...history].slice(0, MAX_HISTORY_COUNT);
     setHistory(newHistory);
 
-    try {
-      localStorage.setItem(OCR_HISTORY_KEY, JSON.stringify(newHistory));
-    } catch (error) {
-      logError('保存历史记录失败', 'OcrPage', error as Error);
-    }
+    localStorageService.set(STORAGE_KEYS.OCR_HISTORY, newHistory);
   }, [history]);
 
   const handleImageUpload = useCallback(async (file: File) => {
@@ -346,7 +338,7 @@ const OcrPage: React.FC = () => {
 
   const handleClearHistory = () => {
     setHistory([]);
-    localStorage.removeItem(OCR_HISTORY_KEY);
+    localStorageService.remove(STORAGE_KEYS.OCR_HISTORY);
     setConfirmClearHistory(false);
     addToast({ type: 'success', message: '历史记录已清空' });
   };

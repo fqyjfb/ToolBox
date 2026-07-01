@@ -200,4 +200,4 @@ const SidebarBottomButton: React.FC<SidebarBottomButtonProps> = ({ icon, title, 
   </button>
 );
 
-export default Sidebar;
+export default React.memo(Sidebar);

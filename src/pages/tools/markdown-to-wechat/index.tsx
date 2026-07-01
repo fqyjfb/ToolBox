@@ -2,19 +2,20 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { FileCode, Copy, Trash2, FileText, Download, Upload, Eye, Edit3, Save, LayoutTemplate, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, Code, Minus, Bold, Italic, Strikethrough, Link, Image, Table, GitBranch, Hash } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
+import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 
 const MarkdownToWechatPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
   
   const getInitialMarkdown = (): string => {
-    const cached = localStorage.getItem('markdown-wechat-content');
+    const cached = localStorageService.getString(STORAGE_KEYS.MARKDOWN_WECHAT_CONTENT);
     return cached || '';
   };
   
   const [markdown, setMarkdown] = useState<string>(getInitialMarkdown);
   
   useEffect(() => {
-    localStorage.setItem('markdown-wechat-content', markdown);
+    localStorageService.setString(STORAGE_KEYS.MARKDOWN_WECHAT_CONTENT, markdown);
   }, [markdown]);
   
   const [activeTab, setActiveTab] = useState<'edit' | 'preview' | 'split'>('split');

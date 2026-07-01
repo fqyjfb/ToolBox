@@ -4,6 +4,7 @@ import { Admin, LoginRequest, RegisterRequest, User } from '../types/auth'
 import { authService } from '../services/AuthService'
 import { logError } from '../services/loggerService'
 import { getDataAccessLayer } from '../services/dataAccessLayer'
+import localStorageService, { STORAGE_KEYS } from '../services/localStorageService'
 
 interface AuthState {
   user: User | null
@@ -22,7 +23,7 @@ interface AuthState {
 const authStorage = {
   getItem: (key: string): string | null => {
     if (key === 'auth') {
-      const storedUser = localStorage.getItem('user')
+      const storedUser = localStorageService.getString(STORAGE_KEYS.USER)
       if (storedUser) {
         try {
           const user = JSON.parse(storedUser)
@@ -41,7 +42,7 @@ const authStorage = {
           return null
         }
       }
-      const storedAdmin = localStorage.getItem('admin')
+      const storedAdmin = localStorageService.getString(STORAGE_KEYS.ADMIN)
       if (storedAdmin) {
         try {
           const admin = JSON.parse(storedAdmin)
@@ -61,7 +62,7 @@ const authStorage = {
         }
       }
     }
-    return localStorage.getItem(key)
+    return localStorageService.getString(key) ?? null
   },
 
   setItem: (key: string, value: string): void => {
@@ -70,26 +71,26 @@ const authStorage = {
         const parsed = JSON.parse(value)
         if (parsed.state) {
           if (parsed.state.user) {
-            localStorage.setItem('user', JSON.stringify(parsed.state.user))
+            localStorageService.setString(STORAGE_KEYS.USER, JSON.stringify(parsed.state.user))
           }
           if (parsed.state.admin) {
-            localStorage.setItem('admin', JSON.stringify(parsed.state.admin))
+            localStorageService.setString(STORAGE_KEYS.ADMIN, JSON.stringify(parsed.state.admin))
           }
         }
       } catch {
-        localStorage.setItem(key, value)
+        localStorageService.setString(key, value)
       }
     } else {
-      localStorage.setItem(key, value)
+      localStorageService.setString(key, value)
     }
   },
 
   removeItem: (key: string): void => {
     if (key === 'auth') {
-      localStorage.removeItem('user')
-      localStorage.removeItem('admin')
+      localStorageService.remove(STORAGE_KEYS.USER)
+      localStorageService.remove(STORAGE_KEYS.ADMIN)
     } else {
-      localStorage.removeItem(key)
+      localStorageService.remove(key)
     }
   }
 }
@@ -99,7 +100,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       admin: null,
-      isAuthenticated: !!localStorage.getItem('user') || !!localStorage.getItem('admin'),
+      isAuthenticated: !!localStorageService.getString(STORAGE_KEYS.USER) || !!localStorageService.getString(STORAGE_KEYS.ADMIN),
       isAdmin: false,
       isLoading: false,
       error: null,

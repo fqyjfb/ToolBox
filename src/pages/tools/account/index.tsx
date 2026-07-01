@@ -6,6 +6,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, h
 import { CSS } from '@dnd-kit/utilities';
 import { PlatformVisibility } from '../../../types/account';
 import { useAuthStore } from '../../../store/AuthStore';
+import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 import WebsitePanel from './panels/WebsitePanel';
 import ShopPanel from './panels/ShopPanel';
 import SocialPanel from './panels/SocialPanel';
@@ -23,8 +24,6 @@ interface PanelRef {
   openModal: () => void;
   setVisibleColumns: (columns: string[]) => void;
 }
-
-const STORAGE_KEY = 'account_columns_visible';
 
 const columnConfigs: Record<PlatformType, ColumnConfig[]> = {
   website_account: [],
@@ -112,89 +111,51 @@ const getDefaultColumns = (platform: PlatformType): string[] => {
 };
 
 const loadSavedColumns = (): Record<PlatformType, string[]> | null => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      return JSON.parse(saved);
-    }
-  } catch (e) {
-    console.error('Failed to load saved columns:', e);
-  }
-  return null;
+  return localStorageService.get<Record<PlatformType, string[]>>(STORAGE_KEYS.ACCOUNT_COLUMNS, null as unknown as Record<PlatformType, string[]>);
 };
 
 const saveColumns = (columns: Record<PlatformType, string[]>) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(columns));
-  } catch (e) {
-    console.error('Failed to save columns:', e);
-  }
+  localStorageService.set(STORAGE_KEYS.ACCOUNT_COLUMNS, columns);
 };
 
-const VISIBILITY_STORAGE_KEY = 'account_platform_visibility';
-const PLATFORM_ORDER_KEY = 'account_platform_order';
-
 const loadPlatformVisibility = (): PlatformVisibility | null => {
-  try {
-    const saved = localStorage.getItem(VISIBILITY_STORAGE_KEY);
-    if (saved) {
-      const visibility = JSON.parse(saved);
-      
-      // 确保旧数据中的 'password' 被替换为 'website_account'
-      if ('password' in visibility) {
-        visibility.website_account = visibility.password;
-        delete visibility.password;
-      }
-      
-      return visibility;
+  const saved = localStorageService.get<PlatformVisibility>(STORAGE_KEYS.PLATFORM_VISIBILITY, null as unknown as PlatformVisibility);
+  if (saved) {
+    const savedWithPassword = saved as PlatformVisibility & { password?: boolean };
+    if ('password' in savedWithPassword && savedWithPassword.password !== undefined) {
+      saved.website_account = savedWithPassword.password;
+      delete (saved as unknown as Record<string, unknown>).password;
     }
-  } catch (e) {
-    console.error('Failed to load platform visibility:', e);
+    return saved;
   }
   return null;
 };
 
 const savePlatformVisibility = (visibility: PlatformVisibility) => {
-  try {
-    localStorage.setItem(VISIBILITY_STORAGE_KEY, JSON.stringify(visibility));
-  } catch (e) {
-    console.error('Failed to save platform visibility:', e);
-  }
+  localStorageService.set(STORAGE_KEYS.PLATFORM_VISIBILITY, visibility);
 };
 
 const loadPlatformOrder = (): PlatformType[] => {
-  try {
-    const saved = localStorage.getItem(PLATFORM_ORDER_KEY);
-    if (saved) {
-      let order: string[] = JSON.parse(saved);
-      
-      // 过滤掉无效的平台 ID，并将 'password' 替换为 'website_account'
-      const validPlatforms: PlatformType[] = ['website_account', 'shops', 'social', 'emails', 'phones', 'companies', 'credentials', 'general'];
-      order = order.map(p => p === 'password' ? 'website_account' : p)
-                   .filter(p => validPlatforms.includes(p as PlatformType));
-      
-      // 确保所有平台都在列表中，按默认顺序补充缺失的平台
-      const defaultOrder: PlatformType[] = ['website_account', 'shops', 'social', 'emails', 'phones', 'companies', 'credentials', 'general'];
-      defaultOrder.forEach(p => {
-        if (!order.includes(p)) {
-          order.push(p);
-        }
-      });
-      
-      return order as PlatformType[];
-    }
-  } catch (e) {
-    console.error('Failed to load platform order:', e);
+  const saved = localStorageService.get<string[]>(STORAGE_KEYS.PLATFORM_ORDER, []);
+  if (saved.length > 0) {
+    const validPlatforms: PlatformType[] = ['website_account', 'shops', 'social', 'emails', 'phones', 'companies', 'credentials', 'general'];
+    let order = saved.map(p => p === 'password' ? 'website_account' : p)
+                     .filter(p => validPlatforms.includes(p as PlatformType));
+    
+    const defaultOrder: PlatformType[] = ['website_account', 'shops', 'social', 'emails', 'phones', 'companies', 'credentials', 'general'];
+    defaultOrder.forEach(p => {
+      if (!order.includes(p)) {
+        order.push(p);
+      }
+    });
+    
+    return order as PlatformType[];
   }
   return ['website_account', 'shops', 'social', 'emails', 'phones', 'companies', 'credentials', 'general'];
 };
 
 const savePlatformOrder = (order: PlatformType[]) => {
-  try {
-    localStorage.setItem(PLATFORM_ORDER_KEY, JSON.stringify(order));
-  } catch (e) {
-    console.error('Failed to save platform order:', e);
-  }
+  localStorageService.set(STORAGE_KEYS.PLATFORM_ORDER, order);
 };
 
 const AccountManagerPage: React.FC = () => {

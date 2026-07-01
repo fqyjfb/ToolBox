@@ -1,18 +1,19 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
-export interface ModalProps {
+interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title?: string;
   children: React.ReactNode;
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
   confirmText?: string;
   cancelText?: string;
-  onConfirm?: (...args: unknown[]) => void;
-  confirmDisabled?: boolean;
+  onConfirm?: () => void;
   showCancel?: boolean;
   showConfirm?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  confirmDisabled?: boolean;
   clickOutsideToClose?: boolean;
 }
 
@@ -21,25 +22,28 @@ const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
+  className = '',
+  size = 'md',
   confirmText = '确定',
   cancelText = '取消',
   onConfirm,
-  confirmDisabled = false,
   showCancel = true,
   showConfirm = true,
-  size = 'md',
-  clickOutsideToClose = false,
+  confirmDisabled = false,
+  clickOutsideToClose = true,
 }) => {
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    },
-    [onClose]
-  );
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+      if (e.key === 'Enter' && isOpen && !e.shiftKey && !confirmDisabled) {
+        onConfirm?.();
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
@@ -47,11 +51,26 @@ const Modal: React.FC<ModalProps> = ({
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
-  }, [isOpen, handleKeyDown]);
+  }, [isOpen, onClose, onConfirm, confirmDisabled]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen && modalRef.current) {
+      const firstInput = modalRef.current.querySelector('input, textarea, button') as HTMLElement;
+      firstInput?.focus();
+    }
+  }, [isOpen]);
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (clickOutsideToClose && e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  if (!isOpen) {
+    return null;
+  }
 
   const sizeClasses = {
     sm: 'max-w-sm',
@@ -60,44 +79,53 @@ const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3"
-      onClick={(e) => {
-        if (clickOutsideToClose && e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className={`bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full ${sizeClasses[size]} animate-modal-in`}
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200"
+        onClick={handleOverlayClick}
+      />
+      <div
+        ref={modalRef}
+        className={`
+          relative w-full ${sizeClasses[size]} mx-4
+          bg-white dark:bg-gray-800 rounded-lg shadow-lg
+          border border-gray-200 dark:border-gray-700
+          overflow-hidden
+          animate-[slideIn_0.25s_cubic-bezier(0.175,0.885,0.32,1.275)]
+          ${className}
+        `}
       >
-        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        {title && (
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">
+              {title}
+            </h2>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
+        <div className="p-5">
+          {children}
         </div>
-        <div className="p-4 space-y-2.5">{children}</div>
         {(showCancel || showConfirm) && (
-          <div className="flex justify-center gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             {showCancel && (
               <button
                 onClick={onClose}
-                className="px-3.5 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 {cancelText}
               </button>
             )}
-            {showConfirm && (
+            {showConfirm && onConfirm && (
               <button
-                onClick={onConfirm || onClose}
+                onClick={onConfirm}
                 disabled={confirmDisabled}
-                className="px-3.5 py-1.5 text-sm font-medium text-white bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {confirmText}
               </button>
@@ -106,18 +134,15 @@ const Modal: React.FC<ModalProps> = ({
         )}
       </div>
       <style>{`
-        @keyframes modal-in {
+        @keyframes slideIn {
           from {
             opacity: 0;
-            transform: scale(0.96) translateY(4px);
+            transform: scale(0.95) translateY(10px);
           }
           to {
             opacity: 1;
             transform: scale(1) translateY(0);
           }
-        }
-        .animate-modal-in {
-          animation: modal-in var(--duration-modal) cubic-bezier(0.16, 1, 0.3, 1);
         }
       `}</style>
     </div>

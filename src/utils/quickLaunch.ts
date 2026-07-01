@@ -1,3 +1,5 @@
+import { localStorageService, STORAGE_KEYS } from '../services/localStorageService';
+
 export interface QuickLaunchCategory {
   id: string;
   name: string;
@@ -19,35 +21,19 @@ export const getAppName = (path: string): string => {
 };
 
 export const loadApps = (): QuickLaunchItem[] => {
-  const savedApps = localStorage.getItem('quickLaunchApps');
-  if (savedApps) {
-    try {
-      return JSON.parse(savedApps);
-    } catch {
-      return [];
-    }
-  }
-  return [];
+  return localStorageService.get<QuickLaunchItem[]>(STORAGE_KEYS.QUICK_LAUNCH_APPS, []);
 };
 
 export const saveApps = (apps: QuickLaunchItem[]): void => {
-  localStorage.setItem('quickLaunchApps', JSON.stringify(apps));
+  localStorageService.set(STORAGE_KEYS.QUICK_LAUNCH_APPS, apps);
 };
 
 export const loadCategories = (): QuickLaunchCategory[] => {
-  const savedCategories = localStorage.getItem('quickLaunchCategories');
-  if (savedCategories) {
-    try {
-      return JSON.parse(savedCategories);
-    } catch {
-      return [];
-    }
-  }
-  return [];
+  return localStorageService.get<QuickLaunchCategory[]>(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, []);
 };
 
 export const saveCategories = (categories: QuickLaunchCategory[]): void => {
-  localStorage.setItem('quickLaunchCategories', JSON.stringify(categories));
+  localStorageService.set(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, categories);
 };
 
 export const getDefaultCategoryId = (categories: QuickLaunchCategory[]): string => {
@@ -106,22 +92,12 @@ export const scanAndAddDesktopApps = async (
   return { addedCount, skippedCount };
 };
 
-const HOME_QUICK_LAUNCH_KEY = 'homeQuickLaunchApps';
-
 export const loadHomeQuickLaunchApps = (): QuickLaunchItem[] => {
-  const savedApps = localStorage.getItem(HOME_QUICK_LAUNCH_KEY);
-  if (savedApps) {
-    try {
-      return JSON.parse(savedApps);
-    } catch {
-      return [];
-    }
-  }
-  return [];
+  return localStorageService.get<QuickLaunchItem[]>(STORAGE_KEYS.HOME_QUICK_LAUNCH, []);
 };
 
 export const saveHomeQuickLaunchApps = (apps: QuickLaunchItem[]): void => {
-  localStorage.setItem(HOME_QUICK_LAUNCH_KEY, JSON.stringify(apps));
+  localStorageService.set(STORAGE_KEYS.HOME_QUICK_LAUNCH, apps);
 };
 
 export const addHomeQuickLaunchApp = (app: QuickLaunchItem): boolean => {
