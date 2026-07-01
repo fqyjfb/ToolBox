@@ -271,7 +271,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
-    node: FileTreeNode;
+    node?: FileTreeNode;
   } | null>(null);
   const [isRebuilding, setIsRebuilding] = useState(false);
 
@@ -294,7 +294,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     node: FileTreeNode;
   } | null>(null);
 
-  const handleContextMenu = (e: React.MouseEvent, node: FileTreeNode) => {
+  const handleContextMenu = (e: React.MouseEvent, node?: FileTreeNode) => {
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ x: e.clientX, y: e.clientY, node });
@@ -398,60 +398,73 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     if (!contextMenu) return [];
     
     const items: ContextMenuItem[] = [];
+    const node = contextMenu.node;
     
-    if (contextMenu.node.type === 'folder') {
-      items.push({
-        id: 'create-folder',
-        label: '新建文件夹',
-        icon: <FolderPlus className="w-4 h-4" />,
-        onClick: () => {
-          setCreateDialog({ type: 'folder', parentPath: contextMenu.node.path });
-          setContextMenu(null);
-        },
-      });
-      items.push({
-        id: 'create-note',
-        label: '新建笔记',
-        icon: <FilePlus className="w-4 h-4" />,
-        onClick: () => {
-          setCreateDialog({ type: 'note', parentPath: contextMenu.node.path });
-          setContextMenu(null);
-        },
-      });
+    const getParentPath = (): string | null => {
+      if (!node) return null;
+      if (node.type === 'folder') return node.path;
+      const pathParts = node.path.split('/');
+      pathParts.pop();
+      return pathParts.join('/') || null;
+    };
+    
+    items.push({
+      id: 'create-note',
+      label: '新建笔记',
+      icon: <FilePlus className="w-4 h-4" />,
+      onClick: () => {
+        setCreateDialog({ type: 'note', parentPath: getParentPath() });
+        setContextMenu(null);
+      },
+    });
+    
+    items.push({
+      id: 'create-folder',
+      label: '新建文件夹',
+      icon: <FolderPlus className="w-4 h-4" />,
+      onClick: () => {
+        setCreateDialog({ type: 'folder', parentPath: getParentPath() });
+        setContextMenu(null);
+      },
+    });
+    
+    if (node) {
       items.push({
         id: 'divider1',
         divider: true,
       });
+      
+      items.push({
+        id: 'open-in-folder',
+        label: '打开位置',
+        icon: <ExternalLink className="w-4 h-4" />,
+        onClick: () => {
+          window.electron?.notes.openFileInFolder(node.path);
+          setContextMenu(null);
+        },
+      });
+      
+      items.push({
+        id: 'rename',
+        label: '重命名',
+        icon: <Edit className="w-4 h-4" />,
+        onClick: () => {
+          setRenameDialog({ node });
+          setContextMenu(null);
+        },
+      });
+      
+      items.push({
+        id: 'delete',
+        label: '删除',
+        icon: <Trash2 className="w-4 h-4" />,
+        onClick: () => {
+          setDeleteDialog({ node });
+          setContextMenu(null);
+        },
+        className: 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30',
+      });
     }
-    
-    items.push({
-      id: 'open-in-folder',
-      label: '打开位置',
-      icon: <ExternalLink className="w-4 h-4" />,
-      onClick: () => {
-        window.electron?.notes.openFileInFolder(contextMenu.node.path);
-        setContextMenu(null);
-      },
-    });
-    items.push({
-      id: 'rename',
-      label: '重命名',
-      icon: <Edit className="w-4 h-4" />,
-      onClick: () => {
-        setRenameDialog({ node: contextMenu.node });
-        setContextMenu(null);
-      },
-    });
-    items.push({
-      id: 'delete',
-      label: '删除',
-      icon: <Trash2 className="w-4 h-4" />,
-      onClick: () => {
-        setDeleteDialog({ node: contextMenu.node });
-        setContextMenu(null);
-      },
-      className: 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30',
-    });
     
     return items;
   };
@@ -507,7 +520,13 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide">
+      <div 
+        className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide"
+        onContextMenu={(e) => {
+          if ((e.target as HTMLElement).closest('.cursor-pointer')) return;
+          handleContextMenu(e);
+        }}
+      >
         <div
           className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 mb-2 transition-colors ${
             isChatMode
