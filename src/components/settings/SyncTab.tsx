@@ -27,6 +27,8 @@ const TABLE_LABELS: Record<string, string> = {
   quick_reply_categories: '快捷回复分类',
   clipboard_items: '剪贴板',
   clipboard_categories: '剪贴板分类',
+  memos: '备忘录',
+  memo_categories: '备忘录分类',
 };
 
 const getTableNameLabel = (tableName: string): string => TABLE_LABELS[tableName] || tableName;

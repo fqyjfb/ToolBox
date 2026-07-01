@@ -3,6 +3,7 @@ import { offlineStorage } from './offlineStorage';
 import { logError, logInfo } from './loggerService';
 import {
   SyncModuleKey,
+  SyncModule,
   SyncMetadata,
   PendingOperation,
   ConflictItem,
@@ -16,7 +17,7 @@ import {
 } from '../types/offline';
 
 // 有效同步模块键列表
-const VALID_MODULE_KEYS: readonly SyncModuleKey[] = ['account', 'todo', 'quickReply', 'clipboard'];
+const VALID_MODULE_KEYS: readonly SyncModuleKey[] = ['account', 'todo', 'quickReply', 'clipboard', 'memo'];
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
@@ -43,7 +44,26 @@ export interface SyncProgressInfo {
 export const syncManager = {
   async getSyncMetadata(userId: string): Promise<SyncMetadata | null> {
     try {
-      return await offlineStorage.get<SyncMetadata>('sync_metadata', userId);
+      const metadata = await offlineStorage.get<SyncMetadata>('sync_metadata', userId);
+      if (!metadata) return null;
+
+      const defaultModules: SyncModule[] = [
+        { key: 'account', name: '账号管理', enabled: true },
+        { key: 'todo', name: '待办事项', enabled: true },
+        { key: 'quickReply', name: '快捷回复', enabled: true },
+        { key: 'clipboard', name: '云剪贴板', enabled: false },
+        { key: 'memo', name: '备忘录', enabled: true },
+      ];
+
+      const existingKeys = new Set(metadata.syncModules?.map(m => m.key) || []);
+      const missingModules = defaultModules.filter(m => !existingKeys.has(m.key));
+
+      if (missingModules.length > 0) {
+        metadata.syncModules = [...(metadata.syncModules || []), ...missingModules];
+        await offlineStorage.put('sync_metadata', metadata);
+      }
+
+      return metadata;
     } catch {
       return null;
     }
@@ -65,6 +85,7 @@ export const syncManager = {
         { key: 'todo', name: '待办事项', enabled: true },
         { key: 'quickReply', name: '快捷回复', enabled: true },
         { key: 'clipboard', name: '云剪贴板', enabled: false },
+        { key: 'memo', name: '备忘录', enabled: true },
       ]
     };
 
@@ -172,6 +193,7 @@ export const syncManager = {
         { key: 'todo', name: '待办事项', enabled: true },
         { key: 'quickReply', name: '快捷回复', enabled: true },
         { key: 'clipboard', name: '云剪贴板', enabled: false },
+        { key: 'memo', name: '备忘录', enabled: true },
       ]
     };
 
@@ -515,6 +537,7 @@ export const syncManager = {
         { key: 'todo', name: '待办事项', enabled: true },
         { key: 'quickReply', name: '快捷回复', enabled: true },
         { key: 'clipboard', name: '云剪贴板', enabled: false },
+        { key: 'memo', name: '备忘录', enabled: true },
       ]
     };
 

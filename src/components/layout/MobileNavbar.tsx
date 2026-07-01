@@ -4,7 +4,7 @@ import { Menu, X, Home, Compass, Wrench, User, LogOut, ClipboardList, Link, Clip
 import { useAuth } from '../../store/AuthStore';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 
-const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/quick-reply', '/tools/cloud-clipboard', '/tools/account', '/nav'];
+const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/memo', '/tools/quick-reply', '/tools/cloud-clipboard', '/tools/account', '/nav'];
 
 const bottomNavItems = [
   { icon: Home, label: '首页', path: '/' },

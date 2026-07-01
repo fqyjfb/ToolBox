@@ -3,7 +3,7 @@ import { ENCRYPTED_FIELDS } from '../types/offline';
 import { logError, logInfo } from './loggerService';
 
 const DB_NAME = 'ToolBoxOfflineDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const STORES = [
   'shops', 'social_accounts', 'emails', 'phones', 'companies', 'credentials', 'general_accounts',
@@ -11,6 +11,7 @@ const STORES = [
   'todos', 'todo_categories',
   'quick_replies', 'quick_reply_categories',
   'clipboard_items', 'clipboard_categories',
+  'memos', 'memo_categories',
   'sync_metadata', 'pending_operations'
 ];
 

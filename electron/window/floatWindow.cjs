@@ -277,6 +277,19 @@ const registerFloatIpcHandlers = () => {
           });
         }
       },
+      {
+        label: '备忘录',
+        click: () => {
+          checkLockAndShow(() => {
+            const mainWindow = require('./mainWindow.cjs').getMainWindow();
+            if (mainWindow) {
+              mainWindow.show();
+              mainWindow.focus();
+              mainWindow.webContents.send('navigate-to', '/tools/memo');
+            }
+          });
+        }
+      },
       { type: 'separator' },
       {
         label: '关闭',

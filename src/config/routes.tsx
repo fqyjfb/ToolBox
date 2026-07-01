@@ -28,6 +28,7 @@ const CloudClipboardPage = React.lazy(() => import('../pages/tools/cloud-clipboa
 const QuickReplyPage = React.lazy(() => import('../pages/tools/quick-reply'));
 const TodoManagerPage = React.lazy(() => import('../pages/tools/todo'));
 const NotesPage = React.lazy(() => import('../pages/tools/notes'));
+const MemoPage = React.lazy(() => import('../pages/tools/memo'));
 const ProfilePage = React.lazy(() => import('../pages/tools/profile'));
 const AccountManagerPage = React.lazy(() => import('../pages/tools/account'));
 const MarkdownToWechatPage = React.lazy(() => import('../pages/tools/markdown-to-wechat'));
@@ -93,6 +94,7 @@ export const webRoutes: RouteConfig[] = [
   { path: '/about', element: <About /> },
   { path: '/tools', element: <ToolsPage /> },
   { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
+  { path: '/tools/memo', element: <MemoPage />, requiresAuth: true },
   { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
   { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
   { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
@@ -112,6 +114,7 @@ export const mobileRoutes: RouteConfig[] = [
   { path: '/about', element: <About /> },
   { path: '/tools', element: <ToolsPage /> },
   { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
+  { path: '/tools/memo', element: <MemoPage />, requiresAuth: true },
   { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
   { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
   { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
@@ -132,6 +135,7 @@ export const protectedRoutes: RouteConfig[] = [
   { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
   { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
   { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
+  { path: '/tools/memo', element: <MemoPage />, requiresAuth: true },
   { path: '/tools/notes', element: <NotesPage />, requiresAuth: true },
   { path: '/tools/profile', element: <ProfilePage />, requiresAuth: true },
   { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },

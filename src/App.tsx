@@ -240,7 +240,7 @@ function App() {
           setSyncEnabled(metadata.syncEnabled);
           setStorageLocation(metadata.storageLocation);
           if (metadata.syncModules && metadata.syncModules.length > 0) {
-            const validKeys = ['account', 'todo', 'quickReply', 'clipboard'] as const;
+            const validKeys = ['account', 'todo', 'quickReply', 'clipboard', 'memo'] as const;
             setSyncModules(metadata.syncModules.filter(m => validKeys.includes(m.key)));
           }
           if (metadata.lastSyncTime !== '1970-01-01T00:00:00Z') {

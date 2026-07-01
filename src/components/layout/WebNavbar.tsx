@@ -4,7 +4,7 @@ import { Menu, X, LogOut, ClipboardList, User, Sparkles, Search } from 'lucide-r
 import { useAuth } from '../../store/AuthStore';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 
-const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/quick-reply', '/tools/cloud-clipboard', '/tools/account', '/nav'];
+const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/memo', '/tools/quick-reply', '/tools/cloud-clipboard', '/tools/account', '/nav'];
 
 const navItems = [
   { path: '/', label: '首页' },

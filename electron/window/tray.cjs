@@ -107,6 +107,22 @@ const refreshTrayMenu = () => {
         });
       },
     },
+    {
+      label: '新建备忘',
+      click: () => {
+        checkLockAndShow(() => {
+          const mainWindow = require('./mainWindow.cjs').getMainWindow();
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+            mainWindow.webContents.send('navigate-to', '/tools/memo');
+            setTimeout(() => {
+              mainWindow.webContents.send('open-add-memo');
+            }, 300);
+          }
+        });
+      },
+    },
     { type: 'separator' },
     {
       label: '功能',

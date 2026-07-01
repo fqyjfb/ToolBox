@@ -68,6 +68,7 @@ export const useSyncStore = create<SyncStore>((set) => ({
     { key: 'todo', name: '待办事项', enabled: true },
     { key: 'quickReply', name: '快捷回复', enabled: true },
     { key: 'clipboard', name: '云剪贴板', enabled: false },
+    { key: 'memo', name: '备忘录', enabled: true },
   ],
   isSyncing: false,
   syncProgress: 0,

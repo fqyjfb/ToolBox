@@ -2,7 +2,8 @@ export type SyncModuleKey =
   | 'account'
   | 'todo'
   | 'quickReply'
-  | 'clipboard';
+  | 'clipboard'
+  | 'memo';
 
 export type StorageLocation = 'local' | 'cloud';
 
@@ -106,6 +107,7 @@ export const MODULE_TABLE_MAP: Record<SyncModuleKey, string[]> = {
   todo: ['todos', 'todo_categories'],
   quickReply: ['quick_replies', 'quick_reply_categories'],
   clipboard: ['clipboard_items', 'clipboard_categories'],
+  memo: ['memos', 'memo_categories'],
 };
 
 export const ENCRYPTED_FIELDS: Record<string, string[]> = {

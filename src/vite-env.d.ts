@@ -307,6 +307,7 @@ declare interface Window {
     onNavigate: (callback: (path: string) => void) => void;
     onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean }) => void) => void;
     onOpenAddTodo: (callback: () => void) => void;
+    onOpenAddMemo: (callback: () => void) => void;
     ipcRenderer: {
       send: <T extends unknown[]>(channel: string, ...args: T) => void;
       on: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;

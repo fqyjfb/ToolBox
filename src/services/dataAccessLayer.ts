@@ -286,7 +286,8 @@ class StorageContext {
       'website_accounts', 'website_account_categories',
       'todos', 'todo_categories',
       'quick_replies', 'quick_reply_categories',
-      'clipboard_items', 'clipboard_categories'
+      'clipboard_items', 'clipboard_categories',
+      'memos', 'memo_categories'
     ]
 
     for (const table of tables) {
@@ -318,7 +319,8 @@ class StorageContext {
       'website_accounts', 'website_account_categories',
       'todos', 'todo_categories',
       'quick_replies', 'quick_reply_categories',
-      'clipboard_items', 'clipboard_categories'
+      'clipboard_items', 'clipboard_categories',
+      'memos', 'memo_categories'
     ]
 
     for (const table of tables) {

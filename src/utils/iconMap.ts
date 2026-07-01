@@ -3,7 +3,7 @@ import {
   FileCode, Globe, Smile, Clock, ArrowUpDown, Hash, Copy,
   Table, Link, Map, QrCode, Code, AtSign, Tag, AlignLeft,
   Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, Sparkles, Type,
-  Home, Zap, User, Settings, Info, Palette
+  Home, Zap, User, Settings, Info, Palette, StickyNote
 } from 'lucide-react';
 
 export const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -46,4 +46,5 @@ export const iconMap: Record<string, React.ComponentType<{ className?: string; s
   Settings,
   Info,
   Palette,
+  StickyNote,
 };

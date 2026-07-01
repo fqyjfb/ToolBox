@@ -4,6 +4,7 @@ let navigateCallback = null;
 let downloadProgressCallback = null;
 let settingChangedCallback = null;
 let openAddTodoCallback = null;
+let openAddMemoCallback = null;
 
 ipcRenderer.on('navigate-to', (event, path) => {
   if (navigateCallback) {
@@ -17,7 +18,11 @@ ipcRenderer.on('open-add-todo', () => {
   }
 });
 
-
+ipcRenderer.on('open-add-memo', () => {
+  if (openAddMemoCallback) {
+    openAddMemoCallback();
+  }
+});
 
 ipcRenderer.on('open-notes-chat', () => {
   if (navigateCallback) {
@@ -151,6 +156,9 @@ contextBridge.exposeInMainWorld('electron', {
   },
   onOpenAddTodo: (callback) => {
     openAddTodoCallback = callback;
+  },
+  onOpenAddMemo: (callback) => {
+    openAddMemoCallback = callback;
   },
   ipcRenderer: {
     send: (channel, ...args) => ipcRenderer.send(channel, ...args),
