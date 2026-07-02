@@ -568,12 +568,22 @@ const registerIpcHandlers = () => {
       if (mainWindow && mainWindow.webContents) {
         try {
           await mainWindow.webContents.session.clearCache();
-          await mainWindow.webContents.session.clearStorageData();
         } catch (sessionError) {}
       }
       return { code: 0, msg: '缓存已清除' };
     } catch (error) {
       return { code: -1, msg: '清除缓存失败: ' + error.message };
+    }
+  });
+
+  ipcMain.handle('restart-app', async () => {
+    try {
+      const { app } = require('electron');
+      app.relaunch();
+      app.exit(0);
+      return { code: 0, msg: '应用重启中...' };
+    } catch (error) {
+      return { code: -1, msg: '重启失败: ' + error.message };
     }
   });
 

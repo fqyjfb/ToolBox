@@ -72,7 +72,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                   key={message.id}
                   className={`chat-message relative cursor-pointer rounded-lg transition-all ${
                     selectedMessages.includes(message.id)
-                      ? 'bg-blue-50 dark:bg-blue-900/30'
+                      ? 'bg-primary/10 dark:bg-primary/20'
                       : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
                   } ${message.done ? 'opacity-60' : ''}`}
                   style={{
@@ -85,10 +85,10 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 >
                   <button
                     className={`absolute left-3 top-3 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors ${
-                      selectedMessages.includes(message.id)
-                        ? 'border-blue-500 bg-blue-500 text-white'
-                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-                    }`}
+                    selectedMessages.includes(message.id)
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  }`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onToggleSelection(message.id, true);
@@ -99,10 +99,10 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
 
                   <button
                     className={`absolute left-10 top-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border-2 transition-colors ${
-                      message.done
-                        ? 'border-green-500 bg-green-500 text-white'
-                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-                    }`}
+                    message.done
+                      ? 'border-success bg-success text-white'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  }`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onToggleDone(message.id);

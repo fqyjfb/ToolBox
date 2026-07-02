@@ -4,7 +4,7 @@ import { PanelLeft } from 'lucide-react';
 import { useNotes } from '@/hooks/useNotes';
 import { useChatNotes } from './hooks/useChatNotes';
 import FolderSelectModal from './components/FolderSelectModal';
-import NotesSidebar from './components/NotesSidebar';
+import NotesSidebar, { CreateDialog } from './components/NotesSidebar';
 import NotesEditor from './components/NotesEditor';
 import { ChatMessageList } from './components/ChatMessageList';
 import { ChatInput } from './components/ChatInput';
@@ -17,6 +17,11 @@ const NotesPage: React.FC = () => {
     const stored = localStorageService.getString(STORAGE_KEYS.NOTES_SIDEBAR_VISIBLE);
     return stored === null ? true : stored === 'true';
   });
+  const [createDialog, setCreateDialog] = useState<{
+    type: 'folder' | 'note';
+    parentPath: string | null;
+  } | null>(null);
+  const [createName, setCreateName] = useState('');
   const {
     hasRootPath,
     rootPath,
@@ -82,6 +87,30 @@ const NotesPage: React.FC = () => {
     }
   };
 
+  const handleOpenCreateDialog = (type: 'folder' | 'note') => {
+    setCreateDialog({ type, parentPath: null });
+    setCreateName('');
+  };
+
+  const handleCloseCreateDialog = () => {
+    setCreateDialog(null);
+    setCreateName('');
+  };
+
+  const handleCreateConfirm = async () => {
+    if (!createDialog || !createName.trim()) return;
+
+    try {
+      if (createDialog.type === 'folder') {
+        await createFolder(createDialog.parentPath, createName.trim());
+      } else {
+        await createNote(createDialog.parentPath, createName.trim());
+      }
+      handleCloseCreateDialog();
+    } catch {
+    }
+  };
+
   if (!hasRootPath) {
     return (
       <div className="h-full flex flex-col overflow-hidden">
@@ -125,10 +154,7 @@ const NotesPage: React.FC = () => {
                 >
                   <PanelLeft className="h-4 w-4" />
                 </button>
-                <div>
-                  <h2 className="text-lg font-medium text-gray-900 dark:text-white">聊天记录</h2>
-                  <p className="text-xs text-gray-400">快速记录想法，稍后整理</p>
-                </div>
+                <h2 className="text-base font-medium text-gray-900 dark:text-white">快速记录想法，稍后整理</h2>
               </div>
               {selectedMessages.length > 0 && (
                 <button
@@ -158,9 +184,21 @@ const NotesPage: React.FC = () => {
             onSave={saveFile}
             sidebarVisible={sidebarVisible}
             onToggleSidebar={handleToggleSidebar}
+            onCreateNote={() => handleOpenCreateDialog('note')}
+            onCreateFolder={() => handleOpenCreateDialog('folder')}
           />
         )}
       </main>
+
+      {createDialog && (
+        <CreateDialog
+          type={createDialog.type}
+          onConfirm={handleCreateConfirm}
+          onCancel={handleCloseCreateDialog}
+          initialName={createName}
+          onNameChange={setCreateName}
+        />
+      )}
     </div>
   );
 };

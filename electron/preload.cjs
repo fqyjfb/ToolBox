@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld('electron', {
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
+  restart: () => ipcRenderer.invoke('restart-app'),
   openExternal: (url) => ipcRenderer.send('open-external', url),
   openInternal: (url) => ipcRenderer.send('open-internal', url),
   openFile: (path) => ipcRenderer.send('open-file', path),

@@ -10,8 +10,8 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading
   return (
     <div className="flex h-full w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="flex flex-col items-center gap-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-xl">
-        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-900/30">
-          <FolderOpen className="h-12 w-12 text-blue-500" />
+        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 dark:bg-primary/20">
+          <FolderOpen className="h-12 w-12 text-primary" />
         </div>
 
         <div className="text-center">
@@ -26,25 +26,25 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading
 
         <div className="grid w-full max-w-sm grid-cols-2 gap-3">
           <div className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-700 p-3">
-            <FileText className="h-6 w-6 text-blue-500" />
+            <FileText className="h-6 w-6 text-primary" />
             <span className="text-xs text-gray-600 dark:text-gray-300">Markdown 格式</span>
           </div>
           <div className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-700 p-3">
-            <HardDrive className="h-6 w-6 text-blue-500" />
+            <HardDrive className="h-6 w-6 text-primary" />
             <span className="text-xs text-gray-600 dark:text-gray-300">本地存储</span>
           </div>
           <div className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-700 p-3">
-            <FolderOpen className="h-6 w-6 text-blue-500" />
+            <FolderOpen className="h-6 w-6 text-primary" />
             <span className="text-xs text-gray-600 dark:text-gray-300">文件夹管理</span>
           </div>
           <div className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-700 p-3">
-            <CloudOff className="h-6 w-6 text-blue-500" />
+            <CloudOff className="h-6 w-6 text-primary" />
             <span className="text-xs text-gray-600 dark:text-gray-300">离线可用</span>
           </div>
         </div>
 
         <button
-          className="flex w-full max-w-sm items-center justify-center gap-2 rounded-lg bg-blue-500 py-3 font-medium text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full max-w-sm items-center justify-center gap-2 rounded-lg bg-primary py-3 font-medium text-white transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           disabled={loading}
           onClick={onSelect}
         >

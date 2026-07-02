@@ -153,6 +153,7 @@ declare interface Window {
     minimize: () => void;
     maximize: () => void;
     close: () => void;
+    restart: () => Promise<{ code: number; msg: string }>;
     openExternal: (url: string) => void;
     openInternal: (url: string) => void;
     openFile: (path: string) => void;

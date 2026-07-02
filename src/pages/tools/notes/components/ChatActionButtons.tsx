@@ -31,7 +31,7 @@ export const ChatActionButtons: React.FC<ChatActionButtonsProps> = ({
       {actions.map((action) => (
         <button
           key={action.target}
-          className="relative flex h-8 w-8 items-center justify-center rounded bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-500 transition-colors"
+          className="relative flex h-8 w-8 items-center justify-center rounded bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-sm hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
           onClick={(e) => {
             e.stopPropagation();
             onMove(action.target);

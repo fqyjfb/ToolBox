@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FileText, Save, Edit3, PanelLeft } from 'lucide-react';
+import { FileText, Save, Edit3, PanelLeft, FolderPlus, FilePlus } from 'lucide-react';
 import WMarkdownEditor from '@/components/WMarkdownEditor';
 import { useThemeStore } from '@/store/themeStore';
 
@@ -20,6 +20,8 @@ interface NotesEditorProps {
   onSave: (content: string) => Promise<boolean>;
   sidebarVisible?: boolean;
   onToggleSidebar?: () => void;
+  onCreateNote?: () => void;
+  onCreateFolder?: () => void;
 }
 
 const NotesEditor: React.FC<NotesEditorProps> = ({
@@ -29,6 +31,8 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   onSave,
   sidebarVisible = true,
   onToggleSidebar,
+  onCreateNote,
+  onCreateFolder,
 }) => {
   const { isDark } = useThemeStore();
   const [isDirty, setIsDirty] = useState(false);
@@ -113,6 +117,24 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
         <p className="mt-1 text-sm text-gray-400">
           从左侧文件树选择笔记开始编辑
         </p>
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            onClick={onCreateNote}
+            disabled={!onCreateNote}
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FilePlus className="h-4 w-4" />
+            新建笔记
+          </button>
+          <button
+            onClick={onCreateFolder}
+            disabled={!onCreateFolder}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FolderPlus className="h-4 w-4" />
+            新建文件夹
+          </button>
+        </div>
       </section>
     );
   }
@@ -131,12 +153,12 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
                 <PanelLeft className="h-4 w-4" />
               </button>
             )}
-            <FileText className="h-5 w-5 text-blue-500" />
+            <FileText className="h-5 w-5 text-primary" />
             <span className="font-medium text-gray-900 dark:text-white">
               {selectedFile.name}
             </span>
             {isDirty && (
-              <span className="text-xs text-amber-500">● 未保存</span>
+              <span className="text-xs text-warning">● 未保存</span>
             )}
             {isSaving && (
               <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -163,12 +185,12 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
         </div>
 
         <button
-          className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center rounded-lg bg-primary px-2 py-1.5 text-white transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           onClick={() => handleSave(content)}
           disabled={!isDirty || isSaving}
+          title="保存"
         >
           <Save className="h-4 w-4" />
-          保存
         </button>
       </div>
 

@@ -234,11 +234,6 @@ const Settings: React.FC = () => {
     setBtnLoading(true);
     setBtnText('正在清除缓存');
     try {
-      const quickLaunchApps = localStorageService.getString(STORAGE_KEYS.QUICK_LAUNCH_APPS);
-      const quickLaunchCategories = localStorageService.getString(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES);
-      const homeTools = localStorageService.getString(STORAGE_KEYS.HOME_TOOLS);
-      const homeQuickLaunchApps = localStorageService.getString(STORAGE_KEYS.HOME_QUICK_LAUNCH);
-
       if (!window.electron) {
         addToast({ type: 'error', message: '无法访问Electron API' });
         return;
@@ -252,11 +247,33 @@ const Settings: React.FC = () => {
       const result = await window.electron.clearCache();
 
       if (result && result.code === 0) {
-        if (quickLaunchApps) localStorageService.setString(STORAGE_KEYS.QUICK_LAUNCH_APPS, quickLaunchApps);
-        if (quickLaunchCategories) localStorageService.setString(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, quickLaunchCategories);
-        if (homeTools) localStorageService.setString(STORAGE_KEYS.HOME_TOOLS, homeTools);
-        if (homeQuickLaunchApps) localStorageService.setString(STORAGE_KEYS.HOME_QUICK_LAUNCH, homeQuickLaunchApps);
-        addToast({ type: 'success', message: '缓存已清除' });
+        localStorageService.clearAllExcept([
+          STORAGE_KEYS.THEME,
+          STORAGE_KEYS.BROWSER_MODE,
+          STORAGE_KEYS.WEATHER_CITY,
+          STORAGE_KEYS.SIDEBAR,
+          STORAGE_KEYS.QUICK_LAUNCH_APPS,
+          STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES,
+          STORAGE_KEYS.QUICK_LAUNCH_ICON_SIZE,
+          STORAGE_KEYS.HOME_TOOLS,
+          STORAGE_KEYS.HOME_QUICK_LAUNCH,
+          STORAGE_KEYS.ACCOUNT_COLUMNS,
+          STORAGE_KEYS.PLATFORM_VISIBILITY,
+          STORAGE_KEYS.PLATFORM_ORDER,
+          STORAGE_KEYS.WEBSITE_ACCOUNT_CATEGORY_ORDER,
+          STORAGE_KEYS.OCR_SETTINGS,
+          STORAGE_KEYS.NOTES_SIDEBAR_VISIBLE,
+          STORAGE_KEYS.NOTES_LAST_OPENED_FILE,
+        ]);
+        addToast({ type: 'success', message: '缓存已清除，应用将自动重启' });
+        if (window.electron?.restart) {
+          setTimeout(async () => {
+            try {
+              await window.electron?.restart();
+            } catch {
+            }
+          }, 1500);
+        }
       } else {
         const errorMsg = result?.msg || '清除缓存失败';
         addToast({ type: 'error', message: errorMsg });

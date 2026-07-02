@@ -103,6 +103,24 @@ export const localStorageService = {
       return false;
     }
   },
+
+  clearAllExcept(keepKeys: string[]): void {
+    try {
+      const keepData: Record<string, string> = {};
+      keepKeys.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value !== null) {
+          keepData[key] = value;
+        }
+      });
+      localStorage.clear();
+      Object.entries(keepData).forEach(([key, value]) => {
+        localStorage.setItem(key, value);
+      });
+    } catch (error) {
+      logError('localStorage.clearAllExcept failed', 'localStorageService', error as Error);
+    }
+  },
 };
 
 export default localStorageService;

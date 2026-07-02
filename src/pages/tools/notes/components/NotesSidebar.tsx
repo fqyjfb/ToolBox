@@ -75,7 +75,7 @@ const FileTreeItem: React.FC<{
         ref={itemRef}
         className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${
           isSelected
-            ? 'border-l-2 border-blue-500 bg-blue-50 text-blue-600'
+            ? 'border-l-2 border-primary bg-primary/10 text-primary'
             : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
         }`}
         style={{ paddingLeft: `${12 + depth * 16}px` }}
@@ -119,15 +119,22 @@ const FileTreeItem: React.FC<{
 
 const CreateDialog: React.FC<{
   type: 'folder' | 'note';
-  onConfirm: (name: string) => void;
+  onConfirm: () => void;
   onCancel: () => void;
-}> = ({ type, onConfirm, onCancel }) => {
-  const [name, setName] = useState('');
+  initialName?: string;
+  onNameChange?: (name: string) => void;
+}> = ({ type, onConfirm, onCancel, initialName = '', onNameChange }) => {
+  const [name, setName] = useState(initialName);
 
   const handleConfirm = () => {
     if (name.trim()) {
-      onConfirm(name.trim());
+      onConfirm();
     }
+  };
+
+  const handleNameChange = (value: string) => {
+    setName(value);
+    onNameChange?.(value);
   };
 
   return (
@@ -139,10 +146,10 @@ const CreateDialog: React.FC<{
 
         <input
           type="text"
-          className="mb-4 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+          className="mb-4 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-primary focus:outline-none"
           placeholder={type === 'folder' ? '文件夹名称' : '笔记名称'}
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => handleNameChange(e.target.value)}
           autoFocus
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleConfirm();
@@ -158,7 +165,7 @@ const CreateDialog: React.FC<{
             取消
           </button>
           <button
-            className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm text-white hover:bg-blue-600"
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary-hover"
             onClick={handleConfirm}
           >
             确定
@@ -190,7 +197,7 @@ const ExistsConfirmDialog: React.FC<{
 
         <div className="flex flex-col gap-2">
           <button
-            className="w-full rounded-lg bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600"
+            className="w-full rounded-lg bg-primary px-3 py-2 text-sm text-white hover:bg-primary-hover"
             onClick={onOverwrite}
           >
             覆盖原有{type === 'folder' ? '文件夹' : '文件'}
@@ -239,7 +246,7 @@ const DeleteConfirmDialog: React.FC<{
             取消
           </button>
           <button
-            className="rounded-lg bg-red-500 px-3 py-1.5 text-sm text-white hover:bg-red-600"
+            className="rounded-lg bg-error px-3 py-1.5 text-sm text-white hover:bg-error/80"
             onClick={onConfirm}
           >
             删除
@@ -279,6 +286,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     type: 'folder' | 'note';
     parentPath: string | null;
   } | null>(null);
+  const [createName, setCreateName] = useState('');
 
   const [existsDialog, setExistsDialog] = useState<{
     type: 'folder' | 'note';
@@ -289,6 +297,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   const [renameDialog, setRenameDialog] = useState<{
     node: FileTreeNode;
   } | null>(null);
+  const [renameName, setRenameName] = useState('');
 
   const [deleteDialog, setDeleteDialog] = useState<{
     node: FileTreeNode;
@@ -300,25 +309,29 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     setContextMenu({ x: e.clientX, y: e.clientY, node });
   };
 
-  const handleCreateFolder = async (name: string) => {
+  const handleCreateFolder = async () => {
     const parentPath = createDialog?.parentPath ?? null;
+    const name = createName;
     const result = await onCreateFolder(parentPath, name);
 
     if (result.exists) {
       setExistsDialog({ type: 'folder', name, parentPath });
     } else {
       setCreateDialog(null);
+      setCreateName('');
     }
   };
 
-  const handleCreateNote = async (name: string) => {
+  const handleCreateNote = async () => {
     const parentPath = createDialog?.parentPath ?? null;
+    const name = createName;
     const result = await onCreateNote(parentPath, name);
 
     if (result.exists) {
       setExistsDialog({ type: 'note', name, parentPath });
     } else {
       setCreateDialog(null);
+      setCreateName('');
     }
   };
 
@@ -370,10 +383,11 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     }
   };
 
-  const handleRename = async (name: string) => {
+  const handleRename = async () => {
     if (renameDialog) {
-      await onRenameItem(renameDialog.node.path, name);
+      await onRenameItem(renameDialog.node.path, renameName);
       setRenameDialog(null);
+      setRenameName('');
     }
   };
 
@@ -414,6 +428,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
       icon: <FilePlus className="w-4 h-4" />,
       onClick: () => {
         setCreateDialog({ type: 'note', parentPath: getParentPath() });
+        setCreateName('');
         setContextMenu(null);
       },
     });
@@ -424,6 +439,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
       icon: <FolderPlus className="w-4 h-4" />,
       onClick: () => {
         setCreateDialog({ type: 'folder', parentPath: getParentPath() });
+        setCreateName('');
         setContextMenu(null);
       },
     });
@@ -450,6 +466,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         icon: <Edit className="w-4 h-4" />,
         onClick: () => {
           setRenameDialog({ node });
+          setRenameName(node.name);
           setContextMenu(null);
         },
       });
@@ -462,7 +479,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
           setDeleteDialog({ node });
           setContextMenu(null);
         },
-        className: 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30',
+        className: 'text-error hover:bg-error/10 dark:hover:bg-error/20',
       });
     }
     
@@ -530,7 +547,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         <div
           className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 mb-2 transition-colors ${
             isChatMode
-              ? 'border-l-2 border-blue-500 bg-blue-50 text-blue-600'
+              ? 'border-l-2 border-primary bg-primary/10 text-primary'
               : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           onClick={onToggleChatMode}
@@ -578,7 +595,9 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
               ? handleCreateFolder
               : handleCreateNote
           }
-          onCancel={() => setCreateDialog(null)}
+          onCancel={() => { setCreateDialog(null); setCreateName(''); }}
+          initialName={createName}
+          onNameChange={setCreateName}
         />
       )}
 
@@ -586,7 +605,9 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         <CreateDialog
           type="note"
           onConfirm={handleRename}
-          onCancel={() => setRenameDialog(null)}
+          onCancel={() => { setRenameDialog(null); setRenameName(''); }}
+          initialName={renameName}
+          onNameChange={setRenameName}
         />
       )}
 
@@ -623,4 +644,5 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   );
 };
 
+export { CreateDialog };
 export default NotesSidebar;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StickyNote, Plus, Trash2, Edit, Tag, AlertCircle, Copy } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -21,7 +21,6 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
-import Pagination from '../../../components/ui/Pagination';
 
 const getPriorityStyle = (priority: string) => {
   switch (priority) {
@@ -125,9 +124,32 @@ const MemoPage: React.FC = () => {
   const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
   const [previewMemo, setPreviewMemo] = useState<Memo | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(10);
-  const [totalItems, setTotalItems] = useState<number>(0);
+  const [pageSize] = useState<number>(10);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastMemoRef = useRef<HTMLDivElement | null>(null);
+  const [columnCount, setColumnCount] = useState<number>(4);
+
+  useEffect(() => {
+    const updateColumnCount = () => {
+      const width = window.innerWidth;
+      if (width >= 1280) {
+        setColumnCount(4);
+      } else if (width >= 1024) {
+        setColumnCount(3);
+      } else if (width >= 640) {
+        setColumnCount(2);
+      } else {
+        setColumnCount(1);
+      }
+    };
+
+    updateColumnCount();
+    window.addEventListener('resize', updateColumnCount);
+    return () => window.removeEventListener('resize', updateColumnCount);
+  }, []);
   
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
@@ -204,20 +226,42 @@ const MemoPage: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-    loadMemos(1);
+    setMemos([]);
+    setHasMore(true);
+    loadMemos(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [admin, selectedCategory]);
 
   useEffect(() => {
-    loadMemos(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageSize]);
-
-  useEffect(() => {
     setCurrentPage(1);
-    loadMemos(1);
+    setMemos([]);
+    setHasMore(true);
+    loadMemos(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, isSearchActive]);
+
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && hasMore && !isLoadingMore && !loading) {
+          setIsLoadingMore(true);
+          loadMemos(currentPage + 1, true);
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    if (lastMemoRef.current && memos.length > 0) {
+      observerRef.current.observe(lastMemoRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [memos.length, hasMore, isLoadingMore, loading, currentPage]);
 
   useEffect(() => {
     const handleOpenAddMemo = () => {
@@ -235,11 +279,13 @@ const MemoPage: React.FC = () => {
     };
   }, []);
 
-  const loadMemos = async (pageNum: number = 1) => {
+  const loadMemos = async (pageNum: number = 1, append: boolean = false) => {
     if (!admin) return;
     
     try {
-      setLoading(true);
+      if (!append) {
+        setLoading(true);
+      }
       let result;
       
       if (isSearchActive && searchQuery.trim()) {
@@ -249,14 +295,19 @@ const MemoPage: React.FC = () => {
         result = await memoService.getMemos(admin.id, categoryId, pageNum, pageSize);
       }
       
-      setMemos(result.list);
-      setTotalItems(result.total);
+      if (append) {
+        setMemos(prev => [...prev, ...result.list]);
+      } else {
+        setMemos(result.list);
+      }
+      setHasMore(result.list.length >= pageSize);
       setCurrentPage(pageNum);
     } catch (error) {
       logError('Error loading memos', 'MemoPage', error as Error);
       addToast({ message: '加载备忘录失败', type: 'error' });
     } finally {
       setLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
@@ -349,7 +400,9 @@ const MemoPage: React.FC = () => {
       setNewMemoCategoryId(null);
       setNewMemoPriority('medium');
       setShowAddMemoModal(false);
-      await loadMemos(1);
+      setCurrentPage(1);
+      setHasMore(true);
+      await loadMemos(1, false);
       addToast({ message: '备忘录添加成功', type: 'success' });
       logInfo('备忘录添加成功', 'MemoPage');
     } catch (error) {
@@ -376,7 +429,9 @@ const MemoPage: React.FC = () => {
       setEditingMemoCategoryId(null);
       setEditingMemoPriority('medium');
       setShowEditMemoModal(false);
-      await loadMemos(1);
+      setCurrentPage(1);
+      setHasMore(true);
+      await loadMemos(1, false);
       addToast({ message: '备忘录修改成功', type: 'success' });
     } catch (error) {
       logError('Error updating memo', 'MemoPage', error as Error);
@@ -391,7 +446,9 @@ const MemoPage: React.FC = () => {
     try {
       setLoading(true);
       await memoService.deleteMemo(admin.id, memoId);
-      await loadMemos(1);
+      setCurrentPage(1);
+      setHasMore(true);
+      await loadMemos(1, false);
       addToast({ message: '备忘录删除成功', type: 'success' });
     } catch (error) {
       logError('Error deleting memo', 'MemoPage', error as Error);
@@ -599,7 +656,7 @@ const MemoPage: React.FC = () => {
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto scrollbar-hide">
+          <div className="flex-1 overflow-y-auto scrollbar-hide p-1">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <LoadingSpinner size="lg" />
@@ -617,73 +674,76 @@ const MemoPage: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {memos.map((memo) => (
-                  <div 
-                    key={memo.id} 
-                    className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    style={{ maxWidth: '250px', maxHeight: '160px' }}
-                    onClick={() => handleOpenPreview(memo)}
-                    onContextMenu={(e) => handleContextMenu(e, 'memo', memo.id)}
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full flex items-center gap-0.5 ${getPriorityStyle(memo.priority)}`}>
-                            <AlertCircle size={8} />
-                            {getPriorityLabel(memo.priority)}
-                          </span>
-                          <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                            {memo.title}
-                          </h3>
-                        </div>
-                        {memo.content && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words line-clamp-3">
-                            {memo.content}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopyMemoContent(memo);
-                    }}
-                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                    title="复制内容"
-                  >
-                    <Copy size={12} />
-                  </button>
-                      {memo.category_id && (
-                        <span 
-                          className="text-xs font-medium px-1.5 py-0.5 rounded-full"
-                          style={{ backgroundColor: `${categories.find(c => c.id === memo.category_id)?.color}20`, color: categories.find(c => c.id === memo.category_id)?.color }}
+              <div className="flex gap-4 h-full" style={{ flexDirection: columnCount === 1 ? 'column' : 'row' }}>
+                {Array.from({ length: columnCount }).map((_, colIndex) => {
+                  const colMemos = memos.filter((_, index) => index % columnCount === colIndex);
+                  return (
+                    <div 
+                      key={colIndex} 
+                      className="flex-1 flex flex-col gap-4"
+                      style={{ minWidth: columnCount === 1 ? 'auto' : '200px', maxWidth: '300px' }}
+                    >
+                      {colMemos.map((memo, index) => (
+                        <div 
+                          key={memo.id}
+                          ref={colIndex === columnCount - 1 && index === colMemos.length - 1 ? lastMemoRef : null}
+                          className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors shadow-sm"
+                          onClick={() => handleOpenPreview(memo)}
+                          onContextMenu={(e) => handleContextMenu(e, 'memo', memo.id)}
                         >
-                          {memo.category_name}
-                        </span>
-                      )}
-                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
-                        {new Date(memo.created_at).toLocaleDateString()}
-                      </span>
+                          <div className="flex items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full flex items-center gap-0.5 ${getPriorityStyle(memo.priority)}`}>
+                                  <AlertCircle size={8} />
+                                  {getPriorityLabel(memo.priority)}
+                                </span>
+                                <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                  {memo.title}
+                                </h3>
+                              </div>
+                              {memo.content && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-h-32 overflow-hidden">
+                                  {memo.content}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyMemoContent(memo);
+                              }}
+                              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                              title="复制内容"
+                            >
+                              <Copy size={12} />
+                            </button>
+                            {memo.category_id && (
+                              <span 
+                                className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+                                style={{ backgroundColor: `${categories.find(c => c.id === memo.category_id)?.color}20`, color: categories.find(c => c.id === memo.category_id)?.color }}
+                              >
+                                {memo.category_name}
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                              {new Date(memo.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
+                  );
+                })}
+                {isLoadingMore && (
+                  <div className="flex items-center justify-center py-4 w-full">
+                    <LoadingSpinner size="sm" />
                   </div>
-                ))}
+                )}
               </div>
             )}
-          </div>
-          
-          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 mt-4">
-            <Pagination
-              currentPage={currentPage}
-              total={totalItems}
-              pageSize={pageSize}
-              onPageChange={loadMemos}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setCurrentPage(1);
-              }}
-            />
           </div>
         </div>
 
@@ -697,6 +757,31 @@ const MemoPage: React.FC = () => {
           clickOutsideToClose={false}
         >
           <div className="space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <select
+                  value={newMemoPriority}
+                  onChange={(e) => setNewMemoPriority(e.target.value as 'high' | 'medium' | 'low')}
+                  className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border-none ${getPriorityStyle(newMemoPriority)}`}
+                >
+                  <option value="high">高优先级</option>
+                  <option value="medium">中优先级</option>
+                  <option value="low">低优先级</option>
+                </select>
+                <select
+                  value={newMemoCategoryId || ''}
+                  onChange={(e) => setNewMemoCategoryId(e.target.value || null)}
+                  className="text-xs font-medium px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                >
+                  <option value="">全部</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <input
               type="text"
               value={newMemoTitle}
@@ -704,34 +789,15 @@ const MemoPage: React.FC = () => {
               placeholder="标题"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
             />
-            <select
-              value={newMemoCategoryId || ''}
-              onChange={(e) => setNewMemoCategoryId(e.target.value || null)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">全部</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={newMemoPriority}
-              onChange={(e) => setNewMemoPriority(e.target.value as 'high' | 'medium' | 'low')}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="high">高优先级</option>
-              <option value="medium">中优先级</option>
-              <option value="low">低优先级</option>
-            </select>
-            <textarea
-              value={newMemoContent}
-              onChange={(e) => setNewMemoContent(e.target.value)}
-              placeholder="内容"
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-            />
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[120px] max-h-64 overflow-auto relative group">
+              <textarea
+                value={newMemoContent}
+                onChange={(e) => setNewMemoContent(e.target.value)}
+                placeholder="内容"
+                rows={4}
+                className="w-full bg-transparent resize-none focus:outline-none text-sm text-gray-600 dark:text-gray-300 placeholder-gray-400"
+              />
+            </div>
           </div>
         </Modal>
 
@@ -745,6 +811,31 @@ const MemoPage: React.FC = () => {
         >
           {editingMemo && (
             <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <select
+                    value={editingMemoPriority}
+                    onChange={(e) => setEditingMemoPriority(e.target.value as 'high' | 'medium' | 'low')}
+                    className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border-none ${getPriorityStyle(editingMemoPriority)}`}
+                  >
+                    <option value="high">高优先级</option>
+                    <option value="medium">中优先级</option>
+                    <option value="low">低优先级</option>
+                  </select>
+                  <select
+                    value={editingMemoCategoryId || ''}
+                    onChange={(e) => setEditingMemoCategoryId(e.target.value || null)}
+                    className="text-xs font-medium px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                  >
+                    <option value="">全部</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <input
                 type="text"
                 value={editingMemo.title}
@@ -752,34 +843,15 @@ const MemoPage: React.FC = () => {
                 placeholder="标题"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
               />
-              <select
-                value={editingMemoCategoryId || ''}
-                onChange={(e) => setEditingMemoCategoryId(e.target.value || null)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">全部</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={editingMemoPriority}
-                onChange={(e) => setEditingMemoPriority(e.target.value as 'high' | 'medium' | 'low')}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="high">高优先级</option>
-                <option value="medium">中优先级</option>
-                <option value="low">低优先级</option>
-              </select>
-              <textarea
-                value={editingMemo.content}
-                onChange={(e) => setEditingMemo({ ...editingMemo, content: e.target.value })}
-                placeholder="内容"
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-              />
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[120px] max-h-64 overflow-auto relative group">
+                <textarea
+                  value={editingMemo.content}
+                  onChange={(e) => setEditingMemo({ ...editingMemo, content: e.target.value })}
+                  placeholder="内容"
+                  rows={4}
+                  className="w-full bg-transparent resize-none focus:outline-none text-sm text-gray-600 dark:text-gray-300 placeholder-gray-400"
+                />
+              </div>
             </div>
           )}
         </Modal>
@@ -869,11 +941,26 @@ const MemoPage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {new Date(previewMemo.created_at).toLocaleString()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(previewMemo.created_at).toLocaleString()}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setEditingMemo(previewMemo);
+                      setEditingMemoCategoryId(previewMemo.category_id);
+                      setEditingMemoPriority(previewMemo.priority);
+                      setShowEditMemoModal(true);
+                      handleClosePreview();
+                    }}
+                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    title="编辑"
+                  >
+                    <Edit size={14} />
+                  </button>
+                </div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[120px] relative group">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[120px] max-h-64 overflow-auto relative group scrollbar-hide">
                 <button
                   onClick={() => handleCopyMemoContent(previewMemo)}
                   className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded hover:bg-gray-200 dark:hover:bg-gray-700"
