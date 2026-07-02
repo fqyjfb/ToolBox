@@ -36,6 +36,8 @@ export const STORAGE_KEYS = {
   
   NOTES_SIDEBAR_VISIBLE: 'notes_sidebar_visible',
   OCR_HISTORY: 'ocr_history',
+  
+  FILE_MANAGER_WIDTHS: 'file_manager_widths',
 };
 
 export const localStorageService = {

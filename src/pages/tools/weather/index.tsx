@@ -17,7 +17,7 @@ const WeatherPage: React.FC = () => {
   const [error, setError] = useState('');
   const [searchCity, setSearchCity] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
-  const [city, setCity] = useState(localStorageService.getString(STORAGE_KEYS.WEATHER_CITY) || '南京');
+  const [city, setCity] = useState(localStorageService.getString(STORAGE_KEYS.WEATHER_CITY) || '无锡');
 
   const fetchWeather = useCallback(async () => {
     setLoading(true);

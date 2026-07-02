@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Folder,
   File,
@@ -19,6 +19,7 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import { logError } from '../../../services/loggerService';
+import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 import FileGridItem from './FileGridItem';
 
 interface FileItem {
@@ -70,6 +71,24 @@ const FileManagerPage: React.FC = () => {
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<FileItem | null>(null);
   const [showDeletePathConfirm, setShowDeletePathConfirm] = useState(false);
   const [deletePathItem, setDeletePathItem] = useState<PathConfig | null>(null);
+  
+  const [leftPanelWidth, setLeftPanelWidth] = useState<number>(() => {
+    const saved = localStorageService.get<{ left: number; right: number }>(
+      STORAGE_KEYS.FILE_MANAGER_WIDTHS,
+      { left: 256, right: 320 }
+    );
+    return saved.left;
+  });
+  const [rightPanelWidth, setRightPanelWidth] = useState<number>(() => {
+    const saved = localStorageService.get<{ left: number; right: number }>(
+      STORAGE_KEYS.FILE_MANAGER_WIDTHS,
+      { left: 256, right: 320 }
+    );
+    return saved.right;
+  });
+  const [isDraggingLeft, setIsDraggingLeft] = useState(false);
+  const [isDraggingRight, setIsDraggingRight] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const initializeFileManager = useCallback(async () => {
     try {
@@ -87,6 +106,13 @@ const FileManagerPage: React.FC = () => {
       addToast({ type: 'error', message: '初始化文件管理器失败' });
     }
   }, [addToast]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  useEffect(() => {
+    localStorageService.set(STORAGE_KEYS.FILE_MANAGER_WIDTHS, {
+      left: leftPanelWidth,
+      right: rightPanelWidth,
+    });
+  }, [leftPanelWidth, rightPanelWidth]);
 
   useEffect(() => {
     initializeFileManager();
@@ -140,6 +166,40 @@ const FileManagerPage: React.FC = () => {
       setLoading(false);
     }
   }, [addToast]);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!containerRef.current) return;
+    
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    
+    if (isDraggingLeft) {
+      const newWidth = e.clientX - containerRect.left;
+      setLeftPanelWidth(Math.min(Math.max(newWidth, 120), containerWidth - rightPanelWidth - 120));
+    } else if (isDraggingRight) {
+      const newWidth = containerRect.right - e.clientX;
+      setRightPanelWidth(Math.min(Math.max(newWidth, 120), containerWidth - leftPanelWidth - 120));
+    }
+  }, [isDraggingLeft, isDraggingRight, rightPanelWidth, leftPanelWidth]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDraggingLeft(false);
+    setIsDraggingRight(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDraggingLeft || isDraggingRight) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+      };
+    }
+  }, [isDraggingLeft, isDraggingRight, handleMouseMove, handleMouseUp]);
 
   const navigateToPath = useCallback(async (path: string) => {
     setCurrentPath(path);
@@ -500,26 +560,26 @@ const FileManagerPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className="w-64 border-r border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50 dark:bg-gray-900">
-            <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg">
+        <div ref={containerRef} className="flex flex-1 overflow-hidden">
+          <div style={{ width: leftPanelWidth }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50 dark:bg-gray-900">
+            <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center">
+              <div className="flex gap-1 w-full">
                 <button
                   onClick={() => setActiveTab('system')}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  className={`flex-1 px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeTab === 'system'
                       ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
                   系统
                 </button>
                 <button
                   onClick={() => setActiveTab('user')}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  className={`flex-1 px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeTab === 'user'
                       ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
                   常用
@@ -565,7 +625,15 @@ const FileManagerPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col">
+          <div
+            className="w-1 flex-shrink-0 cursor-col-resize hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+            onMouseDown={() => setIsDraggingLeft(true)}
+            title="拖动调整宽度"
+          >
+            <div className="w-0.5 h-8 bg-gray-300 dark:bg-gray-600 rounded-full" />
+          </div>
+
+          <div className="flex-1 flex flex-col min-w-0">
             <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -611,18 +679,28 @@ const FileManagerPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="w-80 border-l border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50 dark:bg-gray-900">
-            <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <span className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
-                目标路径
-              </span>
-              <button
-                onClick={() => setShowAddPathModal(true)}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                title="添加路径"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
+          <div
+            className="w-1 flex-shrink-0 cursor-col-resize hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+            onMouseDown={() => setIsDraggingRight(true)}
+            title="拖动调整宽度"
+          >
+            <div className="w-0.5 h-8 bg-gray-300 dark:bg-gray-600 rounded-full" />
+          </div>
+
+          <div style={{ width: rightPanelWidth }} className="flex-shrink-0 border-l border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50 dark:bg-gray-900">
+            <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center">
+              <div className="flex items-center justify-between w-full">
+                <span className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
+                  目标路径
+                </span>
+                <button
+                  onClick={() => setShowAddPathModal(true)}
+                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  title="添加路径"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-auto p-3">
               {targetPaths.length === 0 ? (
