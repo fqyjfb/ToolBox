@@ -30,7 +30,7 @@ const Modal: React.FC<ModalProps> = ({
   showCancel = true,
   showConfirm = true,
   confirmDisabled = false,
-  clickOutsideToClose = true,
+  clickOutsideToClose = false,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +39,7 @@ const Modal: React.FC<ModalProps> = ({
       if (e.key === 'Escape' && isOpen) {
         onClose();
       }
-      if (e.key === 'Enter' && isOpen && !e.shiftKey && !confirmDisabled) {
+      if (e.key === 'Enter' && isOpen && !e.shiftKey && !confirmDisabled && !(e.target instanceof HTMLTextAreaElement)) {
         onConfirm?.();
       }
     };

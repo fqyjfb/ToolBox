@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Plus, Edit, Trash2, Copy, Share2, Tag, ChevronDown, RefreshCw, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Trash2, Copy, Share2, Tag, ChevronDown, RefreshCw, ExternalLink, Eye } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -14,6 +14,7 @@ import Modal from '../../../../components/ui/Modal';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import Pagination from '../../../../components/ui/Pagination';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
+import PreviewModal from '../../../../components/ui/PreviewModal';
 import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
 import PasswordInput from '../../../../components/forms/PasswordInput';
 import { logError } from '../../../../services/loggerService';
@@ -99,6 +100,8 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
 
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [showItemModal, setShowItemModal] = useState<boolean>(false);
+  const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
+  const [previewItem, setPreviewItem] = useState<WebsiteAccount | null>(null);
   const [editingCategory, setEditingCategory] = useState<WebsiteAccountCategory | null>(null);
   const [editingItem, setEditingItem] = useState<WebsiteAccount | null>(null);
 
@@ -468,6 +471,11 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     }
   }, [addToast]);
 
+  const handleRowClick = (account: WebsiteAccount) => {
+    setPreviewItem(account);
+    setShowPreviewModal(true);
+  };
+
   const generatePassword = useCallback(() => {
     const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
     let password = '';
@@ -512,6 +520,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       if (!account) return [];
 
       return [
+        { id: 'view', label: '查看详情', icon: <Eye className="w-4 h-4" />, onClick: () => { handleRowClick(account); handleCloseContextMenu(); } },
         { id: 'copy-username', label: '复制账号', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyText(account.username || '', '用户名已复制'); handleCloseContextMenu(); } },
         { id: 'copy-pwd', label: '复制密码', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyPassword(account.password); handleCloseContextMenu(); } },
         { id: 'divider1', label: '', divider: true },
@@ -541,10 +550,10 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, accounts, categories, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyPassword, handleCopyText, handleDeleteCategory, handleDeleteItem, openItemModal, openCategoryModal]);
+  }, [contextMenu.type, contextMenu.targetId, accounts, categories, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyPassword, handleCopyText, handleDeleteCategory, handleDeleteItem, openItemModal, openCategoryModal, handleRowClick]);
 
   const renderAccountItem = (account: WebsiteAccount) => (
-    <div key={account.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3" onContextMenu={(e) => handleContextMenu(e, 'item', account.id)}>
+    <div key={account.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleRowClick(account)} onContextMenu={(e) => handleContextMenu(e, 'item', account.id)}>
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 flex flex-col items-center">
           <div className="w-9 h-9 rounded-md bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-700 flex items-center justify-center">
@@ -798,6 +807,13 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       <ConfirmDialog isOpen={confirmDialog.isOpen} onClose={handleCloseConfirmDialog} onConfirm={() => { confirmDialog.onConfirm(); handleCloseConfirmDialog(); }} title={confirmDialog.title} message={confirmDialog.message} />
 
       <ContextMenu isOpen={contextMenu.isOpen} x={contextMenu.x} y={contextMenu.y} items={getContextMenuItems()} onClose={handleCloseContextMenu} />
+
+      <PreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        item={previewItem}
+        title={previewItem?.name || '网站账号详情'}
+      />
     </div>
   );
 });

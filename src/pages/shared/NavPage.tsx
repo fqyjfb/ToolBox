@@ -62,6 +62,9 @@ const NavPage: React.FC = () => {
   const [showMoreSubCategories, setShowMoreSubCategories] = useState(false)
   const [overflowSubCategories, setOverflowSubCategories] = useState<Category[]>([])
   
+  const [categoryDropdownPosition, setCategoryDropdownPosition] = useState<{ left: number; top: number } | null>(null)
+  const [subCategoryDropdownPosition, setSubCategoryDropdownPosition] = useState<{ left: number; top: number } | null>(null)
+  
   const { searchQuery, isSearchActive } = useNavSearch()
   
   const contentRef = useRef<HTMLDivElement>(null)
@@ -76,13 +79,22 @@ const NavPage: React.FC = () => {
     bookmarks: null as Bookmark[] | null,
     lastLoaded: 0
   })
+  
+  const isAuthenticatedRef = useRef<{ value: boolean; timestamp: number } | null>(null)
 
   // 检查用户是否登录
   const isAuthenticated = useCallback(async () => {
+    const authCache = isAuthenticatedRef.current
+    const cacheExpiry = 5 * 60 * 1000
+    if (authCache && (Date.now() - authCache.timestamp) < cacheExpiry) {
+      return authCache.value
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser()
+      isAuthenticatedRef.current = { value: !!user, timestamp: Date.now() }
       return !!user
     } catch {
+      isAuthenticatedRef.current = { value: false, timestamp: Date.now() }
       return false
     }
   }, [])
@@ -176,29 +188,29 @@ const NavPage: React.FC = () => {
         const container = categoriesContainerRef.current
         const containerWidth = container.offsetWidth
         
-        // 假设每个分类的平均宽度（包含padding）
-        const avgCategoryWidth = 80 // 平均每个分类约80px宽
-        
-        // 计算可显示的分类数量
-        const favoritesWidth = 80 // "我的收藏"分类的宽度
-        const dropdownWidth = 40 // 下拉按钮宽度
+        const avgCategoryWidth = 80
+        const favoritesWidth = 80
+        const dropdownWidth = 40
         const availableWidth = containerWidth - favoritesWidth - dropdownWidth
         const maxVisibleCategories = Math.max(0, Math.floor(availableWidth / avgCategoryWidth))
         
-        // 计算溢出的分类
         const overflow = categoriesTree.slice(maxVisibleCategories)
         
         setOverflowCategories(overflow)
       }
     }
 
-    // 使用 setTimeout 确保 DOM 已渲染完成
-    setTimeout(checkOverflow, 100)
+    checkOverflow()
     
-    // 窗口大小变化时重新检测
+    const resizeObserver = new ResizeObserver(checkOverflow)
+    if (categoriesContainerRef.current) {
+      resizeObserver.observe(categoriesContainerRef.current)
+    }
+    
     window.addEventListener('resize', checkOverflow)
     
     return () => {
+      resizeObserver.disconnect()
       window.removeEventListener('resize', checkOverflow)
     }
   }, [categoriesTree])
@@ -219,9 +231,8 @@ const NavPage: React.FC = () => {
         const container = subCategoriesContainerRef.current
         const containerWidth = container.offsetWidth
         
-        // 假设每个子分类的平均宽度（包含padding）
-        const avgSubCategoryWidth = 65 // 平均每个子分类约65px宽
-        const dropdownWidth = 36 // 下拉按钮宽度
+        const avgSubCategoryWidth = 65
+        const dropdownWidth = 36
         const availableWidth = containerWidth - dropdownWidth
         const maxVisibleSubCategories = Math.max(1, Math.floor(availableWidth / avgSubCategoryWidth))
         
@@ -232,11 +243,17 @@ const NavPage: React.FC = () => {
       }
     }
 
-    setTimeout(checkSubCategoryOverflow, 100)
+    checkSubCategoryOverflow()
+    
+    const resizeObserver = new ResizeObserver(checkSubCategoryOverflow)
+    if (subCategoriesContainerRef.current) {
+      resizeObserver.observe(subCategoriesContainerRef.current)
+    }
     
     window.addEventListener('resize', checkSubCategoryOverflow)
     
     return () => {
+      resizeObserver.disconnect()
       window.removeEventListener('resize', checkSubCategoryOverflow)
     }
   }, [activeMainCategoryId, categoriesTree, getSubCategories])
@@ -283,7 +300,17 @@ const NavPage: React.FC = () => {
     return ids
   }, [])
 
-  // 获取分类下的书签 - 使用useCallback缓存
+  // 获取分类下的书签 - 使用useMemo缓存每个分类的结果
+  const bookmarksByCategory = useMemo(() => {
+    const map = new Map<string, Bookmark[]>()
+    bookmarks.forEach(bookmark => {
+      const existing = map.get(bookmark.category_id) || []
+      existing.push(bookmark)
+      map.set(bookmark.category_id, existing)
+    })
+    return map
+  }, [bookmarks])
+
   const getCategoryBookmarks = useCallback((mainCategoryId: string) => {
     const mainCategory = categoriesTree.find(category => category.id === mainCategoryId)
     if (!mainCategory) return []
@@ -292,11 +319,24 @@ const NavPage: React.FC = () => {
     const categoryIds = getCategoryIds(mainCategory)
     
     if (activeSubCategoryId === 'all') {
-      return bookmarks.filter(bookmark => categoryIds.includes(bookmark.category_id))
+      const result: Bookmark[] = []
+      categoryIds.forEach(id => {
+        const categoryBookmarks = bookmarksByCategory.get(id) || []
+        result.push(...categoryBookmarks)
+      })
+      return result
     } else {
-      return bookmarks.filter(bookmark => bookmark.category_id === activeSubCategoryId)
+      return bookmarksByCategory.get(activeSubCategoryId) || []
     }
-  }, [categoriesTree, bookmarks, getActiveSubCategoryId, getCategoryIds])
+  }, [categoriesTree, bookmarksByCategory, getActiveSubCategoryId, getCategoryIds])
+
+  // 预计算所有书签的映射表，用于hover提示查找
+  const allBookmarksMap = useMemo(() => {
+    const map = new Map<string, Bookmark>()
+    bookmarks.forEach(b => map.set(b.id, b))
+    favorites.forEach(b => map.set(b.id, b))
+    return map
+  }, [bookmarks, favorites])
 
   // 切换主分类
   const switchMainCategory = (categoryId: string) => {
@@ -489,6 +529,34 @@ const NavPage: React.FC = () => {
     }
   }, [handleScroll])
 
+  // 计算分类下拉菜单位置
+  useEffect(() => {
+    if (showMoreCategories && dropdownButtonRef.current) {
+      const buttonRect = dropdownButtonRef.current.getBoundingClientRect()
+      const pageRect = document.querySelector('.homenav-page')?.getBoundingClientRect()
+      setCategoryDropdownPosition({
+        left: buttonRect.left - (pageRect?.left || 0),
+        top: buttonRect.bottom - (pageRect?.top || 0)
+      })
+    } else {
+      setCategoryDropdownPosition(null)
+    }
+  }, [showMoreCategories])
+
+  // 计算子分类下拉菜单位置
+  useEffect(() => {
+    if (showMoreSubCategories && subCategoryDropdownButtonRef.current) {
+      const buttonRect = subCategoryDropdownButtonRef.current.getBoundingClientRect()
+      const pageRect = document.querySelector('.homenav-page')?.getBoundingClientRect()
+      setSubCategoryDropdownPosition({
+        left: buttonRect.left - (pageRect?.left || 0),
+        top: buttonRect.bottom - (pageRect?.top || 0)
+      })
+    } else {
+      setSubCategoryDropdownPosition(null)
+    }
+  }, [showMoreSubCategories])
+
   if (hasError) {
     return (
       <div className="text-center py-12">
@@ -567,74 +635,62 @@ const NavPage: React.FC = () => {
         </div>
 
       {/* 下拉菜单 - 放在容器外部避免被遮挡 */}
-      {showMoreCategories && dropdownButtonRef.current && (() => {
-        const buttonRect = dropdownButtonRef.current.getBoundingClientRect()
-        const pageRect = document.querySelector('.homenav-page')?.getBoundingClientRect()
-        const left = buttonRect.left - (pageRect?.left || 0)
-        const top = buttonRect.bottom - (pageRect?.top || 0)
-        return (
-          <>
-            <div 
-              className="fixed inset-0 z-40"
-              onClick={() => setShowMoreCategories(false)}
-            />
-            <div 
-              className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown-lg"
-              style={{ left: `${left - 130}px`, top: `${top + 4}px` }}
-            >
-              {overflowCategories.map((category) => (
-                <button
-                  key={category.id}
-                  className={`block w-full text-left px-4 py-2 text-sm ${!activeFavorites && activeMainCategoryId === category.id ? 'bg-gray-100 dark:bg-gray-700 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    switchMainCategory(category.id)
-                    setActiveFavorites(false)
-                    setShowFavorites(false)
-                    setShowMoreCategories(false)
-                  }}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-          </>
-        )
-      })()}
+      {showMoreCategories && categoryDropdownPosition && (
+        <>
+          <div 
+            className="fixed inset-0 z-40"
+            onClick={() => setShowMoreCategories(false)}
+          />
+          <div 
+            className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown-lg"
+            style={{ left: `${categoryDropdownPosition.left - 130}px`, top: `${categoryDropdownPosition.top + 4}px` }}
+          >
+            {overflowCategories.map((category) => (
+              <button
+                key={category.id}
+                className={`block w-full text-left px-4 py-2 text-sm ${!activeFavorites && activeMainCategoryId === category.id ? 'bg-gray-100 dark:bg-gray-700 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  switchMainCategory(category.id)
+                  setActiveFavorites(false)
+                  setShowFavorites(false)
+                  setShowMoreCategories(false)
+                }}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* 子分类下拉菜单 - 放在容器外部避免被遮挡 */}
-      {showMoreSubCategories && subCategoryDropdownButtonRef.current && activeMainCategoryId && (() => {
-        const buttonRect = subCategoryDropdownButtonRef.current.getBoundingClientRect()
-        const pageRect = document.querySelector('.homenav-page')?.getBoundingClientRect()
-        const left = buttonRect.left - (pageRect?.left || 0)
-        const top = buttonRect.bottom - (pageRect?.top || 0)
-        return (
-          <>
-            <div 
-              className="fixed inset-0 z-40"
-              onClick={() => setShowMoreSubCategories(false)}
-            />
-            <div 
-              className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown"
-              style={{ left: `${left - 80}px`, top: `${top + 4}px` }}
-            >
-              {overflowSubCategories.map((subCategory) => (
-                <button
-                  key={subCategory.id}
-                  className={`block w-full text-left px-4 py-2 text-sm ${getActiveSubCategoryId(activeMainCategoryId) === subCategory.id ? 'bg-gray-100 dark:bg-gray-700 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)
-                    setShowMoreSubCategories(false)
-                  }}
-                >
-                  {subCategory.name}
-                </button>
-              ))}
-            </div>
-          </>
-        )
-      })()}
+      {showMoreSubCategories && subCategoryDropdownPosition && activeMainCategoryId && (
+        <>
+          <div 
+            className="fixed inset-0 z-40"
+            onClick={() => setShowMoreSubCategories(false)}
+          />
+          <div 
+            className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown"
+            style={{ left: `${subCategoryDropdownPosition.left - 80}px`, top: `${subCategoryDropdownPosition.top + 4}px` }}
+          >
+            {overflowSubCategories.map((subCategory) => (
+              <button
+                key={subCategory.id}
+                className={`block w-full text-left px-4 py-2 text-sm ${getActiveSubCategoryId(activeMainCategoryId) === subCategory.id ? 'bg-gray-100 dark:bg-gray-700 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)
+                  setShowMoreSubCategories(false)
+                }}
+              >
+                {subCategory.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       
       {/* 内容区域 */}
@@ -998,8 +1054,7 @@ const NavPage: React.FC = () => {
       
       {/* 卡片描述悬浮提示框 */}
       {hoveredBookmark && (() => {
-        const bookmark = [...searchResults, ...favorites, ...categoriesTree.flatMap(c => getCategoryBookmarks(c.id))]
-          .find(b => b.id === hoveredBookmark.id)
+        const bookmark = allBookmarksMap.get(hoveredBookmark.id)
         if (bookmark?.description) {
           return (
             <div 
