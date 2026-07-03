@@ -3,14 +3,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background-color: #ffffff;
+  background-color: var(--color-bg-primary);
   border-radius: 8px;
   margin-bottom: 12px;
   flex-shrink: 0;
 }
 
 .dark .recents-header {
-  background-color: #1f2937;
+  background-color: var(--color-bg-secondary);
 }
 
 .recents-content {
@@ -39,7 +39,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  background-color: #ffffff;
+  background-color: var(--color-bg-primary);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -47,19 +47,19 @@
 }
 
 .dark .recents-item {
-  background-color: #1f2937;
+  background-color: var(--color-bg-secondary);
 }
 
 .recents-item:hover {
-  background-color: #f9fafb;
-  border-color: #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background-color: var(--color-card-hover);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .dark .recents-item:hover {
-  background-color: #374151;
-  border-color: #4b5563;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background-color: var(--color-card-hover);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .recents-icon {

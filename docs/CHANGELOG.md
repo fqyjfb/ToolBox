@@ -4,6 +4,12 @@
 
 - 网址导航页面性能优化
 - 认证状态缓存优化：添加 5 分钟 TTL 过期机制，避免重复调用 supabase.auth.getUser()
+- UI 主题一致性修复：RecentsPage / Sidebar / Home Tooltip 硬编码颜色替换为 CSS 变量
+- 主题切换开关：Switch 组件颜色提取为专用 CSS 变量，支持深色模式
+- LoginPage.css 统一化：圆角、字号、边距接入 Token 体系
+- theme.css 清理：删除重复定义的 --space-3、--transition-fast、--transition-normal
+- HotNewsPage.css 去重：删除与 theme.css 重复的 .loader/.dot 动画定义
+- 清理 float.css 重复文件 styles.css
 
 ## v2.4.2
 

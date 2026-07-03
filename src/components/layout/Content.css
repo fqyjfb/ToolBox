@@ -19,7 +19,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #73C0FC;
+  background-color: var(--color-switch-bg);
   transition: .4s;
   border-radius: 30px;
 }
@@ -33,7 +33,7 @@
   left: 2px;
   bottom: 2px;
   z-index: 2;
-  background-color: #e8e8e8;
+  background-color: var(--color-switch-thumb);
   transition: .4s;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .moon svg {
-  fill: #73C0FC;
+  fill: var(--color-switch-bg);
   position: absolute;
   top: 2px;
   left: 2px;
@@ -89,11 +89,11 @@
 }
 
 .input:checked + .slider {
-  background-color: #183153;
+  background-color: var(--color-switch-active-bg);
 }
 
 .input:focus + .slider {
-  box-shadow: 0 0 1px #183153;
+  box-shadow: 0 0 1px var(--color-switch-active-bg);
 }
 
 .input:checked + .slider:before {

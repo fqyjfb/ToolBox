@@ -14,8 +14,8 @@
 .login-card {
   max-width: 350px;
   background-color: var(--color-bg-primary);
-  border-radius: 40px;
-  padding: 25px 35px;
+  border-radius: var(--radius-xl);
+  padding: var(--space-5) var(--space-6);
   border: 5px solid var(--color-bg-primary);
   box-shadow: var(--shadow-login);
   margin: var(--space-5);
@@ -122,8 +122,8 @@
   width: 100%;
   background: var(--color-bg-primary);
   border: none;
-  padding: 15px 20px 15px 45px;
-  border-radius: 20px;
+  padding: var(--space-3) var(--space-5) var(--space-3) var(--space-6);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   border-inline: 2px solid transparent;
   color: var(--color-text-primary);
@@ -201,9 +201,9 @@
 
 .login-error-text {
   color: var(--color-error);
-  font-size: 11px;
-  margin-top: 5px;
-  margin-left: 5px;
+  font-size: var(--text-xs);
+  margin-top: var(--space-1);
+  margin-left: var(--space-1);
 }
 
 .login-remember-forgot {
@@ -227,7 +227,7 @@
 }
 
 .login-forgot-link {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--color-primary);
   text-decoration: none;
 }
@@ -242,9 +242,9 @@
   font-weight: bold;
   background-color: var(--color-button-primary);
   color: var(--color-bg-primary);
-  padding-block: 15px;
+  padding-block: var(--space-3);
   margin: var(--space-5) auto;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-login);
   border: none;
   transition: all 0.2s ease-in-out;
@@ -328,7 +328,7 @@
 }
 
 .login-terms-label {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--color-text-tertiary);
 }
 
@@ -361,7 +361,7 @@
 .login-social-title {
   display: block;
   text-align: center;
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--color-text-tertiary);
 }
 
@@ -408,7 +408,7 @@
 .login-agreement a {
   text-decoration: none;
   color: var(--color-primary);
-  font-size: 9px;
+  font-size: var(--text-xs);
 }
 
 .login-agreement a:hover {

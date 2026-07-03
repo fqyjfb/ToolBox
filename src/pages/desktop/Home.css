@@ -307,7 +307,7 @@
   position: absolute;
   top: var(--var);
   transition: all var(--transition-slow);
-  background-color: dodgerblue;
+  background-color: var(--color-primary);
   border-radius: 7px;
   opacity: 0;
   padding-inline: 7px;
@@ -315,7 +315,7 @@
   width: max-content;
   font-size: small;
   font-weight: bold;
-  color: white;
+  color: var(--color-bg-primary);
   white-space: nowrap;
   z-index: 20;
 }
@@ -323,7 +323,7 @@
 .favorite-item > .favorite-title::after {
   content: "";
   position: absolute;
-  border-top: 10px solid dodgerblue;
+  border-top: 10px solid var(--color-primary);
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
   top: 100%;
@@ -373,7 +373,7 @@
   position: absolute;
   top: var(--var);
   transition: all var(--transition-slow);
-  background-color: dodgerblue;
+  background-color: var(--color-primary);
   border-radius: 7px;
   opacity: 0;
   padding-inline: 7px;
@@ -381,7 +381,7 @@
   width: max-content;
   font-size: small;
   font-weight: bold;
-  color: white;
+  color: var(--color-bg-primary);
   white-space: nowrap;
   z-index: 200;
 }
@@ -389,7 +389,7 @@
 .quicklaunch-item > .quicklaunch-title::after {
   content: "";
   position: absolute;
-  border-top: 10px solid dodgerblue;
+  border-top: 10px solid var(--color-primary);
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
   top: 100%;
