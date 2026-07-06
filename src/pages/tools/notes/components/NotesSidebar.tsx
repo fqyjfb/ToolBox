@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle } from 'lucide-react';
+import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle, Table2, FileImage } from 'lucide-react';
 import ContextMenu, { ContextMenuItem } from '@/components/ui/ContextMenu';
 
 export interface FileTreeNode {
@@ -7,6 +7,7 @@ export interface FileTreeNode {
   name: string;
   type: 'file' | 'folder';
   path: string;
+  fileType?: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
   children?: FileTreeNode[];
   expanded?: boolean;
   active?: boolean;
@@ -92,7 +93,13 @@ const FileTreeItem: React.FC<{
         {node.type === 'folder' ? (
           isExpanded ? <FolderOpen className="w-4 h-4" /> : <Folder className="w-4 h-4" />
         ) : (
-          <FileText className="w-4 h-4" />
+          <>
+            {node.fileType === 'docx' && <FileText className="w-4 h-4 text-blue-600" />}
+            {node.fileType === 'xlsx' && <Table2 className="w-4 h-4 text-green-600" />}
+            {node.fileType === 'image' && <FileImage className="w-4 h-4 text-purple-600" />}
+            {node.fileType === 'txt' && <FileText className="w-4 h-4 text-gray-500" />}
+            {(!node.fileType || node.fileType === 'md') && <FileText className="w-4 h-4" />}
+          </>
         )}
 
         <span className="flex-1 truncate text-sm">{node.name}</span>
@@ -101,16 +108,16 @@ const FileTreeItem: React.FC<{
       {node.type === 'folder' && isExpanded && node.children && (
         <div>
           {node.children.map((child) => (
-            <FileTreeItem
-              key={child.id}
-              node={child}
-              depth={depth + 1}
-              selectedFile={selectedFile}
-              onSelectFile={onSelectFile}
-              onToggleFolder={onToggleFolder}
-              onContextMenu={onContextMenu}
-            />
-          ))}
+          <FileTreeItem
+            key={child.id}
+            node={child}
+            depth={depth + 1}
+            selectedFile={selectedFile}
+            onSelectFile={onSelectFile}
+            onToggleFolder={onToggleFolder}
+            onContextMenu={onContextMenu}
+          />
+        ))}
         </div>
       )}
     </>

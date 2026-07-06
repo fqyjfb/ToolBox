@@ -55,25 +55,32 @@ VITE_ENCRYPTION_KEY=your-32-character-encryption-key
 - 自动锁定：当系统空闲时间达到设定值时自动锁定
 - 锁定后需要输入密码才能解锁
 
-## 📁 项目结构配置
-
-### 目录结构
+## 📁 项目结构
 
 ```
 ToolBox/
-├── electron/         # Electron 主进程
-│   ├── window/      # 窗口管理
-│   ├── services/    # 后端服务
-│   ├── ipc/         # IPC 通信
-│   └── preload.js   # 预加载脚本
-├── python-service/  # Python OCR 服务
-├── public/          # 静态资源
-├── src/             # 前端源码
-│   ├── components/  # 通用组件
-│   ├── pages/       # 页面组件
-│   ├── services/    # 服务层
-│   └── store/       # 状态管理
-└── docs/            # 文档
+├── electron/           # Electron 主进程
+│   ├── window/         # 窗口管理（主窗口、浮动窗口、锁定窗口、托盘）
+│   ├── services/       # 后端服务（笔记服务、Python 进程服务）
+│   ├── ipc/            # IPC 通信（文件管理、OCR）
+│   ├── lib/            # 工具库（配置、图标数据、快捷键管理）
+│   ├── logs/           # 日志服务
+│   ├── main.cjs        # 主入口文件
+│   └── preload.cjs     # 预加载脚本
+├── python-service/     # Python OCR 服务
+├── public/             # 静态资源
+├── src/                # 前端源码
+│   ├── components/     # 通用组件
+│   ├── pages/          # 页面组件
+│   ├── services/       # 服务层
+│   ├── store/          # 状态管理
+│   ├── hooks/          # 自定义 Hooks
+│   ├── types/          # TypeScript 类型定义
+│   ├── utils/          # 工具函数
+│   ├── config/         # 配置文件（路由、常量）
+│   └── styles/         # 全局样式
+├── scripts/            # 脚本工具
+└── docs/               # 文档
 ```
 
 ### 配置文件

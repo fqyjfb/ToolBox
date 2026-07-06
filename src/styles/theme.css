@@ -827,3 +827,71 @@ body {
   transform: scale(1.15);
   z-index: 999;
 }
+
+.xlsx-preview .xlsx-sheet-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.xlsx-preview .xlsx-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 24px;
+  font-size: 13px;
+}
+
+.xlsx-preview .xlsx-table th,
+.xlsx-preview .xlsx-table td {
+  border: 1px solid #d1d5db;
+  padding: 4px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.xlsx-preview .xlsx-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+.xlsx-preview .xlsx-empty-cell {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  height: 1.5em;
+}
+
+.docx-preview-content {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  max-width: 800px;
+}
+
+.docx-preview-content h1, .docx-preview-content h2,
+.docx-preview-content h3 { margin-top: 1.5em; }
+.docx-preview-content p { margin: 0.8em 0; }
+.docx-preview-content table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+.docx-preview-content table th,
+.docx-preview-content table td { border: 1px solid #d1d5db; padding: 4px 8px; }
+
+.dark .xlsx-preview .xlsx-sheet-title {
+  color: #d1d5db;
+}
+
+.dark .xlsx-preview .xlsx-table th,
+.dark .xlsx-preview .xlsx-table td {
+  border-color: #374151;
+}
+
+.dark .xlsx-preview .xlsx-table th {
+  background: #374151;
+}
+
+.dark .xlsx-preview .xlsx-empty-cell {
+  border-color: #374151;
+}
+
+.dark .docx-preview-content table th,
+.dark .docx-preview-content table td {
+  border-color: #374151;
+}

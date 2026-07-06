@@ -28,6 +28,9 @@ const NotesPage: React.FC = () => {
     fileTree,
     selectedFile,
     fileContent,
+    fileMetadata,
+    filePreviewUrl,
+    officeHtmlPreview,
     loading,
     selectRootFolder,
     selectFile,
@@ -180,6 +183,9 @@ const NotesPage: React.FC = () => {
           <NotesEditor
             selectedFile={selectedFile}
             content={fileContent}
+            fileMetadata={fileMetadata}
+            filePreviewUrl={filePreviewUrl}
+            officeHtmlPreview={officeHtmlPreview}
             onContentChange={updateFileContent}
             onSave={saveFile}
             sidebarVisible={sidebarVisible}

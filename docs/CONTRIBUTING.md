@@ -49,7 +49,7 @@
 ## 🔧 开发环境
 
 ### 环境要求
-- Node.js >= 18.x
+- Node.js >= 20.x
 - pnpm >= 8.x（推荐）
 - Git
 - Python >= 3.8（OCR 功能需要）
@@ -61,21 +61,10 @@ pnpm install
 
 ### 开发模式
 ```bash
-pnpm dev          # 启动前端开发服务器
-pnpm electron:dev # 启动 Electron
+pnpm dev              # 启动前端开发服务器
+pnpm dev:electron     # 启动 Electron 模式开发服务器
+pnpm electron:dev     # 启动 Electron 开发模式
 ```
-
-## 🧪 测试
-
-### 运行测试
-```bash
-pnpm test
-```
-
-### 测试规范
-- 新增功能需要添加单元测试
-- 修复 Bug 需要添加回归测试
-- 测试覆盖率应 ≥ 80%
 
 ## 📦 构建
 

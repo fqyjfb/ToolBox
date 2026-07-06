@@ -107,6 +107,9 @@ contextBridge.exposeInMainWorld('electron', {
   ipInfo: {
     query: (ip) => ipcRenderer.invoke('ip-info:query', ip),
   },
+  systemInfo: {
+    get: () => ipcRenderer.invoke('system-info:get'),
+  },
   python: {
     start: () => ipcRenderer.invoke('python:start'),
     stop: () => ipcRenderer.invoke('python:stop'),
@@ -141,6 +144,8 @@ contextBridge.exposeInMainWorld('electron', {
     deleteItem: (itemPath) => ipcRenderer.invoke('notes-delete-item', itemPath),
     indexAll: (rootPath) => ipcRenderer.invoke('notes-index-all', rootPath),
     openFileInFolder: (filePath) => ipcRenderer.invoke('notes-open-file-in-folder', filePath),
+    readFileAsBuffer: (filePath) => ipcRenderer.invoke('notes-read-file-as-buffer', filePath),
+    convertOfficeToHtml: (filePath) => ipcRenderer.invoke('notes-convert-office-to-html', filePath),
   },
   lock: {
     getStatus: () => ipcRenderer.invoke('lock:getStatus'),

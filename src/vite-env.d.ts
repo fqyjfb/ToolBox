@@ -29,6 +29,19 @@ interface AppVersionInfo {
   download: string;
 }
 
+interface SystemInfo {
+  os_name: string;
+  os_version: string;
+  os_arch: string;
+  computer_name: string;
+  user_name: string;
+  cpu_info: string;
+  cpu_cores: number;
+  total_memory: number;
+  available_memory: number;
+  uptime_seconds: number;
+}
+
 interface UpdateResult {
   code: number;
   msg: string;
@@ -63,6 +76,7 @@ interface NotesFileTreeNode {
   name: string;
   type: 'file' | 'folder';
   path: string;
+  fileType?: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
   children?: NotesFileTreeNode[];
   expanded?: boolean;
   active?: boolean;
@@ -247,11 +261,13 @@ declare interface Window {
       createNote: (parentPath: string | null, name: string, content?: string) => Promise<NotesCreateResult>;
       createNoteForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy', content?: string) => Promise<NotesCreateResult>;
       readFile: (filePath: string) => Promise<NotesReadResult>;
+      readFileAsBuffer: (filePath: string) => Promise<{ success: boolean; base64?: string; mimeType?: string; error?: string }>;
       saveFile: (filePath: string, content: string) => Promise<NotesSaveResult>;
       renameItem: (oldPath: string, newName: string) => Promise<NotesRenameResult>;
       deleteItem: (itemPath: string) => Promise<NotesDeleteResult>;
       indexAll: (rootPath: string) => Promise<{ success: boolean; error?: string }>;
       openFileInFolder: (filePath: string) => Promise<{ success: boolean; error?: string }>;
+      convertOfficeToHtml: (filePath: string) => Promise<{ success: boolean; html?: string; error?: string }>;
     };
     log: {
       open: () => void;
@@ -334,6 +350,9 @@ declare interface Window {
         error?: boolean;
         reason?: string;
       }>;
+    };
+    systemInfo: {
+      get: () => Promise<SystemInfo>;
     };
   };
 }

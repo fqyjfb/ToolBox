@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import path from 'path';
 import { logError } from '../services/loggerService';
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
 
@@ -7,9 +8,16 @@ export interface FileTreeNode {
   name: string;
   type: 'file' | 'folder';
   path: string;
+  fileType?: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
   children?: FileTreeNode[];
   expanded?: boolean;
   active?: boolean;
+}
+
+export interface FileMetadata {
+  filePath: string;
+  fileType: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  mimeType?: string;
 }
 
 export interface NotesState {
@@ -18,6 +26,9 @@ export interface NotesState {
   fileTree: FileTreeNode[];
   selectedFile: FileTreeNode | null;
   fileContent: string;
+  fileMetadata: FileMetadata | null;
+  filePreviewUrl: string | null;
+  officeHtmlPreview: string | null;
   loading: boolean;
   error: string | null;
 }
@@ -47,6 +58,9 @@ export function useNotes(): UseNotesReturn {
   const [fileTree, setFileTree] = useState<FileTreeNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileTreeNode | null>(null);
   const [fileContent, setFileContent] = useState('');
+  const [fileMetadata, setFileMetadata] = useState<FileMetadata | null>(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const [officeHtmlPreview, setOfficeHtmlPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -110,19 +124,34 @@ export function useNotes(): UseNotesReturn {
             if (lastOpenedFile) {
               const fileNode = findFileInTree(lastOpenedFile, tree);
               if (fileNode) {
-                const result = await window.electron.notes.readFile(fileNode.path);
-                if (result.success && result.content !== undefined) {
-                  setFileContent(result.content);
-                  setSelectedFile(fileNode);
+                const fileType = fileNode.fileType;
+                setSelectedFile(fileNode);
+                setFileMetadata({ filePath: fileNode.path, fileType: fileType || 'md' });
 
-                  const parentFolders = getParentFolders(fileNode.path, root);
-                  if (parentFolders.length > 0) {
-                    setExpandedFolders((prev) => {
-                      const newSet = new Set(prev);
-                      parentFolders.forEach((folder) => newSet.add(folder));
-                      return newSet;
-                    });
+                if (fileType === 'md' || fileType === 'txt') {
+                  const result = await window.electron.notes.readFile(fileNode.path);
+                  if (result.success && result.content !== undefined) {
+                    setFileContent(result.content);
                   }
+                } else if (fileType === 'image' || fileType === 'pdf') {
+                  const result = await window.electron.notes.readFileAsBuffer(fileNode.path);
+                  if (result.success && result.base64) {
+                    setFilePreviewUrl(`data:${result.mimeType};base64,${result.base64}`);
+                  }
+                } else if (fileType === 'docx' || fileType === 'xlsx') {
+                  const result = await window.electron.notes.convertOfficeToHtml(fileNode.path);
+                  if (result.success && result.html) {
+                    setOfficeHtmlPreview(result.html);
+                  }
+                }
+
+                const parentFolders = getParentFolders(fileNode.path, root);
+                if (parentFolders.length > 0) {
+                  setExpandedFolders((prev) => {
+                    const newSet = new Set(prev);
+                    parentFolders.forEach((folder) => newSet.add(folder));
+                    return newSet;
+                  });
                 }
               } else {
                 localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
@@ -215,16 +244,38 @@ export function useNotes(): UseNotesReturn {
 
     try {
       setLoading(true);
-      const result = await window.electron.notes.readFile(file.path);
 
-      if (result.success && result.content !== undefined) {
-        setFileContent(result.content);
-        setSelectedFile(file);
-        localStorageService.setString(STORAGE_KEYS.NOTES_LAST_OPENED_FILE, file.path);
-      } else {
-        setError(result.error || '读取文件失败');
+      const fileType = file.fileType;
+      setFileContent('');
+      setFileMetadata({ filePath: file.path, fileType: fileType || 'md' });
+      setFilePreviewUrl(null);
+      setOfficeHtmlPreview(null);
+
+      if (fileType === 'md' || fileType === 'txt') {
+        const result = await window.electron.notes.readFile(file.path);
+        if (result.success && result.content !== undefined) {
+          setFileContent(result.content);
+        } else {
+          setError(result.error || '读取文件失败');
+        }
+      } else if (fileType === 'image' || fileType === 'pdf') {
+        const result = await window.electron.notes.readFileAsBuffer(file.path);
+        if (result.success && result.base64) {
+          setFilePreviewUrl(`data:${result.mimeType};base64,${result.base64}`);
+        } else {
+          setError(result.error || '读取文件失败');
+        }
+      } else if (fileType === 'docx' || fileType === 'xlsx') {
+        const result = await window.electron.notes.convertOfficeToHtml(file.path);
+        if (result.success && result.html) {
+          setOfficeHtmlPreview(result.html);
+        } else {
+          setError(result.error || '转换文件失败');
+        }
       }
 
+      setSelectedFile(file);
+      localStorageService.setString(STORAGE_KEYS.NOTES_LAST_OPENED_FILE, file.path);
       setLoading(false);
     } catch (err) {
       logError('读取文件失败', 'useNotes', err as Error);
@@ -398,7 +449,7 @@ export function useNotes(): UseNotesReturn {
             setSelectedFile({
               ...selectedFile,
               id: result.newPath,
-              name: newName.endsWith('.md') ? newName : `${newName}.md`,
+              name: path.basename(result.newPath),
               path: result.newPath,
             });
           } else if (selectedFile?.path && result.newPath) {
@@ -440,6 +491,9 @@ export function useNotes(): UseNotesReturn {
           if (selectedFile?.path === itemPath) {
             setSelectedFile(null);
             setFileContent('');
+            setFileMetadata(null);
+            setFilePreviewUrl(null);
+            setOfficeHtmlPreview(null);
             localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
           }
 
@@ -494,6 +548,9 @@ export function useNotes(): UseNotesReturn {
 
       setSelectedFile(null);
       setFileContent('');
+      setFileMetadata(null);
+      setFilePreviewUrl(null);
+      setOfficeHtmlPreview(null);
       localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
 
       const result = await window.electron.notes.selectFolder();
@@ -554,6 +611,9 @@ export function useNotes(): UseNotesReturn {
     fileTree: updateTreeExpandState(fileTree),
     selectedFile,
     fileContent,
+    fileMetadata,
+    filePreviewUrl,
+    officeHtmlPreview,
     loading,
     error,
     selectRootFolder,

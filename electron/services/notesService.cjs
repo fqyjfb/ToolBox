@@ -2,6 +2,8 @@ const { dialog, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const fileTypeUtils = require('./fileTypeUtils.cjs');
+const officePreview = require('./officePreview.cjs');
 
 const SETTINGS_FILE_NAME = 'notes_settings.json';
 
@@ -115,7 +117,7 @@ function scanFolder(rootPath) {
         if (item.isDirectory()) {
           folderCount++;
           scanDir(itemPath);
-        } else if (item.isFile() && item.name.endsWith('.md')) {
+        } else if (item.isFile() && fileTypeUtils.getFileType(itemPath)) {
           fileCount++;
         }
       }
@@ -164,12 +166,16 @@ function getFileTree() {
           expanded: false,
         };
         nodes.push(node);
-      } else if (item.isFile() && item.name.endsWith('.md')) {
+      } else if (item.isFile()) {
+        const fileType = fileTypeUtils.getFileType(itemPath);
+        if (!fileType) continue;
+
         const node = {
           id: itemPath,
           name: item.name,
           type: 'file',
           path: itemPath,
+          fileType,
         };
         nodes.push(node);
       }
@@ -340,6 +346,11 @@ function readFile(filePath) {
 
 function saveFile(filePath, content) {
   try {
+    const fileType = fileTypeUtils.getFileType(filePath);
+    if (fileType && !fileTypeUtils.isTextFile(filePath)) {
+      return { success: false, error: '不支持直接编辑此文件类型' };
+    }
+
     const dirPath = path.dirname(filePath);
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
@@ -361,9 +372,11 @@ function renameItem(oldPath, newName) {
     const parentPath = path.dirname(oldPath);
 
     const isFile = fs.existsSync(oldPath) && fs.statSync(oldPath).isFile();
+    const oldExt = path.extname(oldPath).toLowerCase();
+
     let finalName = newName;
-    if (isFile && !newName.endsWith('.md')) {
-      finalName = `${newName}.md`;
+    if (isFile && oldExt && !path.extname(newName)) {
+      finalName = `${newName}${oldExt}`;
     }
 
     const newPath = path.join(parentPath, finalName);
@@ -448,6 +461,43 @@ function openFileInFolder(filePath) {
   }
 }
 
+function readFileAsBuffer(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: '文件不存在' };
+    }
+    const buffer = fs.readFileSync(filePath);
+    const base64 = buffer.toString('base64');
+    return { success: true, base64, mimeType: fileTypeUtils.getMimeType(filePath) };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : '读取失败' };
+  }
+}
+
+function convertOfficeToHtml(filePath) {
+  return new Promise((resolve) => {
+    const fileType = fileTypeUtils.getFileType(filePath);
+    if (!fileType) {
+      return resolve({ success: false, error: '不支持的文件类型' });
+    }
+
+    if (fileType === 'docx') {
+      const ext = path.extname(filePath).toLowerCase();
+      if (ext === '.doc') {
+        officePreview.docToHtml(filePath).then(resolve);
+      } else {
+        officePreview.docxToHtml(filePath).then(resolve);
+      }
+    } else if (fileType === 'xlsx') {
+      officePreview.xlsxToHtml(filePath).then(resolve);
+    } else {
+      resolve({ success: false, error: '不是 Office 文件' });
+    }
+  });
+}
+
+
+
 module.exports = {
   getSetting,
   saveSetting,
@@ -468,4 +518,6 @@ module.exports = {
   hasRootPath,
   indexAllNotes,
   openFileInFolder,
+  readFileAsBuffer,
+  convertOfficeToHtml,
 };

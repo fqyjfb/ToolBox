@@ -6,6 +6,7 @@ const { execFile } = require('child_process');
 const { loadSettings, saveSettings } = require('../lib/config.cjs');
 const ShortcutManager = require('../lib/shortcutManager.cjs');
 const notesService = require('../services/notesService.cjs');
+const systemInfoService = require('../services/systemInfoService.cjs');
 const { getFloatWindow } = require('./floatWindow.cjs');
 const { getFileIcon, isSupportedFileType, getShortcutTarget, getCacheFilePath } = require('../lib/iconExtractor.cjs');
 
@@ -829,6 +830,8 @@ const registerIpcHandlers = () => {
   ipcMain.handle('notes-delete-item', (event, itemPath) => notesService.deleteItem(itemPath));
   ipcMain.handle('notes-index-all', (event, rootPath) => notesService.indexAllNotes(rootPath));
   ipcMain.handle('notes-open-file-in-folder', (event, filePath) => notesService.openFileInFolder(filePath));
+  ipcMain.handle('notes-read-file-as-buffer', (event, filePath) => notesService.readFileAsBuffer(filePath));
+  ipcMain.handle('notes-convert-office-to-html', async (event, filePath) => notesService.convertOfficeToHtml(filePath));
 
   ipcMain.handle('ip-info:query', async (event, ip) => {
     const https = require('https');
@@ -872,6 +875,10 @@ const registerIpcHandlers = () => {
         resolve({ error: true, reason: error.message });
       });
     });
+  });
+
+  ipcMain.handle('system-info:get', () => {
+    return systemInfoService.getSystemInfo();
   });
 };
 

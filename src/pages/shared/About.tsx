@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { APP_VERSION, compareVersions } from '../../utils/version';
 import { useToastStore } from '../../store/toastStore';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Monitor, HardDrive, Cpu, User, Clock, RefreshCw } from 'lucide-react';
 import GitHubButton from '../../components/ui/GitHubButton';
 import UpdateButton from '../../components/ui/UpdateButton';
+import { formatBytes } from '../../utils/format';
 
 const About: React.FC = () => {
   const { addToast } = useToastStore();
@@ -14,11 +15,14 @@ const About: React.FC = () => {
   const [downloadUrl, setDownloadUrl] = useState<string>('');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [hasUpdate, setHasUpdate] = useState(false);
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
+  const [loadingSystemInfo, setLoadingSystemInfo] = useState(true);
   const isElectron = typeof window !== 'undefined' && !!window.electron;
 
   useEffect(() => {
     if (isElectron) {
       loadVersionInfo();
+      loadSystemInfo();
     }
   }, [isElectron]);
 
@@ -33,6 +37,19 @@ const About: React.FC = () => {
       setDownloadUrl(info.download);
     } catch (error) {
       console.error('Failed to load version info:', error);
+    }
+  };
+
+  const loadSystemInfo = async () => {
+    const electron = window.electron;
+    if (!electron) return;
+    try {
+      const info = await electron.systemInfo.get();
+      setSystemInfo(info);
+    } catch (error) {
+      console.error('Failed to load system info:', error);
+    } finally {
+      setLoadingSystemInfo(false);
     }
   };
 
@@ -125,6 +142,89 @@ const About: React.FC = () => {
             </div>
           )}
         </div>
+        {isElectron && (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Monitor className="w-3.5 h-3.5" />
+              系统信息
+            </h3>
+            {loadingSystemInfo ? (
+              <div className="flex items-center justify-center py-4">
+                <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" />
+                <span className="ml-2 text-sm text-gray-500">正在获取系统信息...</span>
+              </div>
+            ) : systemInfo ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">操作系统</span>
+                  </div>
+                  <span className="text-sm text-gray-900 dark:text-gray-100 truncate max-w-[200px]" title={systemInfo.os_version}>
+                    {systemInfo.os_version}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <HardDrive className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">系统架构</span>
+                  </div>
+                  <span className="text-sm text-gray-900 dark:text-gray-100">{systemInfo.os_arch}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">处理器</span>
+                  </div>
+                  <span className="text-sm text-gray-900 dark:text-gray-100 truncate max-w-[200px]" title={systemInfo.cpu_info}>
+                    {systemInfo.cpu_info}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">CPU 核心数</span>
+                  </div>
+                  <span className="text-sm text-gray-900 dark:text-gray-100">{systemInfo.cpu_cores} 核</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <HardDrive className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">内存</span>
+                  </div>
+                  <span className="text-sm text-gray-900 dark:text-gray-100">
+                    {formatBytes(systemInfo.available_memory)} 可用 / {formatBytes(systemInfo.total_memory)} 总计
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">计算机名</span>
+                  </div>
+                  <span className="text-sm text-gray-900 dark:text-gray-100">{systemInfo.computer_name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">当前用户</span>
+                  </div>
+                  <span className="text-sm text-gray-900 dark:text-gray-100">{systemInfo.user_name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">系统运行时间</span>
+                  </div>
+                  <span className="text-sm text-gray-900 dark:text-gray-100">
+                    {Math.floor(systemInfo.uptime_seconds / 86400)} 天 {Math.floor((systemInfo.uptime_seconds % 86400) / 3600)} 小时 {Math.floor((systemInfo.uptime_seconds % 3600) / 60)} 分钟
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-4">无法获取系统信息</p>
+            )}
+          </div>
+        )}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-center gap-3">
             <UpdateButton

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FileText, Save, Edit3, PanelLeft, FolderPlus, FilePlus } from 'lucide-react';
+import { FileText, Save, Edit3, PanelLeft, FolderPlus, FilePlus, FileText as FileWord, Table2, FileImage } from 'lucide-react';
 import WMarkdownEditor from '@/components/WMarkdownEditor';
 import { useThemeStore } from '@/store/themeStore';
 
@@ -8,14 +8,24 @@ interface FileTreeNode {
   name: string;
   type: 'file' | 'folder';
   path: string;
+  fileType?: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
   children?: FileTreeNode[];
   expanded?: boolean;
   active?: boolean;
 }
 
+interface FileMetadata {
+  filePath: string;
+  fileType: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  mimeType?: string;
+}
+
 interface NotesEditorProps {
   selectedFile: FileTreeNode | null;
   content: string;
+  fileMetadata: FileMetadata | null;
+  filePreviewUrl: string | null;
+  officeHtmlPreview: string | null;
   onContentChange: (content: string) => void;
   onSave: (content: string) => Promise<boolean>;
   sidebarVisible?: boolean;
@@ -27,6 +37,9 @@ interface NotesEditorProps {
 const NotesEditor: React.FC<NotesEditorProps> = ({
   selectedFile,
   content,
+  fileMetadata,
+  filePreviewUrl,
+  officeHtmlPreview,
   onContentChange,
   onSave,
   sidebarVisible = true,
@@ -105,6 +118,99 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     [selectedFile, onSave]
   );
 
+  const getFileTypeLabel = () => {
+    if (!fileMetadata) return '';
+    const labels = {
+      md: 'Markdown',
+      txt: '纯文本',
+      docx: 'Word 文档',
+      xlsx: 'Excel 表格',
+      image: '图片',
+      pdf: 'PDF 文档',
+    };
+    return labels[fileMetadata.fileType] || '';
+  };
+
+  const getFileIcon = () => {
+    if (!fileMetadata) return <FileText className="h-5 w-5 text-primary" />;
+    switch (fileMetadata.fileType) {
+      case 'md':
+        return <FileText className="h-5 w-5 text-primary" />;
+      case 'txt':
+        return <FileText className="h-5 w-5 text-gray-500" />;
+      case 'docx':
+        return <FileWord className="h-5 w-5 text-blue-600" />;
+      case 'xlsx':
+        return <Table2 className="h-5 w-5 text-green-600" />;
+      case 'image':
+        return <FileImage className="h-5 w-5 text-purple-600" />;
+      case 'pdf':
+        return <FileText className="h-5 w-5 text-orange-600" />;
+      default:
+        return <FileText className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const renderEditor = () => {
+    const fileType = fileMetadata?.fileType;
+
+    if (fileType === 'image' && filePreviewUrl) {
+      return (
+        <div className="flex flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900 overflow-auto p-4">
+          <img
+            src={filePreviewUrl}
+            alt={selectedFile?.name || 'preview'}
+            className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+          />
+        </div>
+      );
+    }
+
+    if (fileType === 'pdf' && filePreviewUrl) {
+      return (
+        <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-auto" style={{ minHeight: '100%' }}>
+          <embed
+            src={filePreviewUrl}
+            type="application/pdf"
+            className="w-full"
+            style={{ height: '100vh' }}
+            title={selectedFile?.name || 'PDF Preview'}
+          />
+        </div>
+      );
+    }
+
+    if (fileType === 'docx' || fileType === 'xlsx') {
+      if (officeHtmlPreview) {
+        return (
+          <div
+            className="flex-1 overflow-auto bg-white dark:bg-gray-900 p-6"
+            style={{ minHeight: '100%' }}
+            dangerouslySetInnerHTML={{ __html: officeHtmlPreview }}
+          />
+        );
+      }
+      return (
+        <div className="flex flex-1 items-center justify-center text-gray-400">
+          加载中...
+        </div>
+      );
+    }
+
+    return (
+      <WMarkdownEditor
+        value={content}
+        onChange={handleContentChange}
+        onSave={handleSave}
+        onUpload={handleUpload}
+        mode="ir"
+        height="100%"
+        placeholder="开始编写内容..."
+        theme={isDark ? 'dark' : 'classic'}
+      />
+    );
+  };
+
   if (!selectedFile) {
     return (
       <section className="flex flex-1 flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -153,10 +259,15 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
                 <PanelLeft className="h-4 w-4" />
               </button>
             )}
-            <FileText className="h-5 w-5 text-primary" />
+            {getFileIcon()}
             <span className="font-medium text-gray-900 dark:text-white">
               {selectedFile.name}
             </span>
+            {getFileTypeLabel() && (
+              <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 rounded">
+                {getFileTypeLabel()}
+              </span>
+            )}
             {isDirty && (
               <span className="text-xs text-warning">● 未保存</span>
             )}
@@ -184,27 +295,28 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
           </div>
         </div>
 
-        <button
-          className="flex items-center rounded-lg bg-primary px-2 py-1.5 text-white transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-          onClick={() => handleSave(content)}
-          disabled={!isDirty || isSaving}
-          title="保存"
-        >
-          <Save className="h-4 w-4" />
-        </button>
+        {(fileMetadata?.fileType === 'md' || fileMetadata?.fileType === 'txt') ? (
+          <button
+            className="flex items-center rounded-lg bg-primary px-2 py-1.5 text-white transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => handleSave(content)}
+            disabled={!isDirty || isSaving}
+            title="保存"
+          >
+            <Save className="h-4 w-4" />
+          </button>
+        ) : (
+          <button
+            className="flex items-center gap-1 rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-xs text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => selectedFile && window.electron?.openFile(selectedFile.path)}
+            title="在外部打开"
+          >
+            外部打开
+          </button>
+        )}
       </div>
 
       <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
-        <WMarkdownEditor
-          value={content}
-          onChange={handleContentChange}
-          onSave={handleSave}
-          onUpload={handleUpload}
-          mode="ir"
-          height="100%"
-          placeholder="开始编写您的笔记..."
-          theme={isDark ? 'dark' : 'classic'}
-        />
+        {renderEditor()}
       </div>
     </section>
   );
