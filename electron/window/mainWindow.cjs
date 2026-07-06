@@ -368,6 +368,36 @@ const registerIpcHandlers = () => {
   const { ipcMain } = require('electron');
   const { loadShortcuts, saveShortcuts, loadFloatConfig, saveFloatConfig, defaultFloatConfig } = require('../lib/config.cjs');
 
+  const getUpdateErrorMessage = (error) => {
+    const errorStr = error instanceof Error ? error.message : String(error);
+    
+    if (errorStr.includes('network') || errorStr.includes('connect')) {
+      return '网络连接失败，请检查网络后重试';
+    }
+    
+    if (errorStr.includes('timeout')) {
+      return '连接超时，请稍后重试';
+    }
+    
+    if (errorStr.includes('404') || errorStr.includes('not found')) {
+      return '未找到更新信息，请稍后重试';
+    }
+    
+    if (errorStr.includes('permission') || errorStr.includes('access denied')) {
+      return '没有写入权限，请以管理员身份运行';
+    }
+    
+    if (errorStr.includes('disk') || errorStr.includes('space')) {
+      return '磁盘空间不足，请清理后重试';
+    }
+    
+    if (errorStr.includes('EOF')) {
+      return '下载文件不完整，请重试';
+    }
+    
+    return errorStr || '更新失败，请稍后重试';
+  };
+
   ipcMain.on('window-minimize', () => { mainWindow.minimize(); });
   ipcMain.on('window-maximize', () => {
     if (mainWindow.isMaximized()) {
@@ -634,32 +664,70 @@ const registerIpcHandlers = () => {
   ipcMain.handle('get-version', async () => {
     let newVersion = '未知';
     let downloadUrl = 'https://github.com/fqyjfb/ToolBox';
+    
     try {
       const https = require('https');
       const options = {
         hostname: 'api.github.com',
         path: '/repos/fqyjfb/ToolBox/releases/latest',
-        headers: { 'User-Agent': 'ToolBox-App' }
+        headers: { 'User-Agent': 'ToolBox-App' },
+        timeout: 10000
       };
+      
       const response = await new Promise((resolve, reject) => {
-        https.get(options, (res) => {
+        const req = https.get(options, (res) => {
+          if (res.statusCode === 301 || res.statusCode === 302) {
+            const redirectUrl = res.headers.location;
+            if (!redirectUrl) {
+              reject(new Error('重定向URL无效'));
+              return;
+            }
+            res.destroy();
+            const redirectOptions = {
+              hostname: new URL(redirectUrl).hostname,
+              path: new URL(redirectUrl).pathname + new URL(redirectUrl).search,
+              headers: { 'User-Agent': 'ToolBox-App' },
+              timeout: 10000
+            };
+            https.get(redirectOptions, (redirectRes) => {
+              let data = '';
+              redirectRes.on('data', (chunk) => { data += chunk; });
+              redirectRes.on('end', () => resolve(data));
+              redirectRes.on('error', reject);
+            }).on('error', reject);
+            return;
+          }
+          
           let data = '';
           res.on('data', (chunk) => { data += chunk; });
           res.on('end', () => resolve(data));
           res.on('error', reject);
-        }).on('error', reject);
+        });
+        
+        req.on('timeout', () => {
+          req.destroy();
+          reject(new Error('请求超时'));
+        });
+        
+        req.on('error', reject);
       });
+      
       const release = JSON.parse(response);
+      
       if (release.tag_name) {
         newVersion = release.tag_name.replace('v', '');
       }
+      
       if (release.assets && release.assets.length > 0) {
         const installer = release.assets.find(a => a.name.endsWith('.exe'));
         if (installer) {
           downloadUrl = installer.browser_download_url;
         }
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error('Failed to check for updates:', getUpdateErrorMessage(error));
+    }
+    
     return {
       version: require('electron').app.getVersion(),
       electron: process.versions.electron,
@@ -673,37 +741,75 @@ const registerIpcHandlers = () => {
   ipcMain.handle('download-update', async (event, url) => {
     try {
       const https = require('https');
+      const http = require('http');
       const downloadPath = path.join(require('electron').app.getPath('downloads'), 'ToolBox-Setup.exe');
+      
       return new Promise((resolve, reject) => {
-        https.get(url, (response) => {
-          if (response.statusCode !== 200) {
-            reject({ code: -1, msg: `下载失败，HTTP状态码: ${response.statusCode}` });
-            return;
-          }
-          const totalSize = parseInt(response.headers['content-length'] || '0', 10);
-          let downloadedSize = 0;
-          const file = fs.createWriteStream(downloadPath);
-          response.on('data', (chunk) => {
-            downloadedSize += chunk.length;
-            if (totalSize > 0) {
-              const progress = Math.round((downloadedSize / totalSize) * 100);
-              event.sender.send('update-download-progress', progress);
+        const download = (currentUrl) => {
+          const protocol = currentUrl.startsWith('https') ? https : http;
+          const parsedUrl = new URL(currentUrl);
+          
+          const options = {
+            hostname: parsedUrl.hostname,
+            path: parsedUrl.pathname + parsedUrl.search,
+            headers: {
+              'User-Agent': 'ToolBox-App',
+              'Accept': '*/*'
+            },
+            timeout: 30000
+          };
+          
+          protocol.get(options, (response) => {
+            if (response.statusCode === 301 || response.statusCode === 302) {
+              const redirectUrl = response.headers.location;
+              if (!redirectUrl) {
+                reject({ code: -1, msg: '重定向URL无效' });
+                return;
+              }
+              response.destroy();
+              download(redirectUrl);
+              return;
             }
-          });
-          response.pipe(file);
-          file.on('finish', () => {
-            file.close();
-            event.sender.send('update-download-progress', 100);
-            resolve({ code: 0, msg: '下载完成', path: downloadPath });
-          });
-          file.on('error', (err) => {
+            
+            if (response.statusCode !== 200) {
+              reject({ code: -1, msg: `下载失败，HTTP状态码: ${response.statusCode}` });
+              return;
+            }
+            
+            const totalSize = parseInt(response.headers['content-length'] || '0', 10);
+            let downloadedSize = 0;
+            const file = fs.createWriteStream(downloadPath);
+            
+            response.on('data', (chunk) => {
+              downloadedSize += chunk.length;
+              if (totalSize > 0) {
+                const progress = Math.round((downloadedSize / totalSize) * 100);
+                event.sender.send('update-download-progress', progress);
+              }
+            });
+            
+            response.pipe(file);
+            
+            file.on('finish', () => {
+              file.close();
+              event.sender.send('update-download-progress', 100);
+              resolve({ code: 0, msg: '下载完成', path: downloadPath });
+            });
+            
+            file.on('error', (err) => {
+              fs.unlink(downloadPath, () => {});
+              reject({ code: -1, msg: `文件写入失败: ${err.message}` });
+            });
+          }).on('error', (err) => {
             fs.unlink(downloadPath, () => {});
-            reject({ code: -1, msg: `文件写入失败: ${err.message}` });
+            reject({ code: -1, msg: `网络请求失败: ${err.message}` });
+          }).on('timeout', () => {
+            fs.unlink(downloadPath, () => {});
+            reject({ code: -1, msg: '下载超时，请重试' });
           });
-        }).on('error', (err) => {
-          fs.unlink(downloadPath, () => {});
-          reject({ code: -1, msg: `网络请求失败: ${err.message}` });
-        });
+        };
+        
+        download(url);
       });
     } catch (error) {
       return { code: -1, msg: `下载失败: ${error.message}` };
@@ -717,7 +823,10 @@ const registerIpcHandlers = () => {
           if (error) {
             reject({ code: -1, msg: `安装启动失败: ${error.message}` });
           } else {
-            resolve({ code: 0, msg: '安装程序已启动' });
+            setTimeout(() => {
+              require('electron').app.exit(0);
+            }, 500);
+            resolve({ code: 0, msg: '安装程序已启动，请等待安装完成' });
           }
         });
       });

@@ -6,15 +6,19 @@ import GitHubButton from '../../components/ui/GitHubButton';
 import UpdateButton from '../../components/ui/UpdateButton';
 import { formatBytes } from '../../utils/format';
 
+type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'installing' | 'error';
+
 const About: React.FC = () => {
   const { addToast } = useToastStore();
   const [webVersion] = useState(APP_VERSION);
   const [electronVersion, setElectronVersion] = useState<string | null>(null);
   const [chromeVersion, setChromeVersion] = useState<string | null>(null);
-  const [newVersion, setNewVersion] = useState<string>('');
-  const [downloadUrl, setDownloadUrl] = useState<string>('');
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
-  const [hasUpdate, setHasUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
+  const [latestVersion, setLatestVersion] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
+  const [downloadPath, setDownloadPath] = useState('');
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [errorMessage, setErrorMessage] = useState('');
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [loadingSystemInfo, setLoadingSystemInfo] = useState(true);
   const isElectron = typeof window !== 'undefined' && !!window.electron;
@@ -26,6 +30,24 @@ const About: React.FC = () => {
     }
   }, [isElectron]);
 
+  useEffect(() => {
+    if (isElectron && updateStatus === 'downloading') {
+      const handleProgress = (progress: number) => {
+        setDownloadProgress(progress);
+      };
+      
+      if (window.electron?.onDownloadProgress) {
+        window.electron.onDownloadProgress(handleProgress);
+      }
+      
+      return () => {
+        if (window.electron?.onDownloadProgress) {
+          window.electron.onDownloadProgress(() => {});
+        }
+      };
+    }
+  }, [updateStatus, isElectron]);
+
   const loadVersionInfo = async () => {
     const electron = window.electron;
     if (!electron) return;
@@ -33,8 +55,6 @@ const About: React.FC = () => {
       const info = await electron.getVersion();
       setElectronVersion(info.electron);
       setChromeVersion(info.chrome);
-      setNewVersion(info.newVersion);
-      setDownloadUrl(info.download);
     } catch (error) {
       console.error('Failed to load version info:', error);
     }
@@ -58,36 +78,98 @@ const About: React.FC = () => {
       addToast({ type: 'info', message: '网页版无需检查更新' });
       return;
     }
-    setIsCheckingUpdate(true);
-    addToast({ type: 'info', message: '正在检查更新...' });
+    
+    setUpdateStatus('checking');
+    setErrorMessage('');
 
     try {
       const electron = window.electron;
       if (electron) {
         const info = await electron.getVersion();
+        
         setElectronVersion(info.electron);
         setChromeVersion(info.chrome);
-        setNewVersion(info.newVersion);
+        setLatestVersion(info.newVersion);
         setDownloadUrl(info.download);
 
         const currentVersion = APP_VERSION;
-        const latestVersion = info.newVersion;
-        const needsUpdate = latestVersion !== '未知' && compareVersions(currentVersion, latestVersion) < 0;
-
+        const needsUpdate = info.newVersion !== '未知' && 
+          compareVersions(currentVersion, info.newVersion) < 0;
+        
         if (needsUpdate) {
-          setHasUpdate(true);
-          addToast({ type: 'success', message: `发现新版本: ${latestVersion}` });
+          setUpdateStatus('available');
+          addToast({ type: 'success', message: `发现新版本: ${info.newVersion}` });
         } else {
-          setHasUpdate(false);
+          setUpdateStatus('idle');
           addToast({ type: 'success', message: '当前已是最新版本' });
         }
       }
     } catch (error) {
       console.error('Failed to check for updates:', error);
+      setUpdateStatus('error');
+      setErrorMessage('检查更新失败');
       addToast({ type: 'error', message: '检查更新失败' });
-    } finally {
-      setIsCheckingUpdate(false);
     }
+  };
+
+  const handleDownload = async () => {
+    if (!downloadUrl) return;
+    
+    setUpdateStatus('downloading');
+    setDownloadProgress(0);
+    
+    try {
+      const electron = window.electron;
+      if (electron) {
+        const result = await electron.downloadUpdate(downloadUrl);
+        
+        if (result.code === 0) {
+          setDownloadPath(result.path || '');
+          setUpdateStatus('ready');
+          addToast({ type: 'success', message: '更新包下载完成' });
+        } else {
+          setUpdateStatus('error');
+          setErrorMessage(result.msg);
+          addToast({ type: 'error', message: result.msg });
+        }
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      setUpdateStatus('error');
+      setErrorMessage('下载失败');
+      addToast({ type: 'error', message: '下载失败' });
+    }
+  };
+
+  const handleInstall = async () => {
+    if (!downloadPath) return;
+    
+    setUpdateStatus('installing');
+    
+    try {
+      const electron = window.electron;
+      if (electron) {
+        const result = await electron.installUpdate(downloadPath);
+        
+        if (result.code === 0) {
+          addToast({ type: 'success', message: result.msg });
+        } else {
+          setUpdateStatus('error');
+          setErrorMessage(result.msg);
+          addToast({ type: 'error', message: result.msg });
+        }
+      }
+    } catch (error) {
+      console.error('Install failed:', error);
+      setUpdateStatus('error');
+      setErrorMessage('安装失败');
+      addToast({ type: 'error', message: '安装失败' });
+    }
+  };
+
+  const handleRetry = () => {
+    setErrorMessage('');
+    checkForUpdates();
   };
 
   const openDownloadPage = () => {
@@ -112,7 +194,7 @@ const About: React.FC = () => {
             <span className="text-xs text-gray-500 dark:text-gray-400">版本</span>
             <div className="flex items-center gap-2">
               <span className="text-sm">{webVersion}</span>
-              {hasUpdate && (
+              {updateStatus === 'available' && (
                 <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full">
                   有更新
                 </span>
@@ -228,17 +310,21 @@ const About: React.FC = () => {
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-center gap-3">
             <UpdateButton
-              isChecking={isCheckingUpdate}
-              hasUpdate={hasUpdate}
+              status={updateStatus}
+              latestVersion={latestVersion}
+              downloadProgress={downloadProgress}
               onCheck={checkForUpdates}
-              downloadUrl={downloadUrl}
+              onDownload={handleDownload}
+              onInstall={handleInstall}
+              onRetry={handleRetry}
+              errorMessage={errorMessage}
             />
             <GitHubButton />
           </div>
-          {hasUpdate && (
+          {updateStatus === 'available' && latestVersion && (
             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800">
               <p className="text-xs text-blue-700 dark:text-blue-400">
-                发现新版本: <span className="font-semibold">{newVersion}</span>
+                发现新版本: <span className="font-semibold">{latestVersion}</span>
               </p>
               <button
                 onClick={openDownloadPage}
