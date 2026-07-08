@@ -84,9 +84,6 @@
 }
 
 .hot-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
   max-height: calc(100vh - 200px);
   overflow-y: auto;
   padding-right: 0.25rem;
@@ -104,37 +101,53 @@
 
 .hot-card {
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
   padding: var(--space-3);
   cursor: pointer;
-  transition: box-shadow 0.2s ease;
+  transition: background-color 0.2s ease;
   gap: var(--space-3);
 }
 
 .hot-card-with-image {
-  display: grid;
-  grid-template-columns: 100px 1fr;
+  display: flex;
+  flex-direction: column;
 }
 
 .hot-card-no-image {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) 0;
 }
 
 .hot-card:hover {
-  box-shadow: var(--shadow-lg);
+  background-color: var(--color-bg-tertiary);
+}
+
+.hot-masonry-grid {
+  column-count: 2;
+  column-gap: var(--space-4);
+  max-width: 1600px;
+}
+
+.hot-masonry-grid .hot-card {
+  break-inside: avoid;
+  margin-bottom: var(--space-4);
+}
+
+.hot-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .hot-card-cover {
   width: 100%;
-  height: 70px;
-  overflow: hidden;
   border-radius: var(--radius-sm);
 }
 
 .hot-card-cover img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   transition: transform 0.2s;
 }
 
@@ -302,7 +315,6 @@
   justify-content: center;
   padding: var(--space-8);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
 }
 
 .empty-state p {
@@ -310,23 +322,27 @@
   font-size: var(--text-base);
 }
 
-@media (max-width: 768px) {
-  .hot-card {
-    grid-template-columns: 90px 1fr;
+@media (max-width: 640px) {
+  .hot-masonry-grid {
+    column-count: 1;
   }
-  
-  .hot-card-cover {
-    height: 60px;
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .hot-masonry-grid {
+    column-count: 3;
   }
-  
-  .category-tabs {
-    justify-content: center;
+}
+
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .hot-masonry-grid {
+    column-count: 4;
   }
-  
-  .control-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+}
+
+@media (min-width: 1441px) {
+  .hot-masonry-grid {
+    column-count: 5;
   }
 }
 

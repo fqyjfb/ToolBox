@@ -90,6 +90,85 @@ const HotNewsPage: React.FC = () => {
     setActiveTab(platform);
   };
 
+  const renderHotCard = (item: UnifiedHotItem) => {
+    return (
+      <div
+        key={item.id || item.title}
+        className={`hot-card ${item.cover ? 'hot-card-with-image' : 'hot-card-no-image'}`}
+        onClick={() => openLink(item.link)}
+      >
+        {item.cover && (
+          <div className="hot-card-cover">
+            <img src={item.cover} alt={item.title} loading="lazy" />
+          </div>
+        )}
+        <div className="hot-card-info">
+          <div className="hot-card-header">
+            <div className="hot-card-badges">
+              {item.rank && <span className="hot-rank-badge">{item.rank}</span>}
+              {item.wordType && item.wordType !== '无' && (
+                <span className={`hot-word-type-badge hot-word-type-${item.wordType}`}>{item.wordType}</span>
+              )}
+              {item.typeDesc && <span className="hot-type-desc-badge">{item.typeDesc}</span>}
+            </div>
+            <h3 className="hot-title">
+              {item.title}
+              {(item.platform === 'douyin' || item.platform === 'rednote' || item.platform === 'dongchedi') && item.hotValue && (
+                <span className="hot-title-value">{formatHotValue(item.hotValue)}</span>
+              )}
+            </h3>
+          </div>
+          
+          {(item.desc || item.detail || item.summary) && (
+            <div className="hot-card-desc">
+              {item.desc || item.detail || item.summary}
+            </div>
+          )}
+          
+          {(item.commentCount || item.likeCount || item.shareCount || item.answerCount || item.followerCount || (item.hotValue && !['douyin', 'rednote', 'dongchedi'].includes(item.platform))) && (
+            <div className="hot-card-stats">
+              {item.hotValue && !['douyin', 'rednote', 'dongchedi'].includes(item.platform) && (
+                <span className="hot-value">热度: {formatHotValue(item.hotValue)}</span>
+              )}
+              {item.commentCount && <span>评论: {item.commentCount}</span>}
+              {item.likeCount && <span>点赞: {item.likeCount}</span>}
+              {item.shareCount && <span>分享: {item.shareCount}</span>}
+              {item.answerCount && <span>回答: {item.answerCount}</span>}
+              {item.followerCount && <span>关注: {item.followerCount}</span>}
+            </div>
+          )}
+          
+          {(item.source || item.publishedAt || item.scoreDesc || item.typeDesc || item.releaseInfo || item.activeTimeAt || item.eventTimeAt || item.wordType || item.category || item.tags || item.avgSeatView || item.avgShowView || item.sumBoxDesc || item.splitBoxDesc) && (
+            <div className="hot-card-extra">
+              {item.activeTimeAt && (
+                <span className="hot-time">激活时间：{new Date(item.activeTimeAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+              )}
+              {item.eventTimeAt && (
+                <span className="hot-time">事件时间：{new Date(item.eventTimeAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+              )}
+              {item.publishedAt && (
+                <span className="hot-time">{new Date(item.publishedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+              )}
+              {item.source && <span className="hot-source">{item.source}</span>}
+              {item.category && <span className="hot-category">{item.category}</span>}
+              {item.scoreDesc && !['baidu', 'dongchedi'].includes(item.platform) && (
+                <span className="hot-score-desc">{item.scoreDesc}</span>
+              )}
+              {item.releaseInfo && <span className="hot-release-info">{item.releaseInfo}</span>}
+              {item.avgSeatView && <span className="hot-avg-seat-view">{item.avgSeatView} 上座率</span>}
+              {item.avgShowView && <span className="hot-avg-show-view">{item.avgShowView} 场均</span>}
+              {item.sumBoxDesc && <span className="hot-sum-box-desc">{item.sumBoxDesc}</span>}
+              {item.splitBoxDesc && <span className="hot-split-box-desc">{item.splitBoxDesc}</span>}
+              {item.tags && item.tags.slice(0, 3).map((tag: string, index: number) => (
+                <span key={index} className="hot-tag" title={tag}>{tag.length > 8 ? tag.substring(0, 8) + '...' : tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="hot-news-content p-6">
       <svg width="0" height="0" style={{ position: 'absolute' }}>
@@ -138,82 +217,21 @@ const HotNewsPage: React.FC = () => {
             </div>
           ) : (
             <>
-              {currentHotNews.map((item) => (
-                <div
-                  key={item.id || item.title}
-                  className={`hot-card ${item.cover ? 'hot-card-with-image' : 'hot-card-no-image'}`}
-                  onClick={() => openLink(item.link)}
-                >
-                  {item.cover && (
-                    <div className="hot-card-cover">
-                      <img src={item.cover} alt={item.title} loading="lazy" />
+              {currentHotNews.length > 0 && (
+                <>
+                  {currentHotNews.some(item => item.cover) && (
+                    <div className="hot-masonry-grid">
+                      {currentHotNews.filter(item => item.cover).map(renderHotCard)}
                     </div>
                   )}
-                  <div className="hot-card-info">
-                    <div className="hot-card-header">
-                      <div className="hot-card-badges">
-                        {item.rank && <span className="hot-rank-badge">{item.rank}</span>}
-                        {item.wordType && item.wordType !== '无' && (
-                          <span className={`hot-word-type-badge hot-word-type-${item.wordType}`}>{item.wordType}</span>
-                        )}
-                        {item.typeDesc && <span className="hot-type-desc-badge">{item.typeDesc}</span>}
-                      </div>
-                      <h3 className="hot-title">
-                        {item.title}
-                        {(item.platform === 'douyin' || item.platform === 'rednote' || item.platform === 'dongchedi') && item.hotValue && (
-                          <span className="hot-title-value">{formatHotValue(item.hotValue)}</span>
-                        )}
-                      </h3>
+                  
+                  {currentHotNews.some(item => !item.cover) && (
+                    <div className="hot-list-view">
+                      {currentHotNews.filter(item => !item.cover).map(renderHotCard)}
                     </div>
-                    
-                    {(item.desc || item.detail || item.summary) && (
-                      <div className="hot-card-desc">
-                        {item.desc || item.detail || item.summary}
-                      </div>
-                    )}
-                    
-                    {(item.commentCount || item.likeCount || item.shareCount || item.answerCount || item.followerCount || (item.hotValue && !['douyin', 'rednote', 'dongchedi'].includes(item.platform))) && (
-                      <div className="hot-card-stats">
-                        {item.hotValue && !['douyin', 'rednote', 'dongchedi'].includes(item.platform) && (
-                          <span className="hot-value">热度: {formatHotValue(item.hotValue)}</span>
-                        )}
-                        {item.commentCount && <span>评论: {item.commentCount}</span>}
-                        {item.likeCount && <span>点赞: {item.likeCount}</span>}
-                        {item.shareCount && <span>分享: {item.shareCount}</span>}
-                        {item.answerCount && <span>回答: {item.answerCount}</span>}
-                        {item.followerCount && <span>关注: {item.followerCount}</span>}
-                      </div>
-                    )}
-                    
-                    {(item.source || item.publishedAt || item.scoreDesc || item.typeDesc || item.releaseInfo || item.activeTimeAt || item.eventTimeAt || item.wordType || item.category || item.tags || item.avgSeatView || item.avgShowView || item.sumBoxDesc || item.splitBoxDesc) && (
-                      <div className="hot-card-extra">
-                        {item.activeTimeAt && (
-                          <span className="hot-time">激活时间：{new Date(item.activeTimeAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                        )}
-                        {item.eventTimeAt && (
-                          <span className="hot-time">事件时间：{new Date(item.eventTimeAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                        )}
-                        {item.publishedAt && (
-                          <span className="hot-time">{new Date(item.publishedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                        )}
-                        {item.source && <span className="hot-source">{item.source}</span>}
-                        {item.category && <span className="hot-category">{item.category}</span>}
-                        {item.scoreDesc && !['baidu', 'dongchedi'].includes(item.platform) && (
-                          <span className="hot-score-desc">{item.scoreDesc}</span>
-                        )}
-                        {item.releaseInfo && <span className="hot-release-info">{item.releaseInfo}</span>}
-                        {item.avgSeatView && <span className="hot-avg-seat-view">{item.avgSeatView} 上座率</span>}
-                        {item.avgShowView && <span className="hot-avg-show-view">{item.avgShowView} 场均</span>}
-                        {item.sumBoxDesc && <span className="hot-sum-box-desc">{item.sumBoxDesc}</span>}
-                        {item.splitBoxDesc && <span className="hot-split-box-desc">{item.splitBoxDesc}</span>}
-                        {item.tags && item.tags.slice(0, 3).map((tag: string, index: number) => (
-                          <span key={index} className="hot-tag" title={tag}>{tag.length > 8 ? tag.substring(0, 8) + '...' : tag}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                  )}
+                </>
+              )}
               
               {currentHotNews.length === 0 && !isCurrentPlatformLoading && (
                 <div className="empty-state">
