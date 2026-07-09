@@ -8,6 +8,7 @@ import { iconCacheService } from '../../services/iconCacheService';
 import { offlineStorage } from '../../services/offlineStorage';
 import { formatBytes } from '../../utils';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import SettingCard from './SettingCard';
 import { PlatformVisibility } from '../../types/account';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 
@@ -211,7 +212,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+    <SettingCard>
       <input
         ref={fileInputRef}
         type="file"
@@ -473,7 +474,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
           </div>
         </div>
       </div>
-    </div>
+    </SettingCard>
   );
 };
 

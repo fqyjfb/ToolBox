@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { AlignLeft, Copy, FileText } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
 
 const MarkdownToTextPage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy } = useToolPage();
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
 
@@ -44,19 +44,6 @@ const MarkdownToTextPage: React.FC = () => {
     setOutput(convertMarkdown(value));
   }, [convertMarkdown]);
 
-  const handleCopy = useCallback(() => {
-    if (!output) {
-      addToast({ message: '没有可复制的内容', type: 'warning' });
-      return;
-    }
-    
-    navigator.clipboard.writeText(output).then(() => {
-      addToast({ message: '已复制到剪贴板', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [output, addToast]);
-
   const loadSample = useCallback(() => {
     handleInputChange(`# 标题
 
@@ -92,7 +79,7 @@ const code = '示例代码';
             示例
           </button>
           <button 
-            onClick={handleCopy}
+            onClick={() => handleCopy(output)}
             disabled={!output}
             className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >

@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { Tag, Copy, Download } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
 
 const MetaTagsGeneratorPage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy, addToast } = useToolPage();
   const [title, setTitle] = useState('我的网站 - 优质内容');
   const [description, setDescription] = useState('这是我的网站描述，包含关键词和主要内容介绍。');
   const [keywords, setKeywords] = useState('关键词1,关键词2,关键词3');
@@ -39,20 +39,6 @@ const MetaTagsGeneratorPage: React.FC = () => {
     return tags;
   }, [title, description, keywords, author, robots, viewport, ogTitle, ogDescription, ogImage, ogUrl, ogType]);
 
-  const handleCopy = useCallback(() => {
-    const tags = generateMetaTags();
-    if (!tags.trim()) {
-      addToast({ message: '没有可复制的内容', type: 'warning' });
-      return;
-    }
-    
-    navigator.clipboard.writeText(tags).then(() => {
-      addToast({ message: '已复制到剪贴板', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [generateMetaTags, addToast]);
-
   const handleDownload = useCallback(() => {
     const tags = generateMetaTags();
     if (!tags.trim()) {
@@ -79,7 +65,7 @@ const MetaTagsGeneratorPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <button 
-            onClick={handleCopy}
+            onClick={() => handleCopy(generateMetaTags())}
             className="flex items-center gap-2 px-3 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors text-sm"
           >
             <Copy className="w-4 h-4" />

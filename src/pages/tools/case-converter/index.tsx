@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowUpDown, Copy } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
 
 const toTitleCase = (str: string): string => {
   return str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
@@ -56,26 +56,13 @@ const convertText = (text: string): Record<string, string> => {
 };
 
 const CaseConverterPage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy } = useToolPage();
   const [input, setInput] = useState('hello world');
   const [results, setResults] = useState<Record<string, string>>(() => convertText('hello world'));
 
   useEffect(() => {
     setResults(convertText(input));
   }, [input]);
-
-  const handleCopy = useCallback((text: string) => {
-    if (!text) {
-      addToast({ message: '没有可复制的内容', type: 'warning' });
-      return;
-    }
-    
-    navigator.clipboard.writeText(text).then(() => {
-      addToast({ message: '已复制到剪贴板', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [addToast]);
 
   const caseTypes = [
     { id: 'lowercase', name: '小写 (lowercase)' },

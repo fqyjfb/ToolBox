@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AtSign, Copy, FileText } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
 
 const UrlEncodePage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy, addToast } = useToolPage();
   const [input, setInput] = useState('');
   const [encoded, setEncoded] = useState('');
   const [decoded, setDecoded] = useState('');
@@ -53,19 +53,6 @@ const UrlEncodePage: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [input, addToast, encodeUrl, decodeUrl]);
-
-  const handleCopy = useCallback((text: string) => {
-    if (!text) {
-      addToast({ message: '没有可复制的内容', type: 'warning' });
-      return;
-    }
-    
-    navigator.clipboard.writeText(text).then(() => {
-      addToast({ message: '已复制到剪贴板', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [addToast]);
 
   const loadSample = useCallback(() => {
     setInput('https://example.com/path?name=张三&age=28&city=北京');

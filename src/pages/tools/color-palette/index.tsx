@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Palette, Copy, Clipboard } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
 import {
   hexToRgb, rgbToHsl, rgbToHsv, isValidHex,
   generateAllSchemes, basicColors, popularPalettes,
@@ -8,7 +8,7 @@ import {
 } from '../../../utils/colorUtils';
 
 const ColorPalettePage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy, addToast } = useToolPage();
   const [hex, setHex] = useState('#845EC2');
   const [inputValue, setInputValue] = useState('#845EC2');
   const [rgb, setRgb] = useState<RGB>({ r: 132, g: 94, b: 194 });
@@ -55,14 +55,6 @@ const ColorPalettePage: React.FC = () => {
       handleInputBlur();
     }
   }, [handleInputBlur]);
-
-  const handleCopy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      addToast({ message: '已复制到剪贴板', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [addToast]);
 
   const handlePaste = useCallback(async () => {
     try {

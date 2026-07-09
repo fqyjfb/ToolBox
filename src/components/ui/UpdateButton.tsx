@@ -1,5 +1,4 @@
 import React from 'react';
-import styled from 'styled-components';
 import { RefreshCw, CheckCircle, Sparkles, AlertCircle } from 'lucide-react';
 
 type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'installing' | 'error';
@@ -97,177 +96,36 @@ const UpdateButton: React.FC<UpdateButtonProps> = ({
   const isDisabled = ['checking', 'downloading', 'installing'].includes(status);
 
   return (
-    <StyledWrapper>
+    <div className="update-button-wrapper">
       <button
-        className={`button ${getButtonVariant()}`}
+        className={`update-button ${getButtonVariant()}`}
         onClick={handleClick}
         disabled={isDisabled}
       >
-        <div className="icon">
+        <div className="update-icon">
           {getIcon()}
         </div>
         <span>{getText()}</span>
         {status === 'downloading' && (
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${downloadProgress}%` }}></div>
+          <div className="update-progress-bar">
+            <div className="update-progress-fill" style={{ width: `${downloadProgress}%` }}></div>
           </div>
         )}
       </button>
       
       {status === 'available' && latestVersion && (
-        <div className="version-hint">
+        <div className="update-version-hint">
           新版本: v{latestVersion}
         </div>
       )}
       
       {status === 'error' && errorMessage && (
-        <div className="error-hint">
+        <div className="update-error-hint">
           {errorMessage}
         </div>
       )}
-    </StyledWrapper>
+    </div>
   );
 };
-
-const StyledWrapper = styled.div`
-  .button {
-    font-family: inherit;
-    color: var(--color-bg-primary);
-    font-size: 14px;
-    border: none;
-    border-radius: 6px;
-    letter-spacing: 0.04em;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    height: 28px;
-    padding-left: 28px;
-    padding-right: 12px;
-    cursor: pointer;
-    transition: background-color var(--transition-normal);
-  }
-
-  .button.default {
-    background-color: var(--color-button-primary);
-  }
-
-  .button.default:hover:not(:disabled) {
-    background-color: var(--color-button-primary-hover);
-  }
-
-  .button.success {
-    background-color: var(--color-success);
-  }
-
-  .button.success:hover:not(:disabled) {
-    filter: brightness(0.9);
-  }
-
-  .button.primary {
-    background-color: var(--color-primary);
-  }
-
-  .button.primary:hover:not(:disabled) {
-    background-color: var(--color-primary-hover);
-  }
-
-  .button.error {
-    background-color: var(--color-error);
-  }
-
-  .button.error:hover:not(:disabled) {
-    filter: brightness(0.9);
-  }
-
-  .button.disabled {
-    background-color: var(--color-text-tertiary);
-    cursor: not-allowed;
-  }
-
-  .button:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(39, 93, 126, 0.5);
-  }
-
-  .button .icon {
-    background: var(--color-bg-primary);
-    height: 20px;
-    width: 20px;
-    border-radius: 50%;
-    position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    left: 4px;
-    transition: all 0.5s;
-  }
-
-  .icon svg {
-    transition: all 0.5s;
-    width: 14px;
-    height: 14px;
-  }
-
-  .default .icon svg { color: var(--color-button-primary); }
-  .success .icon svg { color: var(--color-success); }
-  .primary .icon svg { color: var(--color-primary); }
-  .error .icon svg { color: var(--color-error); }
-  .disabled .icon svg { color: var(--color-text-tertiary); }
-
-  .button:hover:not(:disabled) .icon svg {
-    transform: rotate(360deg);
-  }
-
-  .button:hover:not(:disabled) .icon {
-    width: calc(100% - 8px);
-    border-radius: 4px;
-  }
-
-  .animate-spin {
-    animation: spin 1s linear infinite;
-  }
-
-  .progress-bar {
-    position: absolute;
-    bottom: 0;
-    left: 5px;
-    right: 5px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 1px;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--color-bg-primary);
-    border-radius: 1px;
-    transition: width 0.3s ease;
-  }
-
-  .version-hint {
-    font-size: var(--text-xs);
-    color: var(--color-success);
-    margin-top: var(--space-1);
-    text-align: center;
-  }
-
-  .error-hint {
-    font-size: var(--text-xs);
-    color: var(--color-error);
-    margin-top: var(--space-1);
-    text-align: center;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`;
 
 export default UpdateButton;

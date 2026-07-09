@@ -11,6 +11,7 @@ import {
   MODULE_TABLE_MAP,
   StorageLocation
 } from '../types/offline';
+import { DISPLAY_LIMITS } from '../constants/timers';
 
 export const syncManager = {
   async getSyncMetadata(userId: string): Promise<SyncMetadata | null> {
@@ -412,7 +413,7 @@ export const databaseBackupService = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `toolbox_backup_${new Date().toISOString().slice(0, 10)}.sql`;
+    a.download = `toolbox_backup_${new Date().toISOString().slice(0, DISPLAY_LIMITS.DATE_SLICE_LENGTH)}.sql`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -450,7 +451,7 @@ export const databaseBackupService = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `toolbox_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `toolbox_backup_${new Date().toISOString().slice(0, DISPLAY_LIMITS.DATE_SLICE_LENGTH)}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

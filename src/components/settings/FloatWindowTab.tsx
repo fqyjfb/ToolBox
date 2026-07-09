@@ -1,6 +1,7 @@
 import React from 'react';
 import { Circle, Save, RotateCcw } from 'lucide-react';
 import FloatConfigEditor from './FloatConfigEditor';
+import SettingCard from './SettingCard';
 import { FloatConfigItem } from '../../types/settings';
 import { QuickLaunchItem } from '../../utils/quickLaunch';
 
@@ -20,7 +21,7 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
   onResetFloatConfig
 }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+    <SettingCard>
       <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="w-5 h-5 flex items-center justify-center text-primary">
           <Circle size={16} />
@@ -55,7 +56,7 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </SettingCard>
   );
 };
 

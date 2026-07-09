@@ -4,6 +4,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { openUrl } from '../../services/browserService';
+import { DISPLAY_LIMITS } from '../../constants/timers';
 
 export interface Bookmark {
   id: string;
@@ -113,7 +114,7 @@ const FavoritesBar: React.FC<FavoritesBarProps> = ({ favorites, onReorder }) => 
       >
         <SortableContext items={favorites.map(fav => fav.id)} strategy={verticalListSortingStrategy}>
           <div className="favorites-bar">
-            {favorites.slice(0, 12).map((bookmark) => (
+            {favorites.slice(0, DISPLAY_LIMITS.FAVORITES).map((bookmark) => (
               <SortableFavoriteItem
                 key={bookmark.id}
                 bookmark={bookmark}

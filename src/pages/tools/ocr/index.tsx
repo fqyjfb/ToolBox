@@ -6,6 +6,7 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Modal from '../../../components/ui/Modal';
 import { logError } from '../../../services/loggerService';
 import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
+import { DISPLAY_LIMITS } from '../../../constants/timers';
 
 interface OcrServiceStatus {
   available: boolean;
@@ -716,7 +717,7 @@ const OcrPage: React.FC = () => {
             </button>
           </div>
           <div className="flex gap-2 px-4 pb-3 overflow-x-auto">
-            {history.slice(0, 10).map((item) => (
+            {history.slice(0, DISPLAY_LIMITS.OCR_HISTORY).map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleHistoryClick(item)}

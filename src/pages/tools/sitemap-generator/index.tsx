@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Map, Copy, Download, FileText } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
 
 interface UrlEntry {
   url: string;
@@ -10,7 +10,7 @@ interface UrlEntry {
 }
 
 const SitemapGeneratorPage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy, addToast } = useToolPage();
   const [entries, setEntries] = useState<UrlEntry[]>([
     { url: 'https://example.com/', priority: '1.0', changefreq: 'daily', lastmod: '' },
     { url: 'https://example.com/about', priority: '0.8', changefreq: 'weekly', lastmod: '' },
@@ -85,19 +85,6 @@ const SitemapGeneratorPage: React.FC = () => {
     setEntries(newEntries);
   }, [entries]);
 
-  const handleCopy = useCallback(() => {
-    if (!output) {
-      addToast({ message: '没有可复制的内容', type: 'warning' });
-      return;
-    }
-    
-    navigator.clipboard.writeText(output).then(() => {
-      addToast({ message: '已复制到剪贴板', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [output, addToast]);
-
   const handleDownload = useCallback(() => {
     if (!output) {
       addToast({ message: '没有可下载的内容', type: 'warning' });
@@ -130,7 +117,7 @@ const SitemapGeneratorPage: React.FC = () => {
             生成 XML
           </button>
           <button 
-            onClick={handleCopy}
+            onClick={() => handleCopy(output)}
             disabled={!output}
             className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >

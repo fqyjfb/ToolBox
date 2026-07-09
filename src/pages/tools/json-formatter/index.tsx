@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Code2, Copy, Download, Trash2, FileText } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
+import { formatBytes } from '../../../utils/format';
 
 type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
 interface JsonObject { [key: string]: JsonValue; }
@@ -52,7 +53,7 @@ const minifyJSON = (text: string): { output: string; error: string } => {
 };
 
 const JsonFormatterPage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy, addToast } = useToolPage();
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
@@ -95,19 +96,6 @@ const JsonFormatterPage: React.FC = () => {
       }, 0);
     }
   }, [input, indentStyle, sortKeys, lastAction]);
-
-  const handleCopy = useCallback(() => {
-    if (!output) {
-      addToast({ message: '没有可复制的内容', type: 'warning' });
-      return;
-    }
-    
-    navigator.clipboard.writeText(output).then(() => {
-      addToast({ message: '已复制到剪贴板', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [output, addToast]);
 
   const handleDownload = useCallback(() => {
     if (!output) {
@@ -152,14 +140,6 @@ const JsonFormatterPage: React.FC = () => {
   const lineCount = output.split('\n').length;
   const size = formatBytes(new Blob([output]).size);
 
-  function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
-  }
-
   return (
     <div className="h-full flex flex-col p-4">
       <div className="flex items-center justify-between mb-4">
@@ -176,7 +156,7 @@ const JsonFormatterPage: React.FC = () => {
             示例
           </button>
           <button 
-            onClick={handleCopy}
+            onClick={() => handleCopy(output)}
             disabled={!output}
             className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >

@@ -7,6 +7,7 @@ import { getWeatherCity } from '../../../utils/weatherLocation';
 import type { WeatherInfo, DailyForecast, HourlyForecast } from '../../../types/weather';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
+import { DISPLAY_LIMITS } from '../../../constants/timers';
 
 const WeatherPage: React.FC = () => {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ const WeatherPage: React.FC = () => {
         setDailyForecast(forecastData.data.daily_forecast);
       }
       if (forecastData?.data?.hourly_forecast) {
-        const hourlyData = forecastData.data.hourly_forecast.slice(0, 24);
+        const hourlyData = forecastData.data.hourly_forecast.slice(0, DISPLAY_LIMITS.HOURLY_FORECAST);
         setHourlyForecast(hourlyData);
       }
     } catch {
@@ -109,7 +110,7 @@ const WeatherPage: React.FC = () => {
   };
 
   const formatHour = (datetime: string) => {
-    return datetime.split(' ')[1]?.slice(0, 5) || '';
+    return datetime.split(' ')[1]?.slice(0, DISPLAY_LIMITS.TIME_SLICE_LENGTH) || '';
   };
 
   const getWeatherIcon = (condition: string) => {

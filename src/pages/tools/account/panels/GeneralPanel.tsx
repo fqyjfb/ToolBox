@@ -290,7 +290,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
 
   return (
     <div className="h-full flex flex-col" onClick={handleCloseContextMenu}>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner size="lg" />

@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
               if (['vditor', 'react-markdown', 'remark-gfm'].some(pkg => id.includes(pkg))) {
                 return 'vendor-editor';
               }
-              if (['lucide-react', 'styled-components'].some(pkg => id.includes(pkg))) {
+              if (['lucide-react'].some(pkg => id.includes(pkg))) {
                 return 'vendor-ui';
               }
               if (['qrcode', '@supabase/supabase-js', '@tanstack/react-query'].some(pkg => id.includes(pkg))) {

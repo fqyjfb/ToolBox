@@ -6,6 +6,15 @@ import { BaseEntity } from '../types/common'
 
 type CreateInput<T extends BaseEntity> = Omit<T, keyof BaseEntity>
 
+const SYNC_TABLES = [
+  'shops', 'social_accounts', 'emails', 'phones', 'companies', 'credentials', 'general_accounts',
+  'website_accounts', 'website_account_categories',
+  'todos', 'todo_categories',
+  'quick_replies', 'quick_reply_categories',
+  'clipboard_items', 'clipboard_categories',
+  'memos', 'memo_categories'
+]
+
 class StorageContext {
   private userId: string = ''
   private storageLocation: StorageLocation = 'cloud'
@@ -281,16 +290,7 @@ class StorageContext {
 
     logInfo('开始从云端同步数据到本地...', 'StorageContext')
 
-    const tables = [
-      'shops', 'social_accounts', 'emails', 'phones', 'companies', 'credentials', 'general_accounts',
-      'website_accounts', 'website_account_categories',
-      'todos', 'todo_categories',
-      'quick_replies', 'quick_reply_categories',
-      'clipboard_items', 'clipboard_categories',
-      'memos', 'memo_categories'
-    ]
-
-    for (const table of tables) {
+    for (const table of SYNC_TABLES) {
       try {
         const { data, error } = await supabase
           .from(table)
@@ -314,16 +314,7 @@ class StorageContext {
 
     logInfo('开始从本地上传数据到云端...', 'StorageContext')
 
-    const tables = [
-      'shops', 'social_accounts', 'emails', 'phones', 'companies', 'credentials', 'general_accounts',
-      'website_accounts', 'website_account_categories',
-      'todos', 'todo_categories',
-      'quick_replies', 'quick_reply_categories',
-      'clipboard_items', 'clipboard_categories',
-      'memos', 'memo_categories'
-    ]
-
-    for (const table of tables) {
+    for (const table of SYNC_TABLES) {
       try {
         const localData = await offlineStorage.queryByUser<Record<string, unknown>>(table, this.userId)
 

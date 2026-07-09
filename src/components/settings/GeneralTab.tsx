@@ -3,6 +3,9 @@ import { Settings as SettingsIcon, MapPin, Loader2 } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
 import Modal from '../ui/Modal';
+import SettingCard from './SettingCard';
+import SettingSection from './SettingSection';
+import SettingRow from './SettingRow';
 import { WindowSize } from '../../types/settings';
 import { useToastStore } from '../../store/toastStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -168,16 +171,16 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+    <SettingCard>
       <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="w-5 h-5 flex items-center justify-center text-primary">
           <SettingsIcon size={16} />
         </div>
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">通用设置</h2>
       </div>
-      <div className="divide-y divide-gray-100 dark:divide-gray-700">
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">启动窗口</span>
+
+      <SettingSection title="窗口设置">
+        <SettingRow label="启动窗口">
           <div className="flex items-center gap-1">
             <input
               type="number"
@@ -194,53 +197,50 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
             />
             <span className="text-xs text-gray-500 ml-1">px</span>
           </div>
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">开机启动</span>
+        </SettingRow>
+        <SettingRow label="开机启动">
           <ToggleSwitch enabled={autostartEnabled} onChange={onAutostartToggle} />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">边缘吸附</span>
+        </SettingRow>
+        <SettingRow label="边缘吸附">
           <ToggleSwitch enabled={isEdgeAdsorption} onChange={onEdgeAdsorptionChange} />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">内存优化</span>
+        </SettingRow>
+        <SettingRow label="内存优化">
           <ToggleSwitch enabled={isMemoryOptimizationEnabled} onChange={onMemoryOptimizationChange} />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">悬浮窗口</span>
+        </SettingRow>
+        <SettingRow label="悬浮窗口">
           <ToggleSwitch enabled={isFloatWindowEnabled} onChange={onFloatWindowChange} />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">显示边栏</span>
+        </SettingRow>
+      </SettingSection>
+
+      <SettingSection title="界面设置">
+        <SettingRow label="显示边栏">
           <ToggleSwitch enabled={isMenuVisible} onChange={onMenuVisibleChange} checkedLabel="显示" uncheckedLabel="隐藏" />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">边栏位置</span>
+        </SettingRow>
+        <SettingRow label="边栏位置">
           <RadioGroup 
             value={leftMenuPosition} 
             options={[{ label: '左侧', value: 'left' }, { label: '右侧', value: 'right' }]} 
             onChange={onMenuPositionChange} 
           />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">主题切换</span>
+        </SettingRow>
+        <SettingRow label="主题切换">
           <RadioGroup 
             value={isDark ? 'dark' : 'light'} 
             options={[{ label: '浅色', value: 'light' }, { label: '深色', value: 'dark' }]} 
             onChange={handleThemeChange} 
           />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">外部链接</span>
+        </SettingRow>
+        <SettingRow label="外部链接">
           <RadioGroup 
             value={browserMode} 
             options={[{ label: '程序弹窗', value: 'internal' }, { label: '默认浏览器', value: 'external' }]} 
             onChange={onBrowserModeChange} 
           />
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <span className="text-sm text-gray-700 dark:text-gray-300">天气城市</span>
+        </SettingRow>
+      </SettingSection>
+
+      <SettingSection title="个性化设置">
+        <SettingRow label="天气城市">
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -264,10 +264,13 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               保存
             </button>
           </div>
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+        </SettingRow>
+      </SettingSection>
+
+      <SettingSection title="安全设置">
+        <SettingRow label={
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-700 dark:text-gray-300">锁定密码</span>
+            <span>锁定密码</span>
             {passwordSet ? (
               <svg className="w-3.5 h-3.5" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
                 <path d="M512 512m-486.4 0a486.4 486.4 0 1 0 972.8 0 486.4 486.4 0 1 0-972.8 0Z" fill="#adf9b2"></path>
@@ -282,6 +285,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               </svg>
             )}
           </div>
+        }>
           <div className="flex items-center gap-1">
             {passwordSet ? (
               <>
@@ -316,14 +320,15 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               </button>
             )}
           </div>
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+        </SettingRow>
+        <SettingRow label={
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-700 dark:text-gray-300">自动锁定</span>
+            <span>自动锁定</span>
             {!passwordSet && (
               <span className="text-xs text-gray-400">(需先设置锁定密码)</span>
             )}
           </div>
+        }>
           <div className="flex items-center gap-2">
             {autoLockEnabled && (
               <select
@@ -341,8 +346,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               onChange={onAutoLockChange}
             />
           </div>
-        </div>
-      </div>
+        </SettingRow>
+      </SettingSection>
 
       <Modal
         isOpen={showPasswordModal}
@@ -374,7 +379,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
           />
         </div>
       </Modal>
-    </div>
+    </SettingCard>
   );
 };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Scan, CheckCircle, AlertCircle, RefreshCw, Play, Square, HelpCircle, FolderOpen, Wifi, Clock, RotateCw, Save, Search } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import Modal from '../ui/Modal';
+import SettingCard from './SettingCard';
 import { useToastStore } from '../../store/toastStore';
 import { logError } from '../../services/loggerService';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
@@ -241,7 +242,7 @@ const OcrTab: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+    <SettingCard>
       <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="w-5 h-5 flex items-center justify-center text-primary">
           <Scan size={16} />
@@ -573,7 +574,7 @@ const OcrTab: React.FC = () => {
           ) : null}
         </div>
       </Modal>
-    </div>
+    </SettingCard>
   );
 };
 

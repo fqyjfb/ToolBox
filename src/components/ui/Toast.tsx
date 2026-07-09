@@ -89,21 +89,6 @@ const Toast: React.FC = () => {
           </li>
         ))}
       </ul>
-      <style>{`
-        @keyframes toast-progress-origin-left {
-          from {
-            transform: scaleX(1);
-            transform-origin: left;
-          }
-          to {
-            transform: scaleX(0);
-            transform-origin: left;
-          }
-        }
-        .animate-toast-progress-origin-left {
-          animation: toast-progress-origin-left var(--duration-toast, 5s) linear forwards;
-        }
-      `}</style>
     </div>
   );
 };

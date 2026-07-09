@@ -68,67 +68,14 @@ const AdminUsersPage = React.lazy(() => import('../pages/admin/users'));
 const AdminToolsPage = React.lazy(() => import('../pages/admin/tools'));
 const AdminDatabasePage = React.lazy(() => import('../pages/admin/database'));
 
-export const desktopRoutes: RouteConfig[] = [
-  { path: '/', element: <Home /> },
-  { path: '/launch', element: <QuickLaunch /> },
-  { path: '/news', element: <HotNewsPage /> },
-  { path: '/nav', element: <NavPage /> },
-  { path: '/recents', element: <RecentsPage /> },
-  { path: '/login', element: <LoginPage /> },
-  { path: '/settings', element: <Settings /> },
-  { path: '/about', element: <About /> },
-  { path: '/tools/weather', element: <WeatherPage /> },
-  { path: '/tools/ai-chat', element: <AIChatPage /> },
-  { path: '/tools/font-generator', element: <FontGeneratorPage /> },
-  { path: '/tools/color-palette', element: <ColorPalettePage /> },
-  { path: '/tools/ai-chat/history', element: <AgnesHistoryPage /> },
-  { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage /> },
-  { path: '/logs', element: <LogsPage /> },
-];
-
-export const webRoutes: RouteConfig[] = [
-  { path: '/', element: <WebHome /> },
+const sharedRoutes: RouteConfig[] = [
   { path: '/news', element: <HotNewsPage /> },
   { path: '/nav', element: <NavPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/about', element: <About /> },
-  { path: '/tools', element: <ToolsPage /> },
-  { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
-  { path: '/tools/memo', element: <MemoPage />, requiresAuth: true },
-  { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
-  { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
-  { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
-  { path: '/tools/weather', element: <WeatherPage /> },
-  { path: '/tools/ai-chat', element: <AIChatPage />, requiresAuth: true },
-  { path: '/tools/font-generator', element: <FontGeneratorPage />, requiresAuth: true },
-  { path: '/tools/color-palette', element: <ColorPalettePage />, requiresAuth: true },
-  { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
-  { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
 ];
 
-export const mobileRoutes: RouteConfig[] = [
-  { path: '/', element: <MobileHome /> },
-  { path: '/news', element: <HotNewsPage /> },
-  { path: '/nav', element: <NavPage /> },
-  { path: '/login', element: <LoginPage /> },
-  { path: '/about', element: <About /> },
-  { path: '/tools', element: <ToolsPage /> },
-  { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
-  { path: '/tools/memo', element: <MemoPage />, requiresAuth: true },
-  { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
-  { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
-  { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
-  { path: '/tools/weather', element: <WeatherPage /> },
-  { path: '/tools/ai-chat', element: <AIChatPage />, requiresAuth: true },
-  { path: '/tools/font-generator', element: <FontGeneratorPage />, requiresAuth: true },
-  { path: '/tools/color-palette', element: <ColorPalettePage />, requiresAuth: true },
-  { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
-  { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
-];
-
-export const publicRoutes: RouteConfig[] = desktopRoutes;
-
-export const protectedRoutes: RouteConfig[] = [
+const authRequiredRoutes: RouteConfig[] = [
   { path: '/tools', element: <ToolsPage />, requiresAuth: true },
   { path: '/tools/exchange', element: <ExchangePage />, requiresAuth: true },
   { path: '/tools/translate', element: <TranslatePage />, requiresAuth: true },
@@ -169,6 +116,37 @@ export const protectedRoutes: RouteConfig[] = [
   { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
   { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
 ];
+
+const publicToolsRoutes: RouteConfig[] = [
+  { path: '/tools/weather', element: <WeatherPage /> },
+];
+
+export const desktopRoutes: RouteConfig[] = [
+  { path: '/', element: <Home /> },
+  { path: '/launch', element: <QuickLaunch /> },
+  { path: '/recents', element: <RecentsPage /> },
+  { path: '/settings', element: <Settings /> },
+  { path: '/logs', element: <LogsPage /> },
+  ...sharedRoutes,
+  ...publicToolsRoutes,
+  ...authRequiredRoutes,
+];
+
+export const webRoutes: RouteConfig[] = [
+  { path: '/', element: <WebHome /> },
+  ...sharedRoutes,
+  ...publicToolsRoutes,
+  ...authRequiredRoutes,
+];
+
+export const mobileRoutes: RouteConfig[] = [
+  { path: '/', element: <MobileHome /> },
+  ...sharedRoutes,
+  ...publicToolsRoutes,
+  ...authRequiredRoutes,
+];
+
+export const protectedRoutes: RouteConfig[] = authRequiredRoutes;
 
 export const adminRoutes: RouteConfig[] = [
   { path: '/admin', element: <AdminDashboardPage />, requiresAdmin: true },

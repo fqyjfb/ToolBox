@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, RefreshCw, Copy, Calendar } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
+import { DISPLAY_LIMITS } from '../../../constants/timers';
 
 const TimestampConverterPage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy, addToast } = useToolPage();
   const [currentTimestamp, setCurrentTimestamp] = useState<number>(() => Math.floor(Date.now() / 1000));
   const [timestampInput, setTimestampInput] = useState('');
   const [datetimeInput, setDatetimeInput] = useState('');
@@ -100,14 +101,6 @@ const TimestampConverterPage: React.FC = () => {
     ]);
   }, [datetimeInput]);
 
-  const handleCopy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      addToast({ message: '已复制', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [addToast]);
-
   const setTimestamp = useCallback((ts: number) => {
     setTimestampInput(ts.toString());
     convertToDate();
@@ -116,7 +109,7 @@ const TimestampConverterPage: React.FC = () => {
   const setCurrentDatetime = useCallback(() => {
     const now = new Date();
     const offset = now.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
+    const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, DISPLAY_LIMITS.DATETIME_SLICE_LENGTH);
     setDatetimeInput(localISOTime);
     convertToTimestamp();
   }, [convertToTimestamp]);

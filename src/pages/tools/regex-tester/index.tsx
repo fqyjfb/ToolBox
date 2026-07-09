@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Code, Copy, FileText } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
 
 const RegexTesterPage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy } = useToolPage();
   const [pattern, setPattern] = useState('');
   const [flags, setFlags] = useState('g');
   const [testString, setTestString] = useState('');
@@ -85,19 +85,6 @@ const RegexTesterPage: React.FC = () => {
     }
   }, [flags]);
 
-  const handleCopy = useCallback(() => {
-    if (!pattern) {
-      addToast({ message: '没有可复制的内容', type: 'warning' });
-      return;
-    }
-    
-    navigator.clipboard.writeText(`/${pattern}/${flags}`).then(() => {
-      addToast({ message: '已复制到剪贴板', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [pattern, flags, addToast]);
-
   const loadSample = useCallback(() => {
     setPattern('\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b');
     setTestString(`联系我们：
@@ -139,7 +126,7 @@ email: test@example.com
             示例
           </button>
           <button 
-            onClick={handleCopy}
+            onClick={() => handleCopy(pattern)}
             disabled={!pattern}
             className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >

@@ -10,13 +10,34 @@ const { initLogger } = require('./logs/logger.cjs');
 const { loadSettings } = require('./lib/config.cjs');
 const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow.cjs');
 
+const DELAY_CREATE_TRAY = 500;
+const DELAY_CREATE_FLOAT_WINDOW = 1000;
+
+let cachedSettings = null;
+
+function getCachedSettings() {
+  if (!cachedSettings) {
+    try {
+      cachedSettings = loadSettings();
+    } catch (error) {
+      console.error('[Main] Failed to load settings:', error);
+      cachedSettings = {};
+    }
+  }
+  return cachedSettings;
+}
+
+function invalidateSettingsCache() {
+  cachedSettings = null;
+}
+
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    const settings = loadSettings();
+    const settings = getCachedSettings();
     if (settings.isLockEnabled === 1) {
       require('./window/lockWindow.cjs').toggleLock();
       return;
@@ -47,14 +68,14 @@ function onWindowReady() {
   registerLogIpcHandlers();
   registerLockIpcHandlers();
 
-  setTimeout(() => createTray(), 500);
+  setTimeout(() => createTray(), DELAY_CREATE_TRAY);
 
   setTimeout(() => {
-    const settings = loadSettings();
+    const settings = getCachedSettings();
     if (settings.isFloatWindowEnabled === 1) {
       createFloatWindow();
     }
-  }, 1000);
+  }, DELAY_CREATE_FLOAT_WINDOW);
 }
 
 app.whenReady().then(async () => {
@@ -68,7 +89,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('activate', () => {
-  const settings = loadSettings();
+  const settings = getCachedSettings();
   if (settings.isLockEnabled === 1) {
     require('./window/lockWindow.cjs').toggleLock();
     return;

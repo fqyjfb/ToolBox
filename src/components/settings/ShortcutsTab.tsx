@@ -1,6 +1,7 @@
 import React from 'react';
 import { Keyboard } from 'lucide-react';
 import ShortcutRow from './ShortcutRow';
+import SettingCard from './SettingCard';
 import { ShortcutItem } from '../../types/settings';
 
 interface ShortcutsTabProps {
@@ -11,7 +12,7 @@ interface ShortcutsTabProps {
 
 const ShortcutsTab: React.FC<ShortcutsTabProps> = ({ shortcuts, onUpdateShortcut, onResetShortcuts }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+    <SettingCard>
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 flex items-center justify-center text-primary">
@@ -45,7 +46,7 @@ const ShortcutsTab: React.FC<ShortcutsTabProps> = ({ shortcuts, onUpdateShortcut
           />
         ))}
       </div>
-    </div>
+    </SettingCard>
   );
 };
 

@@ -5,6 +5,7 @@ import { hotNewsApi } from '../../services/hotNews';
 import { loadHomeTools, type HomeToolItem } from '../../utils/homeTools';
 import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../../types/hotNews';
 import WeatherCard from '../../components/home/WeatherCard';
+import { DISPLAY_LIMITS } from '../../constants/timers';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Phone: React.lazy(() => import('lucide-react').then(m => ({ default: m.Phone }))),
@@ -134,7 +135,7 @@ const WebHome: React.FC = () => {
     navigate(path);
   };
 
-  const quickTools = useMemo<HomeToolItem[]>(() => homeTools.slice(0, 8), [homeTools]);
+  const quickTools = useMemo<HomeToolItem[]>(() => homeTools.slice(0, DISPLAY_LIMITS.WEB_QUICK_TOOLS), [homeTools]);
 
   return (
     <>
@@ -226,7 +227,7 @@ const WebHome: React.FC = () => {
               </div>
             ) : sixtySecondsData?.length ? (
               <div style={{ gap: 'var(--space-3)' }}>
-                {(expandedNews === 'sixtySeconds' ? sixtySecondsData : sixtySecondsData.slice(0, 5)).map((news, index) => (
+                {(expandedNews === 'sixtySeconds' ? sixtySecondsData : sixtySecondsData.slice(0, DISPLAY_LIMITS.WEB_SIXTY_SECONDS_NEWS)).map((news, index) => (
                   <div
                     key={index}
                     className="flex items-start rounded-lg transition-colors"
@@ -272,7 +273,7 @@ const WebHome: React.FC = () => {
               </div>
             ) : itNewsData?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 'var(--space-3)' }}>
-                {(expandedNews === 'itNews' ? itNewsData : itNewsData.slice(0, 6)).map((news, index) => (
+                {(expandedNews === 'itNews' ? itNewsData : itNewsData.slice(0, DISPLAY_LIMITS.WEB_IT_NEWS)).map((news, index) => (
                   <div
                     key={index}
                     className="rounded-lg cursor-pointer transition-all"
@@ -320,7 +321,7 @@ const WebHome: React.FC = () => {
               </div>
             ) : todayInHistoryData?.length ? (
               <div style={{ gap: 'var(--space-3)' }}>
-                {(expandedNews === 'todayInHistory' ? todayInHistoryData : todayInHistoryData.slice(0, 5)).map((item, index) => (
+                {(expandedNews === 'todayInHistory' ? todayInHistoryData : todayInHistoryData.slice(0, DISPLAY_LIMITS.WEB_TODAY_IN_HISTORY)).map((item, index) => (
                   <div
                     key={index}
                     className="flex items-start rounded-lg cursor-pointer transition-colors"
@@ -403,7 +404,7 @@ const WebHome: React.FC = () => {
               </div>
             ) : aiNewsData?.length ? (
               <div style={{ gap: 'var(--space-3)' }}>
-                {(expandedNews === 'aiNews' ? aiNewsData : aiNewsData.slice(0, 4)).map((news, index) => (
+                {(expandedNews === 'aiNews' ? aiNewsData : aiNewsData.slice(0, DISPLAY_LIMITS.AI_NEWS)).map((news, index) => (
                   <div
                     key={index}
                     className="rounded-lg cursor-pointer transition-colors"

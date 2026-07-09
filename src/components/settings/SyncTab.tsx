@@ -2,6 +2,7 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { RefreshCw, Cloud, CloudOff, Loader2, HardDrive, Database, AlertCircle } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import SyncConflictModal from './SyncConflictModal';
+import SettingCard from './SettingCard';
 import { useSyncStore, SyncSummary } from '../../store/syncStore';
 import { useAuthStore } from '../../store/AuthStore';
 import { syncManager, SyncProgressInfo } from '../../services/syncManager';
@@ -338,7 +339,7 @@ const SyncTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+      <SettingCard>
         <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <HardDrive size={16} className="text-blue-600" />
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">数据存储位置</h2>
@@ -382,10 +383,10 @@ const SyncTab: React.FC = () => {
             </button>
           ))}
         </div>
-      </div>
+      </SettingCard>
 
       {storageLocation === 'cloud' && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+        <SettingCard>
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <div className="flex items-center gap-2">
               <Database size={16} className="text-blue-600" />
@@ -552,7 +553,7 @@ const SyncTab: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+        </SettingCard>
       )}
 
       {storageLocation === 'local' && (

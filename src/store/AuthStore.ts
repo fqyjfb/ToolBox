@@ -18,6 +18,7 @@ interface AuthState {
   logout: () => Promise<void>
   getCurrentUser: () => Promise<void>
   updateUserProfile: (data: { id: string; name?: string; email?: string; phone?: string; password?: string }) => Promise<boolean>
+  handleAuthSuccess: (user: User, admin: Admin | undefined) => Promise<void>
 }
 
 const authStorage = {
@@ -110,16 +111,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authService.login(credentials);
           if (response.success && response.data) {
-            const dal = getDataAccessLayer(response.data.user.id);
-            await dal.init(response.data.user.id);
-
-            set({
-              user: response.data.user,
-              admin: response.data.admin || null,
-              isAuthenticated: true,
-              isAdmin: !!response.data.admin,
-              isLoading: false
-            });
+            await get().handleAuthSuccess(response.data.user, response.data.admin);
           } else {
             set({ error: response.message || '登录失败', isLoading: false });
           }
@@ -135,16 +127,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authService.register(userData);
           if (response.success && response.data) {
-            const dal = getDataAccessLayer(response.data.user.id);
-            await dal.init(response.data.user.id);
-
-            set({
-              user: response.data.user,
-              admin: response.data.admin || null,
-              isAuthenticated: true,
-              isAdmin: !!response.data.admin,
-              isLoading: false
-            });
+            await get().handleAuthSuccess(response.data.user, response.data.admin);
           } else {
             set({ error: response.message || '注册失败', isLoading: false });
           }
@@ -153,6 +136,19 @@ export const useAuthStore = create<AuthState>()(
           logError('注册失败', 'AuthStore', error instanceof Error ? error : undefined);
           set({ error: errorMessage, isLoading: false });
         }
+      },
+
+      handleAuthSuccess: async (user: User, admin: Admin | undefined) => {
+        const dal = getDataAccessLayer(user.id);
+        await dal.init(user.id);
+
+        set({
+          user,
+          admin: admin || null,
+          isAuthenticated: true,
+          isAdmin: !!admin,
+          isLoading: false
+        });
       },
 
       logout: async () => {

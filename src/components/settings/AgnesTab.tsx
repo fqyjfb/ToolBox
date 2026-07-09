@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Key, Eye, EyeOff, Save, Check, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/AuthStore';
 import { useToastStore } from '../../store/toastStore';
+import SettingCard from './SettingCard';
 import { getUserAgnesConfig, saveUserAgnesConfig } from '../../services/AgnesService';
 
 const AgnesTab: React.FC = () => {
@@ -46,7 +47,7 @@ const AgnesTab: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+    <SettingCard>
       <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="w-5 h-5 flex items-center justify-center text-purple-600">
           <Key size={16} />
@@ -107,7 +108,7 @@ const AgnesTab: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </SettingCard>
   );
 };
 

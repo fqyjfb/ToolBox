@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { ChatMessage, ChatTarget } from '../types/chat';
 import { CHAT_FILENAME, LATER_FILENAME, READ_FILENAME, WATCH_FILENAME, SHOP_FILENAME, JOURNAL_FOLDER, ARCHIVE_FOLDER } from '../constants/paths';
 import { parseChatContent, generateChatContent, generateTimestamp, generateTodayHeader, generateJournalFilename } from '../utils/chatParser';
+import { DISPLAY_LIMITS } from '../../../../constants/timers';
 
 export interface UseChatNotesProps {
   rootPath: string | null;
@@ -144,7 +145,7 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
       }
       case 'archive': {
         for (const msg of messagesToMove) {
-          const header = msg.text.slice(0, 100);
+          const header = msg.text.slice(0, DISPLAY_LIMITS.CHAT_HEADER_LENGTH);
           const archiveFilename = `${header.replace(/[^\w\s]/g, '_')}.md`;
           const destinationPath = `${rootPath}/${ARCHIVE_FOLDER}/${archiveFilename}`;
           await ensureFolderExists(`${rootPath}/${ARCHIVE_FOLDER}`);

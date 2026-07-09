@@ -9,6 +9,7 @@ import { isWeb } from '../../utils/environment';
 import { getWeatherCity } from '../../utils/weatherLocation';
 import type { WeatherInfo } from '../../types/weather';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
+import { DISPLAY_LIMITS } from '../../constants/timers';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Phone: React.lazy(() => import('lucide-react').then(m => ({ default: m.Phone }))),
@@ -146,7 +147,7 @@ const MobileHome: React.FC = () => {
     return <Cloud className="w-8 h-8 text-gray-400" />;
   };
 
-  const quickTools: HomeToolItem[] = homeTools.slice(0, 6);
+  const quickTools: HomeToolItem[] = homeTools.slice(0, DISPLAY_LIMITS.MOBILE_QUICK_TOOLS);
 
   return (
     <>
@@ -280,7 +281,7 @@ const MobileHome: React.FC = () => {
           
           {sixtySecondsData?.length ? (
             <div style={{ gap: 'var(--space-2)' }}>
-              {(expandedNews === 'sixtySeconds' ? sixtySecondsData : sixtySecondsData.slice(0, 4)).map((news, index) => (
+              {(expandedNews === 'sixtySeconds' ? sixtySecondsData : sixtySecondsData.slice(0, DISPLAY_LIMITS.MOBILE_SIXTY_SECONDS_NEWS)).map((news, index) => (
                 <div
                   key={index}
                   className="flex items-start rounded-lg"
@@ -323,7 +324,7 @@ const MobileHome: React.FC = () => {
           
           {itNewsData?.length ? (
             <div style={{ gap: 'var(--space-3)' }}>
-              {(expandedNews === 'itNews' ? itNewsData : itNewsData.slice(0, 4)).map((news, index) => (
+              {(expandedNews === 'itNews' ? itNewsData : itNewsData.slice(0, DISPLAY_LIMITS.MOBILE_IT_NEWS)).map((news, index) => (
                 <div
                   key={index}
                   className="flex items-center"
@@ -371,7 +372,7 @@ const MobileHome: React.FC = () => {
           
           {todayInHistoryData?.length ? (
             <div style={{ gap: 'var(--space-2)' }}>
-              {(expandedNews === 'todayInHistory' ? todayInHistoryData : todayInHistoryData.slice(0, 4)).map((item, index) => (
+              {(expandedNews === 'todayInHistory' ? todayInHistoryData : todayInHistoryData.slice(0, DISPLAY_LIMITS.MOBILE_TODAY_IN_HISTORY)).map((item, index) => (
                 <div
                   key={index}
                   className="flex items-start rounded-lg"
@@ -421,7 +422,7 @@ const MobileHome: React.FC = () => {
           
           {aiNewsData?.length ? (
             <div style={{ gap: 'var(--space-3)' }}>
-              {(expandedNews === 'aiNews' ? aiNewsData : aiNewsData.slice(0, 4)).map((news, index) => (
+              {(expandedNews === 'aiNews' ? aiNewsData : aiNewsData.slice(0, DISPLAY_LIMITS.AI_NEWS)).map((news, index) => (
                 <div
                   key={index}
                   className="flex items-center"

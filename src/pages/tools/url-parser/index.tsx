@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, Copy, FileText } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
 
 const UrlParserPage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy } = useToolPage();
   const [input, setInput] = useState('');
   const [parsed, setParsed] = useState<URL | null>(null);
   const [error, setError] = useState('');
@@ -32,14 +32,6 @@ const UrlParserPage: React.FC = () => {
     }, 0);
     return () => clearTimeout(timer);
   }, [parseURL]);
-
-  const handleCopy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      addToast({ message: '已复制', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [addToast]);
 
   const loadSample = useCallback(() => {
     setInput('https://www.example.com:8080/path/to/page?query=value&lang=zh#section');

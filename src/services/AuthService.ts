@@ -16,6 +16,55 @@ interface AuthUser {
   user_metadata?: { name?: string; phone?: string }
 }
 
+interface UserDetails {
+  userName: string
+  memberLevel: '普通' | 'VIP' | 'SVIP'
+  vipExpireAt: string | undefined
+  isBanned: boolean
+  userPhone: string | undefined
+}
+
+const fetchUserDetails = async (userId: string): Promise<UserDetails> => {
+  let memberLevel: '普通' | 'VIP' | 'SVIP' = '普通'
+  let vipExpireAt: string | undefined
+  let isBanned = false
+  let userName = ''
+  let userPhone: string | undefined
+
+  try {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('username, name, email, phone, member_level, vip_expire_at, is_banned')
+      .eq('id', userId)
+      .single()
+
+    if (userData) {
+      userName = userData.name || userData.username || ''
+      memberLevel = (userData.member_level as '普通' | 'VIP' | 'SVIP') || '普通'
+      vipExpireAt = userData.vip_expire_at || undefined
+      isBanned = userData.is_banned || false
+      userPhone = userData.phone || undefined
+    }
+  } catch {}
+
+  return { userName, memberLevel, vipExpireAt, isBanned, userPhone }
+}
+
+const fetchAdminRole = async (userId: string): Promise<'super' | 'normal' | undefined> => {
+  try {
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+
+    if (!profileError && profileData?.role && (profileData.role === 'super' || profileData.role === 'normal')) {
+      return profileData.role as 'super' | 'normal'
+    }
+  } catch {}
+  return undefined
+}
+
 export const authService = {
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
     try {
@@ -59,27 +108,7 @@ export const authService = {
         }
       }
 
-      let memberLevel: '普通' | 'VIP' | 'SVIP' = '普通'
-      let vipExpireAt: string | undefined
-      let isBanned = false
-      let userName = ''
-      let userPhone: string | undefined
-
-      try {
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('username, name, email, phone, member_level, vip_expire_at, is_banned')
-          .eq('id', data.user.id)
-          .single()
-
-        if (!userError && userData) {
-          userName = userData.name || userData.username || ''
-          memberLevel = (userData.member_level as '普通' | 'VIP' | 'SVIP') || '普通'
-          vipExpireAt = userData.vip_expire_at || undefined
-          isBanned = userData.is_banned || false
-          userPhone = userData.phone || undefined
-        }
-      } catch {}
+      const { userName, memberLevel, vipExpireAt, isBanned, userPhone } = await fetchUserDetails(data.user.id)
 
       if (isBanned) {
         return {
@@ -87,6 +116,9 @@ export const authService = {
           message: '您的账号已被封禁，请联系管理员'
         }
       }
+
+      let finalMemberLevel = memberLevel
+      let finalVipExpireAt = vipExpireAt
 
       if (vipExpireAt) {
         const expireDate = new Date(vipExpireAt)
@@ -96,24 +128,13 @@ export const authService = {
               .from('users')
               .update({ member_level: '普通', vip_expire_at: null })
               .eq('id', data.user.id)
-            memberLevel = '普通'
-            vipExpireAt = undefined
+            finalMemberLevel = '普通'
+            finalVipExpireAt = undefined
           } catch {}
         }
       }
 
-      let adminRole: 'super' | 'normal' | undefined
-      try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single()
-
-        if (!profileError && profileData?.role && (profileData.role === 'super' || profileData.role === 'normal')) {
-          adminRole = profileData.role as 'super' | 'normal'
-        }
-      } catch {}
+      const adminRole = await fetchAdminRole(data.user.id)
 
       const user: User = {
         id: data.user.id,
@@ -121,8 +142,8 @@ export const authService = {
         name: userName || data.user.email?.split('@')[0] || '',
         email: data.user.email || '',
         phone: userPhone,
-        memberLevel,
-        vipExpireAt,
+        memberLevel: finalMemberLevel,
+        vipExpireAt: finalVipExpireAt,
         isBanned: false,
         createdAt: data.user.created_at || ''
       }
@@ -207,27 +228,7 @@ export const authService = {
       }
 
       if (authUser) {
-        let memberLevel: '普通' | 'VIP' | 'SVIP' = '普通'
-        let vipExpireAt: string | undefined
-        let isBanned = false
-        let userName = ''
-        let userPhone: string | undefined
-
-        try {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('username, name, email, phone, member_level, vip_expire_at, is_banned')
-            .eq('id', authUser.id)
-            .single()
-
-          if (userData) {
-            userName = userData.name || userData.username || ''
-            memberLevel = (userData.member_level as '普通' | 'VIP' | 'SVIP') || '普通'
-            vipExpireAt = userData.vip_expire_at || undefined
-            isBanned = userData.is_banned || false
-            userPhone = userData.phone || undefined
-          }
-        } catch {}
+        const { userName, memberLevel, vipExpireAt, isBanned, userPhone } = await fetchUserDetails(authUser.id)
 
         if (isBanned) {
           return { success: false }
@@ -245,26 +246,16 @@ export const authService = {
           createdAt: authUser.created_at || ''
         }
 
-        let admin: Admin | undefined
-        try {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', authUser.id)
-            .single()
-
-          if (!profileError && profileData?.role && (profileData.role === 'super' || profileData.role === 'normal')) {
-            admin = {
-              id: authUser.id,
-              username: authUser.email || '',
-              role: profileData.role as 'super' | 'normal',
-              createdAt: authUser.created_at || '',
-              name: userName,
-              email: authUser.email || '',
-              phone: userPhone
-            }
-          }
-        } catch {}
+        const adminRole = await fetchAdminRole(authUser.id)
+        const admin = adminRole ? {
+          id: authUser.id,
+          username: authUser.email || '',
+          role: adminRole,
+          createdAt: authUser.created_at || '',
+          name: userName,
+          email: authUser.email || '',
+          phone: userPhone
+        } : undefined
 
         return { success: true, data: user, admin }
       }

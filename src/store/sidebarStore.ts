@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
+import { DISPLAY_LIMITS } from '../constants/timers';
 
 function loadState() {
   try {
@@ -86,7 +87,7 @@ export const useSidebarStore = create<SidebarStore>((set) => ({
 
   addRecentTool: (toolId) => set((state) => {
     const filtered = state.recentToolIds.filter((id) => id !== toolId);
-    const next = { recentToolIds: [toolId, ...filtered].slice(0, 10) };
+    const next = { recentToolIds: [toolId, ...filtered].slice(0, DISPLAY_LIMITS.RECENT_TOOLS) };
     saveState({ ...state, ...next });
     return next;
   }),

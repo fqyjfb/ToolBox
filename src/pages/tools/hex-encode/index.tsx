@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Binary, Copy, FileText } from 'lucide-react';
-import { useToastStore } from '../../../store/toastStore';
+import { useToolPage } from '../../../hooks/useToolPage';
 
 const encodeHex = (text: string): string => {
   if (!text) {
@@ -13,7 +13,7 @@ const encodeHex = (text: string): string => {
 };
 
 const HexEncodePage: React.FC = () => {
-  const addToast = useToastStore((state) => state.addToast);
+  const { handleCopy, addToast } = useToolPage();
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
 
@@ -24,19 +24,6 @@ const HexEncodePage: React.FC = () => {
       addToast({ message: '编码失败', type: 'error' });
     }
   }, [input, addToast]);
-
-  const handleCopy = useCallback(() => {
-    if (!output) {
-      addToast({ message: '没有可复制的内容', type: 'warning' });
-      return;
-    }
-    
-    navigator.clipboard.writeText(output).then(() => {
-      addToast({ message: '已复制到剪贴板', type: 'success' });
-    }).catch(() => {
-      addToast({ message: '复制失败', type: 'error' });
-    });
-  }, [output, addToast]);
 
   const loadSample = useCallback(() => {
     setInput('Hello, World!');
@@ -58,7 +45,7 @@ const HexEncodePage: React.FC = () => {
             示例
           </button>
           <button 
-            onClick={handleCopy}
+            onClick={() => handleCopy(output)}
             disabled={!output}
             className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >

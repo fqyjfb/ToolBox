@@ -1,14 +1,14 @@
 import { logEncryptionOperation } from '../services/loggerService';
+import { CRYPTO_CONSTANTS } from '../constants/timers';
 
 const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY;
-const IV_LENGTH = 16;
 
 const getEncryptionKey = (): string => {
   if (!ENCRYPTION_KEY) {
     throw new Error('加密密钥未配置，请设置 VITE_ENCRYPTION_KEY 环境变量');
   }
-  if (ENCRYPTION_KEY.length < 16) {
-    throw new Error('加密密钥长度不足，至少需要16个字符');
+  if (ENCRYPTION_KEY.length < CRYPTO_CONSTANTS.MIN_KEY_LENGTH) {
+    throw new Error(`加密密钥长度不足，至少需要${CRYPTO_CONSTANTS.MIN_KEY_LENGTH}个字符`);
   }
   return ENCRYPTION_KEY;
 };
@@ -75,7 +75,7 @@ const getKey = async (): Promise<CryptoKey> => {
 export const encrypt = async (text: string): Promise<string> => {
   const startTime = Date.now();
   try {
-    const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+    const iv = crypto.getRandomValues(new Uint8Array(CRYPTO_CONSTANTS.IV_LENGTH));
     const key = await getKey();
     
     const encrypted = await crypto.subtle.encrypt(

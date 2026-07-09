@@ -5,6 +5,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { openUrl } from '../../services/browserService';
 import { debounce, formatHotValue } from '../../utils';
 import { Inbox, RefreshCw } from 'lucide-react';
+import { DISPLAY_LIMITS } from '../../constants/timers';
 import './HotNewsPage.css';
 
 const HotNewsPage: React.FC = () => {
@@ -159,7 +160,7 @@ const HotNewsPage: React.FC = () => {
               {item.avgShowView && <span className="hot-avg-show-view">{item.avgShowView} 场均</span>}
               {item.sumBoxDesc && <span className="hot-sum-box-desc">{item.sumBoxDesc}</span>}
               {item.splitBoxDesc && <span className="hot-split-box-desc">{item.splitBoxDesc}</span>}
-              {item.tags && item.tags.slice(0, 3).map((tag: string, index: number) => (
+              {item.tags && item.tags.slice(0, DISPLAY_LIMITS.TAGS).map((tag: string, index: number) => (
                 <span key={index} className="hot-tag" title={tag}>{tag.length > 8 ? tag.substring(0, 8) + '...' : tag}</span>
               ))}
             </div>
