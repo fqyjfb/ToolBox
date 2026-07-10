@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import path from 'path';
 import { logError } from '../services/loggerService';
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
@@ -66,18 +66,23 @@ export function useNotes(): UseNotesReturn {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [initialized, setInitialized] = useState(false);
 
+  const findFileInTreeRef = useRef<((filePath: string, nodes: FileTreeNode[]) => FileTreeNode | null) | null>(null);
+  findFileInTreeRef.current = (filePath: string, nodes: FileTreeNode[]): FileTreeNode | null => {
+    for (const node of nodes) {
+      if (node.path === filePath && node.type === 'file') {
+        return node;
+      }
+      if (node.children) {
+        const found = findFileInTreeRef.current!(filePath, node.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   const findFileInTree = useCallback(
     (filePath: string, nodes: FileTreeNode[]): FileTreeNode | null => {
-      for (const node of nodes) {
-        if (node.path === filePath && node.type === 'file') {
-          return node;
-        }
-        if (node.children) {
-          const found = findFileInTree(filePath, node.children);
-          if (found) return found;
-        }
-      }
-      return null;
+      return findFileInTreeRef.current!(filePath, nodes);
     },
     []
   );
@@ -594,15 +599,20 @@ export function useNotes(): UseNotesReturn {
     }
   }, []);
 
+  const updateTreeExpandStateRef = useRef<((nodes: FileTreeNode[]) => FileTreeNode[]) | null>(null);
+  updateTreeExpandStateRef.current = (nodes: FileTreeNode[]): FileTreeNode[] => {
+    return nodes.map((node) => ({
+      ...node,
+      expanded: expandedFolders.has(node.path),
+      children: node.children ? updateTreeExpandStateRef.current!(node.children) : undefined,
+    }));
+  };
+
   const updateTreeExpandState = useCallback(
     (nodes: FileTreeNode[]): FileTreeNode[] => {
-      return nodes.map((node) => ({
-        ...node,
-        expanded: expandedFolders.has(node.path),
-        children: node.children ? updateTreeExpandState(node.children) : undefined,
-      }));
+      return updateTreeExpandStateRef.current!(nodes);
     },
-    [expandedFolders]
+    []
   );
 
   return {

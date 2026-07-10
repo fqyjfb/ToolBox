@@ -110,7 +110,8 @@ const NotesPage: React.FC = () => {
         await createNote(createDialog.parentPath, createName.trim());
       }
       handleCloseCreateDialog();
-    } catch {
+    } catch (error) {
+      console.error('Create failed:', error);
     }
   };
 

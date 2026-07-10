@@ -270,7 +270,8 @@ const Settings: React.FC = () => {
           setTimeout(async () => {
             try {
               await window.electron?.restart();
-            } catch {
+            } catch (error) {
+              console.error('Restart failed:', error);
             }
           }, 1500);
         }

@@ -2,6 +2,8 @@ import React from 'react';
 import { FolderOpen, Folder, MoreVertical, CheckSquare, Clock, AlertCircle, Edit, Trash2, Plus } from 'lucide-react';
 import { Todo, TodoCategory } from '../../services/TodoService';
 
+const MAX_TODO_LIST_HEIGHT = '220px';
+
 interface TodoCardProps {
   category: { id: string; name: string };
   todos: Todo[];
@@ -32,7 +34,10 @@ const getPriorityColor = (priority: string): string => {
 
 
 
-const formatTime = (dueDate?: string | null): { text: string; status: 'overdue' | 'today' | 'tomorrow' | 'later' } | null => {
+const formatTime = (
+  dueDate?: string | null,
+  isCompleted?: boolean
+): { text: string; status: 'overdue' | 'today' | 'tomorrow' | 'later' } | null => {
   if (!dueDate) return null;
   
   const date = new Date(dueDate);
@@ -42,7 +47,7 @@ const formatTime = (dueDate?: string | null): { text: string; status: 'overdue' 
   
   const diffDays = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   
-  if (diffDays < 0) {
+  if (diffDays < 0 && !isCompleted) {
     return { text: '已逾期', status: 'overdue' };
   } else if (diffDays === 0) {
     return { text: '今天', status: 'today' };
@@ -129,10 +134,10 @@ const TodoCard: React.FC<TodoCardProps> = ({
         </div>
       </div>
 
-      <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+      <div className="space-y-3 overflow-y-auto pr-1" style={{ maxHeight: MAX_TODO_LIST_HEIGHT }}>
         {sortedTodos.map((todo) => {
-          const timeInfo = formatTime(todo.due_date);
           const isCompleted = todo.is_completed;
+          const timeInfo = formatTime(todo.due_date, isCompleted);
 
           return (
             <div 

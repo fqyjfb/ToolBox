@@ -50,32 +50,14 @@ const OcrTab: React.FC = () => {
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  useEffect(() => {
-    loadSettings();
-    checkOcrStatus();
-  }, []);
-
-  const loadSettings = () => {
+  const loadSettings = useCallback(() => {
     const saved = localStorageService.get<OcrSettings>(STORAGE_KEYS.OCR_SETTINGS, null as unknown as OcrSettings);
     if (saved) {
       setSettings({ ...DEFAULT_OCR_SETTINGS, ...saved });
     }
-  };
+  }, []);
 
-  const saveSettings = useCallback((newSettings: OcrSettings) => {
-    localStorageService.set(STORAGE_KEYS.OCR_SETTINGS, newSettings);
-    setSettings(newSettings);
-    setHasUnsavedChanges(false);
-    window.dispatchEvent(new CustomEvent('ocr-settings-changed', { detail: newSettings }));
-    addToast({ type: 'success', message: 'OCR设置已保存' });
-  }, [addToast]);
-
-  const handleSettingChange = <K extends keyof OcrSettings>(key: K, value: OcrSettings[K]) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-    setHasUnsavedChanges(true);
-  };
-
-  const checkOcrStatus = async () => {
+  const checkOcrStatus = useCallback(async () => {
     try {
       const result = await window.electron?.ocr?.status();
       if (result) {
@@ -91,6 +73,24 @@ const OcrTab: React.FC = () => {
         canManualStart: true,
       });
     }
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+    checkOcrStatus();
+  }, [loadSettings, checkOcrStatus]);
+
+  const saveSettings = useCallback((newSettings: OcrSettings) => {
+    localStorageService.set(STORAGE_KEYS.OCR_SETTINGS, newSettings);
+    setSettings(newSettings);
+    setHasUnsavedChanges(false);
+    window.dispatchEvent(new CustomEvent('ocr-settings-changed', { detail: newSettings }));
+    addToast({ type: 'success', message: 'OCR设置已保存' });
+  }, [addToast]);
+
+  const handleSettingChange = <K extends keyof OcrSettings>(key: K, value: OcrSettings[K]) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    setHasUnsavedChanges(true);
   };
 
   const handleStartService = async () => {

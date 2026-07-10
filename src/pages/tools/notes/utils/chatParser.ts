@@ -34,7 +34,7 @@ export function parseChatContent(content: string): ChatMessage[] {
       continue;
     }
 
-    const continuationMatch = line.match(/^  (.*)$/);
+    const continuationMatch = line.match(/^ {2}(.*)$/);
     if (continuationMatch && currentMessage) {
       currentMessage.textLines.push(continuationMatch[1]);
       continue;

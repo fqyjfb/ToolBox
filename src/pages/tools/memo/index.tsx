@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallbackRef } from '../../../hooks/useCallbackRef';
 import { useNavigate } from 'react-router-dom';
 import { StickyNote, Plus, Trash2, Edit, Tag, AlertCircle, Copy } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -182,14 +183,7 @@ const MemoPage: React.FC = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  useEffect(() => {
-    if (admin) {
-      loadCategories();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin]);
-
-  const loadCategories = async () => {
+  const loadCategories = useCallbackRef(async () => {
     if (!admin) return;
     
     try {
@@ -202,7 +196,13 @@ const MemoPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [admin, addToast]);
+
+  useEffect(() => {
+    if (admin) {
+      loadCategories();
+    }
+  }, [admin, loadCategories]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -224,62 +224,7 @@ const MemoPage: React.FC = () => {
     }
   }, [categories, admin, addToast]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-    setMemos([]);
-    setHasMore(true);
-    loadMemos(1, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin, selectedCategory]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setMemos([]);
-    setHasMore(true);
-    loadMemos(1, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, isSearchActive]);
-
-  useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting && hasMore && !isLoadingMore && !loading) {
-          setIsLoadingMore(true);
-          loadMemos(currentPage + 1, true);
-        }
-      },
-      { rootMargin: '200px' }
-    );
-
-    if (lastMemoRef.current && memos.length > 0) {
-      observerRef.current.observe(lastMemoRef.current);
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [memos.length, hasMore, isLoadingMore, loading, currentPage]);
-
-  useEffect(() => {
-    const handleOpenAddMemo = () => {
-      setShowAddMemoModal(true);
-    };
-
-    if (window.electron) {
-      window.electron.onOpenAddMemo?.(handleOpenAddMemo);
-    }
-
-    return () => {
-      if (window.electron) {
-        window.electron.onOpenAddMemo?.(() => {});
-      }
-    };
-  }, []);
-
-  const loadMemos = async (pageNum: number = 1, append: boolean = false) => {
+  const loadMemos = useCallbackRef(async (pageNum: number = 1, append: boolean = false) => {
     if (!admin) return;
     
     try {
@@ -309,7 +254,60 @@ const MemoPage: React.FC = () => {
       setLoading(false);
       setIsLoadingMore(false);
     }
-  };
+  }, [admin, isSearchActive, searchQuery, selectedCategory, pageSize, addToast]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setMemos([]);
+    setHasMore(true);
+    loadMemos(1, false);
+  }, [admin, selectedCategory, loadMemos]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setMemos([]);
+    setHasMore(true);
+    loadMemos(1, false);
+  }, [searchQuery, isSearchActive, loadMemos]);
+
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && hasMore && !isLoadingMore && !loading) {
+          setIsLoadingMore(true);
+          loadMemos(currentPage + 1, true);
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    if (lastMemoRef.current && memos.length > 0) {
+      observerRef.current.observe(lastMemoRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [memos.length, hasMore, isLoadingMore, loading, currentPage, loadMemos]);
+
+  useEffect(() => {
+    const handleOpenAddMemo = () => {
+      setShowAddMemoModal(true);
+    };
+
+    if (window.electron) {
+      window.electron.onOpenAddMemo?.(handleOpenAddMemo);
+    }
+
+    return () => {
+      if (window.electron) {
+        window.electron.onOpenAddMemo?.(() => {});
+      }
+    };
+  }, []);
 
   const handleCreateCategory = async () => {
     if (!admin || !newCategoryName.trim()) {
@@ -377,7 +375,7 @@ const MemoPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [admin, selectedCategory, addToast]);
+  }, [admin, selectedCategory, addToast, loadCategories]);
 
   const handleCreateMemo = async () => {
     if (!admin || !newMemoTitle.trim()) {
@@ -456,7 +454,7 @@ const MemoPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [admin, addToast]);
+  }, [admin, addToast, loadMemos]);
 
   const handleCopyMemoContent = useCallback(async (memo: Memo) => {
     try {

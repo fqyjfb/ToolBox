@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallbackRef } from '../../../hooks/useCallbackRef';
 import { useAgnesStore } from '../../../store/agnesStore';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
@@ -31,19 +32,7 @@ const HistoryPage: React.FC = () => {
     tasksRef.current = videoGeneration.tasks;
   }, [videoGeneration.tasks]);
 
-  useEffect(() => {
-    const hasPendingTasks = videoGeneration.tasks.some(
-      task => ['pending', 'running', 'queued', 'processing'].includes(task.status)
-    );
-
-    if (hasPendingTasks && pollingTimerRef.current === null) {
-      startPolling();
-    } else if (!hasPendingTasks && pollingTimerRef.current !== null) {
-      stopPolling();
-    }
-  }, [videoGeneration.tasks.map(t => t.status)]);
-
-  const fetchTaskStatus = async (taskId: string): Promise<void> => {
+  const fetchTaskStatus = useCallback(async (taskId: string): Promise<void> => {
     try {
       const result = await getVideoTaskStatus(taskId);
 
@@ -63,9 +52,17 @@ const HistoryPage: React.FC = () => {
     } catch (error) {
       console.error(`Failed to fetch task ${taskId}:`, error);
     }
-  };
+  }, [updateVideoTask]);
 
-  const startPolling = () => {
+  const stopPolling = useCallbackRef(() => {
+    if (pollingTimerRef.current !== null) {
+      clearInterval(pollingTimerRef.current);
+      pollingTimerRef.current = null;
+    }
+    setPollingStatus('idle');
+  }, []);
+
+  const startPolling = useCallbackRef(() => {
     if (pollingTimerRef.current !== null) return;
 
     setPollingStatus('polling');
@@ -94,15 +91,20 @@ const HistoryPage: React.FC = () => {
 
     poll();
     pollingTimerRef.current = window.setInterval(poll, POLLING_INTERVAL_MS);
-  };
+  }, [fetchTaskStatus, stopPolling]);
 
-  const stopPolling = () => {
-    if (pollingTimerRef.current !== null) {
-      clearInterval(pollingTimerRef.current);
-      pollingTimerRef.current = null;
+  useEffect(() => {
+    const taskStatuses = videoGeneration.tasks.map(t => t.status);
+    const hasPendingTasks = taskStatuses.some(
+      status => ['pending', 'running', 'queued', 'processing'].includes(status)
+    );
+
+    if (hasPendingTasks && pollingStatus === 'idle') {
+      startPolling();
+    } else if (!hasPendingTasks && pollingStatus === 'polling') {
+      stopPolling();
     }
-    setPollingStatus('idle');
-  };
+  }, [videoGeneration.tasks, pollingStatus, startPolling, stopPolling]);
 
   const handleRefreshAllTasks = async () => {
     if (videoGeneration.tasks.length === 0) return;
@@ -120,7 +122,7 @@ const HistoryPage: React.FC = () => {
     return () => {
       stopPolling();
     };
-  }, []);
+  }, [stopPolling]);
 
   const handleImageDownload = async (url: string, filename?: string) => {
     try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { APP_VERSION, compareVersions } from '../../utils/version';
 import { useToastStore } from '../../store/toastStore';
 import { ExternalLink, Monitor, HardDrive, Cpu, User, Clock, RefreshCw } from 'lucide-react';
@@ -23,12 +23,37 @@ const About: React.FC = () => {
   const [loadingSystemInfo, setLoadingSystemInfo] = useState(true);
   const isElectron = typeof window !== 'undefined' && !!window.electron;
 
+  const loadVersionInfo = useCallback(async () => {
+    const electron = window.electron;
+    if (!electron) return;
+    try {
+      const info = await electron.getVersion();
+      setElectronVersion(info.electron);
+      setChromeVersion(info.chrome);
+    } catch (error) {
+      console.error('Failed to load version info:', error);
+    }
+  }, []);
+
+  const loadSystemInfo = useCallback(async () => {
+    const electron = window.electron;
+    if (!electron) return;
+    try {
+      const info = await electron.systemInfo.get();
+      setSystemInfo(info);
+    } catch (error) {
+      console.error('Failed to load system info:', error);
+    } finally {
+      setLoadingSystemInfo(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isElectron) {
       loadVersionInfo();
       loadSystemInfo();
     }
-  }, [isElectron]);
+  }, [isElectron, loadVersionInfo, loadSystemInfo]);
 
   useEffect(() => {
     if (isElectron && updateStatus === 'downloading') {
@@ -47,31 +72,6 @@ const About: React.FC = () => {
       };
     }
   }, [updateStatus, isElectron]);
-
-  const loadVersionInfo = async () => {
-    const electron = window.electron;
-    if (!electron) return;
-    try {
-      const info = await electron.getVersion();
-      setElectronVersion(info.electron);
-      setChromeVersion(info.chrome);
-    } catch (error) {
-      console.error('Failed to load version info:', error);
-    }
-  };
-
-  const loadSystemInfo = async () => {
-    const electron = window.electron;
-    if (!electron) return;
-    try {
-      const info = await electron.systemInfo.get();
-      setSystemInfo(info);
-    } catch (error) {
-      console.error('Failed to load system info:', error);
-    } finally {
-      setLoadingSystemInfo(false);
-    }
-  };
 
   const checkForUpdates = async () => {
     if (!isElectron) {

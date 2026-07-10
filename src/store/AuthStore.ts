@@ -1,18 +1,21 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, type StorageValue } from 'zustand/middleware'
 import { Admin, LoginRequest, RegisterRequest, User } from '../types/auth'
 import { authService } from '../services/AuthService'
 import { logError } from '../services/loggerService'
 import { getDataAccessLayer } from '../services/dataAccessLayer'
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService'
 
-interface AuthState {
+interface AuthStateData {
   user: User | null
   admin: Admin | null
   isAuthenticated: boolean
   isAdmin: boolean
   isLoading: boolean
   error: string | null
+}
+
+interface AuthState extends AuthStateData {
   login: (credentials: LoginRequest) => Promise<void>
   register: (userData: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
@@ -22,13 +25,13 @@ interface AuthState {
 }
 
 const authStorage = {
-  getItem: (key: string): string | null => {
+  getItem: (key: string): StorageValue<AuthStateData> | null => {
     if (key === 'auth') {
       const storedUser = localStorageService.getString(STORAGE_KEYS.USER)
       if (storedUser) {
         try {
           const user = JSON.parse(storedUser)
-          return JSON.stringify({
+          return {
             state: {
               user,
               admin: user.role ? { ...user, role: user.role as 'super' | 'normal' } : null,
@@ -38,7 +41,7 @@ const authStorage = {
               error: null
             },
             version: 0
-          })
+          }
         } catch {
           return null
         }
@@ -47,7 +50,7 @@ const authStorage = {
       if (storedAdmin) {
         try {
           const admin = JSON.parse(storedAdmin)
-          return JSON.stringify({
+          return {
             state: {
               user: null,
               admin,
@@ -57,32 +60,23 @@ const authStorage = {
               error: null
             },
             version: 0
-          })
+          }
         } catch {
           return null
         }
       }
     }
-    return localStorageService.getString(key) ?? null
+    return null
   },
 
-  setItem: (key: string, value: string): void => {
-    if (key === 'auth') {
-      try {
-        const parsed = JSON.parse(value)
-        if (parsed.state) {
-          if (parsed.state.user) {
-            localStorageService.setString(STORAGE_KEYS.USER, JSON.stringify(parsed.state.user))
-          }
-          if (parsed.state.admin) {
-            localStorageService.setString(STORAGE_KEYS.ADMIN, JSON.stringify(parsed.state.admin))
-          }
-        }
-      } catch {
-        localStorageService.setString(key, value)
+  setItem: (key: string, value: StorageValue<AuthStateData>): void => {
+    if (key === 'auth' && value.state) {
+      if (value.state.user) {
+        localStorageService.setString(STORAGE_KEYS.USER, JSON.stringify(value.state.user))
       }
-    } else {
-      localStorageService.setString(key, value)
+      if (value.state.admin) {
+        localStorageService.setString(STORAGE_KEYS.ADMIN, JSON.stringify(value.state.admin))
+      }
     }
   },
 
@@ -90,8 +84,6 @@ const authStorage = {
     if (key === 'auth') {
       localStorageService.remove(STORAGE_KEYS.USER)
       localStorageService.remove(STORAGE_KEYS.ADMIN)
-    } else {
-      localStorageService.remove(key)
     }
   }
 }
@@ -233,7 +225,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth',
-      storage: authStorage as any
+      storage: authStorage
     }
   )
 )

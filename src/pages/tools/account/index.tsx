@@ -139,7 +139,7 @@ const loadPlatformOrder = (): PlatformType[] => {
   const saved = localStorageService.get<string[]>(STORAGE_KEYS.PLATFORM_ORDER, []);
   if (saved.length > 0) {
     const validPlatforms: PlatformType[] = ['website_account', 'shops', 'social', 'emails', 'phones', 'companies', 'credentials', 'general'];
-    let order = saved.map(p => p === 'password' ? 'website_account' : p)
+    const order = saved.map(p => p === 'password' ? 'website_account' : p)
                      .filter(p => validPlatforms.includes(p as PlatformType));
     
     const defaultOrder: PlatformType[] = ['website_account', 'shops', 'social', 'emails', 'phones', 'companies', 'credentials', 'general'];

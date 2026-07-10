@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useCallbackRef } from '../../../../hooks/useCallbackRef';
 import { ChatMessage, ChatTarget } from '../types/chat';
 import { CHAT_FILENAME, LATER_FILENAME, READ_FILENAME, WATCH_FILENAME, SHOP_FILENAME, JOURNAL_FOLDER, ARCHIVE_FOLDER } from '../constants/paths';
 import { parseChatContent, generateChatContent, generateTimestamp, generateTodayHeader, generateJournalFilename } from '../utils/chatParser';
@@ -111,6 +112,29 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
     return messages;
   }, [messages, selectedMessages]);
 
+  const ensureFolderExists = useCallbackRef(async (folderPath: string) => {
+    try {
+      const result = await (window.electron?.notes.createFolder(null, folderPath) || Promise.resolve({ success: true }));
+      return result.success;
+    } catch {
+      return true;
+    }
+  }, []);
+
+  const appendToFile = useCallbackRef(async (filePath: string, header: string, content: string) => {
+    const result = await (window.electron?.notes.readFile(filePath) || Promise.resolve({ success: false }));
+    let fileContent = result.success && result.content ? result.content : '';
+
+    if (header && !fileContent.includes(header)) {
+      if (fileContent) fileContent += '\n\n';
+      fileContent += `${header}\n`;
+    }
+    if (fileContent && !fileContent.endsWith('\n')) fileContent += '\n';
+    fileContent += `${content}\n`;
+
+    await window.electron?.notes.saveFile(filePath, fileContent);
+  }, []);
+
   const moveMessages = useCallback(async (target: ChatTarget | string) => {
     if (!rootPath) return;
 
@@ -170,30 +194,7 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
     if (onRefreshFileTree) {
       onRefreshFileTree();
     }
-  }, [rootPath, getMessagesToMove, messages, selectedMessages, chatFilePath, onRefreshFileTree]);
-
-  const ensureFolderExists = useCallback(async (folderPath: string) => {
-    try {
-      const result = await (window.electron?.notes.createFolder(null, folderPath) || Promise.resolve({ success: true }));
-      return result.success;
-    } catch {
-      return true;
-    }
-  }, []);
-
-  const appendToFile = useCallback(async (filePath: string, header: string, content: string) => {
-    const result = await (window.electron?.notes.readFile(filePath) || Promise.resolve({ success: false }));
-    let fileContent = result.success && result.content ? result.content : '';
-
-    if (header && !fileContent.includes(header)) {
-      if (fileContent) fileContent += '\n\n';
-      fileContent += `${header}\n`;
-    }
-    if (fileContent && !fileContent.endsWith('\n')) fileContent += '\n';
-    fileContent += `${content}\n`;
-
-    await window.electron?.notes.saveFile(filePath, fileContent);
-  }, []);
+  }, [rootPath, getMessagesToMove, messages, selectedMessages, chatFilePath, onRefreshFileTree, ensureFolderExists, appendToFile]);
 
   return {
     isChatMode,

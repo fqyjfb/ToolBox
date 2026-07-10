@@ -155,8 +155,9 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
   }, [isOpen, x, y, items]);
 
   useEffect(() => {
+    const refs = subMenuRefs.current;
     return () => {
-      subMenuRefs.current.clear();
+      refs.clear();
     };
   }, []);
 

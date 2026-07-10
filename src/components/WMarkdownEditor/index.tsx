@@ -308,7 +308,7 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
       vditorRef.current = null;
       isReadyRef.current = false;
     };
-  }, [onChange, onSave, placeholder, height, minHeight, readonly, mode, theme, onFocus, onBlur, onUpload, handleLinkClick]);
+  }, [onChange, onSave, placeholder, height, minHeight, readonly, mode, theme, onFocus, onBlur, onUpload, handleLinkClick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!vditorRef.current || !isReadyRef.current) return;

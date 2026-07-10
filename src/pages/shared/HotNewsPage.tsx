@@ -58,6 +58,7 @@ const HotNewsPage: React.FC = () => {
       }
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
+        console.error(`Failed to fetch ${platform} news:`, err);
       }
     } finally {
       if (currentController.signal.aborted === false) {

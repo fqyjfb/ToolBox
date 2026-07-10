@@ -52,28 +52,29 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
       onConfirm={onConfirm}
       confirmDisabled={!newCategoryName.trim()}
     >
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类名称 *</label>
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">分类名称 *</label>
           <input
             type="text"
             value={newCategoryName}
             onChange={(e) => onNewCategoryNameChange(e.target.value)}
             placeholder="输入分类名称"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
+            className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">颜色</label>
-          <div className="flex gap-2 flex-wrap">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">颜色</label>
+          <div className="flex gap-1.5 flex-wrap">
             {COLOR_OPTIONS.map((color) => (
               <div
                 key={color}
-                className={`w-7 h-7 rounded-full cursor-pointer border-2 transition-all bg-[${color}] ${
+                className={`w-6 h-6 rounded-full cursor-pointer border transition-all ${
                   newCategoryColor === color
-                    ? 'border-white scale-110'
+                    ? 'border-gray-800 scale-110'
                     : 'border-transparent hover:scale-105'
                 }`}
+                style={{ backgroundColor: color }}
                 onClick={() => onNewCategoryColorChange(color)}
               />
             ))}
@@ -81,24 +82,24 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
         </div>
         {categories.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">现有分类</h3>
-            <div className="space-y-2">
+            <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">现有分类</h3>
+            <div className="space-y-1.5">
               {categories.map(category => (
-                <div key={category.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                <div key={category.id} className="flex items-center justify-between px-2 py-1.5 bg-gray-50 dark:bg-gray-700 rounded-md">
                   <span className="text-sm text-gray-800 dark:text-white">{category.name}</span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <button
                       onClick={() => onEditCategory(category)}
-                      className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                      className="p-0.5 text-gray-400 hover:text-blue-500 transition-colors"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3 h-3" />
                     </button>
                     <button
                       type="button"
                       onClick={() => onOpenConfirmDialog('删除确认', '确定要删除这个分类吗？', () => onDeleteCategory(category.id))}
-                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      className="p-0.5 text-gray-400 hover:text-red-500 transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { logInfo } from '../services/loggerService';
 
 interface PerformanceStats {
@@ -9,15 +9,23 @@ interface PerformanceStats {
 }
 
 export const usePerformanceMonitor = (componentName: string, enabled = true) => {
-  const statsRef = useRef<PerformanceStats>({
+  const [stats, setStats] = useState<PerformanceStats>({
     renderCount: 0,
     lastRenderTime: 0,
     averageRenderTime: 0,
     maxRenderTime: 0,
   });
 
-  const lastTimestampRef = useRef<number>(performance.now());
+  const lastTimestampRef = useRef<number>(0);
+  const renderCountRef = useRef(0);
+  const averageRenderTimeRef = useRef(0);
+  const maxRenderTimeRef = useRef(0);
 
+  useEffect(() => {
+    lastTimestampRef.current = performance.now();
+  }, []);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!enabled) return;
 
@@ -25,12 +33,18 @@ export const usePerformanceMonitor = (componentName: string, enabled = true) => 
     const renderTime = currentTime - lastTimestampRef.current;
     lastTimestampRef.current = currentTime;
 
-    const stats = statsRef.current;
-    stats.renderCount++;
-    stats.lastRenderTime = renderTime;
-    stats.averageRenderTime =
-      (stats.averageRenderTime * (stats.renderCount - 1) + renderTime) / stats.renderCount;
-    stats.maxRenderTime = Math.max(stats.maxRenderTime, renderTime);
+    renderCountRef.current++;
+    const count = renderCountRef.current;
+    averageRenderTimeRef.current =
+      (averageRenderTimeRef.current * (count - 1) + renderTime) / count;
+    maxRenderTimeRef.current = Math.max(maxRenderTimeRef.current, renderTime);
+
+    setStats({
+      renderCount: count,
+      lastRenderTime: renderTime,
+      averageRenderTime: averageRenderTimeRef.current,
+      maxRenderTime: maxRenderTimeRef.current,
+    });
 
     if (renderTime > 100) {
       logInfo(
@@ -41,13 +55,13 @@ export const usePerformanceMonitor = (componentName: string, enabled = true) => 
 
     return () => {
       logInfo(
-        `[Performance] ${componentName} unmounted - renders: ${stats.renderCount}, avg: ${stats.averageRenderTime.toFixed(2)}ms, max: ${stats.maxRenderTime.toFixed(2)}ms`,
+        `[Performance] ${componentName} unmounted - renders: ${count}, avg: ${averageRenderTimeRef.current.toFixed(2)}ms, max: ${maxRenderTimeRef.current.toFixed(2)}ms`,
         'PerformanceMonitor'
       );
     };
   });
 
-  return statsRef.current;
+  return stats;
 };
 
 export const useDebounce = <T>(value: T, delay: number): T => {
@@ -63,5 +77,3 @@ export const useDebounce = <T>(value: T, delay: number): T => {
 
   return debouncedValue;
 };
-
-import { useState } from 'react';

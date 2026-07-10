@@ -54,7 +54,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentFilePathRef = useRef<string | null>(null);
 
-  const handleUpload = useCallback(async (_file: File) => {
+  const handleUpload = useCallback(async () => {
     const filePath = await window.electron?.selectFile();
     if (filePath) {
       return `file:///${filePath.replace(/\\/g, '/')}`;

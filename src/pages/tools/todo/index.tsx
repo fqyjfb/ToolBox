@@ -13,6 +13,12 @@ import { useTodoContextMenu } from './useTodoContextMenu';
 import TodoFormModal from './TodoFormModal';
 import CategoryFormModal from './CategoryFormModal';
 
+const DEBOUNCE_DELAY_MS = 300;
+const PAGE_SIZE = 100;
+const DEFAULT_PRIORITY = '中';
+const DEFAULT_STATUS = '待办';
+const DEFAULT_CATEGORY_COLOR = '#3B82F6';
+
 function formatDateTimeForInput(dateTimeStr: string): string {
   if (!dateTimeStr) return '';
   
@@ -64,7 +70,7 @@ const TodoManagerPage: React.FC = () => {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [editingCategory, setEditingCategory] = useState<TodoCategory | null>(null);
-  const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
+  const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_CATEGORY_COLOR);
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -83,8 +89,8 @@ const TodoManagerPage: React.FC = () => {
     title: '',
     description: '',
     due_date: '',
-    priority: '中',
-    status: '待办',
+    priority: DEFAULT_PRIORITY,
+    status: DEFAULT_STATUS,
     category_id: null
   });
 
@@ -106,9 +112,9 @@ const TodoManagerPage: React.FC = () => {
     const finalSearchQuery = isSearchActive && searchQuery.trim() ? searchQuery.trim() : undefined;
 
     if (finalSearchQuery) {
-      todosResult = await todoServiceWrapper.todo.searchTodos(user.id, finalSearchQuery, 1, 100);
+      todosResult = await todoServiceWrapper.todo.searchTodos(user.id, finalSearchQuery, 1, PAGE_SIZE);
     } else {
-      todosResult = await todoServiceWrapper.todo.getTodos(user.id, undefined, 1, 100);
+      todosResult = await todoServiceWrapper.todo.getTodos(user.id, undefined, 1, PAGE_SIZE);
     }
 
     if (todosResult.success && todosResult.data) {
@@ -129,7 +135,7 @@ const TodoManagerPage: React.FC = () => {
   useEffect(() => {
     debouncedLoadTodosRef.current = debounce(() => {
       loadTodos();
-    }, 300);
+    }, DEBOUNCE_DELAY_MS);
   }, [loadTodos]);
 
   useEffect(() => {
@@ -137,8 +143,7 @@ const TodoManagerPage: React.FC = () => {
       debouncedLoadTodosRef.current();
     }
     return () => {
-      if (debouncedLoadTodosRef.current) {
-      }
+      debouncedLoadTodosRef.current = null;
     };
   }, [searchQuery, isSearchActive]);
 
@@ -172,8 +177,8 @@ const TodoManagerPage: React.FC = () => {
       title: '',
       description: '',
       due_date: '',
-      priority: '中',
-      status: '待办',
+      priority: DEFAULT_PRIORITY,
+      status: DEFAULT_STATUS,
       category_id: null
     });
   }, []);
@@ -263,7 +268,7 @@ const TodoManagerPage: React.FC = () => {
     const success = await createCategory(categoryData);
     if (success) {
       setNewCategoryName('');
-      setNewCategoryColor('#3B82F6');
+      setNewCategoryColor(DEFAULT_CATEGORY_COLOR);
       setShowCategoryModal(false);
       loadTodos();
     }
@@ -272,7 +277,7 @@ const TodoManagerPage: React.FC = () => {
   const handleEditCategory = useCallback((category: TodoCategory) => {
     setEditingCategory(category);
     setNewCategoryName(category.name);
-    setNewCategoryColor(category.color || '#3B82F6');
+    setNewCategoryColor(category.color || DEFAULT_CATEGORY_COLOR);
     setShowCategoryModal(true);
   }, []);
 

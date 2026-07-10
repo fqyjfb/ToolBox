@@ -45,7 +45,9 @@ const fetchUserDetails = async (userId: string): Promise<UserDetails> => {
       isBanned = userData.is_banned || false
       userPhone = userData.phone || undefined
     }
-  } catch {}
+  } catch (error) {
+    console.error('Parse user data failed:', error);
+  }
 
   return { userName, memberLevel, vipExpireAt, isBanned, userPhone }
 }
@@ -61,7 +63,9 @@ const fetchAdminRole = async (userId: string): Promise<'super' | 'normal' | unde
     if (!profileError && profileData?.role && (profileData.role === 'super' || profileData.role === 'normal')) {
       return profileData.role as 'super' | 'normal'
     }
-  } catch {}
+  } catch (error) {
+    console.error('Fetch admin role failed:', error);
+  }
   return undefined
 }
 
@@ -130,7 +134,9 @@ export const authService = {
               .eq('id', data.user.id)
             finalMemberLevel = '普通'
             finalVipExpireAt = undefined
-          } catch {}
+          } catch (error) {
+            console.error('Update member level failed:', error);
+          }
         }
       }
 
@@ -207,7 +213,9 @@ export const authService = {
           authUser = data.user
           isSessionValid = !!authUser
         }
-      } catch {}
+      } catch (error) {
+        console.error('Get user failed:', error);
+      }
 
       if (!isSessionValid && parsedStoredUser) {
         try {
@@ -281,9 +289,8 @@ export const authService = {
         }
       } catch (signOutError: unknown) {
         const error = signOutError as Error
-        if (error.name === 'AuthSessionMissingError' ||
-            error.message.includes('Auth session missing')) {
-        } else {
+        if (error.name !== 'AuthSessionMissingError' &&
+            !error.message.includes('Auth session missing')) {
           return { success: false }
         }
       }

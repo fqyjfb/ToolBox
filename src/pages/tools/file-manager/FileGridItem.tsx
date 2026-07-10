@@ -41,7 +41,7 @@ const formatSize = (bytes?: number) => {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 };
 
-const getFileIcon = (filename: string) => {
+const getFileIconType = (filename: string): string => {
   const ext = filename.split('.').pop()?.toLowerCase();
   
   const textExts = ['txt', 'md', 'markdown', 'log', 'readme', 'rst'];
@@ -57,20 +57,20 @@ const getFileIcon = (filename: string) => {
   const pptExts = ['ppt', 'pptx', 'key', 'odp'];
   const docExts = ['doc', 'docx', 'odt'];
 
-  if (textExts.includes(ext || '')) return FileText;
-  if (codeExts.includes(ext || '')) return FileCode;
-  if (imageExts.includes(ext || '')) return FileImage;
-  if (audioExts.includes(ext || '')) return FileAudio;
-  if (videoExts.includes(ext || '')) return FileVideo;
-  if (spreadsheetExts.includes(ext || '')) return FileSpreadsheet;
-  if (archiveExts.includes(ext || '')) return FileArchive;
-  if (jsonExts.includes(ext || '')) return FileJson;
-  if (xmlExts.includes(ext || '')) return FileX;
-  if (pdfExts.includes(ext || '')) return BookOpen;
-  if (pptExts.includes(ext || '')) return Presentation;
-  if (docExts.includes(ext || '')) return FileText;
+  if (textExts.includes(ext || '')) return 'text';
+  if (codeExts.includes(ext || '')) return 'code';
+  if (imageExts.includes(ext || '')) return 'image';
+  if (audioExts.includes(ext || '')) return 'audio';
+  if (videoExts.includes(ext || '')) return 'video';
+  if (spreadsheetExts.includes(ext || '')) return 'spreadsheet';
+  if (archiveExts.includes(ext || '')) return 'archive';
+  if (jsonExts.includes(ext || '')) return 'json';
+  if (xmlExts.includes(ext || '')) return 'xml';
+  if (pdfExts.includes(ext || '')) return 'pdf';
+  if (pptExts.includes(ext || '')) return 'ppt';
+  if (docExts.includes(ext || '')) return 'text';
   
-  return File;
+  return 'file';
 };
 
 const getFileIconColor = (filename: string) => {
@@ -105,6 +105,35 @@ const getFileIconColor = (filename: string) => {
   return 'text-gray-500 dark:text-gray-400';
 };
 
+const FileIconComponent: React.FC<{ type: string; className: string }> = ({ type, className }) => {
+  switch (type) {
+    case 'text':
+      return <FileText className={className} />;
+    case 'code':
+      return <FileCode className={className} />;
+    case 'image':
+      return <FileImage className={className} />;
+    case 'audio':
+      return <FileAudio className={className} />;
+    case 'video':
+      return <FileVideo className={className} />;
+    case 'spreadsheet':
+      return <FileSpreadsheet className={className} />;
+    case 'archive':
+      return <FileArchive className={className} />;
+    case 'json':
+      return <FileJson className={className} />;
+    case 'xml':
+      return <FileX className={className} />;
+    case 'pdf':
+      return <BookOpen className={className} />;
+    case 'ppt':
+      return <Presentation className={className} />;
+    default:
+      return <File className={className} />;
+  }
+};
+
 const FileGridItem: React.FC<FileGridItemProps> = ({
   item,
   isDragging,
@@ -114,7 +143,7 @@ const FileGridItem: React.FC<FileGridItemProps> = ({
   onDragStart,
   onDragEnd,
 }) => {
-  const FileIcon = getFileIcon(item.name);
+  const iconType = getFileIconType(item.name);
   const iconColor = getFileIconColor(item.name);
   
   return (
@@ -137,7 +166,7 @@ const FileGridItem: React.FC<FileGridItemProps> = ({
           </div>
         ) : (
           <div className="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
-            <FileIcon className={`w-6 h-6 ${iconColor}`} />
+            <FileIconComponent type={iconType} className={`w-6 h-6 ${iconColor}`} />
           </div>
         )}
       </div>

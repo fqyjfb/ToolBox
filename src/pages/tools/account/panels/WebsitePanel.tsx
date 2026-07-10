@@ -471,10 +471,10 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     }
   }, [addToast]);
 
-  const handleRowClick = (account: WebsiteAccount) => {
+  const handleRowClick = useCallback((account: WebsiteAccount) => {
     setPreviewItem(account);
     setShowPreviewModal(true);
-  };
+  }, []);
 
   const generatePassword = useCallback(() => {
     const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
