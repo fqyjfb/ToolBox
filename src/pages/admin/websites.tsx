@@ -464,7 +464,7 @@ const AdminWebsitesPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col p-4 overflow-hidden">
-      <div className="p-6 flex items-center justify-between">
+      <div className="p-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">网址管理</h1>
         {activeTab === 'bookmarks' && (
           <button
@@ -476,7 +476,7 @@ const AdminWebsitesPage: React.FC = () => {
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex gap-2">
             <button

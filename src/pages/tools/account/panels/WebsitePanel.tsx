@@ -707,9 +707,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
         )}
       </div>
 
-      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 mt-4">
-        <Pagination currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
-      </div>
+      <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} title={editingCategory ? '编辑分类' : '添加分类'} confirmText="保存" onConfirm={saveCategory}>
         <div className="space-y-3">

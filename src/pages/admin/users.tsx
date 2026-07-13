@@ -203,7 +203,7 @@ const UserListPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col p-4 overflow-hidden">
-      <div className="p-6 flex items-center justify-between">
+      <div className="p-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">用户管理</h1>
         <button
           onClick={handleResetFilters}
@@ -213,7 +213,7 @@ const UserListPage: React.FC = () => {
           重置筛选
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-4 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div className="flex items-center gap-3">
             <select

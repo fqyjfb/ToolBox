@@ -395,7 +395,7 @@ const AccountManagerPage: React.FC = () => {
   return (
     <>
       <div className="h-full flex flex-col p-4 overflow-hidden">
-          <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+          <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
             <div className="flex items-center justify-between">
               <DndContext
                 sensors={sensors}
@@ -444,7 +444,7 @@ const AccountManagerPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden p-6">
+          <div className="flex-1 overflow-hidden p-4">
           {renderPanel()}
         </div>
       </div>

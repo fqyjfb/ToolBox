@@ -34,7 +34,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
 
   return (
     <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white ${className}`} style={{ overflowX: 'hidden' }}>
-      <div className="px-6 py-2.5 flex items-center justify-between" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+      <div className="px-4 py-2.5 flex items-center justify-between" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <button className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-300/50 dark:hover:bg-gray-600/50 transition-colors" onClick={toggleSidebar} title={isCollapsed ? '展开侧边栏' : '收起侧边栏'}>
             {isCollapsed ? (

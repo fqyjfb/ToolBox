@@ -8,6 +8,7 @@ export interface PaginationProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   pageSizeOptions?: number[];
+  className?: string;
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -17,6 +18,7 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = [10, 20, 50, 100, 200],
+  className = '',
 }) => {
   const totalPages = Math.ceil(total / pageSize);
 
@@ -58,7 +60,7 @@ const Pagination: React.FC<PaginationProps> = ({
   if (total === 0) return null;
 
   return (
-    <div className="flex items-center justify-center gap-2 py-4">
+    <div className={`flex items-center justify-center gap-2 py-2 ${className}`}>
       <span className="text-gray-600 dark:text-gray-400 text-sm">
         {`共${total}条`}
       </span>

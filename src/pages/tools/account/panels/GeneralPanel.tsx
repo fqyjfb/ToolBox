@@ -289,8 +289,8 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
   }, [contextMenu.type, contextMenu.targetId, generalAccounts, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleDeleteItem, handleShareGeneral]);
 
   return (
-    <div className="h-full flex flex-col" onClick={handleCloseContextMenu}>
-      <div className="flex-1 overflow-y-auto scrollbar-hide">
+    <div className="h-full flex flex-col overflow-hidden" onClick={handleCloseContextMenu}>
+      <div className="flex-1 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner size="lg" />
@@ -404,9 +404,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
         )}
       </div>
 
-      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 mt-4">
-        <Pagination currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
-      </div>
+      <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑通用账号' : '添加通用账号'} confirmText="保存" onConfirm={saveItem}>
         <div className="space-y-3">
