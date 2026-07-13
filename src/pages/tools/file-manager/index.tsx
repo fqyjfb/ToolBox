@@ -11,7 +11,11 @@ import {
   FolderOpen,
   Search,
   Settings,
-  X
+  X,
+  FileImage,
+  FileText,
+  FileSpreadsheet,
+  FileVideo,
 } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 import Modal from '../../../components/ui/Modal';
@@ -58,6 +62,22 @@ const FileManagerPage: React.FC = () => {
   const [newPathName, setNewPathName] = useState('');
   const [newPathValue, setNewPathValue] = useState('');
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  
+  const [selectedTypes, setSelectedTypes] = useState<Record<string, boolean>>({
+    image: true,
+    document: true,
+    spreadsheet: true,
+    video: true,
+    folder: true,
+  });
+  
+  const allSelected = useMemo(() => {
+    return Object.values(selectedTypes).every(v => v);
+  }, [selectedTypes]);
+  
+  const someSelected = useMemo(() => {
+    return Object.values(selectedTypes).some(v => v);
+  }, [selectedTypes]);
   
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuX, setContextMenuX] = useState(0);
@@ -419,11 +439,40 @@ const FileManagerPage: React.FC = () => {
     }
   }, [copyToTarget]);
 
+  const getFilterType = (item: FileItem): string | null => {
+    if (item.isDirectory) return 'folder';
+    
+    const ext = item.name.split('.').pop()?.toLowerCase();
+    
+    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'heic'];
+    const documentExts = ['txt', 'md', 'markdown', 'log', 'readme', 'rst', 'pdf', 'doc', 'docx', 'odt', 'ppt', 'pptx', 'key', 'odp', 'js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'less', 'html', 'vue', 'py', 'java', 'cpp', 'c', 'cs', 'go', 'rs', 'php', 'rb', 'swift', 'kt', 'dart', 'json', 'xml'];
+    const spreadsheetExts = ['xls', 'xlsx', 'csv', 'tsv'];
+    const videoExts = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv'];
+    
+    if (imageExts.includes(ext || '')) return 'image';
+    if (documentExts.includes(ext || '')) return 'document';
+    if (spreadsheetExts.includes(ext || '')) return 'spreadsheet';
+    if (videoExts.includes(ext || '')) return 'video';
+    
+    return null;
+  };
+
   const filteredFiles = useMemo(() => {
-    return fileList.filter(file =>
-      file.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [fileList, searchQuery]);
+    const selectedKeys = Object.entries(selectedTypes)
+      .filter(([, value]) => value)
+      .map(([key]) => key);
+    
+    if (selectedKeys.length === 0) return [];
+    
+    return fileList.filter(file => {
+      if (!file.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+      
+      const filterType = getFilterType(file);
+      return filterType ? selectedKeys.includes(filterType) : false;
+    });
+  }, [fileList, searchQuery, selectedTypes]);
 
   const displayedFavorites = useMemo(() => {
     return activeTab === 'system'
@@ -636,14 +685,64 @@ const FileManagerPage: React.FC = () => {
           <div className="flex-1 flex flex-col min-w-0">
             <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
                   <span className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
-                    文件列表
+                    类型筛选
                   </span>
-                  <span className="text-xs text-text-tertiary">
-                    ({filteredFiles.length} 个项目)
-                  </span>
+                  <div className="flex items-center gap-4">
+                    <label
+                      className={`flex items-center gap-1.5 cursor-pointer group ${
+                        allSelected ? 'text-text-primary' : someSelected ? 'text-text-secondary' : 'text-text-tertiary'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={() => {
+                          const newValue = !allSelected;
+                          setSelectedTypes({
+                            image: newValue,
+                            document: newValue,
+                            spreadsheet: newValue,
+                            video: newValue,
+                            folder: newValue,
+                          });
+                        }}
+                        className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer"
+                      />
+                      <span className="text-xs font-medium">全选</span>
+                    </label>
+                    <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
+                    {[
+                      { key: 'image', label: '图片', icon: <FileImage className="w-3.5 h-3.5" /> },
+                      { key: 'document', label: '文档', icon: <FileText className="w-3.5 h-3.5" /> },
+                      { key: 'spreadsheet', label: '表格', icon: <FileSpreadsheet className="w-3.5 h-3.5" /> },
+                      { key: 'video', label: '视频', icon: <FileVideo className="w-3.5 h-3.5" /> },
+                      { key: 'folder', label: '文件夹', icon: <Folder className="w-3.5 h-3.5" /> },
+                    ].map(({ key, label, icon }) => (
+                      <label
+                        key={key}
+                        className={`flex items-center gap-1.5 cursor-pointer group ${
+                          selectedTypes[key] ? 'text-text-primary' : 'text-text-tertiary'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedTypes[key]}
+                          onChange={() =>
+                            setSelectedTypes(prev => ({ ...prev, [key]: !prev[key] }))
+                          }
+                          className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer"
+                        />
+                        {icon}
+                        <span className="text-xs font-medium">{label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
+                <span className="text-xs text-text-tertiary">
+                  ({filteredFiles.length} 个项目)
+                </span>
               </div>
             </div>
             <div className="flex-1 overflow-auto p-3">
@@ -655,9 +754,14 @@ const FileManagerPage: React.FC = () => {
               ) : filteredFiles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-text-tertiary">
                   <Folder className="w-16 h-16 mb-4 opacity-30" />
-                  <p className="text-base">文件夹为空</p>
                   {searchQuery && (
-                    <p className="text-sm mt-1">未找到匹配 "{searchQuery}" 的文件</p>
+                    <p className="text-sm">未找到匹配 "{searchQuery}" 的文件</p>
+                  )}
+                  {!searchQuery && Object.values(selectedTypes).every(v => !v) && (
+                    <p className="text-sm">请至少选择一种文件类型</p>
+                  )}
+                  {!searchQuery && Object.values(selectedTypes).some(v => v) && (
+                    <p className="text-base">文件夹为空</p>
                   )}
                 </div>
               ) : (
