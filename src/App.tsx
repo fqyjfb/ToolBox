@@ -6,6 +6,7 @@ import MobileLayout from './components/layout/MobileLayout';
 import Toast from './components/ui/Toast';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import PluginPanels from './components/plugins/PluginPanels';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/AuthStore';
 import { useSidebarStore } from './store/sidebarStore';
@@ -20,6 +21,7 @@ const LogsPage = React.lazy(() => import('./pages/logs/index'));
 import { isElectron } from './utils/environment';
 import { usePreloadTools } from './hooks/usePreloadTools';
 import { RecentToolsHandler } from './hooks/useRecentTools';
+import { pluginApi } from './services/pluginApi';
 
 // 路由保护组件
 const ProtectedRoute: React.FC<{
@@ -136,6 +138,8 @@ const TrayNavigationHandler: React.FC = () => {
   const navigate = useRouterNavigate();
 
   useEffect(() => {
+    pluginApi.setNavigate(navigate);
+
     const handleNavigate = (path: string) => {
       navigate(path);
     };
@@ -220,6 +224,14 @@ function App() {
         useAuthStore.getState().getCurrentUser().catch(() => {
           logError('初始化认证状态失败', 'App');
         });
+
+        if (isElectron() && window.electron?.plugin?.getInstalled) {
+          try {
+            await window.electron.plugin.getInstalled();
+          } catch (error) {
+            logError('获取插件列表失败', 'App', error as Error);
+          }
+        }
       } catch (error) {
         logError('初始化失败', 'App', error as Error);
       } finally {
@@ -315,6 +327,7 @@ function App() {
                       renderRoutes(currentRoutes, isAuthenticated, isAdmin || false, LayoutComponent)
                     )}
                     <Toast />
+                    <PluginPanels />
                   </>
                 }
               />

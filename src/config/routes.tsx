@@ -53,11 +53,11 @@ const SqlMinifierPage = React.lazy(() => import('../pages/tools/sql-minifier'));
 const HexEncodePage = React.lazy(() => import('../pages/tools/hex-encode'));
 const HexDecodePage = React.lazy(() => import('../pages/tools/hex-decode'));
 const WeatherPage = React.lazy(() => import('../pages/tools/weather'));
-const OcrPage = React.lazy(() => import('../pages/tools/ocr/OcrWrapper'));
-const FileManagerPage = React.lazy(() => import('../pages/tools/file-manager'));
+
 const AIChatPage = React.lazy(() => import('../pages/tools/ai-chat'));
 const FontGeneratorPage = React.lazy(() => import('../pages/tools/font-generator'));
-const ColorPalettePage = React.lazy(() => import('../pages/tools/color-palette'));
+const PluginStorePage = React.lazy(() => import('../pages/tools/plugin-store'));
+const PluginPage = React.lazy(() => import('../pages/tools/PluginPage'));
 const AgnesHistoryPage = React.lazy(() => import('../pages/tools/ai-chat/HistoryPage'));
 const AgnesRolePresetsPage = React.lazy(() => import('../pages/tools/ai-chat/RolePresetsPage'));
 
@@ -108,13 +108,12 @@ const authRequiredRoutes: RouteConfig[] = [
   { path: '/tools/sql-minifier', element: <SqlMinifierPage />, requiresAuth: true },
   { path: '/tools/hex-encode', element: <HexEncodePage />, requiresAuth: true },
   { path: '/tools/hex-decode', element: <HexDecodePage />, requiresAuth: true },
-  { path: '/tools/ocr', element: <OcrPage />, requiresAuth: true },
-  { path: '/tools/file-manager', element: <FileManagerPage />, requiresAuth: true },
   { path: '/tools/ai-chat', element: <AIChatPage />, requiresAuth: true },
   { path: '/tools/font-generator', element: <FontGeneratorPage />, requiresAuth: true },
-  { path: '/tools/color-palette', element: <ColorPalettePage />, requiresAuth: true },
+  { path: '/tools/plugin-store', element: <PluginStorePage />, requiresAuth: true },
   { path: '/tools/ai-chat/history', element: <AgnesHistoryPage />, requiresAuth: true },
   { path: '/tools/ai-chat/roles', element: <AgnesRolePresetsPage />, requiresAuth: true },
+  { path: '/tools/:pluginId', element: <PluginPage />, requiresAuth: true },
 ];
 
 const publicToolsRoutes: RouteConfig[] = [

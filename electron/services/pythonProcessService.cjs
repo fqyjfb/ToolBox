@@ -50,21 +50,20 @@ function resetIdleTimer() {
   }
 }
 
-function getServiceDirectory() {
-  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-  if (isDev) {
-    return path.join(process.cwd(), 'python-service');
+function getServiceDirectory(customDir) {
+  if (customDir && fs.existsSync(customDir)) {
+    return customDir;
   }
-  return path.join(process.resourcesPath, 'python-service');
+  return null;
 }
 
-function getPythonExecutable() {
+function getPythonExecutable(customDir) {
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   if (isDev) return '';
 
-  const serviceDir = getServiceDirectory();
+  const serviceDir = getServiceDirectory(customDir);
   const exeName = process.platform === 'win32' ? 'python-service.exe' : 'python-service';
-  return path.join(serviceDir, exeName);
+  return serviceDir ? path.join(serviceDir, exeName) : '';
 }
 
 async function getPythonInterpreter(config) {
@@ -120,9 +119,18 @@ async function startPythonService(config = {}) {
     serviceStatus = 'starting';
     addLog('info', '正在启动 Python 服务...');
 
-    const serviceDir = getServiceDirectory();
+    const serviceDir = getServiceDirectory(serviceConfig.customDir);
+    if (!serviceDir) {
+      addLog('error', 'Python服务目录不存在，请确保已正确安装OCR插件');
+      lastError = 'Python服务目录不存在，请确保已正确安装OCR插件';
+      serviceStatus = 'error';
+      return {
+        success: false,
+        error: lastError,
+      };
+    }
     const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-    const packagedExePath = getPythonExecutable();
+    const packagedExePath = getPythonExecutable(serviceConfig.customDir);
 
     let execPath;
     let execArgs;

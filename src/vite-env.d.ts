@@ -354,5 +354,17 @@ declare interface Window {
     systemInfo: {
       get: () => Promise<SystemInfo>;
     };
+    plugin: {
+      getAvailable: () => Promise<any[]>;
+      getInstalled: () => Promise<any[]>;
+      install: (pluginId: string, repo?: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
+      uninstall: (pluginId: string) => Promise<{ success: boolean; message?: string }>;
+      toggleEnabled: (pluginId: string, enabled: boolean) => Promise<{ success: boolean }>;
+      installFromFile: () => Promise<{ success: boolean; reason?: string; message?: string; canceled?: boolean }>;
+      installFromPath: (filePath: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
+      installFromGithub: (id: string, repo: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
+      openWindow: (pluginId: string) => Promise<{ success: boolean; error?: string }>;
+      openExtensionsDir: () => Promise<{ success: boolean; error?: string }>;
+    };
   };
 }

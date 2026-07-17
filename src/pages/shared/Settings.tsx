@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { Settings as SettingsIcon, Keyboard, Circle, Database, Scan, FileText, RefreshCw, Sparkles, PanelLeft } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, Sparkles, PanelLeft } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
@@ -13,7 +13,6 @@ import {
 import { DEFAULT_SHORTCUTS, DEFAULT_WINDOW_SIZE } from '../../constants/settings';
 import { logError } from '../../services/loggerService';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
-import { isElectron } from '../../utils/environment';
 import {
   GeneralTab,
   ShortcutsTab,
@@ -23,7 +22,7 @@ import {
   LogMonitorTab,
   AgnesTab
 } from '../../components/settings';
-const OcrTab = isElectron() ? lazy(() => import('../../components/settings/OcrTab')) : null;
+
 import './Settings.css';
 
 const Settings: React.FC = () => {
@@ -261,7 +260,6 @@ const Settings: React.FC = () => {
           STORAGE_KEYS.PLATFORM_VISIBILITY,
           STORAGE_KEYS.PLATFORM_ORDER,
           STORAGE_KEYS.WEBSITE_ACCOUNT_CATEGORY_ORDER,
-          STORAGE_KEYS.OCR_SETTINGS,
           STORAGE_KEYS.NOTES_SIDEBAR_VISIBLE,
           STORAGE_KEYS.NOTES_LAST_OPENED_FILE,
         ]);
@@ -407,7 +405,6 @@ const Settings: React.FC = () => {
     { id: 'sync' as const, label: '数据同步', icon: RefreshCw },
     { id: 'shortcuts' as const, label: '快捷键设置', icon: Keyboard },
     { id: 'floatWindow' as const, label: '悬浮窗设置', icon: Circle },
-    ...(isElectron() ? [{ id: 'ocr' as const, label: 'OCR设置', icon: Scan }] : []),
     { id: 'agnes' as const, label: 'Agnes AI', icon: Sparkles },
     { id: 'logMonitor' as const, label: '日志监控', icon: FileText }
   ];
@@ -500,12 +497,6 @@ const Settings: React.FC = () => {
               onSaveFloatConfig={handleSaveFloatConfig}
               onResetFloatConfig={handleResetFloatConfig}
             />
-          )}
-
-          {activeTab === 'ocr' && OcrTab && (
-            <Suspense fallback={<div className="flex items-center justify-center py-8">加载中...</div>}>
-              <OcrTab />
-            </Suspense>
           )}
 
           {activeTab === 'logMonitor' && (

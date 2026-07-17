@@ -1,7 +1,7 @@
 {
   "name": "toolbox",
   "private": true,
-  "version": "2.5.1",
+  "version": "2.5.3",
   "description": "ToolBox多功能工具包应用程序",
   "author": "ToolBox Team",
   "type": "commonjs",
@@ -16,7 +16,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "node scripts/generate-icon-data.cjs && electron .",
-    "electron:build": "node scripts/generate-icon-data.cjs && electron-builder",
+    "electron:build": "node scripts/generate-icon-data.cjs && electron-builder --publish never",
     "copy:vditor": "node scripts/copy-vditor-assets.cjs",
     "postinstall": "electron-builder install-app-deps && npm run copy:vditor",
     "generate-icons": "node scripts/generate-icon-data.cjs"
@@ -27,6 +27,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.103.0",
     "@tanstack/react-query": "^5.100.10",
+    "adm-zip": "^0.6.0",
     "axios": "^1.18.1",
     "electron-log": "^5.4.4",
     "iconv-lite": "^0.7.3",
@@ -81,12 +82,7 @@
       "public/**/*",
       "package.json"
     ],
-    "extraResources": [
-      {
-        "from": "python-service",
-        "to": "python-service"
-      }
-    ],
+    
     "win": {
       "target": [
         "nsis"

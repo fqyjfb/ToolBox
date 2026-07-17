@@ -49,14 +49,12 @@ const routeLabelMap: Record<string, string> = {
   '/tools/sql-minifier': 'SQL压缩',
   '/tools/hex-encode': '十六进制编码',
   '/tools/hex-decode': '十六进制解码',
-  '/tools/ocr': 'OCR文字识别',
-  '/tools/file-manager': '文件管理',
   '/tools/profile': '个人信息',
   '/tools/notes': '记事本',
   '/tools/font-generator': '字体生成器',
   '/tools/ai-chat': 'AI助手',
   '/tools/ai-chat/history': '历史记录',
-  '/tools/color-palette': '调色板',
+  '/tools/plugin-store': '插件商店',
   '/tools/ai-chat/roles': '角色预设',
   '/logs': '日志',
   '/admin': '管理控制台',
@@ -83,8 +81,14 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
     
     items.push({ path: '/', label: routeLabelMap['/'] });
     
+    const skipParentPaths: string[] = ['/tools/plugin-store'];
+    
     for (let i = 0; i < pathSegments.length; i++) {
       currentPath += '/' + pathSegments[i];
+      
+      if (skipParentPaths.includes(pathname) && i === 0 && currentPath === '/tools') {
+        continue;
+      }
       
       if (routeLabelMap[currentPath]) {
         items.push({

@@ -367,6 +367,9 @@ const registerIpcHandlers = () => {
   
   const { ipcMain } = require('electron');
   const { loadShortcuts, saveShortcuts, loadFloatConfig, saveFloatConfig, defaultFloatConfig } = require('../lib/config.cjs');
+  
+  const { registerPluginIpc } = require('../ipc/pluginIpc.cjs');
+  registerPluginIpc();
 
   const getUpdateErrorMessage = (error) => {
     const errorStr = error instanceof Error ? error.message : String(error);

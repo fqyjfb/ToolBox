@@ -36,6 +36,9 @@ dist-electron/
 # TypeScript build info
 *.tsbuildinfo
 
+# Build cache
+.cache/
+
 # Python cache
 __pycache__/
 *.pyc

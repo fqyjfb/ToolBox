@@ -67,7 +67,6 @@ ToolBox/
 │   ├── logs/           # 日志服务
 │   ├── main.cjs        # 主入口文件
 │   └── preload.cjs     # 预加载脚本
-├── python-service/     # Python OCR 服务
 ├── public/             # 静态资源
 ├── src/                # 前端源码
 │   ├── components/     # 通用组件

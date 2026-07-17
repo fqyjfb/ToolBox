@@ -6,6 +6,14 @@ let settingChangedCallback = null;
 let openAddTodoCallback = null;
 let openAddMemoCallback = null;
 
+const screenshotApi = {
+  startScreenshotCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
+  cancelScreenshot: () => ipcRenderer.send('cancel-screenshot'),
+  saveScreenshot: (data) => ipcRenderer.invoke('save-screenshot', data),
+  copyScreenshotToClipboard: (dataUrl) => ipcRenderer.send('copy-screenshot-to-clipboard', dataUrl),
+  screenshotSessionComplete: () => ipcRenderer.send('screenshot-session-complete'),
+};
+
 ipcRenderer.on('navigate-to', (event, path) => {
   if (navigateCallback) {
     navigateCallback(path);
@@ -78,14 +86,14 @@ contextBridge.exposeInMainWorld('electron', {
   updateFloatConfig: (config) => ipcRenderer.invoke('update-float-config', config),
   resetFloatConfig: () => ipcRenderer.invoke('reset-float-config'),
   ocr: {
-    recognize: (imageBase64) => ipcRenderer.invoke('ocr:recognize', imageBase64),
-    recognizeFile: (filePath) => ipcRenderer.invoke('ocr:recognizeFile', filePath),
+    recognize: (imageBase64, serviceDir) => ipcRenderer.invoke('ocr:recognize', { imageBase64, serviceDir }),
+    recognizeFile: (filePath, serviceDir) => ipcRenderer.invoke('ocr:recognizeFile', { filePath, serviceDir }),
     status: () => ipcRenderer.invoke('ocr:status'),
-    start: () => ipcRenderer.invoke('ocr:start'),
+    start: (serviceDir, config) => ipcRenderer.invoke('ocr:start', { serviceDir, ...config }),
     stop: () => ipcRenderer.invoke('ocr:stop'),
     serviceInfo: () => ipcRenderer.invoke('ocr:serviceInfo'),
-    diagnose: () => ipcRenderer.invoke('ocr:diagnose'),
-    installDeps: () => ipcRenderer.invoke('ocr:installDeps'),
+    diagnose: (serviceDir) => ipcRenderer.invoke('ocr:diagnose', { serviceDir }),
+    installDeps: (serviceDir) => ipcRenderer.invoke('ocr:installDeps', { serviceDir }),
     checkPort: (port) => ipcRenderer.invoke('ocr:checkPort', port),
     selectPythonPath: () => ipcRenderer.invoke('ocr:selectPythonPath'),
   },
@@ -109,6 +117,35 @@ contextBridge.exposeInMainWorld('electron', {
   },
   systemInfo: {
     get: () => ipcRenderer.invoke('system-info:get'),
+  },
+  plugin: {
+    getAvailable: () => ipcRenderer.invoke('plugin:get-available'),
+    getInstalled: () => ipcRenderer.invoke('plugin:get-installed'),
+    install: (pluginId, repo) => ipcRenderer.invoke('plugin:install', { pluginId, repo }),
+    uninstall: (pluginId) => ipcRenderer.invoke('plugin:uninstall', pluginId),
+    toggleEnabled: (pluginId, enabled) => ipcRenderer.invoke('plugin:toggle-enabled', { pluginId, enabled }),
+    installFromFile: () => ipcRenderer.invoke('plugin:install-from-file'),
+    installFromPath: (filePath) => ipcRenderer.invoke('plugin:install-from-path', filePath),
+    installFromGithub: (id, repo) => ipcRenderer.invoke('plugin:install-from-github', { id, repo }),
+    openWindow: (pluginId) => ipcRenderer.invoke('plugin:open-window', { pluginId }),
+    openExtensionsDir: () => ipcRenderer.invoke('plugin:open-extensions-dir'),
+    minimizeWindow: () => ipcRenderer.send('plugin-window-minimize'),
+    maximizeWindow: () => ipcRenderer.send('plugin-window-maximize'),
+    closeWindow: () => ipcRenderer.send('plugin-window-close'),
+  },
+  screenshot: {
+    startCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
+    cancel: () => ipcRenderer.send('cancel-screenshot'),
+    save: (data) => ipcRenderer.invoke('save-screenshot', data),
+    copyToClipboard: (dataUrl) => ipcRenderer.send('copy-screenshot-to-clipboard', dataUrl),
+    complete: () => ipcRenderer.send('screenshot-session-complete'),
+  },
+  api: {
+    startScreenshotCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
+    cancelScreenshot: () => ipcRenderer.send('cancel-screenshot'),
+    saveScreenshot: (data) => ipcRenderer.invoke('save-screenshot', data),
+    copyScreenshotToClipboard: (dataUrl) => ipcRenderer.send('copy-screenshot-to-clipboard', dataUrl),
+    screenshotSessionComplete: () => ipcRenderer.send('screenshot-session-complete'),
   },
   python: {
     start: () => ipcRenderer.invoke('python:start'),
@@ -172,3 +209,11 @@ contextBridge.exposeInMainWorld('electron', {
     off: (channel, listener) => ipcRenderer.off(channel, listener),
   },
 });
+
+contextBridge.exposeInMainWorld('api', screenshotApi);
+
+const noopStore = {
+  getState: () => ({ activeExtensionPanelId: null }),
+  setState: () => {},
+};
+contextBridge.exposeInMainWorld('useAppStore', noopStore);

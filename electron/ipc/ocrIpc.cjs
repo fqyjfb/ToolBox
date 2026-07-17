@@ -25,14 +25,14 @@ function formatError(error) {
   return errorStr;
 }
 
-async function ensurePythonServiceRunning() {
+async function ensurePythonServiceRunning(customDir) {
   if (isRunning()) {
     resetIdleTimer();
     return true;
   }
 
   console.log('[OCR] Python服务未运行，按需启动...');
-  const result = await startPythonService({ autoRestart: true, maxRestarts: 3 });
+  const result = await startPythonService({ autoRestart: true, maxRestarts: 3, customDir });
   if (result.success) {
     const apiReady = await waitForPythonApi(20000, 500);
     if (apiReady) {
@@ -54,9 +54,9 @@ function registerOcrIpc() {
   ocrIpcRegistered = true;
 
   // OCR 识别 Base64 图片（超时时间 60 秒）
-  ipcMain.handle("ocr:recognize", async (_event, imageBase64) => {
+  ipcMain.handle("ocr:recognize", async (_event, { imageBase64, serviceDir }) => {
     try {
-      const serviceReady = await ensurePythonServiceRunning();
+      const serviceReady = await ensurePythonServiceRunning(serviceDir);
       if (!serviceReady) {
         return {
           success: false,
@@ -99,9 +99,9 @@ function registerOcrIpc() {
   });
 
   // OCR 识别图片文件（超时时间 60 秒）
-  ipcMain.handle("ocr:recognizeFile", async (_event, filePath) => {
+  ipcMain.handle("ocr:recognizeFile", async (_event, { filePath, serviceDir }) => {
     try {
-      const serviceReady = await ensurePythonServiceRunning();
+      const serviceReady = await ensurePythonServiceRunning(serviceDir);
       if (!serviceReady) {
         return {
           success: false,
@@ -191,10 +191,17 @@ function registerOcrIpc() {
   });
 
   // 手动启动 OCR 服务
-  ipcMain.handle("ocr:start", async () => {
+  ipcMain.handle("ocr:start", async (_event, { serviceDir, httpPort, wsPort, pythonPath, autoRestart, maxRestarts }) => {
     try {
       console.log('[OCR] 用户手动启动 Python 服务...');
-      const result = await startPythonService({ autoRestart: true, maxRestarts: 3 });
+      const result = await startPythonService({ 
+        autoRestart: autoRestart ?? true, 
+        maxRestarts: maxRestarts ?? 3, 
+        customDir: serviceDir,
+        httpPort,
+        wsPort,
+        pythonPath 
+      });
       
       if (result.success) {
         await waitForPythonApi(15000, 500);
@@ -264,16 +271,20 @@ function registerOcrIpc() {
   });
 
   // 运行服务诊断
-  ipcMain.handle("ocr:diagnose", async () => {
+  ipcMain.handle("ocr:diagnose", async (_event, { serviceDir }) => {
     const { spawn } = require('child_process');
     const path = require('path');
     const fs = require('fs');
-    const { app } = require('electron');
 
     return new Promise((resolve) => {
-      const serviceDir = app.isPackaged
-        ? path.join(process.resourcesPath, 'python-service')
-        : path.join(process.cwd(), 'python-service');
+      if (!serviceDir) {
+        resolve({
+          success: false,
+          error: '服务目录未指定，请确保已正确安装OCR插件',
+          output: '',
+        });
+        return;
+      }
 
       const scriptPath = path.join(serviceDir, 'diagnose.py');
 
@@ -334,16 +345,20 @@ function registerOcrIpc() {
   });
 
   // 安装Python依赖
-  ipcMain.handle("ocr:installDeps", async () => {
+  ipcMain.handle("ocr:installDeps", async (_event, { serviceDir }) => {
     const { spawn } = require('child_process');
     const path = require('path');
     const fs = require('fs');
-    const { app } = require('electron');
 
     return new Promise((resolve) => {
-      const serviceDir = app.isPackaged
-        ? path.join(process.resourcesPath, 'python-service')
-        : path.join(process.cwd(), 'python-service');
+      if (!serviceDir) {
+        resolve({
+          success: false,
+          error: '服务目录未指定，请确保已正确安装OCR插件',
+          output: '',
+        });
+        return;
+      }
 
       const scriptPath = path.join(serviceDir, 'install_deps.py');
 

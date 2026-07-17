@@ -32,12 +32,11 @@ export const STORAGE_KEYS = {
   AGNES_PREFIX: 'agnes_',
   
   MARKDOWN_WECHAT_CONTENT: 'markdown-wechat-content',
-  OCR_SETTINGS: 'ocr_settings',
   
   NOTES_SIDEBAR_VISIBLE: 'notes_sidebar_visible',
-  OCR_HISTORY: 'ocr_history',
   
   FILE_MANAGER_WIDTHS: 'file_manager_widths',
+  PLUGINS: 'toolbox_plugins',
 };
 
 export const localStorageService = {

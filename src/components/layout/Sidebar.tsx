@@ -1,14 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Zap, FileText, Clock, User, Settings, Info, X, Grid3X3, LayoutDashboard } from 'lucide-react';
+import { Home, Zap, FileText, Clock, User, Settings, Info, X, Grid3X3, LayoutDashboard, Package } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useAuthStore } from '../../store/AuthStore';
 import { useSidebarStore } from '../../store/sidebarStore';
+import { usePluginStore } from '../../store/pluginStore';
 import { ALL_TOOLS, ToolInfo } from '../../constants/tools';
 import { isElectron } from '../../utils/environment';
 import { iconMap } from '../../utils/iconMap';
+import { pluginApi } from '../../services/pluginApi';
 import './Sidebar.css';
 
 const Sidebar: React.FC = () => {
@@ -18,20 +20,38 @@ const Sidebar: React.FC = () => {
 
   const { isCollapsed, isVisible, pinnedToolIds, removePinnedTool, reorderPinnedTools } = useSidebarStore();
   const { isAuthenticated, isAdmin } = useAuthStore();
+  const { installedPlugins } = usePluginStore();
+  const [pluginButtons, setPluginButtons] = useState<{ id: string; icon: React.ReactNode; label: string; onClick: () => void }[]>([]);
 
   const isActive = (path: string) => location.pathname === path;
   const isStartsWith = (prefix: string) => location.pathname.startsWith(prefix);
 
-  const pinnedTools = useMemo(
-    () => pinnedToolIds.map((id) => ALL_TOOLS.find((t) => t.id === id)).filter(Boolean) as ToolInfo[],
-    [pinnedToolIds]
-  );
+  const pinnedTools = useMemo(() => {
+    return pinnedToolIds.map((id) => {
+      const tool = ALL_TOOLS.find((t) => t.id === id);
+      if (tool) return tool;
+      const plugin = installedPlugins.find((p) => p.id === id && p.enabled);
+      if (plugin) {
+        return {
+          id: plugin.id,
+          name: plugin.name,
+          path: `/tools/${plugin.id}`,
+          iconName: plugin.iconName,
+          iconUrl: plugin.iconUrl,
+          color: plugin.color,
+          textColor: plugin.textColor,
+        } as ToolInfo & { iconUrl?: string };
+      }
+      return null;
+    }).filter(Boolean) as (ToolInfo & { iconUrl?: string })[];
+  }, [pinnedToolIds, installedPlugins]);
 
   const fixedItems = [
     { id: 'home', title: '首页', icon: <Home className="w-4 h-4 flex-shrink-0" />, path: '/', active: isActive('/') },
     ...(isDesktop ? [{ id: 'launch', title: '快启动', icon: <Zap className="w-4 h-4 flex-shrink-0" />, path: '/launch', active: isActive('/launch') }] : []),
     { id: 'notes', title: '记事本', icon: <FileText className="w-4 h-4 flex-shrink-0" />, path: '/tools/notes', active: isStartsWith('/tools/notes') },
     { id: 'tools', title: '工具中心', icon: <Grid3X3 className="w-4 h-4 flex-shrink-0" />, path: '/tools', active: isActive('/tools') },
+    { id: 'plugin-store', title: '插件商店', icon: <Package className="w-4 h-4 flex-shrink-0" />, path: '/tools/plugin-store', active: isActive('/tools/plugin-store') },
     { id: 'recents', title: '最近使用', icon: <Clock className="w-4 h-4 flex-shrink-0" />, path: '/recents', active: isActive('/recents') },
   ];
 
@@ -39,6 +59,24 @@ const Sidebar: React.FC = () => {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor)
   );
+
+  useEffect(() => {
+    const handleButtonsChange = (buttons: any[]) => {
+      const pluginButtonsData = buttons.map(btn => {
+        const Icon = iconMap[btn.icon] || iconMap.Package;
+        return {
+          id: btn.id,
+          icon: <Icon className="w-4 h-4" />,
+          label: btn.label,
+          onClick: () => btn.onClick(),
+        };
+      });
+      setPluginButtons(pluginButtonsData);
+    };
+
+    pluginApi.addSidebarButtonListener(handleButtonsChange);
+    return () => pluginApi.removeSidebarButtonListener(handleButtonsChange);
+  }, []);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -77,15 +115,27 @@ const Sidebar: React.FC = () => {
             <SortableContext items={pinnedToolIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1">
                 {pinnedTools.map((tool) => {
-                  const Icon = iconMap[tool.iconName];
+                  const Icon = iconMap[tool.iconName] || iconMap.Package;
+                  const iconElement = tool.iconUrl ? (
+                    <img src={tool.iconUrl} alt={tool.name} className="w-4 h-4 flex-shrink-0 object-contain" />
+                  ) : (
+                    <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} />
+                  );
+                  const plugin = installedPlugins.find((p) => p.id === tool.id);
                   return (
                     <SortableNavItem
                       key={tool.id}
                       id={tool.id}
-                      icon={Icon ? <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} /> : null}
+                      icon={iconElement}
                       title={tool.name}
                       active={isActive(tool.path)}
-                      onClick={() => navigate(tool.path)}
+                      onClick={() => {
+                        if (plugin) {
+                          pluginApi.openPluginWindow(tool.id);
+                        } else {
+                          navigate(tool.path);
+                        }
+                      }}
                       onRemove={() => removePinnedTool(tool.id)}
                     />
                   );
@@ -95,23 +145,43 @@ const Sidebar: React.FC = () => {
           </DndContext>
         ) : (
           pinnedTools.map((tool) => {
-            const Icon = iconMap[tool.iconName];
-            return (
-              <NavItem
-                key={tool.id}
-                icon={Icon ? <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} /> : null}
-                title={tool.name}
-                active={isActive(tool.path)}
-                collapsed={isCollapsed}
-                onClick={() => navigate(tool.path)}
-                onRemove={() => removePinnedTool(tool.id)}
-              />
-            );
-          })
+              const Icon = iconMap[tool.iconName] || iconMap.Package;
+              const iconElement = tool.iconUrl ? (
+                <img src={tool.iconUrl} alt={tool.name} className="w-4 h-4 flex-shrink-0 object-contain" />
+              ) : (
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} />
+              );
+              const plugin = installedPlugins.find((p) => p.id === tool.id);
+              return (
+                <NavItem
+                  key={tool.id}
+                  icon={iconElement}
+                  title={tool.name}
+                  active={isActive(tool.path)}
+                  collapsed={isCollapsed}
+                  onClick={() => {
+                    if (plugin) {
+                      pluginApi.openPluginWindow(tool.id);
+                    } else {
+                      navigate(tool.path);
+                    }
+                  }}
+                  onRemove={() => removePinnedTool(tool.id)}
+                />
+              );
+            })
         )}
       </nav>
 
       <div className="sidebar-bottom" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        {pluginButtons.length > 0 && !isCollapsed && <div className="sidebar-divider" />}
+        {pluginButtons.length > 0 && (
+          <div className={`flex items-center gap-1 px-1 ${isCollapsed ? 'flex-col' : 'mb-2'}`}>
+            {pluginButtons.map((btn) => (
+              <SidebarBottomButton key={btn.id} icon={btn.icon} title={btn.label} onClick={btn.onClick} />
+            ))}
+          </div>
+        )}
         {!isCollapsed && <div className="sidebar-divider" />}
         <div className={`flex items-center gap-1 px-1 ${isCollapsed ? 'flex-col' : ''}`}>
           <SidebarBottomButton icon={<User className="w-4 h-4" />} title={isAuthenticated ? '个人信息' : '登录'} onClick={() => navigate(isAuthenticated ? '/tools/profile' : '/login')} />
@@ -144,7 +214,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, title, active, collapsed, onCli
       title={collapsed ? title : ''}
       onClick={onClick}
     >
-      {icon}
+      {collapsed ? <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{icon}</span> : icon}
       {!collapsed && <span className="whitespace-nowrap">{title}</span>}
     </button>
     {!collapsed && onRemove && (

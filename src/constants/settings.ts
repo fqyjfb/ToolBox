@@ -105,10 +105,6 @@ export const SYNC = {
   BATCH_DELAY: 100,
 };
 
-export const OCR = {
-  MAX_HISTORY_COUNT: 20,
-};
-
 export const AI_CHAT = {
   MAX_REFERENCE_IMAGES: 4,
   MAX_MESSAGE_HISTORY: 50,

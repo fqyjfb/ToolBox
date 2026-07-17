@@ -25,7 +25,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
 
 
 
-  const showSearch = ['/launch', '/nav', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/memo', '/tools/account', '/tools/ocr', '/tools/file-manager', '/tools/profile'].includes(location.pathname);
+  const showSearch = ['/launch', '/nav', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/memo', '/tools/account', '/tools/profile'].includes(location.pathname);
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);

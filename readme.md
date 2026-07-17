@@ -72,13 +72,6 @@
 pnpm install
 ```
 
-### Python 服务依赖（OCR）
-
-```bash
-cd python-service
-pip install -r requirements.txt
-```
-
 ### 开发模式
 
 ```bash
