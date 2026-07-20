@@ -132,6 +132,7 @@ contextBridge.exposeInMainWorld('electron', {
     minimizeWindow: () => ipcRenderer.send('plugin-window-minimize'),
     maximizeWindow: () => ipcRenderer.send('plugin-window-maximize'),
     closeWindow: () => ipcRenderer.send('plugin-window-close'),
+    saveFile: (filePath, data) => ipcRenderer.invoke('plugin:save-file', { path: filePath, data }),
   },
   screenshot: {
     startCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
