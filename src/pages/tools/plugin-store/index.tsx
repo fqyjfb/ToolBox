@@ -332,7 +332,7 @@ const PluginStorePage: React.FC = () => {
           </div>
         ) : activeTab === 'explore' ? (
           filteredPlugins.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {filteredPlugins.map((plugin) => {
                 const isInstalled = installedPluginIds.includes(plugin.id);
                 const installedPlugin = installedPlugins.find(p => p.id === plugin.id);
@@ -365,7 +365,7 @@ const PluginStorePage: React.FC = () => {
           )
         ) : (
           filteredInstalledPlugins.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {filteredInstalledPlugins.map((plugin) => {
                 const installedHasUpdate = hasUpdate(plugin);
                 const updateInfo = installedHasUpdate ? getUpdateInfo(plugin) : undefined;

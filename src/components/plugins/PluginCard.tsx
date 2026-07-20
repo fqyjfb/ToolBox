@@ -52,12 +52,12 @@ const PluginCard: React.FC<PluginCardProps> = ({
 
   return (
     <div
-      className="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all duration-200 cursor-pointer"
+      className="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:shadow-md transition-all duration-200 cursor-pointer"
       onClick={onViewDetail}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2">
         <div
-        className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-700"
+        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-700"
       >
         {plugin.iconUrl && !iconError && (
           <img
@@ -68,7 +68,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
           />
         )}
         {(!plugin.iconUrl || iconError) && (
-          <Icon className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+          <Icon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         )}
       </div>
 
@@ -84,11 +84,11 @@ const PluginCard: React.FC<PluginCardProps> = ({
             )}
           </div>
 
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
             {plugin.description}
           </p>
 
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
             {plugin.categories.slice(0, 2).map((category) => (
               <span
                 key={category}
@@ -110,8 +110,8 @@ const PluginCard: React.FC<PluginCardProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center gap-1.5">
           {(plugin as PluginInfo).githubRepo && (
             <button
               onClick={(e) => {
@@ -135,7 +135,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {isInstalled ? (
             <>
               {onToggleEnabled && (
@@ -161,7 +161,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
                     onUpdate();
                   }}
                   disabled={isInstalling}
-                  className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     isInstalling
                       ? 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
                       : 'text-white bg-green-600 dark:bg-green-600 hover:bg-green-700 dark:hover:bg-green-700'
@@ -181,7 +181,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
                     e.stopPropagation();
                     pluginApi.openPluginWindow(plugin.id);
                   }}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
                 >
                   <Play className="w-3.5 h-3.5" />
                   启动
@@ -193,7 +193,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
                     e.stopPropagation();
                     onUninstall();
                   }}
-                  className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-md hover:bg-red-100 dark:hover:bg-red-800/30 transition-colors"
+                  className="px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-md hover:bg-red-100 dark:hover:bg-red-800/30 transition-colors"
                 >
                   卸载
                 </button>
@@ -206,7 +206,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
                 onInstall?.();
               }}
               disabled={isInstalling}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                 isInstalling
                   ? 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
                   : 'text-white bg-primary dark:bg-primary hover:bg-primary/90 dark:hover:bg-primary/90'
@@ -228,7 +228,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
           e.stopPropagation();
           onViewDetail?.();
         }}
-        className="absolute right-3 top-3 w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 transition-colors opacity-0 group-hover:opacity-100"
+        className="absolute right-2 top-2 w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 transition-colors opacity-0 group-hover:opacity-100"
       >
         <ChevronRight className="w-4 h-4" />
       </button>

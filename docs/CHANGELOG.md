@@ -1,5 +1,12 @@
 # 更新日志
 
+## v2.5.5
+
+- 插件商店卡片布局优化：调整为紧凑型，缩小内边距、图标尺寸和间距，每行显示4个插件卡片
+- 插件描述显示优化：改为单行显示，超出内容自动省略（显示省略号）
+- 插件安装功能修复：修复使用镜像源克隆时只生成 .git 目录的问题，浅克隆失败时自动回退到完整克隆
+- 移除不可用镜像源：移除 github.com.cnpmjs.org，保留 hub.fastgit.xyz、gh.fastgit.org 和 github.com
+
 ## v2.5.4
 
 - 插件商店功能优化：添加多个 GitHub 镜像源支持（github.com.cnpmjs.org、hub.fastgit.xyz、gh.fastgit.org），解决国内网络环境下无法下载安装插件的问题

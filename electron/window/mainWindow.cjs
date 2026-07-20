@@ -256,6 +256,7 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     titleBarStyle: 'hidden',
     icon: iconPath,
     show: false,
+    alwaysOnTop: false,
     webPreferences: {
       preload: path.join(__dirname, '../preload.cjs'),
       nodeIntegration: false,

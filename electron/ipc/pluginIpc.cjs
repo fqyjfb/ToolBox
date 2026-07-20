@@ -7,6 +7,7 @@ let pluginIpcRegistered = false;
 const { app } = require('electron');
 
 let preScreenshotBounds = null;
+let preScreenshotAlwaysOnTop = false;
 const pluginWindows = new Map();
 let screenshotOverlayWindow = null;
 
@@ -14,11 +15,21 @@ const EXTENSIONS_DIR = path.join(app.getPath('userData'), 'extensions');
 const CONFIG_FILE = path.join(app.getPath('userData'), 'extensions-config.json');
 
 const GITHUB_MIRRORS = [
-  'https://github.com.cnpmjs.org',
   'https://hub.fastgit.xyz',
   'https://gh.fastgit.org',
   'https://github.com',
 ];
+
+async function executeGitClone(mirrorUrl, targetDir, depth = true) {
+  return new Promise((resolve, reject) => {
+    const { execFile } = require('child_process');
+    const args = depth ? ['clone', '--depth=1', mirrorUrl, targetDir] : ['clone', mirrorUrl, targetDir];
+    execFile('git', args, { timeout: 60000 }, (error) => {
+      if (error) reject(error);
+      else resolve(null);
+    });
+  });
+}
 
 async function gitCloneWithRetry(repoUrl, targetDir) {
   const originalUrl = repoUrl;
@@ -35,22 +46,29 @@ async function gitCloneWithRetry(repoUrl, targetDir) {
     console.log(`Trying to clone from: ${mirrorUrl}`);
 
     try {
-      await new Promise((resolve, reject) => {
-        const { execFile } = require('child_process');
-        execFile('git', ['clone', '--depth=1', mirrorUrl, targetDir], { timeout: 45000 }, (error) => {
-          if (error) reject(error);
-          else resolve(null);
-        });
-      });
+      await executeGitClone(mirrorUrl, targetDir, true);
       console.log(`Successfully cloned from: ${mirrorUrl}`);
       return true;
     } catch (error) {
       lastError = error;
-      console.warn(`Failed to clone from ${mirrorUrl}: ${error.message}`);
+      console.warn(`Shallow clone failed from ${mirrorUrl}: ${error.message}`);
       if (fs.existsSync(targetDir)) {
         try {
           await fs.promises.rm(targetDir, { recursive: true, force: true });
         } catch { /* ignore */ }
+      }
+
+      try {
+        await executeGitClone(mirrorUrl, targetDir, false);
+        console.log(`Successfully cloned (full) from: ${mirrorUrl}`);
+        return true;
+      } catch (fullError) {
+        console.warn(`Full clone also failed from ${mirrorUrl}: ${fullError.message}`);
+        if (fs.existsSync(targetDir)) {
+          try {
+            await fs.promises.rm(targetDir, { recursive: true, force: true });
+          } catch { /* ignore */ }
+        }
       }
     }
   }
@@ -522,6 +540,15 @@ function registerPluginIpc() {
     if (window) window.close();
   });
 
+  ipcMain.handle('plugin:save-file', async (_event, { path: filePath, data }) => {
+    try {
+      await fs.promises.writeFile(filePath, data);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('start-screenshot-capture', async () => {
     try {
       const displays = screen.getAllDisplays();
@@ -540,6 +567,7 @@ function registerPluginIpc() {
       const pluginWindowsBounds = new Map();
 
       preScreenshotBounds = mainWindow ? mainWindow.getBounds() : null;
+      preScreenshotAlwaysOnTop = mainWindow ? mainWindow.isAlwaysOnTop() : false;
 
       if (mainWindow) {
         mainWindow.setAlwaysOnTop(false);
@@ -821,7 +849,7 @@ function registerPluginIpc() {
     if (mainWindow) {
       if (preScreenshotBounds) mainWindow.setBounds(preScreenshotBounds);
       mainWindow.show();
-      mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'floating' : 'screen-saver', 1);
+      mainWindow.setAlwaysOnTop(preScreenshotAlwaysOnTop);
     }
     pluginWindows.forEach((window) => {
       if (!window.isDestroyed()) {
@@ -838,7 +866,7 @@ function registerPluginIpc() {
     if (mainWindow) {
       if (preScreenshotBounds) mainWindow.setBounds(preScreenshotBounds);
       mainWindow.show();
-      mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'floating' : 'screen-saver', 1);
+      mainWindow.setAlwaysOnTop(preScreenshotAlwaysOnTop);
     }
     pluginWindows.forEach((window) => {
       if (!window.isDestroyed()) {
@@ -867,7 +895,7 @@ function registerPluginIpc() {
         ]
       });
 
-      if (mainWindow) mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'floating' : 'screen-saver', 1);
+      if (mainWindow) mainWindow.setAlwaysOnTop(preScreenshotAlwaysOnTop);
 
       if (result.canceled || !result.filePath) return { success: false, reason: 'cancelled' };
       savePath = result.filePath;
