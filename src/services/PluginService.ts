@@ -1,8 +1,17 @@
 import { logError, logInfo } from './loggerService';
 import { PluginInfo, InstalledPlugin, PluginServiceResponse } from '../types/plugin';
 
-const PLUGIN_REGISTRY_URL = 'https://raw.githubusercontent.com/fqyjfb/toolbox-plugins-registry/main/registry.json';
-const PLUGIN_REGISTRY_MIRROR_URL = 'https://raw.fastgit.org/fqyjfb/toolbox-plugins-registry/main/registry.json';
+const PLUGIN_REGISTRY_URLS = [
+  'https://raw.githubusercontent.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
+  'https://raw.fastgit.org/fqyjfb/toolbox-plugins-registry/main/registry.json',
+  'https://raw.gitmirror.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
+];
+
+const GITHUB_RAW_MIRRORS = [
+  'https://raw.githubusercontent.com',
+  'https://raw.fastgit.org',
+  'https://raw.gitmirror.com',
+];
 
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout: number = 15000): Promise<Response> {
   return new Promise((resolve, reject) => {
@@ -22,37 +31,57 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout:
   });
 }
 
+async function fetchWithMirrors(urls: string[], options: RequestInit = {}, timeout: number = 15000): Promise<Response> {
+  let lastError = null;
+
+  for (const url of urls) {
+    try {
+      const res = await fetchWithTimeout(`${url}?t=${new Date().getTime()}`, options, timeout);
+      if (res.ok) {
+        return res;
+      }
+    } catch (error) {
+      lastError = error;
+      logError(`从 ${url} 获取数据失败`, 'PluginService', error as Error);
+    }
+  }
+
+  throw lastError || new Error('所有镜像源均无法访问');
+}
+
+function getMirrorUrls(originalUrl: string): string[] {
+  if (originalUrl.startsWith('https://raw.githubusercontent.com/')) {
+    const path = originalUrl.slice('https://raw.githubusercontent.com'.length);
+    return GITHUB_RAW_MIRRORS.map(mirror => mirror + path);
+  }
+  return [originalUrl];
+}
+
 export default class PluginService {
   async fetchAvailablePlugins(): Promise<PluginInfo[]> {
-    const urls = [PLUGIN_REGISTRY_URL, PLUGIN_REGISTRY_MIRROR_URL];
-    
-    for (const url of urls) {
-      try {
-        const res = await fetchWithTimeout(`${url}?t=${new Date().getTime()}`, {}, 15000);
-        if (res.ok) {
-          const data = await res.json();
-          return (Array.isArray(data) ? data : []).map((ext: any) => ({
-            id: ext.id,
-            name: ext.name,
-            description: ext.description || '',
-            iconName: ext.icon || 'Package',
-            iconUrl: ext.iconUrl,
-            image: ext.image,
-            color: ext.color || '#3b82f6',
-            textColor: ext.textColor || '#ffffff',
-            version: ext.version || '1.0.0',
-            author: ext.author || 'Unknown',
-            categories: ext.categories || [],
-            path: `/tools/${ext.id}`,
-            tags: ext.tags || [],
-            githubRepo: ext.githubRepo,
-            entry: ext.entry,
-            isBeta: ext.isBeta === true,
-          }));
-        }
-      } catch (error) {
-        logError(`从 ${url} 获取插件列表失败`, 'PluginService', error as Error);
-      }
+    try {
+      const res = await fetchWithMirrors(PLUGIN_REGISTRY_URLS);
+      const data = await res.json();
+      return (Array.isArray(data) ? data : []).map((ext: any) => ({
+        id: ext.id,
+        name: ext.name,
+        description: ext.description || '',
+        iconName: ext.icon || 'Package',
+        iconUrl: ext.iconUrl ? getMirrorUrls(ext.iconUrl)[0] : undefined,
+        image: ext.image ? getMirrorUrls(ext.image)[0] : undefined,
+        color: ext.color || '#3b82f6',
+        textColor: ext.textColor || '#ffffff',
+        version: ext.version || '1.0.0',
+        author: ext.author || 'Unknown',
+        categories: ext.categories || [],
+        path: `/tools/${ext.id}`,
+        tags: ext.tags || [],
+        githubRepo: ext.githubRepo,
+        entry: ext.entry,
+        isBeta: ext.isBeta === true,
+      }));
+    } catch (error) {
+      logError('从所有镜像源获取插件列表失败', 'PluginService', error as Error);
     }
 
     try {

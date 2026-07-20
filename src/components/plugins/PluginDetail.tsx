@@ -29,16 +29,17 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
   onUninstall,
   onToggleEnabled,
 }) => {
-  if (!plugin) return null;
-
   const [iconError, setIconError] = React.useState(false);
-  const Icon = iconMap[plugin.iconName] || iconMap.Package;
-  const isEnabled = (plugin as InstalledPlugin).enabled ?? true;
   const pinnedToolIds = useSidebarStore((state) => state.pinnedToolIds);
-  const isInSidebar = pinnedToolIds.includes(plugin.id);
   const addPinnedTool = useSidebarStore((state) => state.addPinnedTool);
   const removePinnedTool = useSidebarStore((state) => state.removePinnedTool);
   const togglePluginPinned = usePluginStore((state) => state.togglePluginPinned);
+
+  if (!plugin) return null;
+
+  const Icon = iconMap[plugin.iconName] || iconMap.Package;
+  const isEnabled = (plugin as InstalledPlugin).enabled ?? true;
+  const isInSidebar = pinnedToolIds.includes(plugin.id);
 
   const handlePin = () => {
     if (isInSidebar) {

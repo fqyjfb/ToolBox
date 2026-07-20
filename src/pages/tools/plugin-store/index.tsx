@@ -33,16 +33,16 @@ const PluginStorePage: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const hasUpdate = (plugin: InstalledPlugin): boolean => {
+  const hasUpdate = useCallback((plugin: InstalledPlugin): boolean => {
     const available = availablePlugins.find(p => p.id === plugin.id);
     return available ? pluginService.hasUpdate(plugin, available) : false;
-  };
+  }, [availablePlugins]);
 
-  const getUpdateInfo = (plugin: InstalledPlugin): { availableVersion: string; githubRepo?: string } | undefined => {
+  const getUpdateInfo = useCallback((plugin: InstalledPlugin): { availableVersion: string; githubRepo?: string } | undefined => {
     const available = availablePlugins.find(p => p.id === plugin.id);
     if (!available) return undefined;
     return { availableVersion: available.version, githubRepo: available.githubRepo };
-  };
+  }, [availablePlugins]);
 
   const loadPlugins = useCallback(async () => {
     setLoadError(null);
@@ -57,7 +57,7 @@ const PluginStorePage: React.FC = () => {
       if (available.length === 0) {
         setLoadError('无法连接到插件注册表，请检查网络连接');
       }
-    } catch (error) {
+    } catch {
       setLoadError('加载插件列表失败，请检查网络连接');
       addToast({ message: '加载插件列表失败', type: 'error' });
     }
@@ -81,7 +81,7 @@ const PluginStorePage: React.FC = () => {
       } else {
         addToast({ message: result.error || `安装 "${plugin.name}" 失败`, type: 'error' });
       }
-    } catch (error) {
+    } catch {
       addToast({ message: `安装 "${plugin.name}" 时发生错误`, type: 'error' });
     } finally {
       setInstallingPluginId(null);
@@ -98,7 +98,7 @@ const PluginStorePage: React.FC = () => {
       } else {
         addToast({ message: result.error || '卸载失败', type: 'error' });
       }
-    } catch (error) {
+    } catch {
       addToast({ message: '卸载插件时发生错误', type: 'error' });
     }
   }, [addToast, loadPlugins, removePinnedTool]);
@@ -110,7 +110,7 @@ const PluginStorePage: React.FC = () => {
         addToast({ message: enabled ? '插件已启用' : '插件已禁用', type: 'success' });
         await loadPlugins();
       }
-    } catch (error) {
+    } catch {
       addToast({ message: '切换插件状态失败', type: 'error' });
     }
   }, [addToast, loadPlugins]);
@@ -125,7 +125,7 @@ const PluginStorePage: React.FC = () => {
       } else {
         addToast({ message: result.error || '安装失败', type: 'error' });
       }
-    } catch (error) {
+    } catch {
       addToast({ message: '安装插件时发生错误', type: 'error' });
     }
   }, [addToast, loadPlugins]);
@@ -143,7 +143,7 @@ const PluginStorePage: React.FC = () => {
       } else {
         addToast({ message: result.error || `更新 "${plugin.name}" 失败`, type: 'error' });
       }
-    } catch (error) {
+    } catch {
       addToast({ message: `更新 "${plugin.name}" 时发生错误`, type: 'error' });
     } finally {
       setInstallingPluginId(null);
@@ -160,7 +160,7 @@ const PluginStorePage: React.FC = () => {
       } else {
         addToast({ message: result.error || '安装失败', type: 'error' });
       }
-    } catch (error) {
+    } catch {
       addToast({ message: '安装插件时发生错误', type: 'error' });
     }
   }, [addToast, loadPlugins]);

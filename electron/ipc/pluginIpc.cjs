@@ -13,6 +13,51 @@ let screenshotOverlayWindow = null;
 const EXTENSIONS_DIR = path.join(app.getPath('userData'), 'extensions');
 const CONFIG_FILE = path.join(app.getPath('userData'), 'extensions-config.json');
 
+const GITHUB_MIRRORS = [
+  'https://github.com.cnpmjs.org',
+  'https://hub.fastgit.xyz',
+  'https://gh.fastgit.org',
+  'https://github.com',
+];
+
+async function gitCloneWithRetry(repoUrl, targetDir) {
+  const originalUrl = repoUrl;
+  let lastError = null;
+
+  for (const mirror of GITHUB_MIRRORS) {
+    let mirrorUrl = originalUrl;
+    if (originalUrl.startsWith('https://github.com/')) {
+      mirrorUrl = mirror + originalUrl.slice('https://github.com'.length);
+    } else if (originalUrl.startsWith('git@github.com:')) {
+      mirrorUrl = mirror + '/' + originalUrl.slice('git@github.com:'.length);
+    }
+
+    console.log(`Trying to clone from: ${mirrorUrl}`);
+
+    try {
+      await new Promise((resolve, reject) => {
+        const { execFile } = require('child_process');
+        execFile('git', ['clone', '--depth=1', mirrorUrl, targetDir], { timeout: 45000 }, (error) => {
+          if (error) reject(error);
+          else resolve(null);
+        });
+      });
+      console.log(`Successfully cloned from: ${mirrorUrl}`);
+      return true;
+    } catch (error) {
+      lastError = error;
+      console.warn(`Failed to clone from ${mirrorUrl}: ${error.message}`);
+      if (fs.existsSync(targetDir)) {
+        try {
+          await fs.promises.rm(targetDir, { recursive: true, force: true });
+        } catch { /* ignore */ }
+      }
+    }
+  }
+
+  throw lastError || new Error('All GitHub mirrors failed');
+}
+
 function getExtensionsDir() {
   if (!fs.existsSync(EXTENSIONS_DIR)) {
     fs.mkdirSync(EXTENSIONS_DIR, { recursive: true });
@@ -117,7 +162,6 @@ function registerPluginIpc() {
 
   ipcMain.handle('plugin:install', async (_event, { pluginId, repo }) => {
     try {
-      const { exec } = require('child_process');
       const extensionsDir = getExtensionsDir();
       const pluginDir = path.join(extensionsDir, pluginId);
       
@@ -127,12 +171,7 @@ function registerPluginIpc() {
       
       const fullRepoUrl = repo.startsWith('http') ? repo : `https://github.com/${repo}`;
       
-      await new Promise((resolve, reject) => {
-        exec(`git clone ${fullRepoUrl} "${pluginDir}"`, (error) => {
-          if (error) reject(error);
-          else resolve(null);
-        });
-      });
+      await gitCloneWithRetry(fullRepoUrl, pluginDir);
 
       const config = loadConfig();
       config[pluginId] = { enabled: true };
@@ -233,7 +272,6 @@ function registerPluginIpc() {
 
   ipcMain.handle('plugin:install-from-github', async (_event, { id, repo }) => {
     try {
-      const { exec } = require('child_process');
       const extensionsDir = getExtensionsDir();
       const pluginDir = path.join(extensionsDir, id);
       
@@ -243,12 +281,7 @@ function registerPluginIpc() {
       
       const fullRepoUrl = repo.startsWith('http') ? repo : `https://github.com/${repo}`;
       
-      await new Promise((resolve, reject) => {
-        exec(`git clone ${fullRepoUrl} "${pluginDir}"`, (error) => {
-          if (error) reject(error);
-          else resolve(null);
-        });
-      });
+      await gitCloneWithRetry(fullRepoUrl, pluginDir);
 
       const config = loadConfig();
       config[id] = { enabled: true };

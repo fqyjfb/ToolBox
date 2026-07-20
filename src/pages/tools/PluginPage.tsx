@@ -31,7 +31,7 @@ const PluginPage: React.FC = () => {
         setTimeout(() => {
           navigate('/');
         }, 300);
-      } catch (err) {
+      } catch {
         setError('打开插件窗口失败');
       } finally {
         setIsLoading(false);

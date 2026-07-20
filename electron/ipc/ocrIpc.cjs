@@ -298,9 +298,16 @@ function registerOcrIpc() {
       }
 
       const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+      const cleanEnv = {};
+      for (const key of Object.keys(process.env)) {
+        const value = process.env[key];
+        if (typeof value === 'string') {
+          cleanEnv[key] = value;
+        }
+      }
       const proc = spawn(pythonCmd, [scriptPath], {
         cwd: serviceDir,
-        env: process.env,
+        env: cleanEnv,
       });
 
       let output = '';
@@ -345,7 +352,7 @@ function registerOcrIpc() {
   });
 
   // 安装Python依赖
-  ipcMain.handle("ocr:installDeps", async (_event, { serviceDir }) => {
+  ipcMain.handle("ocr:installDeps", async (_event, { serviceDir, force }) => {
     const { spawn } = require('child_process');
     const path = require('path');
     const fs = require('fs');
@@ -372,9 +379,20 @@ function registerOcrIpc() {
       }
 
       const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-      const proc = spawn(pythonCmd, [scriptPath], {
+      const args = [scriptPath];
+      if (force) {
+        args.push('--force');
+      }
+      const cleanEnv = {};
+      for (const key of Object.keys(process.env)) {
+        const value = process.env[key];
+        if (typeof value === 'string') {
+          cleanEnv[key] = value;
+        }
+      }
+      const proc = spawn(pythonCmd, args, {
         cwd: serviceDir,
-        env: process.env,
+        env: cleanEnv,
       });
 
       let output = '';

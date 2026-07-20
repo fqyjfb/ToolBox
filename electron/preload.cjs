@@ -93,7 +93,7 @@ contextBridge.exposeInMainWorld('electron', {
     stop: () => ipcRenderer.invoke('ocr:stop'),
     serviceInfo: () => ipcRenderer.invoke('ocr:serviceInfo'),
     diagnose: (serviceDir) => ipcRenderer.invoke('ocr:diagnose', { serviceDir }),
-    installDeps: (serviceDir) => ipcRenderer.invoke('ocr:installDeps', { serviceDir }),
+    installDeps: (serviceDir, force) => ipcRenderer.invoke('ocr:installDeps', { serviceDir, force }),
     checkPort: (port) => ipcRenderer.invoke('ocr:checkPort', port),
     selectPythonPath: () => ipcRenderer.invoke('ocr:selectPythonPath'),
   },

@@ -1,5 +1,12 @@
 # 更新日志
 
+## v2.5.4
+
+- 插件商店功能优化：添加多个 GitHub 镜像源支持（github.com.cnpmjs.org、hub.fastgit.xyz、gh.fastgit.org），解决国内网络环境下无法下载安装插件的问题
+- 插件下载自动重试机制：当主源下载失败时，自动切换到备用镜像源继续尝试
+- 插件注册表和图标资源镜像支持：添加 fastgit.org、gitmirror.com 镜像源，确保插件列表和图标在国内网络正常加载
+- OCR插件服务增强：diagnose.py 添加包导入检测，install_deps.py 添加 --force 参数支持强制重装依赖，ocrIpc.cjs、preload.cjs、ToolPanel.tsx 支持 force 参数传递
+
 ## v2.5.3
 
 - 移除OCR文字识别功能（已迁移为插件版）

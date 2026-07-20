@@ -151,16 +151,26 @@ async function startPythonService(config = {}) {
       execArgs = [];
     }
 
-    const env = {
-      ...process.env,
-      PYTHONUNBUFFERED: '1',
-      PYTHONIOENCODING: 'utf-8',
-      SERVICE_PORT: String(serviceConfig.port || 8765),
-      WS_HOST: '127.0.0.1',
-      WS_PORT: String(serviceConfig.wsPort || 8765),
-      HTTP_PORT: String(serviceConfig.httpPort || 8766),
-      ...serviceConfig.env,
-    };
+    const env = {};
+    for (const key of Object.keys(process.env)) {
+      const value = process.env[key];
+      if (typeof value === 'string') {
+        env[key] = value;
+      }
+    }
+    env.PYTHONUNBUFFERED = '1';
+    env.PYTHONIOENCODING = 'utf-8';
+    env.SERVICE_PORT = String(serviceConfig.port || 8765);
+    env.WS_HOST = '127.0.0.1';
+    env.WS_PORT = String(serviceConfig.wsPort || 8765);
+    env.HTTP_PORT = String(serviceConfig.httpPort || 8766);
+    if (serviceConfig.env) {
+      for (const key of Object.keys(serviceConfig.env)) {
+        env[key] = String(serviceConfig.env[key]);
+      }
+    }
+
+    let stderrOutput = '';
 
     serviceProcess = spawn(execPath, execArgs, {
       cwd: serviceConfig.workDir || serviceDir,
@@ -169,7 +179,7 @@ async function startPythonService(config = {}) {
     });
 
     serviceStartTime = Date.now();
-    serviceStatus = 'running';
+    serviceStatus = 'starting';
     restartCount = 0;
     lastError = null;
 
@@ -183,6 +193,7 @@ async function startPythonService(config = {}) {
 
     serviceProcess.stderr?.on('data', (data) => {
       const message = data.toString().trim();
+      stderrOutput += message + '\n';
       if (message) {
         addLog('warn', message);
         console.warn(`[Python Service] ${message}`);
@@ -198,7 +209,8 @@ async function startPythonService(config = {}) {
         addLog('info', `服务被信号 ${signal} 终止`);
       } else if (code !== 0) {
         addLog('error', `服务异常退出，退出码: ${code}`);
-        lastError = `服务异常退出，退出码: ${code}`;
+        const stderrSummary = stderrOutput.trim().split('\n').slice(-10).join('\n');
+        lastError = `服务异常退出，退出码: ${code}${stderrSummary ? '\nPython错误输出:\n' + stderrSummary : ''}`;
         serviceStatus = 'error';
       } else {
         addLog('info', '服务已正常停止');
@@ -230,7 +242,8 @@ async function startPythonService(config = {}) {
     const portReady = await waitForPort(httpPort, 30000);
     if (!portReady) {
       addLog('error', `HTTP 服务启动超时，端口 ${httpPort} 未就绪`);
-      lastError = `HTTP 服务启动超时，端口 ${httpPort} 未就绪。请检查 Python 环境和依赖是否正确安装。`;
+      const stderrSummary = stderrOutput.trim().split('\n').slice(-10).join('\n');
+      lastError = `HTTP 服务启动超时，端口 ${httpPort} 未就绪。请检查 Python 环境和依赖是否正确安装。${stderrSummary ? '\nPython错误输出:\n' + stderrSummary : ''}`;
       serviceStatus = 'error';
       
       try {
@@ -247,6 +260,7 @@ async function startPythonService(config = {}) {
     }
 
     addLog('info', `HTTP 服务已就绪，端口: ${httpPort}`);
+    serviceStatus = 'running';
     resetIdleTimer();
 
     return {
