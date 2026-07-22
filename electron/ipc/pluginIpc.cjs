@@ -20,6 +20,94 @@ const GITHUB_MIRRORS = [
   'https://github.com',
 ];
 
+const GITHUB_RELEASE_MIRRORS = [
+  'https://github.com',
+  'https://hub.fastgit.xyz',
+  'https://gh.fastgit.org',
+];
+
+async function downloadReleaseZip(url, targetDir, onProgress) {
+  const { createWriteStream, unlinkSync, existsSync, mkdirSync } = require('fs');
+  const { https } = require('follow-redirects');
+  const AdmZip = require('adm-zip');
+
+  if (!existsSync(targetDir)) {
+    mkdirSync(targetDir, { recursive: true });
+  }
+
+  const zipPath = path.join(targetDir, 'plugin.zip');
+  
+  async function tryDownload(mirrorUrl) {
+    const mirroredUrl = url.replace('https://github.com', mirrorUrl);
+    return new Promise((resolve, reject) => {
+      https.get(mirroredUrl, { timeout: 30000 }, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`HTTP ${response.statusCode}`));
+          return;
+        }
+
+        const totalSize = parseInt(response.headers['content-length'], 10) || 0;
+        let downloadedSize = 0;
+        
+        onProgress?.({
+          status: 'downloading',
+          message: '正在下载...',
+          progress: 0,
+          mirror: mirrorUrl
+        });
+
+        const file = createWriteStream(zipPath);
+        response.on('data', (chunk) => {
+          downloadedSize += chunk.length;
+          if (totalSize > 0) {
+            const progress = Math.round((downloadedSize / totalSize) * 100);
+            const speed = (downloadedSize / 1024 / 1024).toFixed(2);
+            onProgress?.({
+              status: 'downloading',
+              message: `正在下载... ${speed}MB`,
+              progress,
+              mirror: mirrorUrl
+            });
+          }
+        });
+
+        response.pipe(file);
+        file.on('finish', () => {
+          file.close(() => resolve(true));
+        });
+        file.on('error', reject);
+      }).on('error', reject).on('timeout', () => reject(new Error('Timeout')));
+    });
+  }
+
+  for (const mirror of GITHUB_RELEASE_MIRRORS) {
+    try {
+      await tryDownload(mirror);
+      onProgress?.({
+        status: 'extracting',
+        message: '正在解压...',
+        progress: 95,
+        mirror: mirror
+      });
+      
+      const zip = new AdmZip(zipPath);
+      zip.extractAllTo(targetDir, true);
+      unlinkSync(zipPath);
+      onProgress?.({
+        status: 'installing',
+        message: '正在安装...',
+        progress: 98,
+        mirror: mirror
+      });
+      return;
+    } catch (error) {
+      console.warn(`Failed to download from ${mirror}:`, error.message);
+    }
+  }
+
+  throw new Error('Failed to download plugin from all mirrors');
+}
+
 async function executeGitClone(mirrorUrl, targetDir, depth = true) {
   return new Promise((resolve, reject) => {
     const { execFile } = require('child_process');
@@ -178,7 +266,40 @@ function registerPluginIpc() {
     }
   });
 
-  ipcMain.handle('plugin:install', async (_event, { pluginId, repo }) => {
+  async function fetchReleaseUrlFromGithub(repo) {
+  const https = require('follow-redirects').https;
+  const mirrors = ['https://api.github.com'];
+  
+  for (const mirror of mirrors) {
+    try {
+      const url = `${mirror}/repos/${repo}/releases/latest`;
+      const data = await new Promise((resolve, reject) => {
+        https.get(url, { timeout: 15000 }, (res) => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`HTTP ${res.statusCode}`));
+            return;
+          }
+          let body = '';
+          res.on('data', (chunk) => body += chunk);
+          res.on('end', () => resolve(JSON.parse(body)));
+          res.on('error', reject);
+        }).on('timeout', () => reject(new Error('Timeout')));
+      });
+      
+      const assets = data.assets || [];
+      const zipAsset = assets.find(a => a.name.endsWith('.zip')) || assets[0];
+      if (zipAsset?.browser_download_url) {
+        return zipAsset.browser_download_url;
+      }
+    } catch {
+      continue;
+    }
+  }
+  
+  return null;
+}
+
+ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) => {
     try {
       const extensionsDir = getExtensionsDir();
       const pluginDir = path.join(extensionsDir, pluginId);
@@ -186,17 +307,50 @@ function registerPluginIpc() {
       if (fs.existsSync(pluginDir)) {
         await fs.promises.rm(pluginDir, { recursive: true, force: true });
       }
+
+      const sendProgress = (progress) => {
+        event.sender.send('plugin:install-progress', { pluginId, ...progress });
+      };
+
+      if (!releaseUrl && repo) {
+        sendProgress({
+          status: 'starting',
+          message: '获取插件版本信息...',
+          progress: 0
+        });
+        
+        releaseUrl = await fetchReleaseUrlFromGithub(repo);
+        
+        if (!releaseUrl) {
+          return { success: false, error: '无法获取插件发布版本，请检查网络连接或插件仓库是否已发布 Release' };
+        }
+      }
       
-      const fullRepoUrl = repo.startsWith('http') ? repo : `https://github.com/${repo}`;
-      
-      await gitCloneWithRetry(fullRepoUrl, pluginDir);
+      if (!releaseUrl) {
+        return { success: false, error: '插件暂未发布可用版本' };
+      }
+
+      sendProgress({
+        status: 'starting',
+        message: '准备安装...',
+        progress: 0
+      });
+
+      await downloadReleaseZip(releaseUrl, pluginDir, sendProgress);
 
       const config = loadConfig();
       config[pluginId] = { enabled: true };
       saveConfig(config);
 
+      sendProgress({
+        status: 'completed',
+        message: '安装完成',
+        progress: 100
+      });
+
       return { success: true };
     } catch (error) {
+      console.error('Failed to install plugin:', error);
       return { success: false, error: error.message };
     }
   });

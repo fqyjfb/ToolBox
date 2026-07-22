@@ -6,6 +6,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { memoService } from '../../../services/MemoService';
+import { openUrl } from '../../../services/browserService';
 import { MemoCategory, Memo } from '../../../types/memo';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
@@ -22,6 +23,29 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+
+const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = ({ url, onCopy }) => {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onCopy(url);
+        }}
+        className="p-0.5 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        title="复制链接"
+      >
+        <Copy size={10} className="text-gray-600 dark:text-gray-400" />
+      </button>
+      <button
+        onClick={() => openUrl(url)}
+        className="text-blue-600 dark:text-blue-400 hover:underline text-xs bg-transparent border-none p-0 cursor-pointer"
+      >
+        {url}
+      </button>
+    </span>
+  );
+};
 
 const getPriorityStyle = (priority: string) => {
   switch (priority) {
@@ -467,6 +491,16 @@ const MemoPage: React.FC = () => {
     }
   }, [addToast]);
 
+  const handleCopyUrl = useCallback(async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      addToast({ message: '链接已复制', type: 'success' });
+    } catch (error) {
+      logError('Error copying URL', 'MemoPage', error as Error);
+      addToast({ message: '复制失败', type: 'error' });
+    }
+  }, [addToast]);
+
   const handleContextMenu = useCallback((e: React.MouseEvent, type: 'memo' | 'category' | 'empty', targetId?: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -702,7 +736,12 @@ const MemoPage: React.FC = () => {
                               </div>
                               {memo.content && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-h-32 overflow-hidden">
-                                  {memo.content}
+                                  {memo.content.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+                                    if (part.match(/^https?:\/\/[^\s]+$/)) {
+                                      return <LinkWithCopy key={index} url={part} onCopy={handleCopyUrl} />;
+                                    }
+                                    return part;
+                                  })}
                                 </p>
                               )}
                             </div>
@@ -967,7 +1006,12 @@ const MemoPage: React.FC = () => {
                   <Copy size={14} />
                 </button>
                 <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words">
-                  {previewMemo.content || '暂无内容'}
+                  {(previewMemo.content || '暂无内容').split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+                    if (part.match(/^https?:\/\/[^\s]+$/)) {
+                      return <LinkWithCopy key={index} url={part} onCopy={handleCopyUrl} />;
+                    }
+                    return part;
+                  })}
                 </p>
               </div>
             </div>

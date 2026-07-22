@@ -5,7 +5,7 @@ interface ToolRegistration {
   color: string;
   textColor: string;
   path: string;
-  component?: any;
+  component?: React.ComponentType<Record<string, unknown>>;
 }
 
 interface SidebarButtonRegistration {
@@ -138,7 +138,7 @@ class PluginApi {
 
   async openPluginWindow(pluginId: string): Promise<void> {
     try {
-      await (window as any).electron?.plugin?.openWindow(pluginId);
+      await window.electron?.plugin?.openWindow(pluginId);
     } catch (error) {
       console.error('Failed to open plugin window:', error);
     }
@@ -147,4 +147,4 @@ class PluginApi {
 
 export const pluginApi = new PluginApi();
 
-(window as any).toolboxApi = pluginApi;
+(window as Window & { toolboxApi?: typeof pluginApi }).toolboxApi = pluginApi;

@@ -1,8 +1,12 @@
 import { PluginInfo, InstalledPlugin } from '../types/plugin';
 
+interface PluginInstance {
+  [key: string]: unknown;
+}
+
 interface PluginEntry {
   plugin: InstalledPlugin;
-  instance?: any;
+  instance?: PluginInstance;
 }
 
 class PluginRegistry {

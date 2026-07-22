@@ -40,6 +40,4 @@ export const ALL_TOOLS: ToolInfo[] = [
   { id: 'sql-minifier', name: 'SQL压缩器', path: '/tools/sql-minifier', color: '#059669', iconName: 'Code2' },
   { id: 'hex-encode', name: 'HEX编码', path: '/tools/hex-encode', color: '#dc2626', iconName: 'Binary' },
   { id: 'hex-decode', name: 'HEX解码', path: '/tools/hex-decode', color: '#b91c1c', iconName: 'Binary' },
-  { id: 'ai-chat', name: 'AI助手', path: '/tools/ai-chat', color: '#8b5cf6', iconName: 'Sparkles' },
-  { id: 'font-generator', name: '字体生成', path: '/tools/font-generator', color: '#f59e0b', iconName: 'Type' },
 ];

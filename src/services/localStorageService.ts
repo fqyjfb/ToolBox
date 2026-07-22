@@ -29,8 +29,6 @@ export const STORAGE_KEYS = {
   PLATFORM_ORDER: 'account_platform_order',
   WEBSITE_ACCOUNT_CATEGORY_ORDER: 'websiteAccountCategoryOrder',
   
-  AGNES_PREFIX: 'agnes_',
-  
   MARKDOWN_WECHAT_CONTENT: 'markdown-wechat-content',
   
   NOTES_SIDEBAR_VISIBLE: 'notes_sidebar_visible',

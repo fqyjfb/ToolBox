@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, Sparkles, PanelLeft } from 'lucide-react';
+import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
@@ -20,7 +20,6 @@ import {
   StorageTab,
   SyncTab,
   LogMonitorTab,
-  AgnesTab
 } from '../../components/settings';
 
 import './Settings.css';
@@ -405,7 +404,6 @@ const Settings: React.FC = () => {
     { id: 'sync' as const, label: '数据同步', icon: RefreshCw },
     { id: 'shortcuts' as const, label: '快捷键设置', icon: Keyboard },
     { id: 'floatWindow' as const, label: '悬浮窗设置', icon: Circle },
-    { id: 'agnes' as const, label: 'Agnes AI', icon: Sparkles },
     { id: 'logMonitor' as const, label: '日志监控', icon: FileText }
   ];
 
@@ -505,8 +503,6 @@ const Settings: React.FC = () => {
               onNotificationToggle={handleNotificationToggle}
             />
           )}
-
-          {activeTab === 'agnes' && <AgnesTab />}
         </div>
       </main>
     </div>

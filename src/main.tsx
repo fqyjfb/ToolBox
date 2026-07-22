@@ -5,7 +5,7 @@ import App from './App.tsx'
 import { QueryProvider } from './providers/QueryProvider'
 import ErrorBoundary from './components/ErrorBoundary'
 
-(window as any).React = React;
+(window as Window & { React?: typeof React }).React = React;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

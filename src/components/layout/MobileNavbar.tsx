@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Compass, Wrench, User, LogOut, ClipboardList, Link, Clipboard, MessageSquare, Sparkles, Search } from 'lucide-react';
+import { Menu, X, Home, Compass, Wrench, User, LogOut, ClipboardList, Link, Clipboard, MessageSquare, Search } from 'lucide-react';
 import { useAuth } from '../../store/AuthStore';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 
@@ -8,7 +8,6 @@ const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/memo', '/tools/quick-reply'
 
 const bottomNavItems = [
   { icon: Home, label: '首页', path: '/' },
-  { icon: Sparkles, label: 'AI助手', path: '/tools/ai-chat' },
   { icon: Compass, label: '资讯', path: '/news' },
   { icon: Wrench, label: '工具', path: '/tools' },
   { icon: User, label: '我的', path: '/login' },

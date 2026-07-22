@@ -8,6 +8,7 @@ export function useCallbackRef<T extends (...args: Parameters<T>) => ReturnType<
 
   useEffect(() => {
     callbackRef.current = callback;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callback, ...dependencies]);
 
   return useCallback((...args: Parameters<T>) => {

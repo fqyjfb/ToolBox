@@ -13,6 +13,7 @@ export interface PluginInfo {
   path: string;
   tags?: string[];
   githubRepo?: string;
+  releaseUrl?: string;
   entry?: string;
   isBeta?: boolean;
 }
@@ -51,9 +52,9 @@ export interface PluginManifest {
   isBeta?: boolean;
 }
 
-export interface PluginServiceResponse {
+export interface PluginServiceResponse<T = unknown> {
   success: boolean;
-  data?: any;
+  data?: T;
   error?: string;
   message?: string;
   canceled?: boolean;

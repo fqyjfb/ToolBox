@@ -1,6 +1,56 @@
 import { logError, logInfo } from './loggerService';
 import { PluginInfo, InstalledPlugin, PluginServiceResponse } from '../types/plugin';
 
+interface RegistryPlugin {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  iconUrl?: string;
+  image?: string;
+  color?: string;
+  textColor?: string;
+  version?: string;
+  author?: string;
+  categories?: string[];
+  tags?: string[];
+  githubRepo?: string;
+  releaseUrl?: string;
+  entry?: string;
+  isBeta?: boolean;
+}
+
+export interface InstallProgress {
+  status: 'starting' | 'downloading' | 'extracting' | 'installing' | 'completed' | 'error';
+  message: string;
+  progress: number;
+  mirror?: string;
+}
+
+interface RawInstalledPlugin {
+  id?: string;
+  name?: string;
+  description?: string;
+  icon?: string;
+  iconName?: string;
+  iconUrl?: string;
+  image?: string;
+  color?: string;
+  textColor?: string;
+  version?: string;
+  author?: string;
+  enabled?: boolean;
+  entry?: string;
+  installedVersion?: string;
+  categories?: string[];
+  path?: string;
+  tags?: string[];
+  githubRepo?: string;
+  isBeta?: boolean;
+  installDate?: number;
+  isPinned?: boolean;
+}
+
 const PLUGIN_REGISTRY_URLS = [
   'https://raw.githubusercontent.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
   'https://raw.fastgit.org/fqyjfb/toolbox-plugins-registry/main/registry.json',
@@ -11,6 +61,10 @@ const GITHUB_RAW_MIRRORS = [
   'https://raw.githubusercontent.com',
   'https://raw.fastgit.org',
   'https://raw.gitmirror.com',
+];
+
+const GITHUB_API_MIRRORS = [
+  'https://api.github.com',
 ];
 
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout: number = 15000): Promise<Response> {
@@ -57,12 +111,91 @@ function getMirrorUrls(originalUrl: string): string[] {
   return [originalUrl];
 }
 
+const RELEASE_URL_CACHE_KEY = 'plugin_release_url_cache';
+const RELEASE_URL_CACHE_TTL = 3600000;
+
+function getCachedReleaseUrl(githubRepo: string): string | undefined {
+  try {
+    const cacheStr = localStorage.getItem(RELEASE_URL_CACHE_KEY);
+    if (!cacheStr) return undefined;
+    
+    const cache = JSON.parse(cacheStr);
+    const entry = cache[githubRepo];
+    
+    if (entry && Date.now() - entry.timestamp < RELEASE_URL_CACHE_TTL) {
+      return entry.url;
+    }
+  } catch { /* ignore */ }
+  
+  return undefined;
+}
+
+function setCachedReleaseUrl(githubRepo: string, url: string): void {
+  try {
+    const cacheStr = localStorage.getItem(RELEASE_URL_CACHE_KEY);
+    const cache = cacheStr ? JSON.parse(cacheStr) : {};
+    
+    cache[githubRepo] = {
+      url,
+      timestamp: Date.now(),
+    };
+    
+    localStorage.setItem(RELEASE_URL_CACHE_KEY, JSON.stringify(cache));
+  } catch { /* ignore */ }
+}
+
+async function fetchLatestReleaseUrl(githubRepo: string): Promise<string | undefined> {
+  if (!githubRepo) return undefined;
+
+  const cachedUrl = getCachedReleaseUrl(githubRepo);
+  if (cachedUrl) {
+    return cachedUrl;
+  }
+
+  const apiPaths = [
+    `/repos/${githubRepo}/releases/latest`,
+    `/repos/${githubRepo}/releases`,
+  ];
+
+  for (const mirror of GITHUB_API_MIRRORS) {
+    for (const apiPath of apiPaths) {
+      try {
+        const url = `${mirror}${apiPath}`;
+        const res = await fetchWithTimeout(url, {}, 10000);
+        
+        if (!res.ok) continue;
+        
+        const data = await res.json();
+        let release = data;
+        
+        if (Array.isArray(data)) {
+          release = data.find((r: { draft: boolean; prerelease: boolean }) => !r.draft && !r.prerelease) || data[0];
+        }
+        
+        if (!release) continue;
+        
+        const assets = (release as { assets?: Array<{ name: string; browser_download_url: string }> }).assets || [];
+        const zipAsset = assets.find(a => a.name.endsWith('.zip')) || assets[0];
+        
+        if (zipAsset?.browser_download_url) {
+          setCachedReleaseUrl(githubRepo, zipAsset.browser_download_url);
+          return zipAsset.browser_download_url;
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+  
+  return undefined;
+}
+
 export default class PluginService {
   async fetchAvailablePlugins(): Promise<PluginInfo[]> {
     try {
       const res = await fetchWithMirrors(PLUGIN_REGISTRY_URLS);
       const data = await res.json();
-      return (Array.isArray(data) ? data : []).map((ext: any) => ({
+      const plugins = (Array.isArray(data) ? data : []).map((ext: RegistryPlugin) => ({
         id: ext.id,
         name: ext.name,
         description: ext.description || '',
@@ -77,9 +210,30 @@ export default class PluginService {
         path: `/tools/${ext.id}`,
         tags: ext.tags || [],
         githubRepo: ext.githubRepo,
+        releaseUrl: ext.releaseUrl,
         entry: ext.entry,
         isBeta: ext.isBeta === true,
       }));
+
+      const pluginsWithoutReleaseUrl = plugins.filter(p => !p.releaseUrl && p.githubRepo);
+      
+      if (pluginsWithoutReleaseUrl.length > 0) {
+        const releaseUrlPromises = pluginsWithoutReleaseUrl.map(async (plugin) => {
+          const releaseUrl = await fetchLatestReleaseUrl(plugin.githubRepo!);
+          return { pluginId: plugin.id, releaseUrl };
+        });
+
+        const releaseUrlResults = await Promise.all(releaseUrlPromises);
+        
+        releaseUrlResults.forEach(({ pluginId, releaseUrl }) => {
+          const plugin = plugins.find(p => p.id === pluginId);
+          if (plugin && releaseUrl) {
+            plugin.releaseUrl = releaseUrl;
+          }
+        });
+      }
+
+      return plugins;
     } catch (error) {
       logError('从所有镜像源获取插件列表失败', 'PluginService', error as Error);
     }
@@ -105,7 +259,7 @@ export default class PluginService {
       if (!plugins || !Array.isArray(plugins)) {
         return [];
       }
-      return plugins.map((plugin: any) => ({
+      return plugins.map((plugin: RawInstalledPlugin) => ({
         id: plugin.id || '',
         name: plugin.name || plugin.id || '未知插件',
         description: plugin.description || '',
@@ -133,20 +287,31 @@ export default class PluginService {
     }
   }
 
-  async installPlugin(pluginId: string, repo?: string): Promise<PluginServiceResponse> {
-    try {
-      if (!window.electron?.plugin?.install) {
-        return { success: false, error: '插件安装功能不可用' };
-      }
-      const result = await window.electron.plugin.install(pluginId, repo);
-      if (result.success) {
-        logInfo(`插件安装成功: ${pluginId}`, 'PluginService');
-      }
-      return result;
-    } catch (error) {
-      logError(`插件安装失败: ${pluginId}`, 'PluginService', error as Error);
-      return { success: false, error: (error as Error).message };
-    }
+  async installPlugin(pluginId: string, repo?: string, releaseUrl?: string, onProgress?: (progress: InstallProgress) => void): Promise<PluginServiceResponse> {
+    return new Promise((resolve) => {
+      const progressHandler = (_event: unknown, data: { pluginId: string; progress: InstallProgress }) => {
+        if (data.pluginId === pluginId && onProgress) {
+          onProgress(data.progress);
+        }
+      };
+
+      window.electron?.ipcRenderer?.on('plugin:install-progress', progressHandler);
+
+      window.electron?.plugin?.install(pluginId, repo, releaseUrl)
+        .then((result) => {
+          if (result?.success) {
+            logInfo(`插件安装成功: ${pluginId}`, 'PluginService');
+          }
+          resolve(result || { success: false, error: '安装失败' });
+        })
+        .catch((error) => {
+          logError(`插件安装失败: ${pluginId}`, 'PluginService', error as Error);
+          resolve({ success: false, error: (error as Error).message });
+        })
+        .finally(() => {
+          window.electron?.ipcRenderer?.off('plugin:install-progress', progressHandler);
+        });
+    });
   }
 
   async uninstallPlugin(pluginId: string): Promise<PluginServiceResponse> {

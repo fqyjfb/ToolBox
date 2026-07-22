@@ -8,4 +8,3 @@ export { default as FloatWindowTab } from './FloatWindowTab';
 export { default as StorageTab } from './StorageTab';
 export { default as SyncTab } from './SyncTab';
 export { default as LogMonitorTab } from './LogMonitorTab';
-export { default as AgnesTab } from './AgnesTab';

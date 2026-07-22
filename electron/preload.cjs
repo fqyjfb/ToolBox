@@ -121,7 +121,7 @@ contextBridge.exposeInMainWorld('electron', {
   plugin: {
     getAvailable: () => ipcRenderer.invoke('plugin:get-available'),
     getInstalled: () => ipcRenderer.invoke('plugin:get-installed'),
-    install: (pluginId, repo) => ipcRenderer.invoke('plugin:install', { pluginId, repo }),
+    install: (pluginId, repo, releaseUrl) => ipcRenderer.invoke('plugin:install', { pluginId, repo, releaseUrl }),
     uninstall: (pluginId) => ipcRenderer.invoke('plugin:uninstall', pluginId),
     toggleEnabled: (pluginId, enabled) => ipcRenderer.invoke('plugin:toggle-enabled', { pluginId, enabled }),
     installFromFile: () => ipcRenderer.invoke('plugin:install-from-file'),

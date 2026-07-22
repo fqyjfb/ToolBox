@@ -5,11 +5,13 @@ import { iconMap } from '../../utils/iconMap';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { pluginApi } from '../../services/pluginApi';
+import { InstallProgress } from '../../services/PluginService';
 
 interface PluginCardProps {
   plugin: PluginInfo | InstalledPlugin;
   isInstalled?: boolean;
   isInstalling?: boolean;
+  installProgress?: InstallProgress;
   hasUpdate?: boolean;
   updateInfo?: { availableVersion: string; githubRepo?: string };
   onInstall?: () => void;
@@ -23,6 +25,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
   plugin,
   isInstalled = false,
   isInstalling = false,
+  installProgress,
   hasUpdate = false,
   updateInfo,
   onInstall,
@@ -167,12 +170,22 @@ const PluginCard: React.FC<PluginCardProps> = ({
                       : 'text-white bg-green-600 dark:bg-green-600 hover:bg-green-700 dark:hover:bg-green-700'
                   }`}
                 >
-                  {isInstalling ? (
+                  {isInstalling && installProgress ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-green-600 transition-all duration-200"
+                          style={{ width: `${installProgress.progress}%` }}
+                        />
+                      </div>
+                      <span className="w-8 text-right">{installProgress.progress}%</span>
+                    </div>
+                  ) : isInstalling ? (
                     <span className="w-3.5 h-3.5 border-1.5 border-gray-400 dark:border-gray-500 border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <RefreshCw className="w-3.5 h-3.5" />
                   )}
-                  {isInstalling ? '更新中...' : '更新'}
+                  {isInstalling && !installProgress ? '更新中...' : !isInstalling ? '更新' : ''}
                 </button>
               )}
               {!hasUpdate && (
@@ -212,12 +225,22 @@ const PluginCard: React.FC<PluginCardProps> = ({
                   : 'text-white bg-primary dark:bg-primary hover:bg-primary/90 dark:hover:bg-primary/90'
               }`}
             >
-              {isInstalling ? (
+              {isInstalling && installProgress ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary dark:bg-primary transition-all duration-200"
+                      style={{ width: `${installProgress.progress}%` }}
+                    />
+                  </div>
+                  <span className="w-8 text-right">{installProgress.progress}%</span>
+                </div>
+              ) : isInstalling ? (
                 <span className="w-3.5 h-3.5 border-1.5 border-gray-400 dark:border-gray-500 border-t-transparent rounded-full animate-spin" />
               ) : (
                 <Download className="w-3.5 h-3.5" />
               )}
-              {isInstalling ? '安装中...' : '安装'}
+              {isInstalling && !installProgress ? '安装中...' : !isInstalling ? '安装' : ''}
             </button>
           )}
         </div>

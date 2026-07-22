@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, ClipboardList, User, Sparkles, Search } from 'lucide-react';
+import { Menu, X, LogOut, ClipboardList, User, Search } from 'lucide-react';
 import { useAuth } from '../../store/AuthStore';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 
@@ -8,7 +8,6 @@ const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/memo', '/tools/quick-reply'
 
 const navItems = [
   { path: '/', label: '首页' },
-  { path: '/tools/ai-chat', label: 'AI助手', icon: Sparkles },
   { path: '/news', label: '热点资讯' },
   { path: '/nav', label: '网址导航' },
   { path: '/tools', label: '工具库' },
@@ -137,14 +136,12 @@ const WebNavbar: React.FC = () => {
                     : ''
                 }`}
                 style={{
-                  gap: item.icon ? 'var(--space-1)' : '0',
                   padding: 'var(--space-1-5) var(--space-3)',
                   fontSize: 'var(--text-xs)',
                   color: isActive(item.path) ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                   backgroundColor: isActive(item.path) ? 'var(--color-bg-tertiary)' : 'transparent',
                 }}
               >
-                {item.icon && <item.icon className="w-4 h-4" />}
                 {item.label}
               </button>
             ))}
@@ -254,14 +251,12 @@ const WebNavbar: React.FC = () => {
                 onClick={() => { navigate(item.path); setIsMenuOpen(false); }}
                 className="w-full text-left font-medium rounded-lg transition-colors flex items-center"
                 style={{
-                  gap: item.icon ? 'var(--space-2)' : '0',
                   padding: 'var(--space-1-5) var(--space-3)',
                   fontSize: 'var(--text-xs)',
                   color: isActive(item.path) ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                   backgroundColor: isActive(item.path) ? 'var(--color-bg-tertiary)' : 'transparent',
                 }}
               >
-                {item.icon && <item.icon className="w-4 h-4" />}
                 {item.label}
               </button>
             ))}

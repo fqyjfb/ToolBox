@@ -29,6 +29,33 @@ interface AppVersionInfo {
   download: string;
 }
 
+interface PluginInfo {
+  id: string;
+  name: string;
+  description: string;
+  iconName: string;
+  iconUrl?: string;
+  image?: string;
+  color: string;
+  textColor: string;
+  version: string;
+  author: string;
+  categories: string[];
+  path: string;
+  tags?: string[];
+  githubRepo?: string;
+  releaseUrl?: string;
+  entry?: string;
+  isBeta?: boolean;
+}
+
+interface InstalledPlugin extends PluginInfo {
+  enabled: boolean;
+  installedVersion: string;
+  installDate: number;
+  isPinned: boolean;
+}
+
 interface SystemInfo {
   os_name: string;
   os_version: string;
@@ -355,9 +382,9 @@ declare interface Window {
       get: () => Promise<SystemInfo>;
     };
     plugin: {
-      getAvailable: () => Promise<any[]>;
-      getInstalled: () => Promise<any[]>;
-      install: (pluginId: string, repo?: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
+      getAvailable: () => Promise<PluginInfo[]>;
+      getInstalled: () => Promise<InstalledPlugin[]>;
+      install: (pluginId: string, repo?: string, releaseUrl?: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
       uninstall: (pluginId: string) => Promise<{ success: boolean; message?: string }>;
       toggleEnabled: (pluginId: string, enabled: boolean) => Promise<{ success: boolean }>;
       installFromFile: () => Promise<{ success: boolean; reason?: string; message?: string; canceled?: boolean }>;

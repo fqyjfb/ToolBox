@@ -61,7 +61,7 @@ const Sidebar: React.FC = () => {
   );
 
   useEffect(() => {
-    const handleButtonsChange = (buttons: any[]) => {
+    const handleButtonsChange = (buttons: { id: string; icon: string; label: string; onClick: () => void }[]) => {
       const pluginButtonsData = buttons.map(btn => {
         const Icon = iconMap[btn.icon] || iconMap.Package;
         return {

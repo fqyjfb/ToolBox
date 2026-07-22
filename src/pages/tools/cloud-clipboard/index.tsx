@@ -5,6 +5,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { clipboardService } from '../../../services/ClipboardService';
+import { openUrl } from '../../../services/browserService';
 import { ClipboardCategory, ClipboardItem } from '../../../types/clipboard';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
@@ -16,6 +17,29 @@ import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Pagination from '../../../components/ui/Pagination';
+
+const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = ({ url, onCopy }) => {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onCopy(url);
+        }}
+        className="p-0.5 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        title="复制链接"
+      >
+        <Clipboard className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+      </button>
+      <button
+        onClick={() => openUrl(url)}
+        className="text-blue-600 dark:text-blue-400 hover:underline text-sm bg-transparent border-none p-0 cursor-pointer"
+      >
+        {url}
+      </button>
+    </span>
+  );
+};
 
 const SortableCategoryButton: React.FC<{
   category: ClipboardCategory;
@@ -334,6 +358,16 @@ const CloudClipboardPage: React.FC = () => {
     }
   }, [addToast]);
 
+  const handleCopyUrl = useCallback(async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      addToast({ message: '链接已复制', type: 'success' });
+    } catch (error) {
+      logError('Error copying URL', 'CloudClipboardPage', error as Error);
+      addToast({ message: '复制失败', type: 'error' });
+    }
+  }, [addToast]);
+
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -597,15 +631,7 @@ const CloudClipboardPage: React.FC = () => {
                     {item.content.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
                       if (part.match(/^https?:\/\/[^\s]+$/)) {
                         return (
-                          <a 
-                            key={index} 
-                            href={part} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-blue-600 dark:text-blue-400 hover:underline"
-                          >
-                            {part}
-                          </a>
+                          <LinkWithCopy key={index} url={part} onCopy={handleCopyUrl} />
                         );
                       }
                       return part;

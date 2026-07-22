@@ -5,7 +5,7 @@ import PluginDetail from '../../../components/plugins/PluginDetail';
 import DragOverlay from '../../../components/plugins/DragOverlay';
 import { usePluginStore } from '../../../store/pluginStore';
 import { useSidebarStore } from '../../../store/sidebarStore';
-import PluginService from '../../../services/PluginService';
+import PluginService, { InstallProgress } from '../../../services/PluginService';
 import { useToastStore } from '../../../store/toastStore';
 import { PluginInfo, InstalledPlugin } from '../../../types/plugin';
 
@@ -32,6 +32,7 @@ const PluginStorePage: React.FC = () => {
   const [selectedPlugin, setSelectedPlugin] = useState<PluginInfo | InstalledPlugin | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [installProgress, setInstallProgress] = useState<Record<string, InstallProgress>>({});
 
   const hasUpdate = useCallback((plugin: InstalledPlugin): boolean => {
     const available = availablePlugins.find(p => p.id === plugin.id);
@@ -72,20 +73,33 @@ const PluginStorePage: React.FC = () => {
   }, [loadPlugins]);
 
   const handleInstall = useCallback(async (plugin: PluginInfo) => {
-    setInstallingPluginId(plugin.id);
-    try {
-      const result = await pluginService.installPlugin(plugin.id, plugin.githubRepo);
-      if (result.success) {
-        addToast({ message: `插件 "${plugin.name}" 安装成功`, type: 'success' });
-        await loadPlugins();
-      } else {
-        addToast({ message: result.error || `安装 "${plugin.name}" 失败`, type: 'error' });
-      }
-    } catch {
-      addToast({ message: `安装 "${plugin.name}" 时发生错误`, type: 'error' });
-    } finally {
-      setInstallingPluginId(null);
+    if (!plugin.releaseUrl && !plugin.githubRepo) {
+      addToast({ message: '插件暂未发布可用版本', type: 'error' });
+      return;
     }
+    
+    setInstallingPluginId(plugin.id);
+    
+    const result = await pluginService.installPlugin(plugin.id, plugin.githubRepo, plugin.releaseUrl, (progress) => {
+      setInstallProgress(prev => ({
+        ...prev,
+        [plugin.id]: progress
+      }));
+    });
+    
+    if (result.success) {
+      addToast({ message: `插件 "${plugin.name}" 安装成功`, type: 'success' });
+      await loadPlugins();
+    } else {
+      addToast({ message: result.error || `安装 "${plugin.name}" 失败`, type: 'error' });
+    }
+    
+    setInstallingPluginId(null);
+    setInstallProgress(prev => {
+      const next = { ...prev };
+      delete next[plugin.id];
+      return next;
+    });
   }, [setInstallingPluginId, addToast, loadPlugins]);
 
   const handleUninstall = useCallback(async (pluginId: string) => {
@@ -131,24 +145,35 @@ const PluginStorePage: React.FC = () => {
   }, [addToast, loadPlugins]);
 
   const handleUpdate = useCallback(async (plugin: InstalledPlugin) => {
-    const updateInfo = getUpdateInfo(plugin);
-    if (!updateInfo) return;
+    const available = availablePlugins.find(p => p.id === plugin.id);
+    if (!available?.releaseUrl && !available?.githubRepo) {
+      addToast({ message: '插件暂未发布可用版本', type: 'error' });
+      return;
+    }
     
     setInstallingPluginId(plugin.id);
-    try {
-      const result = await pluginService.installPlugin(plugin.id, updateInfo.githubRepo);
-      if (result.success) {
-        addToast({ message: `插件 "${plugin.name}" 更新成功`, type: 'success' });
-        await loadPlugins();
-      } else {
-        addToast({ message: result.error || `更新 "${plugin.name}" 失败`, type: 'error' });
-      }
-    } catch {
-      addToast({ message: `更新 "${plugin.name}" 时发生错误`, type: 'error' });
-    } finally {
-      setInstallingPluginId(null);
+    
+    const result = await pluginService.installPlugin(plugin.id, available.githubRepo, available.releaseUrl, (progress) => {
+      setInstallProgress(prev => ({
+        ...prev,
+        [plugin.id]: progress
+      }));
+    });
+    
+    if (result.success) {
+      addToast({ message: `插件 "${plugin.name}" 更新成功`, type: 'success' });
+      await loadPlugins();
+    } else {
+      addToast({ message: result.error || `更新 "${plugin.name}" 失败`, type: 'error' });
     }
-  }, [setInstallingPluginId, addToast, loadPlugins, getUpdateInfo]);
+    
+    setInstallingPluginId(null);
+    setInstallProgress(prev => {
+      const next = { ...prev };
+      delete next[plugin.id];
+      return next;
+    });
+  }, [setInstallingPluginId, addToast, loadPlugins, availablePlugins]);
 
   const handleFileDrop = useCallback(async (file: File) => {
     try {
@@ -345,6 +370,7 @@ const PluginStorePage: React.FC = () => {
                     plugin={isInstalled && installedPlugin ? installedPlugin : plugin}
                     isInstalled={isInstalled}
                     isInstalling={installingPluginId === plugin.id}
+                    installProgress={installProgress[plugin.id]}
                     hasUpdate={installedHasUpdate}
                     updateInfo={updateInfo}
                     onInstall={() => handleInstall(plugin)}
@@ -375,6 +401,7 @@ const PluginStorePage: React.FC = () => {
                     plugin={plugin}
                     isInstalled={true}
                     isInstalling={installingPluginId === plugin.id}
+                    installProgress={installProgress[plugin.id]}
                     hasUpdate={installedHasUpdate}
                     updateInfo={updateInfo}
                     onUpdate={installedHasUpdate ? () => handleUpdate(plugin) : undefined}
