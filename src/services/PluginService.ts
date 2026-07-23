@@ -144,6 +144,12 @@ function setCachedReleaseUrl(githubRepo: string, url: string): void {
   } catch { /* ignore */ }
 }
 
+function clearReleaseUrlCache(): void {
+  try {
+    localStorage.removeItem(RELEASE_URL_CACHE_KEY);
+  } catch { /* ignore */ }
+}
+
 async function fetchLatestReleaseUrl(githubRepo: string): Promise<string | undefined> {
   if (!githubRepo) return undefined;
 
@@ -192,6 +198,7 @@ async function fetchLatestReleaseUrl(githubRepo: string): Promise<string | undef
 
 export default class PluginService {
   async fetchAvailablePlugins(): Promise<PluginInfo[]> {
+    clearReleaseUrlCache();
     try {
       const res = await fetchWithMirrors(PLUGIN_REGISTRY_URLS);
       const data = await res.json();
@@ -326,19 +333,6 @@ export default class PluginService {
       return result;
     } catch (error) {
       logError(`插件卸载失败: ${pluginId}`, 'PluginService', error as Error);
-      return { success: false, error: (error as Error).message };
-    }
-  }
-
-  async togglePluginEnabled(pluginId: string, enabled: boolean): Promise<PluginServiceResponse> {
-    try {
-      if (!window.electron?.plugin?.toggleEnabled) {
-        return { success: false, error: '插件启用/禁用功能不可用' };
-      }
-      const result = await window.electron.plugin.toggleEnabled(pluginId, enabled);
-      return result;
-    } catch (error) {
-      logError(`插件状态切换失败: ${pluginId}`, 'PluginService', error as Error);
       return { success: false, error: (error as Error).message };
     }
   }

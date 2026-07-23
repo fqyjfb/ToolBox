@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Power, Pin, PinOff, ExternalLink, ChevronRight, Play, RefreshCw } from 'lucide-react';
+import { Download, Pin, PinOff, ExternalLink, ChevronRight, Play, RefreshCw } from 'lucide-react';
 import { PluginInfo, InstalledPlugin } from '../../types/plugin';
 import { iconMap } from '../../utils/iconMap';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -17,7 +17,6 @@ interface PluginCardProps {
   onInstall?: () => void;
   onUpdate?: () => void;
   onUninstall?: () => void;
-  onToggleEnabled?: () => void;
   onViewDetail?: () => void;
 }
 
@@ -31,12 +30,10 @@ const PluginCard: React.FC<PluginCardProps> = ({
   onInstall,
   onUpdate,
   onUninstall,
-  onToggleEnabled,
   onViewDetail,
 }) => {
   const [iconError, setIconError] = React.useState(false);
   const Icon = iconMap[plugin.iconName] || iconMap.Package;
-  const isEnabled = (plugin as InstalledPlugin).enabled ?? true;
   const pinnedToolIds = useSidebarStore((state) => state.pinnedToolIds);
   const isInSidebar = pinnedToolIds.includes(plugin.id);
   const addPinnedTool = useSidebarStore((state) => state.addPinnedTool);
@@ -141,22 +138,6 @@ const PluginCard: React.FC<PluginCardProps> = ({
         <div className="flex items-center gap-1">
           {isInstalled ? (
             <>
-              {onToggleEnabled && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleEnabled();
-                  }}
-                  className={`w-7 h-7 flex items-center justify-center rounded-md text-xs font-medium transition-colors ${
-                    isEnabled
-                      ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-800/30'
-                      : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                  title={isEnabled ? '禁用' : '启用'}
-                >
-                  <Power className="w-3.5 h-3.5" />
-                </button>
-              )}
               {hasUpdate && onUpdate && (
                 <button
                   onClick={(e) => {
@@ -188,18 +169,16 @@ const PluginCard: React.FC<PluginCardProps> = ({
                   {isInstalling && !installProgress ? '更新中...' : !isInstalling ? '更新' : ''}
                 </button>
               )}
-              {!hasUpdate && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    pluginApi.openPluginWindow(plugin.id);
-                  }}
-                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  启动
-                </button>
-              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  pluginApi.openPluginWindow(plugin.id);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
+              >
+                <Play className="w-3.5 h-3.5" />
+                启动
+              </button>
               {onUninstall && (
                 <button
                   onClick={(e) => {

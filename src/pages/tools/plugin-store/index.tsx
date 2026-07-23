@@ -22,6 +22,7 @@ const PluginStorePage: React.FC = () => {
     setInstalledPlugins,
     installingPluginId,
     setInstallingPluginId,
+    setIsLoading,
   } = usePluginStore();
 
   const { removePinnedTool } = useSidebarStore();
@@ -47,6 +48,7 @@ const PluginStorePage: React.FC = () => {
 
   const loadPlugins = useCallback(async () => {
     setLoadError(null);
+    setIsLoading(true);
     try {
       const [available, installed] = await Promise.all([
         pluginService.fetchAvailablePlugins(),
@@ -61,8 +63,10 @@ const PluginStorePage: React.FC = () => {
     } catch {
       setLoadError('加载插件列表失败，请检查网络连接');
       addToast({ message: '加载插件列表失败', type: 'error' });
+    } finally {
+      setIsLoading(false);
     }
-  }, [setAvailablePlugins, setInstalledPlugins, addToast]);
+  }, [setAvailablePlugins, setInstalledPlugins, addToast, setIsLoading]);
 
   useEffect(() => {
     loadPlugins();
@@ -116,18 +120,6 @@ const PluginStorePage: React.FC = () => {
       addToast({ message: '卸载插件时发生错误', type: 'error' });
     }
   }, [addToast, loadPlugins, removePinnedTool]);
-
-  const handleToggleEnabled = useCallback(async (pluginId: string, enabled: boolean) => {
-    try {
-      const result = await pluginService.togglePluginEnabled(pluginId, enabled);
-      if (result.success) {
-        addToast({ message: enabled ? '插件已启用' : '插件已禁用', type: 'success' });
-        await loadPlugins();
-      }
-    } catch {
-      addToast({ message: '切换插件状态失败', type: 'error' });
-    }
-  }, [addToast, loadPlugins]);
 
   const handleInstallFromFile = useCallback(async () => {
     try {
@@ -376,7 +368,6 @@ const PluginStorePage: React.FC = () => {
                     onInstall={() => handleInstall(plugin)}
                     onUpdate={installedHasUpdate && installedPlugin ? () => handleUpdate(installedPlugin) : undefined}
                     onUninstall={() => handleUninstall(plugin.id)}
-                    onToggleEnabled={() => handleToggleEnabled(plugin.id, !(installedPlugin?.enabled ?? true))}
                     onViewDetail={() => handleViewDetail(isInstalled && installedPlugin ? installedPlugin : plugin)}
                   />
                 );
@@ -406,7 +397,6 @@ const PluginStorePage: React.FC = () => {
                     updateInfo={updateInfo}
                     onUpdate={installedHasUpdate ? () => handleUpdate(plugin) : undefined}
                     onUninstall={() => handleUninstall(plugin.id)}
-                    onToggleEnabled={() => handleToggleEnabled(plugin.id, !plugin.enabled)}
                     onViewDetail={() => handleViewDetail(plugin)}
                   />
                 );
@@ -439,10 +429,6 @@ const PluginStorePage: React.FC = () => {
         } : undefined}
         onUninstall={selectedPlugin ? () => {
           handleUninstall(selectedPlugin.id);
-          setIsDetailOpen(false);
-        } : undefined}
-        onToggleEnabled={selectedPlugin ? () => {
-          handleToggleEnabled(selectedPlugin.id, !((selectedPlugin as InstalledPlugin).enabled ?? true));
           setIsDetailOpen(false);
         } : undefined}
       />

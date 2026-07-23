@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Star, StarOff, Menu, Globe, ChevronDown, Search } from 'lucide-react'
 import CachedIcon from '../../components/ui/CachedIcon'
 import { websiteService } from '../../services/WebsiteService'
@@ -52,7 +53,6 @@ const NavPage: React.FC = () => {
   const [showFavorites, setShowFavorites] = useState(false)
   const [favorites, setFavorites] = useState<Bookmark[]>([])
   
-  const [categoriesTree, setCategoriesTree] = useState<Category[]>([])
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -72,13 +72,6 @@ const NavPage: React.FC = () => {
   const dropdownButtonRef = useRef<HTMLButtonElement>(null)
   const subCategoriesContainerRef = useRef<HTMLDivElement>(null)
   const subCategoryDropdownButtonRef = useRef<HTMLButtonElement>(null)
-  
-  const isInitializedRef = useRef(false)
-  const cacheRef = useRef({
-    categories: null as Category[] | null,
-    bookmarks: null as Bookmark[] | null,
-    lastLoaded: 0
-  })
   
   const isAuthenticatedRef = useRef<{ value: boolean; timestamp: number } | null>(null)
 
@@ -114,70 +107,55 @@ const NavPage: React.FC = () => {
     }
   }, [isAuthenticated])
 
-  // 加载数据
-  const loadData = useCallback(async () => {
-    if (isInitializedRef.current && cacheRef.current.categories && cacheRef.current.bookmarks) {
-      const now = Date.now()
-      const cacheExpiry = 5 * 60 * 1000
-      if ((now - cacheRef.current.lastLoaded) < cacheExpiry) {
-        setCategoriesTree(websiteService.buildCategoryTree(cacheRef.current.categories!))
-        setBookmarks(cacheRef.current.bookmarks!)
-        
-        if (!activeMainCategoryId && cacheRef.current.categories!.length > 0) {
-          const firstCatId = cacheRef.current.categories![0].id
-          setActiveSubCategoryIds({ [firstCatId]: 'all' })
-          setActiveMainCategoryId(firstCatId)
-        }
-        return
-      }
+  // 使用 React Query 获取分类数据
+  const { data: categories, isError: categoriesError, isLoading: isCategoriesLoading } = useQuery({
+    queryKey: ['website_categories'],
+    queryFn: () => websiteService.getCategories(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000
+  })
+
+  // 使用 React Query 获取书签数据
+  const { data: bookmarksData, isError: bookmarksError, isLoading: isBookmarksLoading } = useQuery({
+    queryKey: ['website_bookmarks'],
+    queryFn: () => websiteService.getPublicBookmarks(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000
+  })
+
+  // 构建分类树
+  const categoriesTree = useMemo(() => {
+    if (!categories || categories.length === 0) return []
+    return websiteService.buildCategoryTree(categories)
+  }, [categories])
+
+  // 加载数据并合并收藏状态
+  useEffect(() => {
+    if (!categories || !bookmarksData || categories.length === 0 || bookmarksData.length === 0) return
+    
+    if (categoriesTree.length > 0) {
+      const firstCatId = categoriesTree[0].id
+      setActiveSubCategoryIds({ [firstCatId]: 'all' })
+      setActiveMainCategoryId(firstCatId)
     }
     
-    setHasError(false)
-    setErrorMessage('')
-    
-    try {
-      const categories = await websiteService.getCategories()
-      
-      const categoriesTreeData = websiteService.buildCategoryTree(categories)
-      setCategoriesTree(categoriesTreeData)
-      
-      if (categoriesTreeData.length > 0) {
-        const firstCatId = categoriesTreeData[0].id
-        setActiveSubCategoryIds({ [firstCatId]: 'all' })
-        setActiveMainCategoryId(firstCatId)
-      }
-      
-      const [bookmarksData, userFavorites] = await Promise.all([
-        websiteService.getPublicBookmarks(),
-        loadUserFavorites(categories)
-      ])
-      
+    loadUserFavorites(categories).then(userFavorites => {
       const favoriteIds = userFavorites.map(f => f.id)
       const bookmarksWithFavorites = bookmarksData.map(bookmark => ({
         ...bookmark,
         is_favorite: favoriteIds.includes(bookmark.id)
       }))
-      
       setBookmarks(bookmarksWithFavorites)
-      
-      cacheRef.current = {
-        categories,
-        bookmarks: bookmarksWithFavorites,
-        lastLoaded: Date.now()
-      }
-      isInitializedRef.current = true
-    } catch (err) {
-      setHasError(true)
-      setErrorMessage('数据加载过程中遇到问题，部分内容可能无法显示: ' + ((err as Error).message || ''))
-    }
-  }, [loadUserFavorites, activeMainCategoryId])
+    })
+  }, [categories, bookmarksData, categoriesTree, loadUserFavorites])
 
+  // 处理查询错误
   useEffect(() => {
-    if (!isInitializedRef.current) {
-      isInitializedRef.current = true
-      loadData()
+    if (categoriesError || bookmarksError) {
+      setHasError(true)
+      setErrorMessage('数据加载过程中遇到问题，部分内容可能无法显示')
     }
-  }, [loadData])
+  }, [categoriesError, bookmarksError])
 
   // 检测分类导航是否超出可视宽度
   useEffect(() => {
@@ -562,11 +540,22 @@ const NavPage: React.FC = () => {
       <div className="text-center py-12">
         <p className="text-red-500 mb-4">{errorMessage}</p>
         <button 
-          onClick={loadData}
+          onClick={() => window.location.reload()}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
           重试
         </button>
+      </div>
+    )
+  }
+
+  if (isCategoriesLoading || isBookmarksLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">加载中...</p>
+        </div>
       </div>
     )
   }

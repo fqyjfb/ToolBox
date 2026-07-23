@@ -17,6 +17,8 @@ import { validateEncryptionKey } from './utils/crypto';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes, RouteConfig } from './config/routes';
+import { QueryProvider } from './providers/QueryProvider';
+import { websiteService } from './services/WebsiteService';
 const LogsPage = React.lazy(() => import('./pages/logs/index'));
 import { isElectron } from './utils/environment';
 import { usePreloadTools } from './hooks/usePreloadTools';
@@ -232,6 +234,14 @@ function App() {
             logError('获取插件列表失败', 'App', error as Error);
           }
         }
+
+        // 预加载网址导航数据，用户导航到该页面时数据已在缓存中
+        websiteService.getCategories().catch(() => {
+          // 忽略预加载错误
+        });
+        websiteService.getPublicBookmarks().catch(() => {
+          // 忽略预加载错误
+        });
       } catch (error) {
         logError('初始化失败', 'App', error as Error);
       } finally {
@@ -309,7 +319,8 @@ function App() {
     <ErrorBoundary>
       <TodoNotificationProvider>
         <NavSearchProvider>
-          <Router>
+          <QueryProvider>
+            <Router>
             {isDesktopApp && !isStandaloneLogWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
             <RecentToolsHandler />
             <Routes>
@@ -333,6 +344,7 @@ function App() {
               />
             </Routes>
           </Router>
+          </QueryProvider>
         </NavSearchProvider>
       </TodoNotificationProvider>
     </ErrorBoundary>

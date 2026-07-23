@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Power, Pin, PinOff, ExternalLink, Star, Play } from 'lucide-react';
+import { Download, Pin, PinOff, ExternalLink, Star, Play } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { PluginInfo, InstalledPlugin } from '../../types/plugin';
 import { iconMap } from '../../utils/iconMap';
@@ -16,7 +16,6 @@ interface PluginDetailProps {
   isInstalling?: boolean;
   onInstall?: () => void;
   onUninstall?: () => void;
-  onToggleEnabled?: () => void;
 }
 
 const PluginDetail: React.FC<PluginDetailProps> = ({
@@ -27,7 +26,6 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
   isInstalling = false,
   onInstall,
   onUninstall,
-  onToggleEnabled,
 }) => {
   const [iconError, setIconError] = React.useState(false);
   const pinnedToolIds = useSidebarStore((state) => state.pinnedToolIds);
@@ -38,7 +36,6 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
   if (!plugin) return null;
 
   const Icon = iconMap[plugin.iconName] || iconMap.Package;
-  const isEnabled = (plugin as InstalledPlugin).enabled ?? true;
   const isInSidebar = pinnedToolIds.includes(plugin.id);
 
   const handlePin = () => {
@@ -175,19 +172,6 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
           <div className="flex items-center gap-2">
             {isInstalled ? (
               <>
-                {onToggleEnabled && (
-                  <button
-                    onClick={onToggleEnabled}
-                    className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      isEnabled
-                        ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-800/30'
-                        : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    <Power className="w-3.5 h-3.5" />
-                    {isEnabled ? '禁用' : '启用'}
-                  </button>
-                )}
                 <button
                   onClick={() => {
                     pluginApi.openPluginWindow(plugin.id);

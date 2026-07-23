@@ -420,12 +420,6 @@ main::-webkit-scrollbar-thumb:hover {
   display: block;
 }
 
-.content div * {
-  animation: content-activated;
-  animation-duration: 1s;
-  animation-fill-mode: forwards;
-}
-
 .content {
   width: 100%;
   flex: 1;
@@ -449,15 +443,6 @@ main::-webkit-scrollbar-thumb:hover {
 
 .content > div::-webkit-scrollbar {
   display: none;
-}
-
-@keyframes content-activated {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }
 
 @media (max-width: 768px) {

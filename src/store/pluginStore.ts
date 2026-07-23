@@ -36,7 +36,6 @@ interface PluginStore {
   setInstalledPlugins: (plugins: InstalledPlugin[]) => void;
   addInstalledPlugin: (plugin: InstalledPlugin) => void;
   removeInstalledPlugin: (pluginId: string) => void;
-  togglePluginEnabled: (pluginId: string, enabled: boolean) => void;
   togglePluginPinned: (pluginId: string, pinned: boolean) => void;
 
   setSearchQuery: (query: string) => void;
@@ -75,16 +74,6 @@ export const usePluginStore = create<PluginStore>((set) => ({
 
   removeInstalledPlugin: (pluginId) => set((state) => {
     const next = { installedPlugins: state.installedPlugins.filter(p => p.id !== pluginId) };
-    saveState({ ...state, ...next });
-    return next;
-  }),
-
-  togglePluginEnabled: (pluginId, enabled) => set((state) => {
-    const next = {
-      installedPlugins: state.installedPlugins.map(p =>
-        p.id === pluginId ? { ...p, enabled } : p
-      ),
-    };
     saveState({ ...state, ...next });
     return next;
   }),

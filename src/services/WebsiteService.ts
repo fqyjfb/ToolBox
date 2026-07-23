@@ -14,14 +14,15 @@ async function attachCategoriesToBookmarks(bookmarks: Bookmark[], cachedCategori
   // 使用提供的缓存分类数据或从接口获取
   const categories = cachedCategories || await websiteService.getCategories()
   
-  // 手动关联分类信息
-  return bookmarks.map(bookmark => {
-    const category = categories.find(cat => cat.id === bookmark.category_id)
-    return {
-      ...bookmark,
-      category
-    }
-  })
+  // 构建分类查找Map，O(m)时间，替代O(n*m)的find查找
+  const categoryMap = new Map<string, Category>()
+  categories.forEach(cat => categoryMap.set(cat.id, cat))
+  
+  // 使用Map查找，O(n)时间
+  return bookmarks.map(bookmark => ({
+    ...bookmark,
+    category: categoryMap.get(bookmark.category_id)
+  }))
 }
 
 // 构建分类树结构（复用内部函数）
