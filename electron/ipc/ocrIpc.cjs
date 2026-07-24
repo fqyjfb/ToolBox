@@ -309,23 +309,24 @@ function registerOcrIpc() {
   // 获取 OCR 服务状态
   ipcMain.handle("ocr:status", async () => {
     try {
-      const serviceInfo = getPythonServiceInfo();
+      const serviceInfo = JSON.parse(JSON.stringify(getPythonServiceInfo()));
       
       if (!isRunning()) {
-        return {
+        const result = {
           available: false,
           message: "OCR服务未运行（将在首次使用时自动启动）",
           status: serviceInfo.status,
           lastError: serviceInfo.lastError || null,
           canManualStart: true,
         };
+        return JSON.parse(JSON.stringify(result));
       }
 
       resetIdleTimer();
       const response = await get("/api/ocr/status");
 
       if (response.success && response.data) {
-        return {
+        const result = {
           available: response.data.available,
           message: response.data.message,
           status: serviceInfo.status,
@@ -333,24 +334,27 @@ function registerOcrIpc() {
           uptime: serviceInfo.uptime,
           canManualStart: false,
         };
+        return JSON.parse(JSON.stringify(result));
       }
 
-      return {
+      const result = {
         available: false,
         message: response.error ? formatError(response.error) : "无法获取 OCR 服务状态",
         status: serviceInfo.status,
         lastError: response.error || null,
         canManualStart: false,
       };
+      return JSON.parse(JSON.stringify(result));
     } catch (error) {
-      const serviceInfo = getPythonServiceInfo();
-      return {
+      const serviceInfo = JSON.parse(JSON.stringify(getPythonServiceInfo()));
+      const result = {
         available: false,
         message: formatError(error),
         status: serviceInfo.status,
         lastError: String(error),
         canManualStart: !isRunning(),
       };
+      return JSON.parse(JSON.stringify(result));
     }
   });
 
