@@ -46,6 +46,170 @@ async function ensurePythonServiceRunning(customDir) {
   return false;
 }
 
+async function runDiagnose(serviceDir) {
+  const { spawn } = require('child_process');
+  const path = require('path');
+  const fs = require('fs');
+
+  return new Promise((resolve) => {
+    if (!serviceDir) {
+      resolve({
+        success: false,
+        error: '服务目录未指定，请确保已正确安装OCR插件',
+        output: '',
+      });
+      return;
+    }
+
+    const scriptPath = path.join(serviceDir, 'diagnose.py');
+
+    if (!fs.existsSync(scriptPath)) {
+      resolve({
+        success: false,
+        error: '诊断脚本不存在',
+        output: '',
+      });
+      return;
+    }
+
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    const cleanEnv = {};
+    for (const key of Object.keys(process.env)) {
+      const value = process.env[key];
+      if (typeof value === 'string') {
+        cleanEnv[key] = value;
+      }
+    }
+    const proc = spawn(pythonCmd, [scriptPath], {
+      cwd: serviceDir,
+      env: cleanEnv,
+    });
+
+    let output = '';
+    let errorOutput = '';
+
+    proc.stdout?.on('data', (data) => {
+      output += data.toString();
+    });
+
+    proc.stderr?.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    proc.on('close', (code) => {
+      resolve({
+        success: code === 0,
+        output: output,
+        error: errorOutput,
+        exitCode: code,
+      });
+    });
+
+    proc.on('error', (err) => {
+      resolve({
+        success: false,
+        error: err.message,
+        output: '',
+      });
+    });
+
+    setTimeout(() => {
+      if (!proc.killed) {
+        proc.kill();
+        resolve({
+          success: false,
+          error: '诊断超时',
+          output: output,
+        });
+      }
+    }, 30000);
+  });
+}
+
+async function installPythonDeps(serviceDir, force) {
+  const { spawn } = require('child_process');
+  const path = require('path');
+  const fs = require('fs');
+
+  return new Promise((resolve) => {
+    if (!serviceDir) {
+      resolve({
+        success: false,
+        error: '服务目录未指定，请确保已正确安装OCR插件',
+        output: '',
+      });
+      return;
+    }
+
+    const scriptPath = path.join(serviceDir, 'install_deps.py');
+
+    if (!fs.existsSync(scriptPath)) {
+      resolve({
+        success: false,
+        error: '安装脚本不存在',
+        output: '',
+      });
+      return;
+    }
+
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    const args = [scriptPath];
+    if (force) {
+      args.push('--force');
+    }
+    const cleanEnv = {};
+    for (const key of Object.keys(process.env)) {
+      const value = process.env[key];
+      if (typeof value === 'string') {
+        cleanEnv[key] = value;
+      }
+    }
+    const proc = spawn(pythonCmd, args, {
+      cwd: serviceDir,
+      env: cleanEnv,
+    });
+
+    let output = '';
+    let errorOutput = '';
+
+    proc.stdout?.on('data', (data) => {
+      output += data.toString();
+    });
+
+    proc.stderr?.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    proc.on('close', (code) => {
+      resolve({
+        success: code === 0,
+        output: output,
+        error: errorOutput,
+        exitCode: code,
+      });
+    });
+
+    proc.on('error', (err) => {
+      resolve({
+        success: false,
+        error: err.message,
+        output: '',
+      });
+    });
+
+    setTimeout(() => {
+      if (!proc.killed) {
+        proc.kill();
+        resolve({
+          success: false,
+          error: '安装超时（可能需要更长时间，请尝试手动安装）',
+          output: output,
+        });
+      }
+    }, 300000);
+  });
+}
+
 /**
  * 注册 OCR 相关 IPC 处理器
  */
@@ -270,170 +434,14 @@ function registerOcrIpc() {
     }
   });
 
-  // 运行服务诊断
   ipcMain.handle("ocr:diagnose", async (_event, { serviceDir }) => {
-    const { spawn } = require('child_process');
-    const path = require('path');
-    const fs = require('fs');
-
-    return new Promise((resolve) => {
-      if (!serviceDir) {
-        resolve({
-          success: false,
-          error: '服务目录未指定，请确保已正确安装OCR插件',
-          output: '',
-        });
-        return;
-      }
-
-      const scriptPath = path.join(serviceDir, 'diagnose.py');
-
-      if (!fs.existsSync(scriptPath)) {
-        resolve({
-          success: false,
-          error: '诊断脚本不存在',
-          output: '',
-        });
-        return;
-      }
-
-      const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-      const cleanEnv = {};
-      for (const key of Object.keys(process.env)) {
-        const value = process.env[key];
-        if (typeof value === 'string') {
-          cleanEnv[key] = value;
-        }
-      }
-      const proc = spawn(pythonCmd, [scriptPath], {
-        cwd: serviceDir,
-        env: cleanEnv,
-      });
-
-      let output = '';
-      let errorOutput = '';
-
-      proc.stdout?.on('data', (data) => {
-        output += data.toString();
-      });
-
-      proc.stderr?.on('data', (data) => {
-        errorOutput += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        resolve({
-          success: code === 0,
-          output: output,
-          error: errorOutput,
-          exitCode: code,
-        });
-      });
-
-      proc.on('error', (err) => {
-        resolve({
-          success: false,
-          error: err.message,
-          output: '',
-        });
-      });
-
-      setTimeout(() => {
-        if (!proc.killed) {
-          proc.kill();
-          resolve({
-            success: false,
-            error: '诊断超时',
-            output: output,
-          });
-        }
-      }, 30000);
-    });
+    const result = await runDiagnose(serviceDir);
+    return JSON.parse(JSON.stringify(result));
   });
 
-  // 安装Python依赖
   ipcMain.handle("ocr:installDeps", async (_event, { serviceDir, force }) => {
-    const { spawn } = require('child_process');
-    const path = require('path');
-    const fs = require('fs');
-
-    return new Promise((resolve) => {
-      if (!serviceDir) {
-        resolve({
-          success: false,
-          error: '服务目录未指定，请确保已正确安装OCR插件',
-          output: '',
-        });
-        return;
-      }
-
-      const scriptPath = path.join(serviceDir, 'install_deps.py');
-
-      if (!fs.existsSync(scriptPath)) {
-        resolve({
-          success: false,
-          error: '安装脚本不存在',
-          output: '',
-        });
-        return;
-      }
-
-      const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-      const args = [scriptPath];
-      if (force) {
-        args.push('--force');
-      }
-      const cleanEnv = {};
-      for (const key of Object.keys(process.env)) {
-        const value = process.env[key];
-        if (typeof value === 'string') {
-          cleanEnv[key] = value;
-        }
-      }
-      const proc = spawn(pythonCmd, args, {
-        cwd: serviceDir,
-        env: cleanEnv,
-      });
-
-      let output = '';
-      let errorOutput = '';
-
-      proc.stdout?.on('data', (data) => {
-        output += data.toString();
-      });
-
-      proc.stderr?.on('data', (data) => {
-        errorOutput += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        resolve({
-          success: code === 0,
-          output: output,
-          error: errorOutput,
-          exitCode: code,
-        });
-      });
-
-      proc.on('error', (err) => {
-        resolve({
-          success: false,
-          error: err.message,
-          output: '',
-        });
-      });
-
-      setTimeout(() => {
-        if (!proc.killed) {
-          proc.kill();
-          resolve({
-            success: false,
-            error: '安装超时（可能需要更长时间，请尝试手动安装）',
-            output: output,
-          });
-        }
-      }, 300000); // 5分钟超时
-    });
+    const result = await installPythonDeps(serviceDir, force);
+    return JSON.parse(JSON.stringify(result));
   });
 
   // 检查端口是否被占用
