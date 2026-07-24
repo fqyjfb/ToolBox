@@ -1,5 +1,9 @@
 # 更新日志
 
+## v2.5.10
+
+- 修复OCR插件运行诊断和安装依赖功能报错：解决"An object could not be cloned"序列化错误
+
 ## v2.5.9
 
 - UI 主题配色统一：所有按钮颜色统一使用 bg-primary text-button-text，支持浅色/深色主题切换
