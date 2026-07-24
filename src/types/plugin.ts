@@ -16,6 +16,8 @@ export interface PluginInfo {
   releaseUrl?: string;
   entry?: string;
   isBeta?: boolean;
+  width?: number;
+  height?: number;
 }
 
 export interface InstalledPlugin extends PluginInfo {

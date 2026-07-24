@@ -368,7 +368,7 @@ const TodoManagerPage: React.FC = () => {
             </div>
             <button
               onClick={() => setShowCategoryModal(true)}
-              className="bg-gray-800 dark:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-gray-700 dark:hover:bg-blue-700 flex items-center gap-1.5"
+              className="bg-primary text-button-text px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-primary-hover flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               新建分类

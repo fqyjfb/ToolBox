@@ -50,7 +50,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
         />
 
         <button
-          className="flex h-[44px] w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex h-[44px] w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-button-text hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSend}
           disabled={!text.trim()}
           title="发送"

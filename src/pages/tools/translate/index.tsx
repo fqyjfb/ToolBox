@@ -252,7 +252,7 @@ const TranslatePage: React.FC = () => {
         <button
           onClick={handleTranslate}
           disabled={loading || !inputText.trim()}
-          className="ml-auto flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+          className="ml-auto flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover disabled:bg-gray-300 disabled:cursor-not-allowed text-button-text rounded-lg text-sm font-medium transition-colors"
         >
           {loading ? (
             <>

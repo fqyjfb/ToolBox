@@ -42,13 +42,13 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
             <div className="flex gap-4 justify-center">
               <button 
                 onClick={this.handleRetry}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                className="px-4 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover transition-colors"
               >
                 重试
               </button>
               <button 
                 onClick={() => window.location.reload()} 
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                className="px-4 py-2 bg-gray-600 dark:bg-gray-500 text-white dark:text-gray-200 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-400 transition-colors"
               >
                 刷新页面
               </button>

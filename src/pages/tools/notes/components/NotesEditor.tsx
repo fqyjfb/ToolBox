@@ -227,7 +227,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
           <button
             onClick={onCreateNote}
             disabled={!onCreateNote}
-            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-button-text transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FilePlus className="h-4 w-4" />
             新建笔记
@@ -297,7 +297,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
 
         {(fileMetadata?.fileType === 'md' || fileMetadata?.fileType === 'txt') ? (
           <button
-            className="flex items-center rounded-lg bg-primary px-2 py-1.5 text-white transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center rounded-lg bg-primary px-2 py-1.5 text-button-text transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => handleSave(content)}
             disabled={!isDirty || isSaving}
             title="保存"

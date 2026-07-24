@@ -134,7 +134,7 @@ const IPInfoPage: React.FC = () => {
             <button
               onClick={handleQuery}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Search className="w-4 h-4" />
               查询

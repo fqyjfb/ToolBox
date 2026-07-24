@@ -44,7 +44,7 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading
         </div>
 
         <button
-          className="flex w-full max-w-sm items-center justify-center gap-2 rounded-lg bg-primary py-3 font-medium text-white transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full max-w-sm items-center justify-center gap-2 rounded-lg bg-primary py-3 font-medium text-button-text transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           disabled={loading}
           onClick={onSelect}
         >

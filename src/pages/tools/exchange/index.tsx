@@ -206,7 +206,7 @@ const ExchangePage: React.FC = () => {
             <button
               onClick={refreshExchange}
               disabled={loading}
-              className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md transition-all duration-300 disabled:opacity-50 text-xs"
+              className="flex items-center space-x-1 bg-primary hover:bg-primary-hover text-button-text px-2 py-1 rounded-md transition-all duration-300 disabled:opacity-50 text-xs"
             >
               {loading ? (
                 <LoadingSpinner size="xs" />

@@ -541,7 +541,7 @@ const AdminWebsitesPage: React.FC = () => {
                 onClick={() => handleCategorySelect(null)}
                 className={`px-2 py-1 text-xs rounded-full transition-colors ${
                   !selectedCategoryId
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-primary text-button-text'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
@@ -553,7 +553,7 @@ const AdminWebsitesPage: React.FC = () => {
                   onClick={() => handleCategorySelect(mainCategory.id)}
                   className={`px-2 py-1 text-xs rounded-full transition-colors ${
                     selectedCategoryId === mainCategory.id
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-primary text-button-text'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >

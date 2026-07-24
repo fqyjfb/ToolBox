@@ -256,7 +256,7 @@ const WeatherPage: React.FC = () => {
             <p className="text-sm">{error || '无法获取天气数据'}</p>
             <button
               onClick={fetchWeather}
-              className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+              className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors text-sm"
             >
               <RefreshCw className="w-4 h-4" />
               重试

@@ -99,7 +99,7 @@ const JsonToCsvPage: React.FC = () => {
           <button 
             onClick={() => handleCopy(output)}
             disabled={!output}
-            className="flex items-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >
             <Copy className="w-4 h-4" />
             复制
@@ -107,7 +107,7 @@ const JsonToCsvPage: React.FC = () => {
           <button 
             onClick={handleDownload}
             disabled={!output}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >
             <Download className="w-4 h-4" />
             下载

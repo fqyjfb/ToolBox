@@ -104,13 +104,13 @@ const SyncConflictModal: React.FC<SyncConflictModalProps> = ({ conflicts, isOpen
             <div className="flex items-center justify-end gap-2 mt-2">
               <button
                 onClick={() => onResolve(conflict.id, true)}
-                className="px-2.5 py-1 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                className="px-2.5 py-1 text-xs bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors"
               >
                 保留本地
               </button>
               <button
                 onClick={() => onResolve(conflict.id, false)}
-                className="px-2.5 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                className="px-2.5 py-1 text-xs bg-gray-600 dark:bg-gray-500 text-white dark:text-gray-200 rounded-md hover:bg-gray-700 dark:hover:bg-gray-400 transition-colors"
               >
                 保留云端
               </button>

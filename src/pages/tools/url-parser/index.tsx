@@ -112,7 +112,7 @@ const UrlParserPage: React.FC = () => {
                   </div>
                   <button
                     onClick={() => handleCopy(part.value)}
-                    className="flex items-center gap-1 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-xs"
+                    className="flex items-center gap-1 px-2 py-1 bg-primary text-button-text rounded hover:bg-primary-hover transition-colors text-xs"
                   >
                     <Copy className="w-3 h-3" />
                     复制

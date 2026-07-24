@@ -244,7 +244,7 @@ const PluginStorePage: React.FC = () => {
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Package className="w-4 h-4 text-white" />
+            <Package className="w-4 h-4 text-button-text" />
           </div>
           <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">插件商店</h1>
         </div>
@@ -320,7 +320,7 @@ const PluginStorePage: React.FC = () => {
               onClick={() => setSelectedCategory(category.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
                 selectedCategory === category.id
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-button-text'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >

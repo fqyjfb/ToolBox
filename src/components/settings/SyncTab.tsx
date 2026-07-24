@@ -359,7 +359,7 @@ const SyncTab: React.FC = () => {
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   storageLocation === option.value
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-button-text'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                 }`}>
                   {option.value === 'local' ? (
@@ -375,7 +375,7 @@ const SyncTab: React.FC = () => {
               </div>
               {storageLocation === option.value && (
                 <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3 text-button-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
@@ -422,7 +422,7 @@ const SyncTab: React.FC = () => {
                   <button
                     onClick={handleSyncClick}
                     disabled={isSyncing || !isOnline || !admin?.id}
-                    className="flex items-center px-3 py-1.5 text-xs bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center px-3 py-1.5 text-xs bg-primary text-button-text rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSyncing ? (
                     <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />

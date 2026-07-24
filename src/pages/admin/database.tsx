@@ -114,7 +114,7 @@ const DatabasePage: React.FC = () => {
                 <button
                   onClick={handleExportSQL}
                   disabled={state.isLoading}
-                  className="w-full px-2 py-1 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
+                  className="w-full px-2 py-1 bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
                 >
                   <Download size={14} />
                   <span>导出为SQL文件</span>

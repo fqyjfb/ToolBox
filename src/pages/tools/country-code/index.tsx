@@ -18,7 +18,8 @@ const CountryCodePage: React.FC = () => {
       result = result.filter(
         item =>
           item.country.toLowerCase().includes(query) ||
-          item.code.toLowerCase().includes(query)
+          item.phoneCode.toLowerCase().includes(query) ||
+          item.countryCode.toLowerCase().includes(query)
       );
     }
 
@@ -41,6 +42,13 @@ const CountryCodePage: React.FC = () => {
     } catch (err) {
       console.error('复制失败:', err);
     }
+  };
+
+  const formatTimeDifference = (diff?: string) => {
+    if (!diff) return '-';
+    const sign = diff.startsWith('-') ? '-' : '+';
+    const value = diff.replace(/^[+-]/, '');
+    return `${sign}${value}h`;
   };
 
   return (
@@ -68,7 +76,9 @@ const CountryCodePage: React.FC = () => {
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
               <th className="text-left py-2 px-3 text-xs font-medium text-gray-600 dark:text-gray-300">国家/地区</th>
+              <th className="text-left py-2 px-3 text-xs font-medium text-gray-600 dark:text-gray-300">国家代码</th>
               <th className="text-left py-2 px-3 text-xs font-medium text-gray-600 dark:text-gray-300">电话区号</th>
+              <th className="text-left py-2 px-3 text-xs font-medium text-gray-600 dark:text-gray-300">时差</th>
             </tr>
           </thead>
         </table>
@@ -79,9 +89,9 @@ const CountryCodePage: React.FC = () => {
               {filteredCodes.length > 0 ? (
                 filteredCodes.map((item: CountryCode, index: number) => (
                   <tr
-                    key={`${item.country}-${item.code}-${index}`}
+                    key={`${item.country}-${item.phoneCode}-${index}`}
                     className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
-                    onClick={() => handleCopy(item.code)}
+                    onClick={() => handleCopy(item.phoneCode)}
                   >
                     <td className="py-1.5 px-3">
                       <div className="flex items-center gap-2">
@@ -90,17 +100,32 @@ const CountryCodePage: React.FC = () => {
                           {item.region}
                         </span>
                       </div>
+                      <span className="text-2xs text-gray-500 dark:text-gray-400">{item.englishName}</span>
+                    </td>
+                    <td className="py-1.5 px-3">
+                      <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-600 dark:text-gray-400">
+                        {item.countryCode}
+                      </code>
                     </td>
                     <td className="py-1.5 px-3">
                       <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-blue-600 dark:text-blue-400">
-                        {item.code}
+                        {item.phoneCode}
                       </code>
+                    </td>
+                    <td className="py-1.5 px-3">
+                      <span className={`text-xs font-medium ${
+                        item.timeDifference && item.timeDifference.startsWith('+') 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}>
+                        {formatTimeDifference(item.timeDifference)}
+                      </span>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={2} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={4} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     <p className="text-xs">未找到匹配的国家/地区</p>
                     <p className="text-2xs mt-1">请尝试其他搜索关键词或选择其他区域</p>
                   </td>

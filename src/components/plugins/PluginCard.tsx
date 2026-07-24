@@ -174,7 +174,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
                   e.stopPropagation();
                   pluginApi.openPluginWindow(plugin.id);
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-button-text bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
               >
                 <Play className="w-3.5 h-3.5" />
                 启动
@@ -201,7 +201,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
               className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                 isInstalling
                   ? 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
-                  : 'text-white bg-primary dark:bg-primary hover:bg-primary/90 dark:hover:bg-primary/90'
+                  : 'text-button-text bg-primary dark:bg-primary hover:bg-primary/90 dark:hover:bg-primary/90'
               }`}
             >
               {isInstalling && installProgress ? (

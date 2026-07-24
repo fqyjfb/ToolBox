@@ -175,7 +175,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                     onClick={() => handleTypeChange(type)}
                     className={`px-2 py-1 text-xs rounded transition-colors ${
                       localConfig.type === type
-                        ? 'bg-primary text-white'
+                        ? 'bg-primary text-button-text'
                         : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
@@ -205,7 +205,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                       onClick={() => handleActionChange(action)}
                       className={`px-2 py-1 text-xs rounded transition-colors ${
                         localConfig.action === action
-                          ? 'bg-primary text-white'
+                          ? 'bg-primary text-button-text'
                           : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
@@ -265,7 +265,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                       onClick={() => handleActionChange(action)}
                       className={`px-2 py-1 text-xs rounded transition-colors ${
                         localConfig.action === action
-                          ? 'bg-primary text-white'
+                          ? 'bg-primary text-button-text'
                           : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >

@@ -177,7 +177,7 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
                     pluginApi.openPluginWindow(plugin.id);
                     onClose();
                   }}
-                  className="flex items-center gap-1 px-4 py-1.5 text-xs font-medium text-white bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
+                  className="flex items-center gap-1 px-4 py-1.5 text-xs font-medium text-button-text bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
                 >
                   <Play className="w-3.5 h-3.5" />
                   启动
@@ -195,7 +195,7 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
               <button
                 onClick={onInstall}
                 disabled={isInstalling}
-                className={`flex items-center gap-1 px-4 py-1.5 text-xs font-medium text-white rounded-md transition-colors ${
+                className={`flex items-center gap-1 px-4 py-1.5 text-xs font-medium text-button-text rounded-md transition-colors ${
                   isInstalling
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-primary dark:bg-primary hover:bg-primary/90 dark:hover:bg-primary/90'

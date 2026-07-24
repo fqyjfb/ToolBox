@@ -105,7 +105,7 @@ const CaseConverterPage: React.FC = () => {
               <button
                 onClick={() => handleCopy(results[caseType.id])}
                 disabled={!results[caseType.id]}
-                className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
               >
                 <Copy className="w-3 h-3" />
                 复制

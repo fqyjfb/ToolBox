@@ -86,7 +86,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                   <button
                     className={`absolute left-3 top-3 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors ${
                     selectedMessages.includes(message.id)
-                      ? 'border-primary bg-primary text-white'
+                      ? 'border-primary bg-primary text-button-text'
                       : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                   }`}
                     onClick={(e) => {

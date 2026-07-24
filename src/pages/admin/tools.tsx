@@ -481,7 +481,7 @@ const ToolsPage: React.FC = () => {
                 onClick={() => handleCategoryFilterChange('')}
                 className={`px-2 py-1 text-xs rounded-full transition-colors ${
                   !filterCategory
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-primary text-button-text'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
@@ -493,7 +493,7 @@ const ToolsPage: React.FC = () => {
                     onClick={() => handleCategoryFilterChange(mainCategory.id)}
                     className={`px-2 py-1 text-xs rounded-full transition-colors ${
                       filterCategory === mainCategory.id
-                        ? 'bg-blue-500 text-white'
+                        ? 'bg-primary text-button-text'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >

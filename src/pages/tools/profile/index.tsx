@@ -280,7 +280,7 @@ const ProfilePage: React.FC = () => {
                 )}
 
                 <div className="flex items-center justify-center gap-2">
-                  <button onClick={() => handleSave('password')} className="px-2 py-1 bg-gray-700 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-500 text-white rounded text-xs font-medium transition-colors inline-flex items-center gap-1">
+                  <button onClick={() => handleSave('password')} className="px-2 py-1 bg-primary dark:bg-primary hover:bg-primary-hover dark:hover:bg-primary-hover text-button-text rounded text-xs font-medium transition-colors inline-flex items-center gap-1">
                     <Save className="w-3 h-3" />
                     保存
                   </button>

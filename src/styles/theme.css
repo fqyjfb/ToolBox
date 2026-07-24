@@ -14,8 +14,8 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --color-primary: #275D7E;
-  --color-primary-hover: #E2D6C3;
+  --color-primary: #18181B;
+  --color-primary-hover: #111113;
   --color-secondary: #3b82f6;
   --color-secondary-hover: #2563eb;
   --color-accent: #f59e0b;
@@ -26,23 +26,23 @@
   --color-error: #ef4444;
   --color-info: #3b82f6;
   
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
+  --color-text-primary: #18181B;
+  --color-text-secondary: #71717A;
+  --color-text-tertiary: #A1A1AA;
   
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f8f9fa;
-  --color-bg-tertiary: #f3f4f6;
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #F4F4F5;
+  --color-bg-tertiary: #F4F4F5;
   
-  --color-border: #e5e7eb;
-  --color-border-light: #f3f4f6;
+  --color-border: #E4E4E7;
+  --color-border-light: #E4E4E7;
   
-  --color-card: #ffffff;
-  --color-card-hover: #f9fafb;
+  --color-card: #FFFFFF;
+  --color-card-hover: #F9FAFB;
   
-  --color-sidebar: #ffffff;
-  --color-sidebar-item: #f3f4f6;
-  --color-sidebar-item-active: #1db954;
+  --color-sidebar: #FFFFFF;
+  --color-sidebar-item: #F4F4F5;
+  --color-sidebar-item-active: #3B82F6;
   
   --color-toast-success-bg: #edfbd8;
   --color-toast-success-border: #84d65a;
@@ -144,16 +144,16 @@
   --duration-bounce-delay: 0.15s;
 
   /* 按钮渐变已移除，改用实心填充 */
-  --color-button-primary: #275D7E;
-  --color-button-primary-hover: #1e4a66;
+  --color-button-primary: #18181B;
+  --color-button-primary-hover: #111113;
   --color-admin-button: #dda36c;
   --color-admin-button-hover: #c4935a;
 
   /* Switch component colors */
-  --color-switch-bg: #73C0FC;
-  --color-switch-thumb: #e8e8e8;
-  --color-switch-active-bg: #183153;
-  --color-switch-active-thumb: #ffffff;
+  --color-switch-bg: #E4E4E7;
+  --color-switch-thumb: #FFFFFF;
+  --color-switch-active-bg: #18181B;
+  --color-switch-active-thumb: #FFFFFF;
 
   --color-todo-1: #3B82F6;
   --color-todo-2: #F97316;
@@ -173,8 +173,8 @@
   --opacity-30: 0.3;
   --opacity-40: 0.4;
 
-  --shadow-primary: 0 4px 12px rgba(39, 93, 126, 0.4);
-  --shadow-primary-hover: 0 6px 20px rgba(39, 93, 126, 0.6);
+  --shadow-primary: 0 4px 12px rgba(24, 24, 27, 0.4);
+  --shadow-primary-hover: 0 6px 20px rgba(24, 24, 27, 0.6);
   --shadow-login: rgba(133, 189, 215, 0.88) 0px 30px 30px -20px;
   --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.15);
   
@@ -188,8 +188,8 @@
 }
 
 .dark {
-  --color-primary: #E2D6C3;
-  --color-primary-hover: #2C2C2C;
+  --color-primary: #EAF1F8;
+  --color-primary-hover: #CBD5E1;
   --color-secondary: #60a5fa;
   --color-secondary-hover: #3b82f6;
   --color-accent: #fbbf24;
@@ -200,23 +200,23 @@
   --color-error: #f87171;
   --color-info: #60a5fa;
   
-  --color-text-primary: #f9fafb;
-  --color-text-secondary: #d1d5db;
-  --color-text-tertiary: #9ca3af;
+  --color-text-primary: #EAF1F8;
+  --color-text-secondary: #94A3B8;
+  --color-text-tertiary: #64748B;
   
-  --color-bg-primary: #111827;
-  --color-bg-secondary: #1f2937;
-  --color-bg-tertiary: #374151;
+  --color-bg-primary: #16181D;
+  --color-bg-secondary: #1A1D23;
+  --color-bg-tertiary: #262A33;
   
-  --color-border: #374151;
-  --color-border-light: #4b5563;
+  --color-border: #2D3139;
+  --color-border-light: #2D3139;
   
-  --color-card: #1f2937;
-  --color-card-hover: #374151;
+  --color-card: #1A1D23;
+  --color-card-hover: #262A33;
   
-  --color-sidebar: #1f2937;
-  --color-sidebar-item: #374151;
-  --color-sidebar-item-active: #fbbf24;
+  --color-sidebar: #1A1D23;
+  --color-sidebar-item: #262A33;
+  --color-sidebar-item-active: #EAF1F8;
   
   --color-toast-success-bg: #166534;
   --color-toast-success-border: #22c55e;
@@ -252,8 +252,8 @@
   --color-favorites-active: #156479;
   --color-favorites-text: #a8f0ed;
   
-  --color-switch-bg: #183153;
-  --color-switch-active-bg: #60a5fa;
+  --color-switch-bg: #2D3139;
+  --color-switch-active-bg: #EAF1F8;
   
   --tools-grid-item-size: 88px;
   --tools-grid-gap: 8px;
@@ -276,8 +276,8 @@
   --duration-bounce-delay: 0.15s;
 
   /* 按钮渐变已移除，改用实心填充 */
-  --color-button-primary: #275D7E;
-  --color-button-primary-hover: #1e4a66;
+  --color-button-primary: #EAF1F8;
+  --color-button-primary-hover: #CBD5E1;
   --color-admin-button: #dda36c;
   --color-admin-button-hover: #c4935a;
 
@@ -299,8 +299,8 @@
   --opacity-30: 0.3;
   --opacity-40: 0.4;
 
-  --shadow-primary: 0 4px 12px rgba(39, 93, 126, 0.4);
-  --shadow-primary-hover: 0 6px 20px rgba(39, 93, 126, 0.6);
+  --shadow-primary: 0 4px 12px rgba(234, 241, 248, 0.4);
+  --shadow-primary-hover: 0 6px 20px rgba(234, 241, 248, 0.6);
   --shadow-login: rgba(133, 189, 215, 0.88) 0px 30px 30px -20px;
   --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.15);
   
@@ -794,7 +794,7 @@ body {
     line-height: 12px;
     transform: translateX(-50%);
     padding: 2px 0.25rem;
-    background-color: #ffffff;
+    background-color: var(--color-card);
     border-radius: 6px;
     pointer-events: none;
     opacity: 0;
@@ -847,7 +847,7 @@ body {
   margin: 0 0 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .xlsx-preview .xlsx-table {
@@ -859,20 +859,20 @@ body {
 
 .xlsx-preview .xlsx-table th,
 .xlsx-preview .xlsx-table td {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   padding: 4px 8px;
   text-align: left;
   white-space: nowrap;
 }
 
 .xlsx-preview .xlsx-table th {
-  background: #f3f4f6;
+  background: var(--color-bg-tertiary);
   font-weight: 600;
 }
 
 .xlsx-preview .xlsx-empty-cell {
   padding: 4px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   height: 1.5em;
 }
 
@@ -887,29 +887,7 @@ body {
 .docx-preview-content p { margin: 0.8em 0; }
 .docx-preview-content table { border-collapse: collapse; width: 100%; margin: 1em 0; }
 .docx-preview-content table th,
-.docx-preview-content table td { border: 1px solid #d1d5db; padding: 4px 8px; }
-
-.dark .xlsx-preview .xlsx-sheet-title {
-  color: #d1d5db;
-}
-
-.dark .xlsx-preview .xlsx-table th,
-.dark .xlsx-preview .xlsx-table td {
-  border-color: #374151;
-}
-
-.dark .xlsx-preview .xlsx-table th {
-  background: #374151;
-}
-
-.dark .xlsx-preview .xlsx-empty-cell {
-  border-color: #374151;
-}
-
-.dark .docx-preview-content table th,
-.dark .docx-preview-content table td {
-  border-color: #374151;
-}
+.docx-preview-content table td { border: 1px solid var(--color-border); padding: 4px 8px; }
 
 .github-button {
   font-family: inherit;

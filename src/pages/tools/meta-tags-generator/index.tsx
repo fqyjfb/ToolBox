@@ -73,7 +73,7 @@ const MetaTagsGeneratorPage: React.FC = () => {
           </button>
           <button 
             onClick={handleDownload}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover transition-colors text-sm"
           >
             <Download className="w-4 h-4" />
             下载

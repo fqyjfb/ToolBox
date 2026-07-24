@@ -172,7 +172,7 @@ const CreateDialog: React.FC<{
             取消
           </button>
           <button
-            className="rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary-hover"
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm text-button-text hover:bg-primary-hover"
             onClick={handleConfirm}
           >
             确定
@@ -204,7 +204,7 @@ const ExistsConfirmDialog: React.FC<{
 
         <div className="flex flex-col gap-2">
           <button
-            className="w-full rounded-lg bg-primary px-3 py-2 text-sm text-white hover:bg-primary-hover"
+            className="w-full rounded-lg bg-primary px-3 py-2 text-sm text-button-text hover:bg-primary-hover"
             onClick={onOverwrite}
           >
             覆盖原有{type === 'folder' ? '文件夹' : '文件'}

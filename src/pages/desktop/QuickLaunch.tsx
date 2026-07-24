@@ -616,7 +616,7 @@ const QuickLaunch: React.FC = () => {
           <button
             className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
               activeCategoryId === 'all' 
-                ? 'bg-[#009ebe] text-white' 
+                ? 'bg-primary text-button-text' 
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
             onClick={() => setActiveCategoryId('all')}

@@ -20,7 +20,8 @@ const CountryCodeSearch: React.FC = () => {
       result = result.filter(
         item =>
           item.country.toLowerCase().includes(query) ||
-          item.code.toLowerCase().includes(query) ||
+          item.phoneCode.toLowerCase().includes(query) ||
+          item.countryCode.toLowerCase().includes(query) ||
           item.region.toLowerCase().includes(query)
       );
       clearSearch();
@@ -40,13 +41,11 @@ const CountryCodeSearch: React.FC = () => {
     }
   };
 
-  const regionColors: Record<string, string> = {
-    亚洲: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    欧洲: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    非洲: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    北美洲: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    南美洲: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-    大洋洲: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+  const formatTimeDifference = (diff?: string) => {
+    if (!diff) return '-';
+    const sign = diff.startsWith('-') ? '-' : '+';
+    const value = diff.replace(/^[+-]/, '');
+    return `${sign}${value}h`;
   };
 
   return (
@@ -88,8 +87,9 @@ const CountryCodeSearch: React.FC = () => {
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">国家/地区</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">国家代码</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">电话区号</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">所属区域</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">时差</th>
                 <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">操作</th>
               </tr>
             </thead>
@@ -97,25 +97,35 @@ const CountryCodeSearch: React.FC = () => {
               {filteredCodes.length > 0 ? (
                 filteredCodes.map((item: CountryCode, index: number) => (
                   <tr
-                    key={`${item.country}-${item.code}-${index}`}
+                    key={`${item.country}-${item.phoneCode}-${index}`}
                     className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <td className="py-3 px-4">
                       <div className="font-medium text-gray-900 dark:text-white">{item.country}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{item.englishName}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <code className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono text-blue-600 dark:text-blue-400">
-                        {item.code}
+                      <code className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono text-gray-600 dark:text-gray-400">
+                        {item.countryCode}
                       </code>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${regionColors[item.region]}`}>
-                        {item.region}
+                      <code className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono text-blue-600 dark:text-blue-400">
+                        {item.phoneCode}
+                      </code>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`text-sm font-medium ${
+                        item.timeDifference && item.timeDifference.startsWith('+') 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}>
+                        {formatTimeDifference(item.timeDifference)}
                       </span>
                     </td>
                     <td className="py-3 px-4">
                       <button
-                        onClick={() => handleCopy(item.code, `${item.country}-${index}`)}
+                        onClick={() => handleCopy(item.phoneCode, `${item.country}-${index}`)}
                         className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                           copiedId === `${item.country}-${index}`
                             ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -139,7 +149,7 @@ const CountryCodeSearch: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="py-12 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={5} className="py-12 text-center text-gray-500 dark:text-gray-400">
                     <div className="flex flex-col items-center gap-2">
                       <Globe className="w-12 h-12 opacity-50" />
                       <p>未找到匹配的国家/地区</p>
