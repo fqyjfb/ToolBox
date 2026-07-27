@@ -1,5 +1,15 @@
 # 更新日志
 
+## v2.6.0
+
+- OCR插件服务增强：修复端口配置不生效问题，统一从localStorage读取服务配置
+- OCR插件状态同步：统一服务状态显示入口到头部，设置面板移除冗余状态UI
+- OCR依赖安装进度反馈：实现实时进度条显示，支持安装状态（开始/下载/解压/完成/错误）
+- OCR服务管理：新增服务关闭功能，支持服务启停控制
+- OCR设置面板精简：移除冗余配置项，仅保留必要配置（端口、超时、Python路径等）
+- Electron IPC序列化修复：修复OCR插件IPC通信中"An object could not be cloned"错误
+- Python进程编码修复：添加UTF-8编码支持，解决Windows下中文乱码问题
+
 ## v2.5.10
 
 - 修复OCR插件运行诊断和安装依赖功能报错：解决"An object could not be cloned"序列化错误
