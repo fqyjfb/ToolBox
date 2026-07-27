@@ -50,6 +50,21 @@ ipcRenderer.on('setting-changed', (event, setting) => {
   }
 });
 
+const s3Api = {
+  listBuckets: (config) => ipcRenderer.invoke('s3:listBuckets', config),
+  listFiles: (config, prefix) => ipcRenderer.invoke('s3:listFiles', { config, prefix }),
+  getObject: (config, key) => ipcRenderer.invoke('s3:getObject', { config, key }),
+  putObject: (config, key, body, contentType) => ipcRenderer.invoke('s3:putObject', { config, key, body, contentType }),
+  deleteObject: (config, key) => ipcRenderer.invoke('s3:deleteObject', { config, key }),
+  deleteObjects: (config, keys) => ipcRenderer.invoke('s3:deleteObjects', { config, keys }),
+  copyObject: (config, sourceKey, destKey) => ipcRenderer.invoke('s3:copyObject', { config, sourceKey, destKey }),
+  getPresignedUrl: (config, key, options) => ipcRenderer.invoke('s3:getPresignedUrl', { config, key, options }),
+  uploadFile: (config, key, fileBuffer, contentType) => ipcRenderer.invoke('s3:uploadFile', { config, key, fileBuffer, contentType }),
+  listAllObjects: (config, prefix) => ipcRenderer.invoke('s3:listAllObjects', { config, prefix }),
+  createBucket: (config, bucketName) => ipcRenderer.invoke('s3:createBucket', { config, bucketName }),
+  deleteBucket: (config, bucketName) => ipcRenderer.invoke('s3:deleteBucket', { config, bucketName }),
+};
+
 contextBridge.exposeInMainWorld('electron', {
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
@@ -86,15 +101,15 @@ contextBridge.exposeInMainWorld('electron', {
   updateFloatConfig: (config) => ipcRenderer.invoke('update-float-config', config),
   resetFloatConfig: () => ipcRenderer.invoke('reset-float-config'),
   ocr: {
-    recognize: (imageBase64, serviceDir) => ipcRenderer.invoke('ocr:recognize', { imageBase64, serviceDir }),
-    recognizeFile: (filePath, serviceDir) => ipcRenderer.invoke('ocr:recognizeFile', { filePath, serviceDir }),
+    recognize: (imageBase64, serviceDir) => ipcRenderer.invoke('ocr:recognize', { imageBase64: String(imageBase64 || ''), serviceDir: String(serviceDir || '') }),
+    recognizeFile: (filePath, serviceDir) => ipcRenderer.invoke('ocr:recognizeFile', { filePath: String(filePath || ''), serviceDir: String(serviceDir || '') }),
     status: () => ipcRenderer.invoke('ocr:status'),
-    start: (serviceDir, config) => ipcRenderer.invoke('ocr:start', { serviceDir, ...config }),
+    start: (serviceDir, config) => ipcRenderer.invoke('ocr:start', { serviceDir: String(serviceDir || ''), ...(config || {}) }),
     stop: () => ipcRenderer.invoke('ocr:stop'),
     serviceInfo: () => ipcRenderer.invoke('ocr:serviceInfo'),
-    diagnose: (serviceDir) => ipcRenderer.invoke('ocr:diagnose', { serviceDir }),
-    installDeps: (serviceDir, force) => ipcRenderer.invoke('ocr:installDeps', { serviceDir, force }),
-    checkPort: (port) => ipcRenderer.invoke('ocr:checkPort', port),
+    diagnose: (serviceDir) => ipcRenderer.invoke('ocr:diagnose', { serviceDir: String(serviceDir || '') }),
+    installDeps: (serviceDir, force) => ipcRenderer.invoke('ocr:installDeps', { serviceDir: String(serviceDir || ''), force: Boolean(force) }),
+    checkPort: (port) => ipcRenderer.invoke('ocr:checkPort', Number(port)),
     selectPythonPath: () => ipcRenderer.invoke('ocr:selectPythonPath'),
   },
   fileManager: {
@@ -134,6 +149,7 @@ contextBridge.exposeInMainWorld('electron', {
     closeWindow: () => ipcRenderer.send('plugin-window-close'),
     saveFile: (filePath, data) => ipcRenderer.invoke('plugin:save-file', { path: filePath, data }),
   },
+  s3: s3Api,
   screenshot: {
     startCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
     cancel: () => ipcRenderer.send('cancel-screenshot'),
