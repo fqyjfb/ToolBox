@@ -439,13 +439,29 @@ function registerOcrIpc() {
   });
 
   ipcMain.handle("ocr:diagnose", async (_event, { serviceDir }) => {
-    const result = await runDiagnose(serviceDir);
-    return JSON.parse(JSON.stringify(result));
+    try {
+      const result = await runDiagnose(serviceDir);
+      return JSON.parse(JSON.stringify(result));
+    } catch (error) {
+      return JSON.parse(JSON.stringify({
+        success: false,
+        error: String(error && error.message || error),
+        output: '',
+      }));
+    }
   });
 
   ipcMain.handle("ocr:installDeps", async (_event, { serviceDir, force }) => {
-    const result = await installPythonDeps(serviceDir, force);
-    return JSON.parse(JSON.stringify(result));
+    try {
+      const result = await installPythonDeps(serviceDir, force);
+      return JSON.parse(JSON.stringify(result));
+    } catch (error) {
+      return JSON.parse(JSON.stringify({
+        success: false,
+        error: String(error && error.message || error),
+        output: '',
+      }));
+    }
   });
 
   // 检查端口是否被占用
