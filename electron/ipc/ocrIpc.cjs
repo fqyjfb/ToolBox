@@ -80,6 +80,8 @@ async function runDiagnose(serviceDir) {
         cleanEnv[key] = value;
       }
     }
+    cleanEnv.PYTHONIOENCODING = 'utf-8';
+    cleanEnv.PYTHONUNBUFFERED = '1';
     const proc = spawn(pythonCmd, [scriptPath], {
       cwd: serviceDir,
       env: cleanEnv,
@@ -89,11 +91,11 @@ async function runDiagnose(serviceDir) {
     let errorOutput = '';
 
     proc.stdout?.on('data', (data) => {
-      output += data.toString();
+      output += data.toString('utf-8');
     });
 
     proc.stderr?.on('data', (data) => {
-      errorOutput += data.toString();
+      errorOutput += data.toString('utf-8');
     });
 
     proc.on('close', (code) => {
@@ -164,6 +166,8 @@ async function installPythonDeps(serviceDir, force) {
         cleanEnv[key] = value;
       }
     }
+    cleanEnv.PYTHONIOENCODING = 'utf-8';
+    cleanEnv.PYTHONUNBUFFERED = '1';
     const proc = spawn(pythonCmd, args, {
       cwd: serviceDir,
       env: cleanEnv,
@@ -173,11 +177,11 @@ async function installPythonDeps(serviceDir, force) {
     let errorOutput = '';
 
     proc.stdout?.on('data', (data) => {
-      output += data.toString();
+      output += data.toString('utf-8');
     });
 
     proc.stderr?.on('data', (data) => {
-      errorOutput += data.toString();
+      errorOutput += data.toString('utf-8');
     });
 
     proc.on('close', (code) => {
@@ -222,12 +226,12 @@ function registerOcrIpc() {
     try {
       const serviceReady = await ensurePythonServiceRunning(serviceDir);
       if (!serviceReady) {
-        return {
+        return JSON.parse(JSON.stringify({
           success: false,
           text: "",
           blocks: [],
           error: "OCR服务启动失败，请检查Python环境配置。",
-        };
+        }));
       }
 
       resetIdleTimer();
@@ -238,27 +242,27 @@ function registerOcrIpc() {
       );
 
       if (response.success && response.data) {
-        return {
+        return JSON.parse(JSON.stringify({
           success: true,
           text: response.data.text || "",
           blocks: response.data.blocks || [],
           error: response.data.error,
-        };
+        }));
       }
 
-      return {
+      return JSON.parse(JSON.stringify({
         success: false,
         text: "",
         blocks: [],
         error: response.error ? formatError(response.error) : "OCR 识别失败",
-      };
+      }));
     } catch (error) {
-      return {
+      return JSON.parse(JSON.stringify({
         success: false,
         text: "",
         blocks: [],
         error: formatError(error),
-      };
+      }));
     }
   });
 
@@ -267,12 +271,12 @@ function registerOcrIpc() {
     try {
       const serviceReady = await ensurePythonServiceRunning(serviceDir);
       if (!serviceReady) {
-        return {
+        return JSON.parse(JSON.stringify({
           success: false,
           text: "",
           blocks: [],
           error: "OCR服务启动失败，请检查Python环境配置。",
-        };
+        }));
       }
 
       resetIdleTimer();
@@ -282,27 +286,27 @@ function registerOcrIpc() {
       );
 
       if (response.success && response.data) {
-        return {
+        return JSON.parse(JSON.stringify({
           success: true,
           text: response.data.text || "",
           blocks: response.data.blocks || [],
           error: response.data.error,
-        };
+        }));
       }
 
-      return {
+      return JSON.parse(JSON.stringify({
         success: false,
         text: "",
         blocks: [],
         error: response.error ? formatError(response.error) : "OCR 识别失败",
-      };
+      }));
     } catch (error) {
-      return {
+      return JSON.parse(JSON.stringify({
         success: false,
         text: "",
         blocks: [],
         error: formatError(error),
-      };
+      }));
     }
   });
 
@@ -374,27 +378,27 @@ function registerOcrIpc() {
       if (result.success) {
         await waitForPythonApi(15000, 500);
         console.log('[OCR] 手动启动成功');
-        return {
+        return JSON.parse(JSON.stringify({
           success: true,
           message: "OCR服务启动成功",
           pid: result.pid,
-        };
+        }));
       }
       
       console.warn('[OCR] 手动启动失败:', result.error);
-      return {
+      return JSON.parse(JSON.stringify({
         success: false,
         message: "OCR服务启动失败: " + result.error,
         error: result.error,
-      };
+      }));
     } catch (error) {
       const errorMessage = formatError(error);
       console.error('[OCR] 手动启动异常:', error);
-      return {
+      return JSON.parse(JSON.stringify({
         success: false,
         message: "OCR服务启动异常: " + errorMessage,
         error: errorMessage,
-      };
+      }));
     }
   });
 
@@ -406,35 +410,35 @@ function registerOcrIpc() {
       
       if (result.success) {
         console.log('[OCR] 手动停止成功');
-        return {
+        return JSON.parse(JSON.stringify({
           success: true,
           message: "OCR服务已停止",
-        };
+        }));
       }
       
-      return {
+      return JSON.parse(JSON.stringify({
         success: false,
         message: "停止服务失败: " + result.error,
         error: result.error,
-      };
+      }));
     } catch (error) {
       const errorMessage = formatError(error);
-      return {
+      return JSON.parse(JSON.stringify({
         success: false,
         message: "停止服务异常: " + errorMessage,
         error: errorMessage,
-      };
+      }));
     }
   });
 
   // 获取服务详细信息（用于诊断）
   ipcMain.handle("ocr:serviceInfo", async () => {
     try {
-      return getPythonServiceInfo();
+      return JSON.parse(JSON.stringify(getPythonServiceInfo()));
     } catch (error) {
-      return {
+      return JSON.parse(JSON.stringify({
         error: String(error),
-      };
+      }));
     }
   });
 
@@ -466,44 +470,53 @@ function registerOcrIpc() {
 
   // 检查端口是否被占用
   ipcMain.handle("ocr:checkPort", async (_event, port) => {
-    return new Promise((resolve) => {
-      const net = require('net');
-      const server = net.createServer();
+    try {
+      const result = await new Promise((resolve) => {
+        const net = require('net');
+        const server = net.createServer();
 
-      server.once('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-          resolve({ success: true, inUse: true, port });
-        } else {
-          resolve({ success: false, error: err.message });
-        }
+        server.once('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            resolve({ success: true, inUse: true, port });
+          } else {
+            resolve({ success: false, error: err.message });
+          }
+        });
+
+        server.once('listening', () => {
+          server.close();
+          resolve({ success: true, inUse: false, port });
+        });
+
+        server.listen(port, '127.0.0.1');
       });
-
-      server.once('listening', () => {
-        server.close();
-        resolve({ success: true, inUse: false, port });
-      });
-
-      server.listen(port, '127.0.0.1');
-    });
+      return JSON.parse(JSON.stringify(result));
+    } catch (error) {
+      return JSON.parse(JSON.stringify({ success: false, error: String(error) }));
+    }
   });
 
   // 选择Python路径
   ipcMain.handle("ocr:selectPythonPath", async () => {
-    const { dialog } = require('electron');
-    const result = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: [
-        { name: 'Python', extensions: ['exe'] },
-        { name: 'All Files', extensions: ['*'] }
-      ],
-      title: '选择Python解释器'
-    });
+    try {
+      const { dialog } = require('electron');
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+          { name: 'Python', extensions: ['exe'] },
+          { name: 'All Files', extensions: ['*'] }
+        ],
+        title: '选择Python解释器'
+      });
 
-    if (result.canceled || result.filePaths.length === 0) {
-      return { success: false, canceled: true };
+      if (result.canceled || result.filePaths.length === 0) {
+        return JSON.parse(JSON.stringify({ success: false, canceled: true }));
+      }
+
+      return JSON.parse(JSON.stringify({ success: true, path: result.filePaths[0] }));
+    } catch (error) {
+      return JSON.parse(JSON.stringify({ success: false, error: String(error) }));
     }
-
-    return { success: true, path: result.filePaths[0] };
   });
 }
 

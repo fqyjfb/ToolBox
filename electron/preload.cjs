@@ -104,7 +104,17 @@ contextBridge.exposeInMainWorld('electron', {
     recognize: (imageBase64, serviceDir) => ipcRenderer.invoke('ocr:recognize', { imageBase64: String(imageBase64 || ''), serviceDir: String(serviceDir || '') }),
     recognizeFile: (filePath, serviceDir) => ipcRenderer.invoke('ocr:recognizeFile', { filePath: String(filePath || ''), serviceDir: String(serviceDir || '') }),
     status: () => ipcRenderer.invoke('ocr:status'),
-    start: (serviceDir, config) => ipcRenderer.invoke('ocr:start', { serviceDir: String(serviceDir || ''), ...(config || {}) }),
+    start: (serviceDir, config) => {
+      const safeConfig = {};
+      if (config) {
+        if (config.httpPort !== undefined) safeConfig.httpPort = Number(config.httpPort);
+        if (config.wsPort !== undefined) safeConfig.wsPort = Number(config.wsPort);
+        if (config.pythonPath !== undefined) safeConfig.pythonPath = String(config.pythonPath || '');
+        if (config.autoRestart !== undefined) safeConfig.autoRestart = Boolean(config.autoRestart);
+        if (config.maxRestarts !== undefined) safeConfig.maxRestarts = Number(config.maxRestarts);
+      }
+      return ipcRenderer.invoke('ocr:start', { serviceDir: String(serviceDir || ''), ...safeConfig });
+    },
     stop: () => ipcRenderer.invoke('ocr:stop'),
     serviceInfo: () => ipcRenderer.invoke('ocr:serviceInfo'),
     diagnose: (serviceDir) => ipcRenderer.invoke('ocr:diagnose', { serviceDir: String(serviceDir || '') }),

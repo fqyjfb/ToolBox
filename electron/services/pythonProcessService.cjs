@@ -184,7 +184,7 @@ async function startPythonService(config = {}) {
     lastError = null;
 
     serviceProcess.stdout?.on('data', (data) => {
-      const message = data.toString().trim();
+      const message = data.toString('utf-8').trim();
       if (message) {
         addLog('info', message);
         console.log(`[Python Service] ${message}`);
@@ -192,7 +192,7 @@ async function startPythonService(config = {}) {
     });
 
     serviceProcess.stderr?.on('data', (data) => {
-      const message = data.toString().trim();
+      const message = data.toString('utf-8').trim();
       stderrOutput += message + '\n';
       if (message) {
         addLog('warn', message);
