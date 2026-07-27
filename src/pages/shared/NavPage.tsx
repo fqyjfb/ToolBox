@@ -564,61 +564,97 @@ const NavPage: React.FC = () => {
     <div className="homenav-page flex flex-col h-full p-4 overflow-hidden">
       {/* 收藏夹效果导航 */}
 
-        <div className="radio-inputs" ref={categoriesContainerRef}>
-          {/* 我的收藏 */}
-          <label className={`radio ${activeFavorites ? 'active' : ''}`}>
-            <input 
-              type="radio" 
-              name="category" 
-              checked={activeFavorites} 
-              onChange={handleFavoriteClick}
-            />
-            <span className="name">
-              <span className="pre-name" />
-              <span className="pos-name" />
-              <span>收藏</span>
-            </span>
-          </label>
-          
-          {/* 分类导航 */}
-          {categoriesTree.filter((category) => !overflowCategories.some(c => c.id === category.id)).map((category) => (
-            <label 
-              key={category.id} 
-              className={`radio ${!activeFavorites && activeMainCategoryId === category.id ? 'active' : ''}`}
-            >
+        <div className="nav-container">
+          <div className="radio-inputs" ref={categoriesContainerRef}>
+            {/* 我的收藏 */}
+            <label className={`radio ${activeFavorites ? 'active' : ''}`}>
               <input 
                 type="radio" 
                 name="category" 
-                checked={!activeFavorites && activeMainCategoryId === category.id}
-                onChange={() => {
-                  switchMainCategory(category.id)
-                  setActiveFavorites(false)
-                  setShowFavorites(false)
-                }}
+                checked={activeFavorites} 
+                onChange={handleFavoriteClick}
               />
               <span className="name">
                 <span className="pre-name" />
                 <span className="pos-name" />
-                <span>{category.name}</span>
+                <span>收藏</span>
               </span>
             </label>
-          ))}
-          
-          {/* 下拉按钮 */}
-          {overflowCategories.length > 0 && (
-            <div className="relative radio">
-              <button
-                ref={dropdownButtonRef}
-                className="name flex items-center justify-center"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowMoreCategories(!showMoreCategories)
-                }}
+            
+            {/* 分类导航 */}
+            {categoriesTree.filter((category) => !overflowCategories.some(c => c.id === category.id)).map((category) => (
+              <label 
+                key={category.id} 
+                className={`radio ${!activeFavorites && activeMainCategoryId === category.id ? 'active' : ''}`}
               >
-                <span>
-                  <ChevronDown className="w-4 h-4" />
+                <input 
+                  type="radio" 
+                  name="category" 
+                  checked={!activeFavorites && activeMainCategoryId === category.id}
+                  onChange={() => {
+                    switchMainCategory(category.id)
+                    setActiveFavorites(false)
+                    setShowFavorites(false)
+                  }}
+                />
+                <span className="name">
+                  <span className="pre-name" />
+                  <span className="pos-name" />
+                  <span>{category.name}</span>
                 </span>
-              </button>
+              </label>
+            ))}
+            
+            {/* 下拉按钮 */}
+            {overflowCategories.length > 0 && (
+              <div className="relative radio">
+                <button
+                  ref={dropdownButtonRef}
+                  className="name flex items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowMoreCategories(!showMoreCategories)
+                  }}
+                >
+                  <span>
+                    <ChevronDown className="w-4 h-4" />
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 子分类导航 - 与主分类合并在同一容器 */}
+          {!activeFavorites && activeMainCategoryId && (
+            <div className="subcategory-nav flex flex-wrap gap-2" ref={subCategoriesContainerRef}>
+              {getSubCategories(activeMainCategoryId).filter((subCategory) => !overflowSubCategories.some(c => c.id === subCategory.id)).map((subCategory) => (
+                <button
+                  key={subCategory.id}
+                  onClick={() => switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
+                    getActiveSubCategoryId(activeMainCategoryId) === subCategory.id
+                      ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md backdrop-blur-sm'
+                      : 'bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm'
+                  }`}
+                >
+                  {subCategory.name}
+                </button>
+              ))}
+              
+              {/* 子分类下拉按钮 */}
+              {overflowSubCategories.length > 0 && (
+                <button
+                  ref={subCategoryDropdownButtonRef}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowMoreSubCategories(!showMoreSubCategories)
+                  }}
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm transition-all duration-300 flex items-center gap-1"
+                >
+                  <span>更多</span>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -632,7 +668,7 @@ const NavPage: React.FC = () => {
           />
           <div 
             className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown-lg"
-            style={{ left: `${categoryDropdownPosition.left - 130}px`, top: `${categoryDropdownPosition.top + 4}px` }}
+            style={{ left: `${categoryDropdownPosition.left}px`, top: `${categoryDropdownPosition.top + 4}px` }}
           >
             {overflowCategories.map((category) => (
               <button
@@ -662,7 +698,7 @@ const NavPage: React.FC = () => {
           />
           <div 
             className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown"
-            style={{ left: `${subCategoryDropdownPosition.left - 80}px`, top: `${subCategoryDropdownPosition.top + 4}px` }}
+            style={{ left: `${subCategoryDropdownPosition.left}px`, top: `${subCategoryDropdownPosition.top + 4}px` }}
           >
             {overflowSubCategories.map((subCategory) => (
               <button
@@ -878,38 +914,6 @@ const NavPage: React.FC = () => {
               {/* 分类内容 */}
               {!activeFavorites && activeMainCategoryId && (
                 <div>
-                  {/* 子分类导航 */}
-                  <div className="subcategory-nav flex flex-wrap gap-2 mb-4" ref={subCategoriesContainerRef}>
-                    {getSubCategories(activeMainCategoryId).filter((subCategory) => !overflowSubCategories.some(c => c.id === subCategory.id)).map((subCategory) => (
-                      <button
-                        key={subCategory.id}
-                        onClick={() => switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
-                          getActiveSubCategoryId(activeMainCategoryId) === subCategory.id
-                            ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md backdrop-blur-sm'
-                            : 'bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm'
-                        }`}
-                      >
-                        {subCategory.name}
-                      </button>
-                    ))}
-                    
-                    {/* 子分类下拉按钮 */}
-                    {overflowSubCategories.length > 0 && (
-                      <button
-                        ref={subCategoryDropdownButtonRef}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setShowMoreSubCategories(!showMoreSubCategories)
-                        }}
-                        className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm transition-all duration-300 flex items-center gap-1"
-                      >
-                        <span>更多</span>
-                        <ChevronDown className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                  
                   {/* 网址卡片 */}
                   {getCategoryBookmarks(activeMainCategoryId).length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">

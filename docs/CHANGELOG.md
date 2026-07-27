@@ -9,6 +9,7 @@
 - OCR设置面板精简：移除冗余配置项，仅保留必要配置（端口、超时、Python路径等）
 - Electron IPC序列化修复：修复OCR插件IPC通信中"An object could not be cloned"错误
 - Python进程编码修复：添加UTF-8编码支持，解决Windows下中文乱码问题
+- 网址导航页面优化：调整分类标签样式，增加分类关联功能
 
 ## v2.5.10
 
