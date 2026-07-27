@@ -5,6 +5,7 @@ const os = require('os');
 const net = require('net');
 const { app } = require('electron');
 const { detectPythonEnvironment } = require('./pythonEnvService.cjs');
+const { setPort: setApiPort } = require('./pythonApiClient.cjs');
 
 const DEFAULT_CONFIG = {
   port: 8765,
@@ -110,6 +111,8 @@ async function getPythonInterpreter(config) {
 
 async function startPythonService(config = {}) {
   serviceConfig = { ...DEFAULT_CONFIG, ...config };
+
+  setApiPort(serviceConfig.httpPort || DEFAULT_CONFIG.httpPort);
 
   if (serviceProcess && serviceStatus === 'running') {
     return { success: false, error: '服务已在运行中' };
@@ -239,7 +242,18 @@ async function startPythonService(config = {}) {
     const httpPort = serviceConfig.httpPort || DEFAULT_CONFIG.httpPort;
     addLog('info', `等待 HTTP 服务就绪，端口: ${httpPort}`);
     
-    const portReady = await waitForPort(httpPort, 30000);
+    const { success: portReady, cancel: cancelPortWait } = await waitForPort(httpPort, 30000, 200, () => serviceStatus === 'error');
+    
+    if (serviceStatus === 'error' && lastError) {
+      cancelPortWait();
+      addLog('error', `服务启动失败: ${lastError}`);
+      const errorMsg = `OCR服务依赖未安装或已损坏，请运行安装依赖功能`;
+      return {
+        success: false,
+        error: lastError.includes('依赖') ? errorMsg : lastError,
+      };
+    }
+    
     if (!portReady) {
       addLog('error', `HTTP 服务启动超时，端口 ${httpPort} 未就绪`);
       const stderrSummary = stderrOutput.trim().split('\n').slice(-10).join('\n');
@@ -443,12 +457,27 @@ function isRunning() {
   return serviceStatus === 'running';
 }
 
-async function waitForPort(port, maxWaitMs = 10000, intervalMs = 200) {
+async function waitForPort(port, maxWaitMs = 10000, intervalMs = 200, abortCondition) {
   const startTime = Date.now();
   let attempts = 0;
+  let cancelled = false;
+  let cleanup = null;
 
-  return new Promise((resolve) => {
+  const cancelWait = () => {
+    cancelled = true;
+    if (cleanup) cleanup();
+  };
+
+  const result = await new Promise((resolve) => {
     const checkPort = () => {
+      if (cancelled) {
+        resolve(false);
+        return;
+      }
+      if (abortCondition && abortCondition()) {
+        resolve(false);
+        return;
+      }
       if (Date.now() - startTime >= maxWaitMs) {
         resolve(false);
         return;
@@ -458,19 +487,23 @@ async function waitForPort(port, maxWaitMs = 10000, intervalMs = 200) {
       socket.setTimeout(100);
       attempts++;
 
-      socket.on('connect', () => {
+      const onComplete = () => {
         socket.destroy();
+      };
+
+      socket.on('connect', () => {
+        onComplete();
         resolve(true);
       });
 
       socket.on('timeout', () => {
-        socket.destroy();
+        onComplete();
         const delay = Math.min(intervalMs * Math.pow(2, attempts - 1), 2000);
         setTimeout(checkPort, delay);
       });
 
       socket.on('error', () => {
-        socket.destroy();
+        onComplete();
         const delay = Math.min(intervalMs * Math.pow(2, attempts - 1), 2000);
         setTimeout(checkPort, delay);
       });
@@ -478,8 +511,17 @@ async function waitForPort(port, maxWaitMs = 10000, intervalMs = 200) {
       socket.connect(port, '127.0.0.1');
     };
 
+    cleanup = () => {
+      try {
+        const s = new net.Socket();
+        s.destroy();
+      } catch {}
+    };
+
     checkPort();
   });
+
+  return { success: result, cancel: cancelWait };
 }
 
 module.exports = {

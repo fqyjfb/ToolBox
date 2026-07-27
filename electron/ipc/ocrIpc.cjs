@@ -5,11 +5,29 @@
  * 支持按需启动Python服务，空闲自动停止
  */
 
-const { ipcMain } = require("electron");
+const { ipcMain, app } = require("electron");
+const fs = require("fs");
+const path = require("path");
 
 let ocrIpcRegistered = false;
 const { get, post, waitForPythonApi } = require("../services/pythonApiClient.cjs");
 const { startPythonService, stopPythonService, isRunning, resetIdleTimer, getPythonServiceInfo } = require("../services/pythonProcessService.cjs");
+
+const getInstallProgressFile = () => {
+  return path.join(app.getPath('temp'), 'ocr_install_progress.log');
+};
+
+const clearInstallProgress = () => {
+  try {
+    fs.writeFileSync(getInstallProgressFile(), '', 'utf-8');
+  } catch {}
+};
+
+const appendInstallProgress = (data) => {
+  try {
+    fs.appendFileSync(getInstallProgressFile(), data, 'utf-8');
+  } catch {}
+};
 
 function formatError(error) {
   const errorStr = String(error);
@@ -130,8 +148,6 @@ async function runDiagnose(serviceDir) {
 
 async function installPythonDeps(serviceDir, force) {
   const { spawn } = require('child_process');
-  const path = require('path');
-  const fs = require('fs');
 
   return new Promise((resolve) => {
     if (!serviceDir) {
@@ -153,6 +169,9 @@ async function installPythonDeps(serviceDir, force) {
       });
       return;
     }
+
+    clearInstallProgress();
+    appendInstallProgress('开始安装依赖...\n');
 
     const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
     const args = [scriptPath];
@@ -177,23 +196,30 @@ async function installPythonDeps(serviceDir, force) {
     let errorOutput = '';
 
     proc.stdout?.on('data', (data) => {
-      output += data.toString('utf-8');
+      const text = data.toString('utf-8');
+      output += text;
+      appendInstallProgress(text);
     });
 
     proc.stderr?.on('data', (data) => {
-      errorOutput += data.toString('utf-8');
+      const text = data.toString('utf-8');
+      errorOutput += text;
+      appendInstallProgress(text);
     });
 
     proc.on('close', (code) => {
+      const finalOutput = output || errorOutput;
+      appendInstallProgress(code === 0 ? '\n依赖安装完成！\n' : `\n安装失败，退出码: ${code}\n`);
       resolve({
         success: code === 0,
-        output: output,
-        error: errorOutput,
+        output: finalOutput,
+        error: code === 0 ? '' : errorOutput,
         exitCode: code,
       });
     });
 
     proc.on('error', (err) => {
+      appendInstallProgress(`进程错误: ${err.message}\n`);
       resolve({
         success: false,
         error: err.message,
@@ -204,6 +230,7 @@ async function installPythonDeps(serviceDir, force) {
     setTimeout(() => {
       if (!proc.killed) {
         proc.kill();
+        appendInstallProgress('\n安装超时（可能需要更长时间，请尝试手动安装）\n');
         resolve({
           success: false,
           error: '安装超时（可能需要更长时间，请尝试手动安装）',
@@ -457,7 +484,8 @@ function registerOcrIpc() {
 
   ipcMain.handle("ocr:installDeps", async (_event, { serviceDir, force }) => {
     try {
-      const result = await installPythonDeps(serviceDir, force);
+      const installPromise = installPythonDeps(serviceDir, force);
+      const result = await installPromise;
       return JSON.parse(JSON.stringify(result));
     } catch (error) {
       return JSON.parse(JSON.stringify({
@@ -465,6 +493,19 @@ function registerOcrIpc() {
         error: String(error && error.message || error),
         output: '',
       }));
+    }
+  });
+
+  ipcMain.handle("ocr:getInstallProgress", async () => {
+    try {
+      const progressFile = getInstallProgressFile();
+      if (!fs.existsSync(progressFile)) {
+        return JSON.parse(JSON.stringify({ progress: '' }));
+      }
+      const content = fs.readFileSync(progressFile, 'utf-8');
+      return JSON.parse(JSON.stringify({ progress: content }));
+    } catch (error) {
+      return JSON.parse(JSON.stringify({ progress: '', error: String(error) }));
     }
   });
 

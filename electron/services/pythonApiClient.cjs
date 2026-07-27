@@ -1,27 +1,28 @@
-/**
- * Python 数据服务 HTTP API 客户端
- *
- * 封装与 Python FastAPI 数据服务的通信，提供：
- * 1. 统一的 HTTP 请求方法
- * 2. 错误处理和重试逻辑
- * 3. 健康检查
- */
-
 const http = require("http");
 
-// Python HTTP 服务配置
-const PYTHON_API_HOST = "127.0.0.1";
-const PYTHON_API_PORT = 8766;
-const PYTHON_API_BASE = `http://${PYTHON_API_HOST}:${PYTHON_API_PORT}`;
+let PYTHON_API_HOST = "127.0.0.1";
+let PYTHON_API_PORT = 8766;
 
-// 请求超时时间（毫秒）
 const DEFAULT_TIMEOUT = 5000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 500;
 
-/**
- * 检查 Python HTTP 服务是否可用
- */
+function setPort(port) {
+  if (port && typeof port === 'number') {
+    PYTHON_API_PORT = port;
+  }
+}
+
+function setHost(host) {
+  if (host && typeof host === 'string') {
+    PYTHON_API_HOST = host;
+  }
+}
+
+function getBaseUrl() {
+  return `http://${PYTHON_API_HOST}:${PYTHON_API_PORT}`;
+}
+
 async function checkPythonApiHealth() {
   return new Promise((resolve) => {
     const req = http.request(
@@ -56,9 +57,6 @@ async function checkPythonApiHealth() {
   });
 }
 
-/**
- * 等待 Python HTTP 服务就绪
- */
 async function waitForPythonApi(maxWaitMs = 15000, intervalMs = 500) {
   const startTime = Date.now();
   let attempts = 0;
@@ -77,37 +75,22 @@ async function waitForPythonApi(maxWaitMs = 15000, intervalMs = 500) {
   return false;
 }
 
-/**
- * 发送 GET 请求
- */
 async function get(path, options) {
   return request(path, { ...options, method: "GET" });
 }
 
-/**
- * 发送 POST 请求
- */
 async function post(path, body, options) {
   return request(path, { ...options, method: "POST", body });
 }
 
-/**
- * 发送 PUT 请求
- */
 async function put(path, body, options) {
   return request(path, { ...options, method: "PUT", body });
 }
 
-/**
- * 发送 DELETE 请求
- */
 async function del(path, options) {
   return request(path, { ...options, method: "DELETE" });
 }
 
-/**
- * 发送 HTTP 请求
- */
 async function request(path, options = {}) {
   const {
     method = "GET",
@@ -117,7 +100,8 @@ async function request(path, options = {}) {
     headers = {},
   } = options;
 
-  const url = path.startsWith("http") ? path : `${PYTHON_API_BASE}${path}`;
+  const base = getBaseUrl();
+  const url = path.startsWith("http") ? path : `${base}${path}`;
   let lastError = null;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -148,9 +132,6 @@ async function request(path, options = {}) {
   };
 }
 
-/**
- * 底层 HTTP 请求实现
- */
 function httpRequest(url, options) {
   return new Promise((resolve, reject) => {
     const urlObj = new URL(url);
@@ -201,9 +182,6 @@ function httpRequest(url, options) {
   });
 }
 
-/**
- * 延迟函数
- */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -215,9 +193,12 @@ module.exports = {
   post,
   put,
   delete: del,
+  setPort,
+  setHost,
+  getBaseUrl,
   config: {
-    host: PYTHON_API_HOST,
-    port: PYTHON_API_PORT,
-    baseUrl: PYTHON_API_BASE,
+    get host() { return PYTHON_API_HOST; },
+    get port() { return PYTHON_API_PORT; },
+    get baseUrl() { return getBaseUrl(); },
   },
 };
