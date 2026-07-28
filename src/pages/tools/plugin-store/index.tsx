@@ -8,6 +8,7 @@ import { useSidebarStore } from '../../../store/sidebarStore';
 import PluginService, { InstallProgress } from '../../../services/PluginService';
 import { useToastStore } from '../../../store/toastStore';
 import { PluginInfo, InstalledPlugin } from '../../../types/plugin';
+import { logError } from '../../../services/loggerService';
 
 const pluginService = new PluginService();
 
@@ -46,35 +47,43 @@ const PluginStorePage: React.FC = () => {
     return { availableVersion: available.version, githubRepo: available.githubRepo };
   }, [availablePlugins]);
 
-  const loadPlugins = useCallback(async () => {
-    setLoadError(null);
-    setIsLoading(true);
+  const loadInstalledPlugins = useCallback(async () => {
     try {
-      const [available, installed] = await Promise.all([
-        pluginService.fetchAvailablePlugins(),
-        pluginService.getInstalledPlugins(),
-      ]);
-      setAvailablePlugins(available);
+      const installed = await pluginService.getInstalledPlugins();
       setInstalledPlugins(installed);
-      
+    } catch {
+      logError('获取已安装插件失败', 'PluginStore');
+    }
+  }, [setInstalledPlugins]);
+
+  const loadAvailablePlugins = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const available = await pluginService.fetchAvailablePlugins();
+      setAvailablePlugins(available);
       if (available.length === 0) {
         setLoadError('无法连接到插件注册表，请检查网络连接');
       }
     } catch {
       setLoadError('加载插件列表失败，请检查网络连接');
       addToast({ message: '加载插件列表失败', type: 'error' });
-    } finally {
-      setIsLoading(false);
     }
-  }, [setAvailablePlugins, setInstalledPlugins, addToast, setIsLoading]);
+  }, [setAvailablePlugins, addToast]);
 
   useEffect(() => {
-    loadPlugins();
-  }, [loadPlugins]);
+    loadInstalledPlugins();
+    if (activeTab === 'explore' && availablePlugins.length === 0) {
+      loadAvailablePlugins();
+    }
+  }, [loadInstalledPlugins, loadAvailablePlugins, activeTab, availablePlugins.length]);
 
   const handleRefresh = useCallback(() => {
-    loadPlugins();
-  }, [loadPlugins]);
+    setIsLoading(true);
+    Promise.all([
+      loadInstalledPlugins(),
+      loadAvailablePlugins(),
+    ]).finally(() => setIsLoading(false));
+  }, [loadInstalledPlugins, loadAvailablePlugins, setIsLoading]);
 
   const handleInstall = useCallback(async (plugin: PluginInfo) => {
     if (!plugin.releaseUrl && !plugin.githubRepo) {
@@ -93,7 +102,7 @@ const PluginStorePage: React.FC = () => {
     
     if (result.success) {
       addToast({ message: `插件 "${plugin.name}" 安装成功`, type: 'success' });
-      await loadPlugins();
+      await loadInstalledPlugins();
     } else {
       addToast({ message: result.error || `安装 "${plugin.name}" 失败`, type: 'error' });
     }
@@ -104,7 +113,7 @@ const PluginStorePage: React.FC = () => {
       delete next[plugin.id];
       return next;
     });
-  }, [setInstallingPluginId, addToast, loadPlugins]);
+  }, [setInstallingPluginId, addToast, loadInstalledPlugins]);
 
   const handleUninstall = useCallback(async (pluginId: string) => {
     try {
@@ -112,14 +121,14 @@ const PluginStorePage: React.FC = () => {
       if (result.success) {
         removePinnedTool(pluginId);
         addToast({ message: '插件卸载成功', type: 'success' });
-        await loadPlugins();
+        await loadInstalledPlugins();
       } else {
         addToast({ message: result.error || '卸载失败', type: 'error' });
       }
     } catch {
       addToast({ message: '卸载插件时发生错误', type: 'error' });
     }
-  }, [addToast, loadPlugins, removePinnedTool]);
+  }, [addToast, loadInstalledPlugins, removePinnedTool]);
 
   const handleInstallFromFile = useCallback(async () => {
     try {
@@ -127,14 +136,14 @@ const PluginStorePage: React.FC = () => {
       if (result.canceled) return;
       if (result.success) {
         addToast({ message: '插件安装成功', type: 'success' });
-        await loadPlugins();
+        await loadInstalledPlugins();
       } else {
         addToast({ message: result.error || '安装失败', type: 'error' });
       }
     } catch {
       addToast({ message: '安装插件时发生错误', type: 'error' });
     }
-  }, [addToast, loadPlugins]);
+  }, [addToast, loadInstalledPlugins]);
 
   const handleUpdate = useCallback(async (plugin: InstalledPlugin) => {
     const available = availablePlugins.find(p => p.id === plugin.id);
@@ -154,7 +163,7 @@ const PluginStorePage: React.FC = () => {
     
     if (result.success) {
       addToast({ message: `插件 "${plugin.name}" 更新成功`, type: 'success' });
-      await loadPlugins();
+      await loadInstalledPlugins();
     } else {
       addToast({ message: result.error || `更新 "${plugin.name}" 失败`, type: 'error' });
     }
@@ -165,7 +174,7 @@ const PluginStorePage: React.FC = () => {
       delete next[plugin.id];
       return next;
     });
-  }, [setInstallingPluginId, addToast, loadPlugins, availablePlugins]);
+  }, [setInstallingPluginId, addToast, loadInstalledPlugins, availablePlugins]);
 
   const handleFileDrop = useCallback(async (file: File) => {
     try {
@@ -173,14 +182,14 @@ const PluginStorePage: React.FC = () => {
       const result = await pluginService.installFromPath(filePath);
       if (result.success) {
         addToast({ message: '插件安装成功', type: 'success' });
-        await loadPlugins();
+        await loadInstalledPlugins();
       } else {
         addToast({ message: result.error || '安装失败', type: 'error' });
       }
     } catch {
       addToast({ message: '安装插件时发生错误', type: 'error' });
     }
-  }, [addToast, loadPlugins]);
+  }, [addToast, loadInstalledPlugins]);
 
   const handleViewDetail = useCallback((plugin: PluginInfo | InstalledPlugin) => {
     setSelectedPlugin(plugin);
