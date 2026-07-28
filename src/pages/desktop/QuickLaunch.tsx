@@ -3,7 +3,7 @@ import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor } f
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { QuickLaunchCategory, QuickLaunchItem, addHomeQuickLaunchApp, isAppInHomeQuickLaunch, loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps } from '../../utils/quickLaunch';
+import { QuickLaunchCategory, QuickLaunchItem, addHomeQuickLaunchApp, isAppInHomeQuickLaunch, loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps, ensureAppIconsCached } from '../../utils/quickLaunch';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useToastStore } from '../../store/toastStore';
 import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
@@ -140,6 +140,7 @@ const QuickLaunch: React.FC = () => {
     const savedApps = localStorageService.get<QuickLaunchItem[]>(STORAGE_KEYS.QUICK_LAUNCH_APPS, []);
     if (savedApps.length > 0) {
       setTimeout(() => setApps(savedApps), 0);
+      ensureAppIconsCached(savedApps).catch(() => {});
     }
 
     const savedCategories = localStorageService.get<QuickLaunchCategory[]>(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, []);

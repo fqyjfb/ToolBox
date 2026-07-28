@@ -1,4 +1,5 @@
 import { localStorageService, STORAGE_KEYS } from '../services/localStorageService';
+import { iconCacheService } from '../services/iconCacheService';
 
 export interface QuickLaunchCategory {
   id: string;
@@ -22,6 +23,18 @@ export const getAppName = (path: string): string => {
 
 export const loadApps = (): QuickLaunchItem[] => {
   return localStorageService.get<QuickLaunchItem[]>(STORAGE_KEYS.QUICK_LAUNCH_APPS, []);
+};
+
+export const ensureAppIconsCached = async (apps: QuickLaunchItem[]): Promise<void> => {
+  for (const app of apps) {
+    if (app.icon) {
+      const dataUrl = `data:image/png;base64,${app.icon}`;
+      try {
+        await iconCacheService.setFromDataUrl(app.path, dataUrl, 'app');
+      } catch {
+      }
+    }
+  }
 };
 
 export const saveApps = (apps: QuickLaunchItem[]): void => {
@@ -53,6 +66,12 @@ export const addAppIfNotExists = async (
   }
   
   const icon = await window.electron?.getFileIcon(path) || undefined;
+  
+  if (icon) {
+    const dataUrl = `data:image/png;base64,${icon}`;
+    iconCacheService.setFromDataUrl(path, dataUrl, 'app').catch(() => {});
+  }
+  
   const newApp: QuickLaunchItem = {
     id: Date.now().toString(),
     name: getAppName(path),
@@ -110,6 +129,12 @@ export const addHomeQuickLaunchApp = (app: QuickLaunchItem): boolean => {
   
   existingApps.push(app);
   saveHomeQuickLaunchApps(existingApps);
+  
+  if (app.icon) {
+    const dataUrl = `data:image/png;base64,${app.icon}`;
+    iconCacheService.setFromDataUrl(app.path, dataUrl, 'app').catch(() => {});
+  }
+  
   return true;
 };
 

@@ -5,6 +5,7 @@ let downloadProgressCallback = null;
 let settingChangedCallback = null;
 let openAddTodoCallback = null;
 let openAddMemoCallback = null;
+let launchPluginCallback = null;
 
 const screenshotApi = {
   startScreenshotCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
@@ -47,6 +48,12 @@ ipcRenderer.on('update-download-progress', (event, progress) => {
 ipcRenderer.on('setting-changed', (event, setting) => {
   if (settingChangedCallback) {
     settingChangedCallback(setting);
+  }
+});
+
+ipcRenderer.on('launch-plugin', (event, pluginId) => {
+  if (launchPluginCallback) {
+    launchPluginCallback(pluginId);
   }
 });
 
@@ -230,6 +237,9 @@ contextBridge.exposeInMainWorld('electron', {
   },
   onOpenAddMemo: (callback) => {
     openAddMemoCallback = callback;
+  },
+  onLaunchPlugin: (callback) => {
+    launchPluginCallback = callback;
   },
   ipcRenderer: {
     send: (channel, ...args) => ipcRenderer.send(channel, ...args),

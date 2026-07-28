@@ -237,6 +237,205 @@ function getExtensionsDir() {
   return EXTENSIONS_DIR;
 }
 
+async function openPluginWindow(pluginId) {
+  try {
+    const existingWindow = pluginWindows.get(pluginId);
+    if (existingWindow && !existingWindow.isDestroyed()) {
+      if (existingWindow.isMinimized()) {
+        existingWindow.restore();
+      }
+      existingWindow.show();
+      existingWindow.focus();
+      return { success: true };
+    }
+
+    const extensionsDir = getExtensionsDir();
+    const pluginDir = path.join(extensionsDir, pluginId);
+    const manifestPath = path.join(pluginDir, 'manifest.json');
+    
+    if (!fs.existsSync(manifestPath)) {
+      return { success: false, error: 'Plugin not found' };
+    }
+
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    const entryPath = path.join(pluginDir, manifest.entry || 'dist/index.js');
+
+    if (!fs.existsSync(entryPath)) {
+      return { success: false, error: 'Plugin entry not found' };
+    }
+
+    const pluginWindow = new BrowserWindow({
+      width: manifest.width || 800,
+      height: manifest.height || 600,
+      minWidth: 400,
+      minHeight: 300,
+      frame: false,
+      transparent: false,
+      alwaysOnTop: true,
+      modal: false,
+      resizable: true,
+      skipTaskbar: false,
+      show: false,
+      webPreferences: {
+        preload: path.join(__dirname, '../preload.cjs'),
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: false,
+      },
+    });
+
+    pluginWindow.on('ready-to-show', () => {
+      pluginWindow.show();
+      pluginWindow.focus();
+      setTimeout(() => {
+        pluginWindow.setAlwaysOnTop(false);
+      }, 500);
+    });
+
+    pluginWindows.set(pluginId, pluginWindow);
+
+    const entryUrl = pathToFileURL(entryPath).href;
+    
+    const themeConfigPath = path.join(app.getPath('userData'), 'config.json');
+    let isDark = false;
+    try {
+      if (fs.existsSync(themeConfigPath)) {
+        const config = JSON.parse(fs.readFileSync(themeConfigPath, 'utf-8'));
+        isDark = config.theme === 'dark' || config.isDark === true;
+      } else {
+        const theme = localStorageService?.getString?.('theme') || 
+                      localStorageService?.getString?.('theme-isDark');
+        isDark = theme === 'dark' || (theme && JSON.parse(theme) === true);
+      }
+    } catch { /* ignore */ }
+
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="zh-CN"${isDark ? ' class="dark"' : ''}>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${manifest.name}</title>
+          <script>
+            tailwind.config = {
+              darkMode: 'class',
+              theme: {
+                extend: {
+                  colors: {
+                    primary: '#059669',
+                    'bg-primary': '#059669',
+                  }
+                }
+              }
+            }
+          </script>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
+            .plugin-header { height: 40px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; -webkit-app-region: drag; }
+            .dark .plugin-header { background: #1f2937; border-bottom-color: #374151; }
+            .plugin-header-title { font-size: 14px; font-weight: 500; color: #374151; }
+            .dark .plugin-header-title { color: #e5e7eb; }
+            .plugin-header-controls { display: flex; gap: 8px; -webkit-app-region: no-drag; }
+            .plugin-header-controls button { background: none; border: none; cursor: pointer; padding: 6px; color: #6b7280; border-radius: 6px; transition-all duration-300; }
+            .plugin-header-controls button:hover { color: #374151; background: #e5e7eb; }
+            .dark .plugin-header-controls button:hover { color: #f3f4f6; background: #374151; }
+            .plugin-header-controls button.close-btn:hover { color: #dc2626; background: #fee2e2; }
+            .dark .plugin-header-controls button.close-btn:hover { color: #f87171; background: #7f1d1d; }
+            .plugin-content { height: calc(100vh - 40px); overflow-y: auto; }
+            .error-panel { padding: 20px; background: #fef2f2; color: #b91c1c; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
+            #root { height: 100%; }
+          </style>
+        </head>
+        <body class="${isDark ? 'dark' : ''}">
+          <div class="plugin-header">
+            <span class="plugin-header-title">${manifest.name}</span>
+            <div class="plugin-header-controls">
+              <button onclick="window.electron?.plugin?.minimizeWindow()" title="最小化">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg>
+              </button>
+              <button onclick="window.electron?.plugin?.maximizeWindow()" title="最大化">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+              </button>
+              <button class="close-btn" onclick="window.electron?.plugin?.closeWindow()" title="关闭">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+              </button>
+            </div>
+          </div>
+          <div class="plugin-content">
+            <div id="root"></div>
+          </div>
+          <div id="error-panel"></div>
+          <script>
+            window.__PLUGIN_DATA__ = ${JSON.stringify({ pluginId, pluginName: manifest.name, manifest, isDark, pluginDir })};
+            
+            window.onerror = function(message, source, lineno, colno, error) {
+              var panel = document.getElementById('error-panel');
+              if (panel) {
+                panel.className = 'error-panel';
+                panel.innerHTML += 'Error: ' + message + '<br>Source: ' + source + '<br>Line: ' + lineno + '<br><br>';
+              }
+              console.error('Plugin error:', message, source, lineno, error);
+              return true;
+            };
+            
+            window.addEventListener('error', function(e) {
+              var panel = document.getElementById('error-panel');
+              if (panel) {
+                panel.className = 'error-panel';
+                panel.innerHTML += 'Error Event: ' + e.message + '<br>';
+              }
+              console.error('Plugin error event:', e);
+            });
+          </script>
+          <script>
+            try {
+              var script = document.createElement('script');
+              script.src = '${entryUrl}';
+              script.onload = function() {
+                console.log('Plugin script loaded successfully');
+              };
+              script.onerror = function() {
+                var panel = document.getElementById('error-panel');
+                if (panel) {
+                  panel.className = 'error-panel';
+                  panel.innerHTML = 'Failed to load plugin script: ' + script.src;
+                }
+                console.error('Failed to load plugin script:', script.src);
+              };
+              document.body.appendChild(script);
+            } catch (e) {
+              var panel = document.getElementById('error-panel');
+              if (panel) {
+                panel.className = 'error-panel';
+                panel.innerHTML = 'Error loading plugin: ' + e.message;
+              }
+              console.error('Error loading plugin:', e);
+            }
+          </script>
+        </body>
+        </html>
+      `;
+
+    const tempHtmlPath = path.join(pluginDir, 'plugin-window.html');
+    fs.writeFileSync(tempHtmlPath, htmlContent);
+    
+    pluginWindow.loadFile(tempHtmlPath);
+
+    pluginWindow.on('closed', () => {
+      pluginWindows.delete(pluginId);
+      if (fs.existsSync(tempHtmlPath)) {
+        fs.unlinkSync(tempHtmlPath);
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 function loadConfig() {
   try {
     if (fs.existsSync(CONFIG_FILE)) {
@@ -542,204 +741,7 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
   });
 
   ipcMain.handle('plugin:open-window', async (_event, { pluginId }) => {
-    try {
-      const existingWindow = pluginWindows.get(pluginId);
-      if (existingWindow && !existingWindow.isDestroyed()) {
-        if (existingWindow.isMinimized()) {
-          existingWindow.restore();
-        }
-        existingWindow.show();
-        existingWindow.focus();
-        return { success: true };
-      }
-
-      const extensionsDir = getExtensionsDir();
-      const pluginDir = path.join(extensionsDir, pluginId);
-      const manifestPath = path.join(pluginDir, 'manifest.json');
-      
-      if (!fs.existsSync(manifestPath)) {
-        return { success: false, error: 'Plugin not found' };
-      }
-
-      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-      const entryPath = path.join(pluginDir, manifest.entry || 'dist/index.js');
-
-      if (!fs.existsSync(entryPath)) {
-        return { success: false, error: 'Plugin entry not found' };
-      }
-
-      const mainWindow = require('../window/mainWindow.cjs').getMainWindow();
-      
-      const pluginWindow = new BrowserWindow({
-        width: manifest.width || 800,
-        height: manifest.height || 600,
-        minWidth: 400,
-        minHeight: 300,
-        frame: false,
-        transparent: false,
-        alwaysOnTop: true,
-        modal: false,
-        resizable: true,
-        skipTaskbar: false,
-        show: false,
-        webPreferences: {
-          preload: path.join(__dirname, '../preload.cjs'),
-          nodeIntegration: false,
-          contextIsolation: true,
-          sandbox: false,
-        },
-      });
-
-      pluginWindow.on('ready-to-show', () => {
-        pluginWindow.show();
-        pluginWindow.focus();
-        setTimeout(() => {
-          pluginWindow.setAlwaysOnTop(false);
-        }, 500);
-      });
-
-      pluginWindows.set(pluginId, pluginWindow);
-
-      const entryUrl = pathToFileURL(entryPath).href;
-      
-      const themeConfigPath = path.join(app.getPath('userData'), 'config.json');
-      let isDark = false;
-      try {
-        if (fs.existsSync(themeConfigPath)) {
-          const config = JSON.parse(fs.readFileSync(themeConfigPath, 'utf-8'));
-          isDark = config.theme === 'dark' || config.isDark === true;
-        } else {
-          const theme = localStorageService?.getString?.('theme') || 
-                        localStorageService?.getString?.('theme-isDark');
-          isDark = theme === 'dark' || (theme && JSON.parse(theme) === true);
-        }
-      } catch { /* ignore */ }
-
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html lang="zh-CN"${isDark ? ' class="dark"' : ''}>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${manifest.name}</title>
-          <script>
-            tailwind.config = {
-              darkMode: 'class',
-              theme: {
-                extend: {
-                  colors: {
-                    primary: '#059669',
-                    'bg-primary': '#059669',
-                  }
-                }
-              }
-            }
-          </script>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
-            .plugin-header { height: 40px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; -webkit-app-region: drag; }
-            .dark .plugin-header { background: #1f2937; border-bottom-color: #374151; }
-            .plugin-header-title { font-size: 14px; font-weight: 500; color: #374151; }
-            .dark .plugin-header-title { color: #e5e7eb; }
-            .plugin-header-controls { display: flex; gap: 8px; -webkit-app-region: no-drag; }
-            .plugin-header-controls button { background: none; border: none; cursor: pointer; padding: 6px; color: #6b7280; border-radius: 6px; transition-all duration-300; }
-            .plugin-header-controls button:hover { color: #374151; background: #e5e7eb; }
-            .dark .plugin-header-controls button:hover { color: #f3f4f6; background: #374151; }
-            .plugin-header-controls button.close-btn:hover { color: #dc2626; background: #fee2e2; }
-            .dark .plugin-header-controls button.close-btn:hover { color: #f87171; background: #7f1d1d; }
-            .plugin-content { height: calc(100vh - 40px); overflow-y: auto; }
-            .error-panel { padding: 20px; background: #fef2f2; color: #b91c1c; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
-            #root { height: 100%; }
-          </style>
-        </head>
-        <body class="${isDark ? 'dark' : ''}">
-          <div class="plugin-header">
-            <span class="plugin-header-title">${manifest.name}</span>
-            <div class="plugin-header-controls">
-              <button onclick="window.electron?.plugin?.minimizeWindow()" title="最小化">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg>
-              </button>
-              <button onclick="window.electron?.plugin?.maximizeWindow()" title="最大化">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
-              </button>
-              <button class="close-btn" onclick="window.electron?.plugin?.closeWindow()" title="关闭">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
-              </button>
-            </div>
-          </div>
-          <div class="plugin-content">
-            <div id="root"></div>
-          </div>
-          <div id="error-panel"></div>
-          <script>
-            window.__PLUGIN_DATA__ = ${JSON.stringify({ pluginId, pluginName: manifest.name, manifest, isDark, pluginDir })};
-            
-            window.onerror = function(message, source, lineno, colno, error) {
-              var panel = document.getElementById('error-panel');
-              if (panel) {
-                panel.className = 'error-panel';
-                panel.innerHTML += 'Error: ' + message + '<br>Source: ' + source + '<br>Line: ' + lineno + '<br><br>';
-              }
-              console.error('Plugin error:', message, source, lineno, error);
-              return true;
-            };
-            
-            window.addEventListener('error', function(e) {
-              var panel = document.getElementById('error-panel');
-              if (panel) {
-                panel.className = 'error-panel';
-                panel.innerHTML += 'Error Event: ' + e.message + '<br>';
-              }
-              console.error('Plugin error event:', e);
-            });
-          </script>
-          <script>
-            try {
-              var script = document.createElement('script');
-              script.src = '${entryUrl}';
-              script.onload = function() {
-                console.log('Plugin script loaded successfully');
-              };
-              script.onerror = function() {
-                var panel = document.getElementById('error-panel');
-                if (panel) {
-                  panel.className = 'error-panel';
-                  panel.innerHTML = 'Failed to load plugin script: ' + script.src;
-                }
-                console.error('Failed to load plugin script:', script.src);
-              };
-              document.body.appendChild(script);
-            } catch (e) {
-              var panel = document.getElementById('error-panel');
-              if (panel) {
-                panel.className = 'error-panel';
-                panel.innerHTML = 'Error loading plugin: ' + e.message;
-              }
-              console.error('Error loading plugin:', e);
-            }
-          </script>
-        </body>
-        </html>
-      `;
-
-      const tempHtmlPath = path.join(pluginDir, 'plugin-window.html');
-      fs.writeFileSync(tempHtmlPath, htmlContent);
-      
-      pluginWindow.loadFile(tempHtmlPath);
-
-      pluginWindow.on('closed', () => {
-        pluginWindows.delete(pluginId);
-        if (fs.existsSync(tempHtmlPath)) {
-          fs.unlinkSync(tempHtmlPath);
-        }
-      });
-
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+    return openPluginWindow(pluginId);
   });
 
   ipcMain.on('plugin-window-minimize', (event) => {
@@ -1493,4 +1495,5 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
 
 module.exports = {
   registerPluginIpc,
+  openPluginWindow,
 };

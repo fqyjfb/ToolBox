@@ -2,6 +2,7 @@ import React from 'react';
 import { Download, Pin, PinOff, ExternalLink, ChevronRight, Play, RefreshCw } from 'lucide-react';
 import { PluginInfo, InstalledPlugin } from '../../types/plugin';
 import { iconMap } from '../../utils/iconMap';
+import CachedPluginIcon from './CachedPluginIcon';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { pluginApi } from '../../services/pluginApi';
@@ -32,7 +33,6 @@ const PluginCard: React.FC<PluginCardProps> = ({
   onUninstall,
   onViewDetail,
 }) => {
-  const [iconError, setIconError] = React.useState(false);
   const Icon = iconMap[plugin.iconName] || iconMap.Package;
   const pinnedToolIds = useSidebarStore((state) => state.pinnedToolIds);
   const isInSidebar = pinnedToolIds.includes(plugin.id);
@@ -59,15 +59,15 @@ const PluginCard: React.FC<PluginCardProps> = ({
         <div
         className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-700"
       >
-        {plugin.iconUrl && !iconError && (
-          <img
-            src={plugin.iconUrl}
-            alt={plugin.name}
+        {plugin.iconUrl ? (
+          <CachedPluginIcon
+            url={plugin.iconUrl}
+            name={plugin.name}
+            type="plugin"
             className="w-full h-full object-contain"
-            onError={() => setIconError(true)}
+            fallbackIcon={<Icon className="w-5 h-5 text-gray-600 dark:text-gray-300" />}
           />
-        )}
-        {(!plugin.iconUrl || iconError) && (
+        ) : (
           <Icon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         )}
       </div>

@@ -30,8 +30,17 @@ function initIcons() {
 
 const defaultFloatIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 16 16"><path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471z" /></svg>';
 
-function getIconByName(name) {
+function getIconByName(name, item) {
   if (!name) return '';
+  
+  // Handle plugin icon type
+  if (name.startsWith('plugin:')) {
+    if (item && item.path) {
+      return '<img src="' + item.path + '" class="app-icon plugin-icon" />';
+    }
+    const pluginId = name.substring(7);
+    return '<span class="plugin-fallback-icon">插件</span>';
+  }
   
   if (name.startsWith('data:image/')) {
     return '<img src="' + name + '" class="app-icon" />';
@@ -54,7 +63,7 @@ function renderFloatBall() {
       tooltipContainer.innerHTML = '<div class="tooltip-item"><span style="color: #666; font-size: 12px;">暂无配置</span></div>';
     } else {
       const itemsHTML = floatConfig.map((item, index) => {
-        const iconHTML = getIconByName(item.icon);
+        const iconHTML = getIconByName(item.icon, item);
         if (iconHTML) {
           return '<div class="tooltip-item" data-index="' + index + '" title="' + item.name + '">' + iconHTML + '<span class="tooltip-label">' + item.name + '</span></div>';
         } else {
@@ -113,6 +122,11 @@ function handleItemClick(e) {
     const appPath = configItem.path || '';
     if (appPath) {
       actionToSend = 'open-app:' + appPath;
+    }
+  } else if (configItem.type === 'plugin') {
+    const pluginId = configItem.action;
+    if (pluginId) {
+      actionToSend = 'plugin:' + pluginId;
     }
   } else {
     actionToSend = configItem.action || '';

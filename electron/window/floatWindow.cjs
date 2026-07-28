@@ -170,6 +170,16 @@ const registerFloatIpcHandlers = () => {
       require('electron').shell.openPath(appPath).catch(err => {});
       return;
     }
+    
+    if (action.startsWith('plugin:')) {
+      const pluginId = action.replace('plugin:', '');
+      checkLockAndShow(() => {
+        const { openPluginWindow } = require('../ipc/pluginIpc.cjs');
+        openPluginWindow(pluginId);
+      });
+      return;
+    }
+    
     const actions = {
       home: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/'); } },
       tools: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/tools'); } },

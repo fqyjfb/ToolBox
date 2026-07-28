@@ -80,6 +80,7 @@ export const FLOAT_TYPE_OPTIONS = [
   { type: 'tool' as const, label: '工具' },
   { type: 'app' as const, label: '应用' },
   { type: 'system' as const, label: '系统' },
+  { type: 'plugin' as const, label: '插件' },
 ];
 
 export const DEFAULT_WINDOW_SIZE = { width: 1024, height: 800 };

@@ -156,6 +156,22 @@ const TrayNavigationHandler: React.FC = () => {
   return null;
 };
 
+const PluginLaunchHandler: React.FC = () => {
+  useEffect(() => {
+    const handleLaunchPlugin = (pluginId: string) => {
+      pluginApi.openPluginWindow(pluginId);
+    };
+
+    window.electron?.onLaunchPlugin?.(handleLaunchPlugin);
+
+    return () => {
+      window.electron?.onLaunchPlugin?.(() => {});
+    };
+  }, []);
+
+  return null;
+};
+
 const isMobile = (): boolean => {
   if (typeof window !== 'undefined') {
     return window.innerWidth < 768;
@@ -322,6 +338,7 @@ function App() {
           <QueryProvider>
             <Router>
             {isDesktopApp && !isStandaloneLogWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
+            {isDesktopApp && !isStandaloneLogWindow() && <PluginLaunchHandler />}
             <RecentToolsHandler />
             <Routes>
               <Route

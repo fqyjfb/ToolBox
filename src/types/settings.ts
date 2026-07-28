@@ -12,7 +12,7 @@ export interface ShortcutItem {
   name?: string;
 }
 
-export type FloatConfigType = 'nav' | 'tool' | 'app' | 'system';
+export type FloatConfigType = 'nav' | 'tool' | 'app' | 'system' | 'plugin';
 
 export interface FloatConfigItem {
   id: number;

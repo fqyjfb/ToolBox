@@ -9,7 +9,7 @@ interface FolderSelectModalProps {
 const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading }) => {
   return (
     <div className="flex h-full w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="flex flex-col items-center gap-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-xl">
+      <div className="flex flex-col items-center gap-6 rounded-2xl bg-white dark:bg-gray-800 p-8 shadow-xl">
         <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 dark:bg-primary/20">
           <FolderOpen className="h-12 w-12 text-primary" />
         </div>

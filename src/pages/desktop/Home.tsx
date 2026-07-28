@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { hotNewsApi } from '../../services/hotNews';
 import { supabase } from '../../services/supabase';
 import { websiteService } from '../../services/WebsiteService';
-import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps } from '../../utils/quickLaunch';
+import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps, ensureAppIconsCached } from '../../utils/quickLaunch';
 import { loadHomeTools } from '../../utils/homeTools';
 import { isElectron } from '../../utils/environment';
 import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
@@ -111,6 +111,9 @@ const Home: React.FC = () => {
   const fetchHomeQuickLaunchApps = useCallback(() => {
     const apps = loadHomeQuickLaunchApps();
     setHomeQuickLaunchApps(apps);
+    if (apps.length > 0) {
+      ensureAppIconsCached(apps).catch(() => {});
+    }
   }, []);
 
   const handleRemoveHomeQuickLaunch = useCallback((appId: string) => {

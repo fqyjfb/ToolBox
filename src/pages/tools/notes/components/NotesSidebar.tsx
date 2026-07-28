@@ -76,7 +76,7 @@ const FileTreeItem: React.FC<{
         ref={itemRef}
         className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${
           isSelected
-            ? 'border-l-2 border-primary bg-primary/10 text-primary'
+            ? 'bg-primary/10 text-primary'
             : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
         }`}
         style={{ paddingLeft: `${12 + depth * 16}px` }}
@@ -146,14 +146,14 @@ const CreateDialog: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-80 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-4 shadow-xl">
+      <div className="w-80 rounded-xl bg-white dark:bg-gray-800 p-4 shadow-xl">
         <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
           {type === 'folder' ? '新建文件夹' : '新建笔记'}
         </h3>
 
         <input
           type="text"
-          className="mb-4 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-primary focus:outline-none"
+          className="mb-4 w-full rounded-lg bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/30 focus:outline-none"
           placeholder={type === 'folder' ? '文件夹名称' : '笔记名称'}
           value={name}
           onChange={(e) => handleNameChange(e.target.value)}
@@ -192,7 +192,7 @@ const ExistsConfirmDialog: React.FC<{
 }> = ({ type, name, onOverwrite, onCreateCopy, onCancel }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-96 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-4 shadow-xl">
+      <div className="w-96 rounded-xl bg-white dark:bg-gray-800 p-4 shadow-xl">
         <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
           {type === 'folder' ? '文件夹已存在' : '文件已存在'}
         </h3>
@@ -210,7 +210,7 @@ const ExistsConfirmDialog: React.FC<{
             覆盖原有{type === 'folder' ? '文件夹' : '文件'}
           </button>
           <button
-            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="w-full rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={onCreateCopy}
           >
             创建副本
@@ -235,7 +235,7 @@ const DeleteConfirmDialog: React.FC<{
 }> = ({ type, name, onConfirm, onCancel }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-96 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-4 shadow-xl">
+      <div className="w-96 rounded-xl bg-white dark:bg-gray-800 p-4 shadow-xl">
         <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
           确认删除
         </h3>
@@ -494,8 +494,8 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   };
 
   return (
-    <aside className="flex h-full w-48 flex-shrink-0 flex-col border-r border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900">
-      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-600 p-3">
+    <aside className="flex h-full w-48 flex-shrink-0 flex-col bg-white dark:bg-gray-900">
+      <div className="flex items-center justify-between p-3">
         <div className="flex items-center gap-1">
           <button
             className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
@@ -554,7 +554,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         <div
           className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 mb-2 transition-colors ${
             isChatMode
-              ? 'border-l-2 border-primary bg-primary/10 text-primary'
+              ? 'bg-primary/10 text-primary'
               : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           onClick={onToggleChatMode}

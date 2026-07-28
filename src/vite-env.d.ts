@@ -77,7 +77,7 @@ interface UpdateResult {
 
 interface FloatConfigItem {
   id: number;
-  type: 'nav' | 'tool' | 'app' | 'system';
+  type: 'nav' | 'tool' | 'app' | 'system' | 'plugin';
   action: string;
   name: string;
   icon: string;
@@ -352,6 +352,7 @@ declare interface Window {
     onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean }) => void) => void;
     onOpenAddTodo: (callback: () => void) => void;
     onOpenAddMemo: (callback: () => void) => void;
+    onLaunchPlugin: (callback: (pluginId: string) => void) => void;
     ipcRenderer: {
       send: <T extends unknown[]>(channel: string, ...args: T) => void;
       on: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;

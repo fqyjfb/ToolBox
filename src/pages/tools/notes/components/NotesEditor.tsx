@@ -235,7 +235,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
           <button
             onClick={onCreateFolder}
             disabled={!onCreateFolder}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-lg bg-white dark:bg-gray-800 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FolderPlus className="h-4 w-4" />
             新建文件夹
@@ -247,7 +247,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
 
   return (
     <section className="flex flex-1 flex-col bg-white dark:bg-gray-900 min-w-0">
-      <div className="relative z-10 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-2">
+      <div className="relative z-10 flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 px-4 py-2">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm">
             {onToggleSidebar && (
@@ -306,7 +306,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
           </button>
         ) : (
           <button
-            className="flex items-center gap-1 rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-xs text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={() => selectedFile && window.electron?.openFile(selectedFile.path)}
             title="在外部打开"
           >
