@@ -8,10 +8,10 @@ let registered = false;
 function register() {
   if (registered) return;
   registered = true;
-  ipcMain.handle('sqlite:init', async () => {
+  ipcMain.handle('sqlite:init', async (_e, username) => {
     const { app } = require('electron');
     const userDataPath = app.getPath('userData');
-    await sqliteService.init(userDataPath);
+    await sqliteService.init(userDataPath, username);
     return true;
   });
 

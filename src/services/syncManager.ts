@@ -475,34 +475,21 @@ export const syncManager = {
     }
   },
 
-  async resolveConflict(userId: string, conflictId: string, keepLocal: boolean): Promise<void> {
-    const allTables = Object.values(MODULE_TABLE_MAP).flat();
+  async resolveConflict(conflict: ConflictItem, keepLocal: boolean): Promise<void> {
+    if (keepLocal) {
+      const { error } = await supabase.from(conflict.tableName)
+        .update(conflict.local)
+        .eq('id', conflict.recordId);
 
-    for (const table of allTables) {
-      const conflicts = await offlineStorage.get<ConflictItem[]>('conflicts', `${userId}_${table}`);
-      if (conflicts) {
-        const conflict = conflicts.find(c => c.id === conflictId);
-        if (conflict) {
-          if (keepLocal) {
-            const { error } = await supabase.from(conflict.tableName)
-              .update(conflict.local)
-              .eq('id', conflict.recordId);
-
-            if (!error) {
-              logInfo(`Resolved conflict: local wins for ${conflict.tableName} ${conflict.recordId}`, 'syncManager');
-            }
-          } else {
-            await offlineStorage.put(conflict.tableName, conflict.cloud);
-            logInfo(`Resolved conflict: cloud wins for ${conflict.tableName} ${conflict.recordId}`, 'syncManager');
-          }
-
-          return;
-        }
+      if (error) {
+        logError(`Failed to resolve conflict (local wins): ${conflict.tableName} ${conflict.recordId}`, 'syncManager', error);
+        throw new Error('保存本地版本失败');
       }
+      logInfo(`Resolved conflict: local wins for ${conflict.tableName} ${conflict.recordId}`, 'syncManager');
+    } else {
+      await offlineStorage.put(conflict.tableName, conflict.cloud);
+      logInfo(`Resolved conflict: cloud wins for ${conflict.tableName} ${conflict.recordId}`, 'syncManager');
     }
-
-    logError(`Conflict not found: ${conflictId}`, 'syncManager');
-    throw new Error('冲突不存在');
   },
 
   async applyPendingOperations(userId: string): Promise<void> {

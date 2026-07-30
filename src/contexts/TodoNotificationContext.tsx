@@ -11,17 +11,17 @@ interface TodoNotificationContextType {
 const TodoNotificationContext = createContext<TodoNotificationContextType | undefined>(undefined);
 
 export const TodoNotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const admin = useAuthStore((state) => state.admin);
+  const user = useAuthStore((state) => state.user);
   const [pendingCount, setPendingCount] = useState<number>(0);
 
   const fetchPendingTodos = useCallback(async () => {
-    if (!admin) return;
-    const result = await todoServiceWrapper.todo.getTodos(admin.id, undefined, 1, 100);
+    if (!user) return;
+    const result = await todoServiceWrapper.todo.getTodos(user.id, undefined, 1, 100);
     if (result.success && result.data) {
       const pending = result.data.data.filter(todo => todo.status !== '已完成' && !todo.is_completed).length;
       setTimeout(() => setPendingCount(pending), 0);
     }
-  }, [admin]);
+  }, [user]);
 
   useEffect(() => {
     fetchPendingTodos();

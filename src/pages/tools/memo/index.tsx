@@ -114,7 +114,7 @@ const SortableCategoryButton: React.FC<{
 
 const MemoPage: React.FC = () => {
   const navigate = useNavigate();
-  const admin = useAuthStore((state) => state.admin);
+  const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const addToast = useToastStore((state) => state.addToast);
   const { searchQuery, isSearchActive } = useNavSearch();
@@ -208,11 +208,11 @@ const MemoPage: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   const loadCategories = useCallbackRef(async () => {
-    if (!admin) return;
+    if (!user) return;
     
     try {
       setLoading(true);
-      const categoriesData = await memoService.getCategories(admin.id);
+      const categoriesData = await memoService.getCategories(user.id);
       setCategories(categoriesData);
     } catch (error) {
       logError('Error loading categories', 'MemoPage', error as Error);
@@ -220,13 +220,13 @@ const MemoPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [admin, addToast]);
+  }, [user, addToast]);
 
   useEffect(() => {
-    if (admin) {
+    if (user) {
       loadCategories();
     }
-  }, [admin, loadCategories]);
+  }, [user, loadCategories]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -237,8 +237,8 @@ const MemoPage: React.FC = () => {
       if (oldIndex !== -1 && newIndex !== -1) {
         const newCategories = arrayMove(categories, oldIndex, newIndex);
         setCategories(newCategories);
-        if (admin) {
-          memoService.updateCategoryOrder(admin.id, newCategories.map(c => c.id))
+        if (user) {
+          memoService.updateCategoryOrder(user.id, newCategories.map(c => c.id))
             .catch(error => {
               logError('Error updating category order', 'MemoPage', error as Error);
               addToast({ message: '更新分类排序失败', type: 'error' });
@@ -246,10 +246,10 @@ const MemoPage: React.FC = () => {
         }
       }
     }
-  }, [categories, admin, addToast]);
+  }, [categories, user, addToast]);
 
   const loadMemos = useCallbackRef(async (pageNum: number = 1, append: boolean = false) => {
-    if (!admin) return;
+    if (!user) return;
     
     try {
       if (!append) {
@@ -258,10 +258,10 @@ const MemoPage: React.FC = () => {
       let result;
       
       if (isSearchActive && searchQuery.trim()) {
-        result = await memoService.searchMemos(admin.id, searchQuery.trim(), pageNum, pageSize);
+        result = await memoService.searchMemos(user.id, searchQuery.trim(), pageNum, pageSize);
       } else {
         const categoryId = selectedCategory || undefined;
-        result = await memoService.getMemos(admin.id, categoryId, pageNum, pageSize);
+        result = await memoService.getMemos(user.id, categoryId, pageNum, pageSize);
       }
       
       if (append) {
@@ -278,14 +278,14 @@ const MemoPage: React.FC = () => {
       setLoading(false);
       setIsLoadingMore(false);
     }
-  }, [admin, isSearchActive, searchQuery, selectedCategory, pageSize, addToast]);
+  }, [user, isSearchActive, searchQuery, selectedCategory, pageSize, addToast]);
 
   useEffect(() => {
     setCurrentPage(1);
     setMemos([]);
     setHasMore(true);
     loadMemos(1, false);
-  }, [admin, selectedCategory, loadMemos]);
+  }, [user, selectedCategory, loadMemos]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -334,15 +334,15 @@ const MemoPage: React.FC = () => {
   }, []);
 
   const handleCreateCategory = async () => {
-    if (!admin || !newCategoryName.trim()) {
-      consoleLog('handleCreateCategory skipped', { admin: !!admin, hasName: !!newCategoryName.trim() });
+    if (!user || !newCategoryName.trim()) {
+      consoleLog('handleCreateCategory skipped', { user: !!user, hasName: !!newCategoryName.trim() });
       return;
     }
     
     try {
-      consoleLog('handleCreateCategory called', { adminId: admin.id, name: newCategoryName, color: newCategoryColor });
+      consoleLog('handleCreateCategory called', { userId: user.id, name: newCategoryName, color: newCategoryColor });
       setLoading(true);
-      await memoService.createCategory(admin.id, {
+      await memoService.createCategory(user.id, {
         name: newCategoryName.trim(),
         color: newCategoryColor
       });
@@ -363,11 +363,11 @@ const MemoPage: React.FC = () => {
   };
 
   const handleUpdateCategory = async () => {
-    if (!editingCategory || !admin) return;
+    if (!editingCategory || !user) return;
     
     try {
       setLoading(true);
-      await memoService.updateCategory(admin.id, editingCategory.id, {
+      await memoService.updateCategory(user.id, editingCategory.id, {
         name: editingCategory.name,
         color: editingCategory.color
       });
@@ -384,10 +384,10 @@ const MemoPage: React.FC = () => {
   };
 
   const handleDeleteCategory = useCallback(async (categoryId: string) => {
-    if (!admin) return;
+    if (!user) return;
     try {
       setLoading(true);
-      await memoService.deleteCategory(admin.id, categoryId);
+      await memoService.deleteCategory(user.id, categoryId);
       await loadCategories();
       if (selectedCategory === categoryId) {
         setSelectedCategory(null);
@@ -399,18 +399,18 @@ const MemoPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [admin, selectedCategory, addToast, loadCategories]);
+  }, [user, selectedCategory, addToast, loadCategories]);
 
   const handleCreateMemo = async () => {
-    if (!admin || !newMemoTitle.trim()) {
-      consoleLog('handleCreateMemo skipped', { admin: !!admin, hasTitle: !!newMemoTitle.trim() });
+    if (!user || !newMemoTitle.trim()) {
+      consoleLog('handleCreateMemo skipped', { user: !!user, hasTitle: !!newMemoTitle.trim() });
       return;
     }
     
     try {
-      consoleLog('handleCreateMemo called', { adminId: admin.id, title: newMemoTitle, content: newMemoContent, categoryId: newMemoCategoryId, priority: newMemoPriority });
+      consoleLog('handleCreateMemo called', { userId: user.id, title: newMemoTitle, content: newMemoContent, categoryId: newMemoCategoryId, priority: newMemoPriority });
       setLoading(true);
-      await memoService.createMemo(admin.id, {
+      await memoService.createMemo(user.id, {
         category_id: newMemoCategoryId,
         title: newMemoTitle.trim(),
         content: newMemoContent,
@@ -437,11 +437,11 @@ const MemoPage: React.FC = () => {
   };
 
   const handleUpdateMemo = async () => {
-    if (!editingMemo || !admin) return;
+    if (!editingMemo || !user) return;
     
     try {
       setLoading(true);
-      await memoService.updateMemo(admin.id, editingMemo.id, {
+      await memoService.updateMemo(user.id, editingMemo.id, {
         title: editingMemo.title,
         content: editingMemo.content,
         category_id: editingMemoCategoryId,
@@ -464,10 +464,10 @@ const MemoPage: React.FC = () => {
   };
 
   const handleDeleteMemo = useCallback(async (memoId: string) => {
-    if (!admin) return;
+    if (!user) return;
     try {
       setLoading(true);
-      await memoService.deleteMemo(admin.id, memoId);
+      await memoService.deleteMemo(user.id, memoId);
       setCurrentPage(1);
       setHasMore(true);
       await loadMemos(1, false);
@@ -478,7 +478,7 @@ const MemoPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [admin, addToast, loadMemos]);
+  }, [user, addToast, loadMemos]);
 
   const handleCopyMemoContent = useCallback(async (memo: Memo) => {
     try {

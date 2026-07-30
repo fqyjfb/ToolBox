@@ -1,0 +1,6 @@
+[build]
+  publish = "dist"
+  command = "pnpm install --frozen-lockfile --ignore-scripts && pnpm run copy:vditor && vite build"
+
+[build.environment]
+  NODE_VERSION = "20"

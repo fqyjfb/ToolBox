@@ -9,20 +9,14 @@ class IconCacheService {
     return 'caches' in window;
   }
 
-  private getCachePrefix(type: IconCacheType): string {
-    return `icon-cache:${type}:`;
-  }
-
   private toCacheKey(url: string, type: IconCacheType = 'general'): string {
-    return `${this.getCachePrefix(type)}${url}`;
+    return `https://icon-cache.local/${type}/${encodeURIComponent(url)}`;
   }
 
   private fromCacheKey(key: string): { url: string; type: IconCacheType } {
-    for (const type of ['plugin', 'app', 'general'] as IconCacheType[]) {
-      const prefix = this.getCachePrefix(type);
-      if (key.startsWith(prefix)) {
-        return { url: key.slice(prefix.length), type };
-      }
+    const match = key.match(/^https:\/\/icon-cache\.local\/(plugin|app|general)\/(.+)/);
+    if (match) {
+      return { url: decodeURIComponent(match[2]), type: match[1] as IconCacheType };
     }
     return { url: key, type: 'general' };
   }
@@ -181,10 +175,10 @@ class IconCacheService {
     try {
       const cache = await caches.open(IconCacheService.CACHE_NAME);
       const keys = await this.getAllCacheKeys(cache);
-      const prefix = this.getCachePrefix(type);
 
       for (const key of keys) {
-        if (key.startsWith(prefix)) {
+        const parsed = this.fromCacheKey(key);
+        if (parsed.type === type) {
           await cache.delete(key);
         }
       }

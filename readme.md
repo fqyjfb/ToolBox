@@ -1,27 +1,20 @@
 # ToolBox
 
-一个基于 Electron + React + TypeScript 构建的现代化桌面工具应用，集成多种实用工具和服务。
+[![Version](https://img.shields.io/badge/version-2.6.5-blue.svg)](./docs/CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
-***
+一个基于 Electron + React + TypeScript 构建的现代化桌面工具应用，集成多种实用工具和服务，支持插件扩展。
 
-## 📋 目录
+---
 
-- [功能特性](#-功能特性)
-- [技术栈](#-技术栈)
-- [快速开始](#-快速开始)
-- [可用命令](#-可用命令)
-- [项目结构](#-项目结构)
-- [文档](#-文档)
-
-***
-
-## ✨ 功能特性
+## 功能特性
 
 - **快速启动**：智能搜索、应用分类管理、浮动窗口悬浮球
 - **热点新闻**：聚合各大平台热点资讯，实时更新（头条、微博、抖音、知乎等）
 - **网址导航**：便捷的网页导航服务，支持收藏管理
 - **记事本**：本地文件系统笔记管理，支持文件夹和笔记操作
 - **浮动窗口**：桌面悬浮球，快捷访问常用功能和系统命令
+- **插件中心**：浏览、安装和管理第三方插件，持续扩展工具能力
 - **工具箱**：47 款实用工具
   - 效率工具：待办事项、备忘录、快捷回复、云剪贴板、账号管理
   - 开发工具：JSON 格式化、URL 编码/解码、哈希生成、正则测试、SQL 压缩、HTML 转文本、HEX 编解码、CSV/JSON 互转、Markdown 处理
@@ -35,15 +28,16 @@
 - **面包屑导航**：顶部导航栏显示当前位置路径，支持点击返回上级页面
 - **最近使用**：自动记录最近访问的工具，最多保留 10 条记录
 - **本地/云端双模式**：支持 SQLite 本地存储与 Supabase 云端存储切换，离线优先架构
+- **S3 文件管理**：支持阿里云 OSS、腾讯云 COS、AWS S3 等对象存储服务
 - **多平台支持**：桌面端、Web 端、移动端三端适配
 
-***
+---
 
-## 🛠️ 技术栈
+## 技术栈
 
 | 分类   | 技术             | 版本     |
 | ---- | -------------- | ------ |
-| 框架   | React          | 19.2.x |
+| 框架   | React          | 19.x   |
 | 语言   | TypeScript     | 6.x    |
 | 构建工具 | Vite           | 5.x    |
 | 桌面框架 | Electron       | 42.x   |
@@ -52,12 +46,12 @@
 | 样式   | TailwindCSS    | 3.x    |
 | 图标   | Lucide React   | 1.x    |
 | 拖拽   | @dnd-kit       | 6.x    |
-| 数据库  | SQLite / Supabase       | - / -      |
+| 数据库  | SQLite / Supabase  | - / -  |
 | 编辑器  | Vditor         | 3.x    |
 
-***
+---
 
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
 
@@ -83,13 +77,13 @@ pnpm electron:dev     # 启动 Electron 开发模式
 ### 构建生产版本
 
 ```bash
-pnpm build
-pnpm electron:build
+pnpm build            # 构建前端生产版本
+pnpm electron:build   # 构建桌面应用安装包
 ```
 
-***
+---
 
-## 📖 可用命令
+## 可用命令
 
 | 命令                    | 描述                  |
 | --------------------- | ------------------- |
@@ -102,9 +96,9 @@ pnpm electron:build
 | `pnpm electron:build` | 构建 Electron 安装包     |
 | `pnpm generate-icons` | 生成图标数据              |
 
-***
+---
 
-## 📁 项目结构
+## 项目结构
 
 ```
 ToolBox/
@@ -128,27 +122,24 @@ ToolBox/
 │   ├── config/         # 配置文件（路由、常量）
 │   └── styles/         # 全局样式
 ├── scripts/            # 脚本工具
+├── plugins-store/      # 插件仓库
 ├── docs/               # 文档目录
 └── readme.md           # 项目说明
 ```
 
-***
+---
 
-## 📚 文档
+## 文档
 
-| 文档                            | 说明     |
-| ----------------------------- | ------ |
-| [更新日志](docs/CHANGELOG.md)     | 版本更新记录 |
-| [贡献指南](docs/CONTRIBUTING.md)  | 代码贡献规范 |
+| 文档 | 说明 |
+| --- | --- |
+| [更新日志](docs/CHANGELOG.md) | 版本更新记录 |
+| [贡献指南](docs/CONTRIBUTING.md) | 代码贡献规范 |
 | [配置说明](docs/CONFIGURATION.md) | 环境配置指南 |
-| [设计规则](docs/DESIGN_RULES.md)  | 功能拓展开发规范 |
+| [设计规则](docs/DESIGN_RULES.md) | 功能拓展开发规范 |
 
-***
+---
 
-## 📄 许可证
+## 许可证
 
 MIT License
-
-***
-
-**Built with ❤️ using Electron + React + TypeScript**

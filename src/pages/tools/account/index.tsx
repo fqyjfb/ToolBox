@@ -160,7 +160,7 @@ const savePlatformOrder = (order: PlatformType[]) => {
 
 const AccountManagerPage: React.FC = () => {
   const navigate = useNavigate();
-  const admin = useAuthStore((state) => state.admin);
+  const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const [activePlatform, setActivePlatform] = useState<PlatformType>('website_account');
@@ -362,25 +362,25 @@ const AccountManagerPage: React.FC = () => {
   };
 
   const renderPanel = () => {
-    if (!admin) return null;
+    if (!user) return null;
     
     switch (activePlatform) {
       case 'website_account':
-        return <WebsitePanel userId={admin.id} ref={websitePanelRef} />;
+        return <WebsitePanel userId={user.id} ref={websitePanelRef} />;
       case 'shops':
-        return <ShopPanel userId={admin.id} ref={shopPanelRef} />;
+        return <ShopPanel userId={user.id} ref={shopPanelRef} />;
       case 'social':
-        return <SocialPanel userId={admin.id} ref={socialPanelRef} />;
+        return <SocialPanel userId={user.id} ref={socialPanelRef} />;
       case 'emails':
-        return <EmailPanel userId={admin.id} ref={emailPanelRef} />;
+        return <EmailPanel userId={user.id} ref={emailPanelRef} />;
       case 'phones':
-        return <PhonePanel userId={admin.id} ref={phonePanelRef} />;
+        return <PhonePanel userId={user.id} ref={phonePanelRef} />;
       case 'companies':
-        return <CompanyPanel userId={admin.id} ref={companyPanelRef} />;
+        return <CompanyPanel userId={user.id} ref={companyPanelRef} />;
       case 'credentials':
-        return <CredentialPanel userId={admin.id} ref={credentialPanelRef} />;
+        return <CredentialPanel userId={user.id} ref={credentialPanelRef} />;
       case 'general':
-        return <GeneralPanel userId={admin.id} ref={generalPanelRef} />;
+        return <GeneralPanel userId={user.id} ref={generalPanelRef} />;
       default:
         return null;
     }

@@ -59,7 +59,7 @@ const SortableCategoryButton: React.FC<{
 
 const QuickReplyPage: React.FC = () => {
   const navigate = useNavigate();
-  const admin = useAuthStore((state) => state.admin);
+  const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const addToast = useToastStore((state) => state.addToast);
   const { searchQuery, isSearchActive } = useNavSearch();
@@ -122,18 +122,18 @@ const QuickReplyPage: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
-    if (admin) {
+    if (user) {
       loadCategories();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin]);
+  }, [user]);
 
   const loadCategories = async () => {
-    if (!admin) return;
+    if (!user) return;
     
     try {
       setLoading(true);
-      const categoriesData = await quickReplyService.getCategories(admin.id);
+      const categoriesData = await quickReplyService.getCategories(user.id);
       setCategories(categoriesData);
     } catch (error) {
       logError('Error loading categories', 'QuickReplyPage', error as Error);
@@ -151,8 +151,8 @@ const QuickReplyPage: React.FC = () => {
       if (oldIndex !== -1 && newIndex !== -1) {
         const newCategories = arrayMove(categories, oldIndex, newIndex);
         setCategories(newCategories);
-        if (admin) {
-          quickReplyService.updateCategoryOrder(admin.id, newCategories.map(c => c.id))
+        if (user) {
+          quickReplyService.updateCategoryOrder(user.id, newCategories.map(c => c.id))
             .catch(error => {
               logError('Error updating category order', 'QuickReplyPage', error as Error);
               addToast({ message: '更新分类排序失败', type: 'error' });
@@ -160,13 +160,13 @@ const QuickReplyPage: React.FC = () => {
         }
       }
     }
-  }, [categories, admin, addToast]);
+  }, [categories, user, addToast]);
 
   useEffect(() => {
     setCurrentPage(1);
     loadQuickReplies(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin, selectedCategory]);
+  }, [user, selectedCategory]);
 
   useEffect(() => {
     loadQuickReplies(currentPage);
@@ -180,17 +180,17 @@ const QuickReplyPage: React.FC = () => {
   }, [searchQuery, isSearchActive]);
 
   const loadQuickReplies = async (pageNum: number = 1) => {
-    if (!admin) return;
+    if (!user) return;
     
     try {
       setLoading(true);
       let result;
       
       if (isSearchActive && searchQuery.trim()) {
-        result = await quickReplyService.searchQuickReplies(admin.id, searchQuery.trim(), pageNum, pageSize);
+        result = await quickReplyService.searchQuickReplies(user.id, searchQuery.trim(), pageNum, pageSize);
       } else {
         const categoryId = selectedCategory || undefined;
-        result = await quickReplyService.getQuickReplies(admin.id, categoryId, pageNum, pageSize);
+        result = await quickReplyService.getQuickReplies(user.id, categoryId, pageNum, pageSize);
       }
       
       setQuickReplies(result.list);
@@ -205,11 +205,11 @@ const QuickReplyPage: React.FC = () => {
   };
 
   const handleCreateCategory = async () => {
-    if (!admin || !newCategoryName.trim()) return;
+    if (!user || !newCategoryName.trim()) return;
     
     try {
       setLoading(true);
-      await quickReplyService.createCategory(admin.id, {
+      await quickReplyService.createCategory(user.id, {
         name: newCategoryName.trim()
       });
       await loadCategories();
@@ -225,11 +225,11 @@ const QuickReplyPage: React.FC = () => {
   };
 
   const handleUpdateCategory = async () => {
-    if (!editingCategory || !admin) return;
+    if (!editingCategory || !user) return;
     
     try {
       setLoading(true);
-      await quickReplyService.updateCategory(admin.id, editingCategory.id, {
+      await quickReplyService.updateCategory(user.id, editingCategory.id, {
         name: editingCategory.name
       });
       await loadCategories();
@@ -245,10 +245,10 @@ const QuickReplyPage: React.FC = () => {
   };
 
   const handleDeleteCategory = useCallback(async (categoryId: string) => {
-    if (!admin) return;
+    if (!user) return;
     try {
       setLoading(true);
-      await quickReplyService.deleteCategory(admin.id, categoryId);
+      await quickReplyService.deleteCategory(user.id, categoryId);
       await loadCategories();
       if (selectedCategory === categoryId) {
         setSelectedCategory(null);
@@ -260,14 +260,14 @@ const QuickReplyPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [admin, quickReplyService, selectedCategory, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, quickReplyService, selectedCategory, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreateQuickReply = async () => {
-    if (!admin || !newQuickReplyContent.trim()) return;
+    if (!user || !newQuickReplyContent.trim()) return;
     
     try {
       setLoading(true);
-      await quickReplyService.createQuickReply(admin.id, {
+      await quickReplyService.createQuickReply(user.id, {
         category_id: selectedCategory || null,
         content: newQuickReplyContent.trim()
       });
@@ -284,11 +284,11 @@ const QuickReplyPage: React.FC = () => {
   };
 
   const handleUpdateQuickReply = async () => {
-    if (!editingQuickReply || !admin) return;
+    if (!editingQuickReply || !user) return;
     
     try {
       setLoading(true);
-      await quickReplyService.updateQuickReply(admin.id, editingQuickReply.id, {
+      await quickReplyService.updateQuickReply(user.id, editingQuickReply.id, {
         content: editingQuickReply.content,
         category_id: selectedCategory || null
       });
@@ -305,10 +305,10 @@ const QuickReplyPage: React.FC = () => {
   };
 
   const handleDeleteQuickReply = useCallback(async (quickReplyId: string) => {
-    if (!admin) return;
+    if (!user) return;
     try {
       setLoading(true);
-      await quickReplyService.deleteQuickReply(admin.id, quickReplyId);
+      await quickReplyService.deleteQuickReply(user.id, quickReplyId);
       await loadQuickReplies(1);
       addToast({ message: '快捷回复删除成功', type: 'success' });
     } catch (error) {
@@ -317,7 +317,7 @@ const QuickReplyPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [admin, quickReplyService, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, quickReplyService, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCopyQuickReply = useCallback(async (content: string) => {
     try {
@@ -340,14 +340,14 @@ const QuickReplyPage: React.FC = () => {
   };
 
   const handleQuickPaste = async () => {
-    if (!admin) return;
+    if (!user) return;
     
     try {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) return;
       
       setLoading(true);
-      await quickReplyService.createQuickReply(admin.id, {
+      await quickReplyService.createQuickReply(user.id, {
         category_id: selectedCategory || null,
         content: text.trim()
       });

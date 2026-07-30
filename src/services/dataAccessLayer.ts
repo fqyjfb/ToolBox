@@ -96,6 +96,12 @@ class StorageContext {
     return () => this.listeners.delete(listener)
   }
 
+  destroy(): void {
+    this.listeners.clear()
+    this.userId = ''
+    this.storageLocation = 'cloud'
+  }
+
   async get<T>(table: string, id: string): Promise<T | null> {
     if (this.storageLocation === 'local') {
       return await offlineStorage.get<T>(table, id)
@@ -496,9 +502,20 @@ class StorageContext {
   }
 }
 
-const instances = new Map<string, StorageContext>()
+export const instances = new Map<string, StorageContext>()
 
-export function getDataAccessLayer(userId: string): StorageContext {
+export function getDataAccessLayer(userId: string, forceNew = false): StorageContext {
+  if (forceNew) {
+    const oldInstance = instances.get(userId)
+    if (oldInstance) {
+      oldInstance.destroy()
+    }
+    const newInstance = new StorageContext()
+    instances.set(userId, newInstance)
+    newInstance.setUserId(userId)
+    return newInstance
+  }
+
   let instance = instances.get(userId)
   if (!instance) {
     instance = new StorageContext()
@@ -506,4 +523,11 @@ export function getDataAccessLayer(userId: string): StorageContext {
   }
   instance.setUserId(userId)
   return instance
+}
+
+export function clearAllDataAccessInstances(): void {
+  for (const instance of instances.values()) {
+    instance.destroy()
+  }
+  instances.clear()
 }

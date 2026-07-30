@@ -12,26 +12,47 @@ const STORES = [
 ];
 
 let initPromise: Promise<void> | null = null;
+let initUsername: string | null = null;
 
 export const offlineStorage = {
-  async init(): Promise<void> {
-    if (initPromise) {
+  async init(username?: string): Promise<void> {
+    if (initUsername === username && initPromise) {
       return initPromise;
+    }
+
+    if (initUsername !== username) {
+      // 旧初始化仍在进行时，先等待其完成再切换
+      if (initPromise) {
+        try {
+          await initPromise;
+        } catch {
+          // 旧初始化失败则忽略
+        }
+      }
+      initPromise = null;
+      initUsername = username || null;
     }
 
     initPromise = (async () => {
       if (sqliteClient.isAvailable()) {
         try {
-          await sqliteClient.init();
+          await sqliteClient.init(username);
           logInfo('SQLite 本地存储初始化完成', 'offlineStorage');
         } catch (error) {
           logError('SQLite 初始化失败，将在查询时重试', 'offlineStorage', error as Error);
           initPromise = null;
+          initUsername = null;
         }
       }
     })();
 
     return initPromise;
+  },
+
+  resetInit(): void {
+    initPromise = null;
+    initUsername = null;
+    sqliteClient.reset();
   },
 
   async get<T>(storeName: string, id: string): Promise<T | null> {

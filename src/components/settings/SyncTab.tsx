@@ -309,19 +309,27 @@ const SyncTab: React.FC = () => {
 
   const handleResolveConflict = async (conflictId: string, keepLocal: boolean) => {
     if (!user?.id) return;
-    syncManager.resolveConflict(user.id, conflictId, keepLocal).then(() => {
-      setConflicts(prev => prev.filter(c => c.id !== conflictId));
-
-      if (conflicts.length === 1) {
-        setShowConflictModal(false);
-        refreshPendingOperations().then(() => {
-          setLastSyncTime(new Date().toISOString());
-          addToast({ type: 'success', message: '所有冲突已解决' });
-        });
-      }
-    }).catch(() => {
+    const conflict = conflicts.find(c => c.id === conflictId);
+    if (!conflict) {
+      addToast({ type: 'error', message: '冲突不存在' });
+      return;
+    }
+    try {
+      await syncManager.resolveConflict(conflict, keepLocal);
+      setConflicts(prev => {
+        const remaining = prev.filter(c => c.id !== conflictId);
+        if (remaining.length === 0) {
+          setShowConflictModal(false);
+          refreshPendingOperations().then(() => {
+            setLastSyncTime(new Date().toISOString());
+            addToast({ type: 'success', message: '所有冲突已解决' });
+          });
+        }
+        return remaining;
+      });
+    } catch {
       addToast({ type: 'error', message: '解决冲突失败' });
-    });
+    }
   };
 
   useEffect(() => {

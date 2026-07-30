@@ -6,13 +6,31 @@ let SQL = null;
 let db = null;
 let dbPath = null;
 let initPromise = null;
+let currentUsername = null;
 
 function getDefaultDbDir(userDataPath) {
   return path.join(userDataPath, 'ToolBox');
 }
 
-async function init(userDataPath) {
-  if (db) return Promise.resolve();
+function getDbFileName(username) {
+  if (!username) return 'ToolBox.db';
+  const sanitized = username.replace(/[\\/:*?"<>|]/g, '_').substring(0, 50);
+  return `ToolBox_${sanitized}.db`;
+}
+
+async function init(userDataPath, username) {
+  const normalizedUsername = username || null;
+
+  // 用户名变化时，先关闭现有数据库连接再重新打开
+  if (db && currentUsername !== normalizedUsername) {
+    persist();
+    db.close();
+    db = null;
+    dbPath = null;
+    initPromise = null;
+  }
+
+  if (db && currentUsername === normalizedUsername) return Promise.resolve();
   
   if (initPromise) {
     try {
@@ -23,6 +41,8 @@ async function init(userDataPath) {
     }
   }
 
+  currentUsername = normalizedUsername;
+
   initPromise = (async () => {
     SQL = await initSqlJs();
 
@@ -31,7 +51,7 @@ async function init(userDataPath) {
     const dir = userSettings.dbPath || defaultDir;
 
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    dbPath = path.join(dir, 'ToolBox.db');
+    dbPath = path.join(dir, getDbFileName(currentUsername));
 
     if (!userSettings.dbPath) {
       userSettings.dbPath = dir;
@@ -240,7 +260,7 @@ async function changePath(newPath) {
   }
   initPromise = null;
   if (!fs.existsSync(newPath)) fs.mkdirSync(newPath, { recursive: true });
-  dbPath = path.join(newPath, 'ToolBox.db');
+  dbPath = path.join(newPath, getDbFileName(currentUsername));
   db = new SQL.Database();
 
   const schemaPath = path.join(__dirname, '../schema/schema.sql');
@@ -422,6 +442,7 @@ function close() {
   }
   initPromise = null;
   dbPath = null;
+  currentUsername = null;
 }
 
 module.exports = {

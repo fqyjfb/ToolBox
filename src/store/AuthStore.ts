@@ -3,7 +3,8 @@ import { persist, type StorageValue } from 'zustand/middleware'
 import { Admin, LoginRequest, RegisterRequest, User } from '../types/auth'
 import { authService } from '../services/AuthService'
 import { logError } from '../services/loggerService'
-import { getDataAccessLayer } from '../services/dataAccessLayer'
+import { getDataAccessLayer, clearAllDataAccessInstances } from '../services/dataAccessLayer'
+import { offlineStorage } from '../services/offlineStorage'
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService'
 
 interface AuthStateData {
@@ -131,6 +132,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       handleAuthSuccess: async (user: User, admin: Admin | undefined) => {
+        // 清理所有旧的 StorageContext 实例，确保用户切换时状态完全隔离
+        clearAllDataAccessInstances();
+
+        const dbUsername = user.name || user.username || user.id;
+        await offlineStorage.init(dbUsername);
+
         const dal = getDataAccessLayer(user.id);
         await dal.init(user.id);
 
@@ -146,6 +153,8 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           await authService.logout();
+          offlineStorage.resetInit();
+          clearAllDataAccessInstances();
           set({
             user: null,
             admin: null,
@@ -154,6 +163,8 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (err) {
           logError('登出失败', 'AuthStore', err as Error);
+          offlineStorage.resetInit();
+          clearAllDataAccessInstances();
           set({
             user: null,
             admin: null,
@@ -170,6 +181,12 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authService.getCurrentUser();
           if (response.success && response.data) {
+            // 清理所有旧的 StorageContext 实例，确保用户切换时状态完全隔离
+            clearAllDataAccessInstances();
+
+            const dbUsername = response.data.name || response.data.username || response.data.id;
+            await offlineStorage.init(dbUsername);
+
             const dal = getDataAccessLayer(response.data.id);
             await dal.init(response.data.id);
 
@@ -181,6 +198,8 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false
             });
           } else {
+            offlineStorage.resetInit();
+            clearAllDataAccessInstances();
             set({
               user: null,
               admin: null,
@@ -191,6 +210,8 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error) {
           logError('获取当前用户信息失败', 'AuthStore', error instanceof Error ? error : undefined);
+          offlineStorage.resetInit();
+          clearAllDataAccessInstances();
           set({
             user: null,
             admin: null,

@@ -24,37 +24,58 @@ async function invoke(channel: string, ...args: unknown[]) {
 export class SQLiteClient {
   private initState: 'idle' | 'initializing' | 'ready' = 'idle';
   private initPromise: Promise<void> | null = null;
+  private currentUsername: string | null = null;
 
-  async init(): Promise<void> {
+  reset(): void {
+    this.initState = 'idle';
+    this.initPromise = null;
+    this.currentUsername = null;
+  }
+
+  async init(username?: string): Promise<void> {
     if (!isElectron()) return;
-    if (this.initState === 'ready') return;
-    if (this.initState === 'initializing' && this.initPromise) {
+    const normalized = username || null;
+
+    if (this.initState === 'ready' && this.currentUsername === normalized) return;
+
+    // 初始化中且用户名相同 → 等待
+    if (this.initState === 'initializing' && this.initPromise && this.currentUsername === normalized) {
       return this.initPromise;
     }
 
+    // 切换用户：等待旧初始化完成
+    if (this.initState === 'initializing' && this.initPromise) {
+      try { await this.initPromise; } catch {}
+      this.reset();
+    }
+
+    // 已就绪但用户名不同 → 重置
+    if (this.initState === 'ready') {
+      this.reset();
+    }
+
+    this.currentUsername = normalized;
     this.initState = 'initializing';
     this.initPromise = (async () => {
       try {
-        await invoke('sqlite:init');
+        await invoke('sqlite:init', normalized);
         this.initState = 'ready';
       } catch (e) {
         this.initState = 'idle';
         this.initPromise = null;
+        this.currentUsername = null;
         throw e;
       }
     })();
 
-    try {
-      await this.initPromise;
-    } catch {
-      // initPromise 已在内部重置
-    }
+    try { await this.initPromise; } catch {}
   }
 
   private async ensureReady(): Promise<void> {
     if (!isElectron()) return;
     if (this.initState === 'ready') return;
-    await this.init();
+    if (this.initState === 'initializing' && this.initPromise) return this.initPromise;
+    throw new Error('SQLite database not initialized');
   }
 
   get<T>(table: string, id: string): Promise<T | null> {

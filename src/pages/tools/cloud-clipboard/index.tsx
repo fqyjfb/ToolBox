@@ -83,7 +83,7 @@ const SortableCategoryButton: React.FC<{
 
 const CloudClipboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const admin = useAuthStore((state) => state.admin);
+  const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const addToast = useToastStore((state) => state.addToast);
   const { searchQuery, isSearchActive } = useNavSearch();
@@ -148,18 +148,18 @@ const CloudClipboardPage: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
-    if (admin) {
+    if (user) {
       loadCategories();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin]);
+  }, [user]);
 
   const loadCategories = async () => {
-    if (!admin) return;
+    if (!user) return;
     
     try {
       setLoading(true);
-      const categoriesData = await clipboardService.getCategories(admin.id);
+      const categoriesData = await clipboardService.getCategories(user.id);
       setCategories(categoriesData);
     } catch (error) {
       logError('Error loading categories', 'CloudClipboardPage', error as Error);
@@ -178,8 +178,8 @@ const CloudClipboardPage: React.FC = () => {
       if (oldIndex !== -1 && newIndex !== -1) {
         const newCategories = arrayMove(categories, oldIndex, newIndex);
         setCategories(newCategories);
-        if (admin) {
-          clipboardService.updateCategoryOrder(admin.id, newCategories.map(c => c.id))
+        if (user) {
+          clipboardService.updateCategoryOrder(user.id, newCategories.map(c => c.id))
             .catch(error => {
               logError('Error updating category order', 'CloudClipboardPage', error as Error);
               addToast({ message: '更新分类排序失败', type: 'error' });
@@ -187,13 +187,13 @@ const CloudClipboardPage: React.FC = () => {
         }
       }
     }
-  }, [categories, admin, addToast]);
+  }, [categories, user, addToast]);
 
   useEffect(() => {
     setCurrentPage(1);
     loadItems(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin, selectedCategory]);
+  }, [user, selectedCategory]);
 
   useEffect(() => {
     loadItems(currentPage);
@@ -207,17 +207,17 @@ const CloudClipboardPage: React.FC = () => {
   }, [searchQuery, isSearchActive]);
 
   const loadItems = async (pageNum: number = 1) => {
-    if (!admin) return;
+    if (!user) return;
     
     try {
       setLoading(true);
       let result;
       
       if (isSearchActive && searchQuery.trim()) {
-        result = await clipboardService.searchItems(admin.id, searchQuery.trim(), pageNum, pageSize);
+        result = await clipboardService.searchItems(user.id, searchQuery.trim(), pageNum, pageSize);
       } else {
         const categoryId = selectedCategory || undefined;
-        result = await clipboardService.getItems(admin.id, categoryId, pageNum, pageSize);
+        result = await clipboardService.getItems(user.id, categoryId, pageNum, pageSize);
       }
       
       setItems(result.list);
@@ -232,11 +232,11 @@ const CloudClipboardPage: React.FC = () => {
   };
 
   const handleCreateCategory = async () => {
-    if (!admin || !newCategoryName.trim()) return;
+    if (!user || !newCategoryName.trim()) return;
     
     try {
       setLoading(true);
-      await clipboardService.createCategory(admin.id, {
+      await clipboardService.createCategory(user.id, {
         name: newCategoryName.trim()
       });
       await loadCategories();
@@ -252,11 +252,11 @@ const CloudClipboardPage: React.FC = () => {
   };
 
   const handleUpdateCategory = async () => {
-    if (!editingCategory || !admin) return;
+    if (!editingCategory || !user) return;
     
     try {
       setLoading(true);
-      await clipboardService.updateCategory(admin.id, editingCategory.id, {
+      await clipboardService.updateCategory(user.id, editingCategory.id, {
         name: editingCategory.name
       });
       await loadCategories();
@@ -272,10 +272,10 @@ const CloudClipboardPage: React.FC = () => {
   };
 
   const handleDeleteCategory = useCallback(async (categoryId: string) => {
-    if (!admin) return;
+    if (!user) return;
     try {
       setLoading(true);
-      await clipboardService.deleteCategory(admin.id, categoryId);
+      await clipboardService.deleteCategory(user.id, categoryId);
       await loadCategories();
       if (selectedCategory === categoryId) {
         setSelectedCategory(null);
@@ -287,14 +287,14 @@ const CloudClipboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [admin, clipboardService, loadCategories, selectedCategory, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, clipboardService, loadCategories, selectedCategory, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreateItem = async () => {
-    if (!admin || !newItemContent.trim()) return;
+    if (!user || !newItemContent.trim()) return;
     
     try {
       setLoading(true);
-      await clipboardService.createItem(admin.id, {
+      await clipboardService.createItem(user.id, {
         category_id: newItemCategoryId,
         content: newItemContent.trim()
       });
@@ -312,11 +312,11 @@ const CloudClipboardPage: React.FC = () => {
   };
 
   const handleUpdateItem = async () => {
-    if (!editingItem || !admin) return;
+    if (!editingItem || !user) return;
     
     try {
       setLoading(true);
-      await clipboardService.updateItem(admin.id, editingItem.id, {
+      await clipboardService.updateItem(user.id, editingItem.id, {
         content: editingItem.content,
         category_id: editingItemCategoryId
       });
@@ -334,10 +334,10 @@ const CloudClipboardPage: React.FC = () => {
   };
 
   const handleDeleteItem = useCallback(async (itemId: string) => {
-    if (!admin) return;
+    if (!user) return;
     try {
       setLoading(true);
-      await clipboardService.deleteItem(admin.id, itemId);
+      await clipboardService.deleteItem(user.id, itemId);
       await loadItems(1);
       addToast({ message: '项目删除成功', type: 'success' });
     } catch (error) {
@@ -346,7 +346,7 @@ const CloudClipboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [admin, clipboardService, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, clipboardService, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCopyItem = useCallback(async (content: string) => {
     try {
@@ -379,14 +379,14 @@ const CloudClipboardPage: React.FC = () => {
   };
 
   const handleQuickPaste = async () => {
-    if (!admin) return;
+    if (!user) return;
     
     try {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) return;
       
       setLoading(true);
-      await clipboardService.createItem(admin.id, {
+      await clipboardService.createItem(user.id, {
         category_id: selectedCategory || null,
         content: text.trim()
       });
