@@ -3,7 +3,6 @@ export interface QuickReplyCategory {
   user_id: string;
   name: string;
   parent_id: string | null;
-  order: number;
   created_at: string;
   updated_at: string;
   children?: QuickReplyCategory[];

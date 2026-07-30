@@ -138,7 +138,15 @@ class PluginApi {
 
   async openPluginWindow(pluginId: string): Promise<void> {
     try {
-      await window.electron?.plugin?.openWindow(pluginId);
+      let userId: string | null = null;
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          userId = user?.id || null;
+        }
+      } catch { /* ignore */ }
+      await window.electron?.plugin?.openWindow(pluginId, userId);
     } catch (error) {
       console.error('Failed to open plugin window:', error);
     }

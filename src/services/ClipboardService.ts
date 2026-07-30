@@ -6,9 +6,7 @@ export const clipboardService = {
   async getCategories(userId: string): Promise<ClipboardCategory[]> {
     try {
       const dal = getDataAccessLayer(userId)
-      const { data } = await dal.list<ClipboardCategory>('clipboard_categories', {
-        orderBy: { column: 'order', ascending: true }
-      })
+      const { data } = await dal.list<ClipboardCategory>('clipboard_categories')
 
       return data
     } catch (error) {
@@ -20,12 +18,8 @@ export const clipboardService = {
   async createCategory(userId: string, request: { name: string }): Promise<ClipboardCategory> {
     try {
       const dal = getDataAccessLayer(userId)
-      const { data: categories } = await dal.list<ClipboardCategory>('clipboard_categories')
-      const maxOrder = categories.length > 0 ? Math.max(...categories.map(c => c.order || 0)) : 0
-      
       const data = await dal.create<ClipboardCategory>('clipboard_categories', {
-        name: request.name,
-        order: maxOrder + 1
+        name: request.name
       })
       logInfo(`创建剪贴板分类成功: ${request.name}`, 'ClipboardService')
       return data
@@ -49,19 +43,8 @@ export const clipboardService = {
     }
   },
 
-  async updateCategoryOrder(userId: string, orderedIds: string[]): Promise<void> {
-    try {
-      const dal = getDataAccessLayer(userId)
-      for (let i = 0; i < orderedIds.length; i++) {
-        await dal.update<ClipboardCategory>('clipboard_categories', orderedIds[i], {
-          order: i + 1
-        })
-      }
-      logInfo(`更新剪贴板分类排序成功`, 'ClipboardService')
-    } catch (error) {
-      logError('更新剪贴板分类排序失败', 'ClipboardService', error as Error)
-      throw error
-    }
+  async updateCategoryOrder(_userId: string, _orderedIds: string[]): Promise<void> {
+    // 排序功能暂未实现（数据库无order字段）
   },
 
   async deleteCategory(userId: string, categoryId: string): Promise<void> {

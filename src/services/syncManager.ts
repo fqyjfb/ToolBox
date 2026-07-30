@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { offlineStorage } from './offlineStorage';
+import { getDataAccessLayer } from './dataAccessLayer';
 import { logError, logInfo } from './loggerService';
 import {
   SyncModuleKey,
@@ -44,8 +45,25 @@ export interface SyncProgressInfo {
 export const syncManager = {
   async getSyncMetadata(userId: string): Promise<SyncMetadata | null> {
     try {
-      const metadata = await offlineStorage.get<SyncMetadata>('sync_metadata', userId);
-      if (!metadata) return null;
+      let metadata = await offlineStorage.get<SyncMetadata>('sync_metadata', userId);
+      if (!metadata) {
+        metadata = {
+          id: userId,
+          user_id: userId,
+          lastSyncTime: '1970-01-01T00:00:00Z',
+          syncEnabled: false,
+          storageLocation: 'cloud',
+          syncModules: [
+            { key: 'account', name: '账号管理', enabled: true },
+            { key: 'todo', name: '待办事项', enabled: true },
+            { key: 'quickReply', name: '快捷回复', enabled: true },
+            { key: 'clipboard', name: '云剪贴板', enabled: false },
+            { key: 'memo', name: '备忘录', enabled: true },
+          ]
+        };
+        await offlineStorage.put('sync_metadata', metadata);
+        return metadata;
+      }
 
       const defaultModules: SyncModule[] = [
         { key: 'account', name: '账号管理', enabled: true },
@@ -77,6 +95,7 @@ export const syncManager = {
   async setStorageLocation(userId: string, location: StorageLocation): Promise<void> {
     const metadata = await this.getSyncMetadata(userId) || {
       id: userId,
+      user_id: userId,
       lastSyncTime: '1970-01-01T00:00:00Z',
       syncEnabled: false,
       storageLocation: 'cloud' as StorageLocation,
@@ -89,12 +108,15 @@ export const syncManager = {
       ]
     };
 
-    const oldLocation = metadata.storageLocation;
+    const oldLocation = metadata.storageLocation || 'cloud';
     metadata.storageLocation = location;
     metadata.lastSyncTime = new Date().toISOString();
     metadata.syncModules = filterValidModules(metadata.syncModules);
 
     await offlineStorage.put('sync_metadata', metadata);
+
+    const dal = getDataAccessLayer(userId);
+    dal.setLocationMemoryOnly(location);
 
     if (location === 'local' && oldLocation === 'cloud') {
       await this.syncCloudToLocal(userId);
@@ -186,8 +208,10 @@ export const syncManager = {
   async setSyncEnabled(userId: string, enabled: boolean): Promise<void> {
     const metadata = await this.getSyncMetadata(userId) || {
       id: userId,
+      user_id: userId,
       lastSyncTime: '1970-01-01T00:00:00Z',
       syncEnabled: false,
+      storageLocation: 'cloud' as StorageLocation,
       syncModules: [
         { key: 'account', name: '账号管理', enabled: true },
         { key: 'todo', name: '待办事项', enabled: true },
@@ -203,8 +227,20 @@ export const syncManager = {
   },
 
   async toggleModuleSync(userId: string, moduleKey: SyncModuleKey, enabled: boolean): Promise<void> {
-    const metadata = await this.getSyncMetadata(userId);
-    if (!metadata) return;
+    const metadata = await this.getSyncMetadata(userId) || {
+      id: userId,
+      user_id: userId,
+      lastSyncTime: '1970-01-01T00:00:00Z',
+      syncEnabled: false,
+      storageLocation: 'cloud' as StorageLocation,
+      syncModules: [
+        { key: 'account', name: '账号管理', enabled: true },
+        { key: 'todo', name: '待办事项', enabled: true },
+        { key: 'quickReply', name: '快捷回复', enabled: true },
+        { key: 'clipboard', name: '云剪贴板', enabled: false },
+        { key: 'memo', name: '备忘录', enabled: true },
+      ]
+    };
 
     metadata.syncModules = filterValidModules(metadata.syncModules)
       .map(m => m.key === moduleKey ? { ...m, enabled } : m);
@@ -529,6 +565,7 @@ export const syncManager = {
   async setSyncOnStartupEnabled(userId: string, enabled: boolean): Promise<void> {
     const metadata = await this.getSyncMetadata(userId) || {
       id: userId,
+      user_id: userId,
       lastSyncTime: '1970-01-01T00:00:00Z',
       syncEnabled: false,
       storageLocation: 'cloud' as StorageLocation,

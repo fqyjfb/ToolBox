@@ -20,6 +20,10 @@ class StorageContext {
   private storageLocation: StorageLocation = 'cloud'
   private listeners: Set<(location: StorageLocation) => void> = new Set()
 
+  setUserId(userId: string): void {
+    this.userId = userId
+  }
+
   async init(userId: string): Promise<void> {
     this.userId = userId
     try {
@@ -30,6 +34,13 @@ class StorageContext {
       logError('存储上下文初始化失败', 'StorageContext', error as Error)
       this.storageLocation = 'cloud'
     }
+  }
+
+  setLocationMemoryOnly(location: StorageLocation): void {
+    const oldLocation = this.storageLocation
+    this.storageLocation = location
+    this.listeners.forEach(listener => listener(location))
+    logInfo(`存储位置已切换(内存): ${oldLocation} -> ${location}`, 'StorageContext')
   }
 
   getLocation(): StorageLocation {
@@ -50,8 +61,22 @@ class StorageContext {
 
     try {
       const metadata = await offlineStorage.get<SyncMetadata>('sync_metadata', this.userId)
+      const defaultMetadata: SyncMetadata = {
+        id: this.userId,
+        user_id: this.userId,
+        lastSyncTime: '1970-01-01T00:00:00Z',
+        syncEnabled: false,
+        storageLocation: location,
+        syncModules: [
+          { key: 'account', name: '账号管理', enabled: true },
+          { key: 'todo', name: '待办事项', enabled: true },
+          { key: 'quickReply', name: '快捷回复', enabled: true },
+          { key: 'clipboard', name: '云剪贴板', enabled: false },
+          { key: 'memo', name: '备忘录', enabled: true },
+        ]
+      }
       const updatedMetadata: SyncMetadata = {
-        ...metadata!,
+        ...(metadata || defaultMetadata),
         storageLocation: location,
         lastSyncTime: new Date().toISOString()
       }
@@ -105,16 +130,23 @@ class StorageContext {
       range?: { from: number; to: number }
     }
   ): Promise<{ data: T[]; total: number }> {
-    if (this.storageLocation === 'local') {
-      let data = await offlineStorage.queryByUser<T>(table, this.userId)
-      if (options?.filters) data = this.applyFilters(data, options.filters)
-      if (options?.orderBy) data = this.applyOrderBy(data, options.orderBy.column, options.orderBy.ascending ?? true)
-      const total = data.length
-      if (options?.range) data = data.slice(options.range.from, options.range.to + 1)
-      return { data, total }
+    let localData: T[] = []
+    let localQueryFailed = false
+    try {
+      localData = await offlineStorage.queryByUser<T>(table, this.userId)
+    } catch (error) {
+      localQueryFailed = true
+      logError(`本地查询失败: ${table}`, 'StorageContext', error as Error)
     }
 
-    let localData = await offlineStorage.queryByUser<T>(table, this.userId)
+    if (this.storageLocation === 'local' && !localQueryFailed) {
+      if (options?.filters) localData = this.applyFilters(localData, options.filters)
+      if (options?.orderBy) localData = this.applyOrderBy(localData, options.orderBy.column, options.orderBy.ascending ?? true)
+      const total = localData.length
+      if (options?.range) localData = localData.slice(options.range.from, options.range.to + 1)
+      return { data: localData, total }
+    }
+
     if (localData.length > 0) {
       if (options?.filters) localData = this.applyFilters(localData, options.filters)
       if (options?.orderBy) localData = this.applyOrderBy(localData, options.orderBy.column, options.orderBy.ascending ?? true)
@@ -143,7 +175,7 @@ class StorageContext {
 
       const { data, error, count } = await query
       if (error) {
-        logError(`查询失败: ${table}`, 'StorageContext', error as Error)
+        logError(`云端查询失败，返回空数据: ${table}`, 'StorageContext', error as Error)
         return { data: [], total: 0 }
       }
 
@@ -153,7 +185,7 @@ class StorageContext {
 
       return { data: data || [], total: count || 0 }
     } catch (error) {
-      logError(`查询失败: ${table}`, 'StorageContext', error as Error)
+      logError(`云端查询异常: ${table}`, 'StorageContext', error as Error)
       return { data: [], total: 0 }
     }
   }
@@ -167,9 +199,29 @@ class StorageContext {
       range?: { from: number; to: number }
     }
   ): Promise<{ data: T[]; total: number }> {
-    if (this.storageLocation === 'local') {
-      const allData = await offlineStorage.queryByUser<T>(table, this.userId)
-      const filtered = this.applySearch(allData, keyword, searchFields)
+    let localData: T[] = []
+    let localQueryFailed = false
+    try {
+      localData = await offlineStorage.queryByUser<T>(table, this.userId)
+    } catch (error) {
+      localQueryFailed = true
+      logError(`本地搜索失败: ${table}`, 'StorageContext', error as Error)
+    }
+
+    if (this.storageLocation === 'local' && !localQueryFailed) {
+      const filtered = this.applySearch(localData, keyword, searchFields)
+      if (options?.orderBy) {
+        filtered.sort((a, b) => this.compareValues(a, b, options.orderBy!.column) * (options.orderBy!.ascending ? 1 : -1))
+      }
+      const total = filtered.length
+      if (options?.range) {
+        return { data: filtered.slice(options.range.from, options.range.to + 1), total }
+      }
+      return { data: filtered, total }
+    }
+
+    if (localData.length > 0) {
+      const filtered = this.applySearch(localData, keyword, searchFields)
       if (options?.orderBy) {
         filtered.sort((a, b) => this.compareValues(a, b, options.orderBy!.column) * (options.orderBy!.ascending ? 1 : -1))
       }
@@ -195,7 +247,7 @@ class StorageContext {
 
       const { data, error, count } = await query
       if (error) {
-        logError(`搜索失败: ${table}`, 'StorageContext', error as Error)
+        logError(`云端搜索失败: ${table}`, 'StorageContext', error as Error)
         return { data: [], total: 0 }
       }
 
@@ -205,7 +257,7 @@ class StorageContext {
 
       return { data: data || [], total: count || 0 }
     } catch (error) {
-      logError(`搜索失败: ${table}`, 'StorageContext', error as Error)
+      logError(`云端搜索异常: ${table}`, 'StorageContext', error as Error)
       return { data: [], total: 0 }
     }
   }
@@ -222,11 +274,16 @@ class StorageContext {
       updated_at: new Date().toISOString()
     } as T
 
-    await offlineStorage.put(table, record)
+    try {
+      await offlineStorage.put(table, record)
+    } catch (error) {
+      logError(`本地创建记录失败，继续云端操作: ${table}`, 'StorageContext', error as Error)
+    }
 
     if (this.storageLocation === 'cloud') {
       try {
-        const { error } = await supabase.from(table).insert(record)
+        const syncedData = this.sanitizeForCloud(table, record)
+        const { error } = await supabase.from(table).insert(syncedData)
         if (error) {
           logError(`创建记录同步到云端失败: ${table}`, 'StorageContext', error as Error)
         } else {
@@ -245,16 +302,45 @@ class StorageContext {
     id: string,
     data: Partial<T>
   ): Promise<T> {
-    const existing = await offlineStorage.get<T>(table, id)
-    if (!existing) throw new Error('记录不存在')
+    let existing: T | null = null
+
+    try {
+      existing = await offlineStorage.get<T>(table, id)
+    } catch (error) {
+      logError(`本地读取记录失败，尝试云端: ${table}/${id}`, 'StorageContext', error as Error)
+    }
+
+    if (!existing && this.storageLocation === 'cloud') {
+      try {
+        const { data: cloudData, error } = await supabase
+          .from(table)
+          .select('*')
+          .eq('id', id)
+          .single()
+        if (!error && cloudData) {
+          existing = cloudData as T
+        }
+      } catch (error) {
+        logError(`云端读取记录失败: ${table}/${id}`, 'StorageContext', error as Error)
+      }
+    }
+
+    if (!existing) {
+      existing = { id, user_id: this.userId } as T
+    }
 
     const updated = { ...existing, ...data, updated_at: new Date().toISOString() } as T
 
-    await offlineStorage.put(table, updated)
+    try {
+      await offlineStorage.put(table, updated)
+    } catch (error) {
+      logError(`本地更新记录失败，继续云端操作: ${table}/${id}`, 'StorageContext', error as Error)
+    }
 
     if (this.storageLocation === 'cloud') {
       try {
-        const { error } = await supabase.from(table).update(updated).eq('id', id)
+        const syncedData = this.sanitizeForCloud(table, updated)
+        const { error } = await supabase.from(table).update(syncedData).eq('id', id)
         if (error) {
           logError(`更新记录同步到云端失败: ${table}`, 'StorageContext', error as Error)
         } else {
@@ -269,7 +355,11 @@ class StorageContext {
   }
 
   async delete(table: string, id: string): Promise<void> {
-    await offlineStorage.delete(table, id)
+    try {
+      await offlineStorage.delete(table, id)
+    } catch (error) {
+      logError(`本地删除记录失败，继续云端操作: ${table}/${id}`, 'StorageContext', error as Error)
+    }
 
     if (this.storageLocation === 'cloud') {
       try {
@@ -325,10 +415,11 @@ class StorageContext {
             .eq('id', item.id)
             .single()
 
+          const syncedItem = this.sanitizeForCloud(table, item)
           if (!data) {
-            await supabase.from(table).insert(item)
+            await supabase.from(table).insert(syncedItem)
           } else {
-            await supabase.from(table).update(item).eq('id', item.id)
+            await supabase.from(table).update(syncedItem).eq('id', item.id)
           }
         }
 
@@ -339,6 +430,22 @@ class StorageContext {
     }
 
     logInfo('本地数据同步到云端完成', 'StorageContext')
+  }
+
+  private static readonly CLOUD_STRIP_FIELDS: Record<string, string[]> = {
+    'clipboard_categories': ['order'],
+    'quick_reply_categories': ['order'],
+  }
+
+  private sanitizeForCloud<T>(table: string, data: T): T {
+    const stripFields = StorageContext.CLOUD_STRIP_FIELDS[table]
+    if (!stripFields) return data
+
+    const result = { ...(data as Record<string, unknown>) }
+    for (const field of stripFields) {
+      delete result[field]
+    }
+    return result as T
   }
 
   private applyFilters<T>(data: T[], filters: Record<string, unknown>): T[] {
@@ -397,5 +504,6 @@ export function getDataAccessLayer(userId: string): StorageContext {
     instance = new StorageContext()
     instances.set(userId, instance)
   }
+  instance.setUserId(userId)
   return instance
 }

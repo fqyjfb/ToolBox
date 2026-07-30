@@ -355,6 +355,7 @@ declare interface Window {
     onLaunchPlugin: (callback: (pluginId: string) => void) => void;
     ipcRenderer: {
       send: <T extends unknown[]>(channel: string, ...args: T) => void;
+      invoke: <T>(channel: string, ...args: unknown[]) => Promise<T>;
       on: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;
       off: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;
     };
@@ -391,8 +392,13 @@ declare interface Window {
       installFromFile: () => Promise<{ success: boolean; reason?: string; message?: string; canceled?: boolean }>;
       installFromPath: (filePath: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
       installFromGithub: (id: string, repo: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
-      openWindow: (pluginId: string) => Promise<{ success: boolean; error?: string }>;
+      openWindow: (pluginId: string, userId?: string | null) => Promise<{ success: boolean; error?: string }>;
       openExtensionsDir: () => Promise<{ success: boolean; error?: string }>;
+      storage: {
+        get: <T>(pluginId: string, userId: string, key?: string) => Promise<T | null>;
+        set: (pluginId: string, userId: string, key: string, value: unknown) => Promise<void>;
+        delete: (pluginId: string, userId: string, key?: string) => Promise<void>;
+      };
     };
   };
 }

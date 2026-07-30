@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Database, Trash2, Loader2, HardDrive, Download, Upload, AlertTriangle, BarChart3, Package } from 'lucide-react';
+import { Database, Trash2, Loader2, HardDrive, Download, Upload, AlertTriangle, BarChart3, Package, FolderOpen } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useStorageStore } from '../../store/storageStore';
 import { useAuthStore } from '../../store/AuthStore';
 import { logError, logInfo } from '../../services/loggerService';
 import { iconCacheService } from '../../services/iconCacheService';
 import { offlineStorage } from '../../services/offlineStorage';
+import { sqliteClient } from '../../services/sqliteClient';
 import { formatBytes } from '../../utils';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import SettingCard from './SettingCard';
@@ -32,7 +33,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
     refreshStorageInfo, 
     refreshStorageStats 
   } = useStorageStore();
-  const admin = useAuthStore(state => state.admin);
+  const user = useAuthStore(state => state.user);
   
   const [platformVisibility, setPlatformVisibility] = useState<PlatformVisibility | null>(null);
   const [iconCacheStats, setIconCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
@@ -50,6 +51,8 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   const [showClearUserDataConfirm, setShowClearUserDataConfirm] = useState(false);
   const [clearProgress, setClearProgress] = useState<number>(0);
   const [clearProgressMessage, setClearProgressMessage] = useState<string>('');
+  const [dbPath, setDbPath] = useState<string>('');
+  const [isChangingPath, setIsChangingPath] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refreshIconCacheStats = useCallback(async () => {
@@ -69,11 +72,23 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   const showDanger = storageUsagePercent >= STORAGE_THRESHOLD_DANGER;
 
   useEffect(() => {
-    if (!admin?.id) return;
     refreshIconCacheStats();
     refreshStorageInfo();
-    refreshStorageStats(admin.id);
-  }, [admin?.id, refreshIconCacheStats, refreshStorageInfo, refreshStorageStats]);
+    const loadDbPath = async () => {
+      try {
+        const filePath = await sqliteClient.getFilePath();
+        if (filePath) setDbPath(filePath);
+      } catch {
+        // Not available outside Electron
+      }
+    };
+    loadDbPath();
+  }, [refreshIconCacheStats, refreshStorageInfo]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    refreshStorageStats(user.id);
+  }, [user?.id, refreshStorageStats]);
 
   useEffect(() => {
     const saved = localStorageService.get<PlatformVisibility>(STORAGE_KEYS.PLATFORM_VISIBILITY, null as unknown as PlatformVisibility);
@@ -130,21 +145,21 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   };
 
   const handleClearUserData = async () => {
-    if (!admin?.id) return;
+    if (!user?.id) return;
     setShowClearUserDataConfirm(false);
     setIsClearingUserData(true);
     setClearProgress(0);
     setClearProgressMessage('');
     
     try {
-      await offlineStorage.clearByUserWithProgress(admin.id, (progress, message) => {
+      await offlineStorage.clearByUserWithProgress(user.id, (progress, message) => {
         setClearProgress(progress);
         setClearProgressMessage(message);
       });
       addToast({ type: 'success', message: '本地数据已清除' });
       logInfo('Local user data cleared', 'StorageTab');
       await refreshStorageInfo();
-      await refreshStorageStats(admin.id);
+      await refreshStorageStats(user.id);
     } catch (error) {
       logError('Failed to clear user data', 'StorageTab', error as Error);
       addToast({ type: 'error', message: '清除失败，请重试' });
@@ -156,24 +171,24 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   };
 
   const handleExportData = async () => {
-    if (!admin?.id) return;
+    if (!user?.id) return;
     setShowExportConfirm(false);
     setIsExporting(true);
     
     try {
-      const data = await offlineStorage.exportUserData(admin.id);
+      const data = await offlineStorage.exportUserData(user.id);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `toolbox-backup-${admin.id}-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `toolbox-backup-${user.id}-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
       addToast({ type: 'success', message: '数据导出成功' });
-      logInfo(`Data exported for user ${admin.id}`, 'StorageTab');
+      logInfo(`Data exported for user ${user.id}`, 'StorageTab');
     } catch (error) {
       logError('Failed to export data', 'StorageTab', error as Error);
       addToast({ type: 'error', message: '导出失败，请重试' });
@@ -183,7 +198,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   };
 
   const handleImportData = async () => {
-    if (!admin?.id || !fileInputRef.current) return;
+    if (!user?.id || !fileInputRef.current) return;
     
     const file = fileInputRef.current.files?.[0];
     if (!file) return;
@@ -193,16 +208,16 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
     
     try {
       const text = await file.text();
-      const result = await offlineStorage.importUserData(admin.id, text);
+      const result = await offlineStorage.importUserData(user.id, text);
       
       if (result.success) {
         addToast({ type: 'success', message: `数据导入成功，共导入 ${result.imported} 条记录` });
       } else {
         addToast({ type: 'warning', message: `数据导入完成，${result.imported} 成功，${result.failed} 失败` });
       }
-      logInfo(`Data imported for user ${admin.id}: ${result.imported} success, ${result.failed} failed`, 'StorageTab');
+      logInfo(`Data imported for user ${user.id}: ${result.imported} success, ${result.failed} failed`, 'StorageTab');
       await refreshStorageInfo();
-      await refreshStorageStats(admin.id);
+      await refreshStorageStats(user.id);
     } catch (error) {
       logError('Failed to import data', 'StorageTab', error as Error);
       addToast({ type: 'error', message: '导入失败，请检查文件格式' });
@@ -216,6 +231,32 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleOpenDbFolder = async () => {
+    try {
+      await sqliteClient.openDatabaseFolder();
+    } catch (error) {
+      logError('Failed to open database folder', 'StorageTab', error as Error);
+      addToast({ type: 'error', message: '无法打开存储路径' });
+    }
+  };
+
+  const handleSelectDbPath = async () => {
+    setIsChangingPath(true);
+    try {
+      const selectedPath = await sqliteClient.selectPath();
+      if (selectedPath) {
+        await sqliteClient.setPath(selectedPath);
+        setDbPath(selectedPath);
+        addToast({ type: 'success', message: '存储路径已更新，应用将重启生效' });
+      }
+    } catch (error) {
+      logError('Failed to select database path', 'StorageTab', error as Error);
+      addToast({ type: 'error', message: '路径选择失败' });
+    } finally {
+      setIsChangingPath(false);
+    }
   };
 
   const statItems = [
@@ -285,7 +326,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowClearUserDataConfirm(true)}
-            disabled={isClearingUserData || !admin?.id}
+            disabled={isClearingUserData || !user?.id}
             className="flex items-center px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isClearingUserData ? (
@@ -297,7 +338,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
           </button>
           <button
             onClick={() => setShowExportConfirm(true)}
-            disabled={isExporting || !admin?.id}
+            disabled={isExporting || !user?.id}
             className="flex items-center px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isExporting ? (
@@ -309,7 +350,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
           </button>
           <button
             onClick={handleFileSelect}
-            disabled={isImporting || !admin?.id}
+            disabled={isImporting || !user?.id}
             className="flex items-center px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isImporting ? (
@@ -322,7 +363,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
           <button
             onClick={() => { 
               refreshStorageInfo(); 
-              if (admin?.id) refreshStorageStats(admin.id); 
+              if (user?.id) refreshStorageStats(user.id); 
             }}
             disabled={isLoading || isStatsLoading}
             className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -387,6 +428,47 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </div>
           </div>
         )}
+      </div>
+
+      <div className="border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+              <HardDrive size={16} />
+            </div>
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">数据存储路径</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleOpenDbFolder}
+              disabled={!sqliteClient.isAvailable()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FolderOpen className="w-3 h-3" />
+              打开目录
+            </button>
+            <button
+              onClick={handleSelectDbPath}
+              disabled={isChangingPath || !sqliteClient.isAvailable()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isChangingPath ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <HardDrive className="w-3 h-3" />
+              )}
+              更改路径
+            </button>
+          </div>
+        </div>
+        <div className="px-4 py-3">
+          <div className="bg-gray-100 dark:bg-gray-700 rounded-md px-3 py-2 text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
+            {dbPath || '使用默认路径'}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            SQLite 数据库文件存储位置，更改路径后需重启应用生效。仅在桌面端（Electron）可用。
+          </p>
+        </div>
       </div>
 
       <div className="border-t border-gray-200 dark:border-gray-700">

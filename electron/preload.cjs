@@ -160,12 +160,20 @@ contextBridge.exposeInMainWorld('electron', {
     installFromFile: () => ipcRenderer.invoke('plugin:install-from-file'),
     installFromPath: (filePath) => ipcRenderer.invoke('plugin:install-from-path', filePath),
     installFromGithub: (id, repo) => ipcRenderer.invoke('plugin:install-from-github', { id, repo }),
-    openWindow: (pluginId) => ipcRenderer.invoke('plugin:open-window', { pluginId }),
+    openWindow: (pluginId, userId) => ipcRenderer.invoke('plugin:open-window', { pluginId, userId }),
     openExtensionsDir: () => ipcRenderer.invoke('plugin:open-extensions-dir'),
     minimizeWindow: () => ipcRenderer.send('plugin-window-minimize'),
     maximizeWindow: () => ipcRenderer.send('plugin-window-maximize'),
     closeWindow: () => ipcRenderer.send('plugin-window-close'),
     saveFile: (filePath, data) => ipcRenderer.invoke('plugin:save-file', { path: filePath, data }),
+    storage: {
+      get: (pluginId, userId, key) =>
+        ipcRenderer.invoke('sqlite:plugin:get', { pluginId, userId, key }),
+      set: (pluginId, userId, key, value) =>
+        ipcRenderer.invoke('sqlite:plugin:set', { pluginId, userId, key, value }),
+      delete: (pluginId, userId, key) =>
+        ipcRenderer.invoke('sqlite:plugin:delete', { pluginId, userId, key }),
+    },
   },
   s3: s3Api,
   screenshot: {
@@ -243,6 +251,7 @@ contextBridge.exposeInMainWorld('electron', {
   },
   ipcRenderer: {
     send: (channel, ...args) => ipcRenderer.send(channel, ...args),
+    invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
     on: (channel, listener) => ipcRenderer.on(channel, listener),
     off: (channel, listener) => ipcRenderer.off(channel, listener),
   },

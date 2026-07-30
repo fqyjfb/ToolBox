@@ -73,7 +73,7 @@ const SyncTab: React.FC = () => {
     setTotalDataCount,
   } = useSyncStore();
 
-  const admin = useAuthStore(state => state.admin);
+  const user = useAuthStore(state => state.user);
   const addToast = useToastStore(state => state.addToast);
   const [showTableStatusVisible, setShowTableStatusVisible] = useState(false);
 
@@ -92,19 +92,19 @@ const SyncTab: React.FC = () => {
   };
 
   const refreshPendingOperations = useCallback(async () => {
-    if (!admin?.id) return;
+    if (!user?.id) return;
     try {
-      const ops = await syncManager.getPendingOperations(admin.id);
+      const ops = await syncManager.getPendingOperations(user.id);
       setPendingOperationsCount(ops.length);
     } catch (error) {
       logError('获取待同步操作失败', 'SyncTab', error as Error);
     }
-  }, [admin, setPendingOperationsCount]);
+  }, [user, setPendingOperationsCount]);
 
   const loadSyncMetadata = useCallback(async () => {
-    if (!admin?.id) return;
+    if (!user?.id) return;
     try {
-      const metadata = await syncManager.getSyncMetadata(admin.id);
+      const metadata = await syncManager.getSyncMetadata(user.id);
       if (metadata) {
         setSyncEnabled(metadata.syncEnabled);
         if (metadata.lastSyncTime !== '1970-01-01T00:00:00Z') {
@@ -120,19 +120,19 @@ const SyncTab: React.FC = () => {
     } catch (error) {
       logError('加载同步配置失败', 'SyncTab', error as Error);
     }
-  }, [admin, setSyncEnabled, setLastSyncTime, setSyncModules, setStorageLocation, setSyncOnStartupEnabled]);
+  }, [user, setSyncEnabled, setLastSyncTime, setSyncModules, setStorageLocation, setSyncOnStartupEnabled]);
 
   const loadDataCounts = useCallback(async () => {
-    if (!admin?.id) return;
+    if (!user?.id) return;
     try {
-      const counts = await syncManager.getTableDataCounts(admin.id);
+      const counts = await syncManager.getTableDataCounts(user.id);
       setTableDataCounts(counts);
       const total = counts.reduce((sum, c) => sum + c.count, 0);
       setTotalDataCount(total);
     } catch (error) {
       logError('加载数据量统计失败', 'SyncTab', error as Error);
     }
-  }, [admin, setTableDataCounts, setTotalDataCount]);
+  }, [user, setTableDataCounts, setTotalDataCount]);
 
   const getModuleDataCount = (moduleKey: SyncModuleKey): number => {
     const tables = MODULE_TABLE_MAP[moduleKey];
@@ -142,9 +142,9 @@ const SyncTab: React.FC = () => {
   };
 
   const handleToggleSync = async (enabled: boolean) => {
-    if (!admin?.id) return;
+    if (!user?.id) return;
     try {
-      await syncManager.setSyncEnabled(admin.id, enabled);
+      await syncManager.setSyncEnabled(user.id, enabled);
       setSyncEnabled(enabled);
       if (enabled) {
         addToast({ type: 'success', message: '数据同步已启用' });
@@ -158,8 +158,8 @@ const SyncTab: React.FC = () => {
   };
 
   const handleToggleSyncOnStartup = async (enabled: boolean) => {
-    if (!admin?.id) return;
-    syncManager.setSyncOnStartupEnabled(admin.id, enabled).then(() => {
+    if (!user?.id) return;
+    syncManager.setSyncOnStartupEnabled(user.id, enabled).then(() => {
       setSyncOnStartupEnabled(enabled);
       addToast({ type: 'success', message: enabled ? '启动同步已启用' : '启动同步已禁用' });
     }).catch((error) => {
@@ -169,8 +169,8 @@ const SyncTab: React.FC = () => {
   };
 
   const handleToggleModule = async (key: SyncModuleKey, enabled: boolean) => {
-    if (!admin?.id) return;
-    syncManager.toggleModuleSync(admin.id, key, enabled).then(() => {
+    if (!user?.id) return;
+    syncManager.toggleModuleSync(user.id, key, enabled).then(() => {
       toggleModuleSync(key);
       addToast({ type: 'success', message: `${syncModules.find(m => m.key === key)?.name} ${enabled ? '已启用' : '已禁用'}` });
     }).catch((error) => {
@@ -180,12 +180,12 @@ const SyncTab: React.FC = () => {
   };
 
   const handleStorageLocationChange = async (location: StorageLocation) => {
-    if (!admin?.id || isSwitching) return;
+    if (!user?.id || isSwitching) return;
 
     setIsSwitching(true);
 
     try {
-      await syncManager.setStorageLocation(admin.id, location);
+      await syncManager.setStorageLocation(user.id, location);
       setStorageLocation(location);
 
       const message = location === 'local'
@@ -202,7 +202,7 @@ const SyncTab: React.FC = () => {
   };
 
   const handleSyncClick = async () => {
-    if (isSyncing || !isOnline || !admin?.id) return;
+    if (isSyncing || !isOnline || !user?.id) return;
 
     setIsSyncing(true);
     setSyncProgress(0);
@@ -221,7 +221,7 @@ const SyncTab: React.FC = () => {
       }));
       setTableSyncStatuses(initialStatuses);
 
-      const result = await syncManager.syncAll(admin.id, false, (progress: number, info?: SyncProgressInfo) => {
+      const result = await syncManager.syncAll(user.id, false, (progress: number, info?: SyncProgressInfo) => {
         setSyncProgress(progress);
 
         if (info) {
@@ -308,8 +308,8 @@ const SyncTab: React.FC = () => {
   };
 
   const handleResolveConflict = async (conflictId: string, keepLocal: boolean) => {
-    if (!admin?.id) return;
-    syncManager.resolveConflict(admin.id, conflictId, keepLocal).then(() => {
+    if (!user?.id) return;
+    syncManager.resolveConflict(user.id, conflictId, keepLocal).then(() => {
       setConflicts(prev => prev.filter(c => c.id !== conflictId));
 
       if (conflicts.length === 1) {
@@ -328,7 +328,7 @@ const SyncTab: React.FC = () => {
     loadSyncMetadata();
     refreshPendingOperations();
     loadDataCounts();
-  }, [admin, loadSyncMetadata, refreshPendingOperations, loadDataCounts]);
+  }, [user, loadSyncMetadata, refreshPendingOperations, loadDataCounts]);
 
   const tableSyncStatuses = useSyncStore(state => state.tableSyncStatuses);
 
@@ -421,7 +421,7 @@ const SyncTab: React.FC = () => {
                   </span>
                   <button
                     onClick={handleSyncClick}
-                    disabled={isSyncing || !isOnline || !admin?.id}
+                    disabled={isSyncing || !isOnline || !user?.id}
                     className="flex items-center px-3 py-1.5 text-xs bg-primary text-button-text rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSyncing ? (

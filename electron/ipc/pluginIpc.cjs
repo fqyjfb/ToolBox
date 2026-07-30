@@ -237,7 +237,7 @@ function getExtensionsDir() {
   return EXTENSIONS_DIR;
 }
 
-async function openPluginWindow(pluginId) {
+async function openPluginWindow(pluginId, userId) {
   try {
     const existingWindow = pluginWindows.get(pluginId);
     if (existingWindow && !existingWindow.isDestroyed()) {
@@ -368,7 +368,7 @@ async function openPluginWindow(pluginId) {
           </div>
           <div id="error-panel"></div>
           <script>
-            window.__PLUGIN_DATA__ = ${JSON.stringify({ pluginId, pluginName: manifest.name, manifest, isDark, pluginDir })};
+            window.__PLUGIN_DATA__ = ${JSON.stringify({ pluginId, pluginName: manifest.name, manifest, isDark, pluginDir, userId: userId || null })};
             
             window.onerror = function(message, source, lineno, colno, error) {
               var panel = document.getElementById('error-panel');
@@ -740,8 +740,8 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
     }
   });
 
-  ipcMain.handle('plugin:open-window', async (_event, { pluginId }) => {
-    return openPluginWindow(pluginId);
+  ipcMain.handle('plugin:open-window', async (_event, { pluginId, userId }) => {
+    return openPluginWindow(pluginId, userId);
   });
 
   ipcMain.on('plugin-window-minimize', (event) => {

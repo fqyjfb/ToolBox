@@ -2,12 +2,15 @@ const { app } = require('electron');
 const { stopPythonService } = require('./services/pythonProcessService.cjs');
 const { registerOcrIpc } = require('./ipc/ocrIpc.cjs');
 const { registerFileManagerIpc } = require('./ipc/fileManagerIpc.cjs');
+const { registerSqliteIpc } = require('./ipc/sqliteIpc.cjs');
+const { registerPluginIpc } = require('./ipc/pluginIpc.cjs');
 const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization, getMainWindow } = require('./window/mainWindow.cjs');
 const { createFloatWindow, registerFloatIpcHandlers } = require('./window/floatWindow.cjs');
 const { createTray } = require('./window/tray.cjs');
 const { registerLogIpcHandlers } = require('./logs/window.cjs');
 const { initLogger } = require('./logs/logger.cjs');
 const { loadSettings } = require('./lib/config.cjs');
+const { sqliteService } = require('./services/sqliteService.cjs');
 const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow.cjs');
 
 const DELAY_CREATE_TRAY = 500;
@@ -62,11 +65,6 @@ async function stopBackendServices() {
 
 function onWindowReady() {
   registerIpcHandlers();
-  registerOcrIpc();
-  registerFileManagerIpc();
-  registerFloatIpcHandlers();
-  registerLogIpcHandlers();
-  registerLockIpcHandlers();
 
   setTimeout(() => createTray(), DELAY_CREATE_TRAY);
 
@@ -81,6 +79,19 @@ function onWindowReady() {
 app.whenReady().then(async () => {
   initLogger();
   registerLockIpcHandlers();
+  registerSqliteIpc();
+  registerOcrIpc();
+  registerFileManagerIpc();
+  registerPluginIpc();
+  registerFloatIpcHandlers();
+  registerLogIpcHandlers();
+
+  try {
+    await sqliteService.init(app.getPath('userData'));
+    console.log('[Main] SQLite 数据库初始化完成');
+  } catch (error) {
+    console.error('[Main] SQLite 初始化失败:', error.message);
+  }
 
   const isLocked = checkLockOnStartup();
   if (!isLocked) {
@@ -104,6 +115,11 @@ app.on('activate', () => {
 app.on('before-quit', () => {
   stopBackendServices();
   stopMemoryOptimization();
+  try {
+    sqliteService.close();
+  } catch (e) {
+    console.error('[Main] SQLite 关闭失败:', e.message);
+  }
 });
 
 app.on('window-all-closed', () => {

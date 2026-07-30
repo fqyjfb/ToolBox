@@ -16,6 +16,7 @@ export interface SyncModule {
 
 export interface SyncMetadata {
   id: string;
+  user_id: string;
   lastSyncTime: string;
   syncEnabled: boolean;
   storageLocation: StorageLocation;
@@ -108,11 +109,4 @@ export const MODULE_TABLE_MAP: Record<SyncModuleKey, string[]> = {
   quickReply: ['quick_replies', 'quick_reply_categories'],
   clipboard: ['clipboard_items', 'clipboard_categories'],
   memo: ['memos', 'memo_categories'],
-};
-
-export const ENCRYPTED_FIELDS: Record<string, string[]> = {
-  website_accounts: ['password'],
-  social_accounts: ['password'],
-  shops: ['password'],
-  general_accounts: ['password'],
 };

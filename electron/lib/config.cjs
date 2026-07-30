@@ -29,6 +29,7 @@ const defaultSettings = {
   lockedAt: null,
   isAutoLockEnabled: 0,
   autoLockTimeout: 600,
+  dbPath: '',
 };
 
 const defaultFloatConfig = [
