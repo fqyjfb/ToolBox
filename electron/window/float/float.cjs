@@ -33,6 +33,11 @@ const defaultFloatIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="22" hei
 function getIconByName(name, item) {
   if (!name) return '';
   
+  // Use pre-cached icon data URL (base64) if available
+  if (item && item.iconDataUrl) {
+    return '<img src="' + item.iconDataUrl + '" class="app-icon plugin-icon" />';
+  }
+  
   // Handle plugin icon type
   if (name.startsWith('plugin:')) {
     if (item && item.path) {
@@ -228,6 +233,19 @@ function initFloatBall() {
   
   async function loadData() {
     try {
+      // Try to load config with cached icons first
+      if (window.electronAPI.getFloatConfigWithIcons) {
+        try {
+          const config = await window.electronAPI.getFloatConfigWithIcons();
+          if (config && Array.isArray(config)) {
+            floatConfig = config;
+            return;
+          }
+        } catch (e) {
+          console.warn('Failed to load config with icons, falling back to basic config');
+        }
+      }
+      // Fallback to basic config without icons
       const config = await window.electronAPI.getFloatConfig();
       floatConfig = config || [];
     } catch (error) {
@@ -238,7 +256,23 @@ function initFloatBall() {
   
   loadData();
   
-  window.electronAPI.onConfigChanged(function(newConfig) {
+  window.electronAPI.onConfigChanged(async function(newConfig) {
+    // Try to load config with icons when config changes
+    if (window.electronAPI.getFloatConfigWithIcons) {
+      try {
+        const configWithIcons = await window.electronAPI.getFloatConfigWithIcons();
+        if (configWithIcons && Array.isArray(configWithIcons)) {
+          floatConfig = configWithIcons;
+          if (isExpanded) {
+            renderFloatBall();
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to load config with icons on change');
+      }
+    }
+    // Fallback to the provided config
     floatConfig = newConfig || [];
     if (isExpanded) {
       renderFloatBall();

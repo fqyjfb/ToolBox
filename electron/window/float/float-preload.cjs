@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   resolveDroppedFiles: (paths) => ipcRenderer.invoke('float-drop-files', paths),
   openWithFiles: (files) => ipcRenderer.send('float-open-with-files', files),
   getFloatConfig: () => ipcRenderer.invoke('get-float-config'),
+  getFloatConfigWithIcons: () => ipcRenderer.invoke('get-float-config-with-icons'),
+  clearIconCache: (type) => ipcRenderer.invoke('clear-icon-cache', { type }),
   setExpanded: (expanded) => ipcRenderer.send('float-expanded', expanded),
   onConfigChanged: (callback) => {
     configChangedCallback = callback;

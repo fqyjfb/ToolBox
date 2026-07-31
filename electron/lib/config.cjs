@@ -1,15 +1,22 @@
 const { app } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { https, http } = require('follow-redirects');
 
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 const shortcutsPath = path.join(app.getPath('userData'), 'shortcuts.json');
 const floatConfigPath = path.join(app.getPath('userData'), 'floatConfig.json');
 const lockPasswordPath = path.join(app.getPath('userData'), 'lockPassword.json');
+const iconCacheDir = path.join(app.getPath('userData'), 'icon-cache');
+const iconCacheIndexPath = path.join(iconCacheDir, 'index.json');
+
+const ICON_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
 
 let settingsCache = null;
 let shortcutsCache = null;
 let floatConfigCache = null;
+let iconCacheIndex = null;
+let iconCacheInitPromise = null;
 
 const defaultSettings = {
   isWindowEdgeAdsorption: 0,
@@ -138,13 +145,232 @@ const saveFloatConfig = (config) => {
   }
 };
 
+const ensureIconCacheDir = () => {
+  if (!fs.existsSync(iconCacheDir)) {
+    fs.mkdirSync(iconCacheDir, { recursive: true });
+  }
+};
+
+const loadIconCacheIndex = () => {
+  if (iconCacheIndex) return iconCacheIndex;
+  try {
+    ensureIconCacheDir();
+    if (fs.existsSync(iconCacheIndexPath)) {
+      const data = fs.readFileSync(iconCacheIndexPath, 'utf-8');
+      iconCacheIndex = JSON.parse(data);
+    } else {
+      iconCacheIndex = { icons: {} };
+    }
+  } catch (error) {
+    console.error('Failed to load icon cache index:', error);
+    iconCacheIndex = { icons: {} };
+  }
+  return iconCacheIndex;
+};
+
+const saveIconCacheIndex = () => {
+  try {
+    ensureIconCacheDir();
+    fs.writeFileSync(iconCacheIndexPath, JSON.stringify(iconCacheIndex, null, 2));
+  } catch (error) {
+    console.error('Failed to save icon cache index:', error);
+  }
+};
+
+const generateIconHash = (url) => {
+  let hash = 0;
+  for (let i = 0; i < url.length; i++) {
+    const char = url.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+};
+
+const getCachedIconPath = (url) => {
+  const index = loadIconCacheIndex();
+  const entry = index.icons[url];
+  if (!entry) return null;
+  
+  const now = Date.now();
+  if (now - entry.timestamp > ICON_CACHE_TTL) {
+    delete index.icons[url];
+    saveIconCacheIndex();
+    return null;
+  }
+  
+  const iconFilePath = path.join(iconCacheDir, entry.file);
+  if (!fs.existsSync(iconFilePath)) {
+    delete index.icons[url];
+    saveIconCacheIndex();
+    return null;
+  }
+  
+  return iconFilePath;
+};
+
+const downloadIcon = (url) => {
+  return new Promise((resolve) => {
+    if (!url || !url.startsWith('http')) {
+      resolve(null);
+      return;
+    }
+    
+    const protocol = url.startsWith('https') ? https : http;
+    
+    const timeout = setTimeout(() => {
+      resolve(null);
+    }, 10000);
+    
+    protocol.get(url, (response) => {
+      clearTimeout(timeout);
+      
+      if (response.statusCode !== 200) {
+        resolve(null);
+        return;
+      }
+      
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => {
+        try {
+          const buffer = Buffer.concat(chunks);
+          const hash = generateIconHash(url);
+          const ext = path.extname(url.split('?')[0]) || '.png';
+          const fileName = `${hash}${ext}`;
+          const filePath = path.join(iconCacheDir, fileName);
+          
+          ensureIconCacheDir();
+          fs.writeFileSync(filePath, buffer);
+          
+          const index = loadIconCacheIndex();
+          index.icons[url] = {
+            file: fileName,
+            timestamp: Date.now(),
+            contentType: response.headers['content-type'] || 'image/png'
+          };
+          saveIconCacheIndex();
+          
+          resolve(filePath);
+        } catch (error) {
+          console.error('Failed to save icon:', error);
+          resolve(null);
+        }
+      });
+      
+      response.on('error', () => resolve(null));
+    }).on('error', () => resolve(null)).on('timeout', () => {
+      clearTimeout(timeout);
+      resolve(null);
+    });
+  });
+};
+
+const getIconDataUrl = (iconPath) => {
+  try {
+    if (!iconPath || !fs.existsSync(iconPath)) return null;
+    const buffer = fs.readFileSync(iconPath);
+    const ext = path.extname(iconPath).toLowerCase();
+    const mimeMap = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.webp': 'image/webp',
+      '.ico': 'image/x-icon'
+    };
+    const mime = mimeMap[ext] || 'image/png';
+    const base64 = buffer.toString('base64');
+    return `data:${mime};base64,${base64}`;
+  } catch (error) {
+    console.error('Failed to read icon data:', error);
+    return null;
+  }
+};
+
+const loadFloatConfigWithIcons = async () => {
+  const config = loadFloatConfig();
+  
+  const results = await Promise.all(
+    config.map(async (item) => {
+      if (item.type === 'plugin' && item.path && item.path.startsWith('http')) {
+        const cachedPath = getCachedIconPath(item.path);
+        
+        let dataUrl = null;
+        if (cachedPath) {
+          dataUrl = getIconDataUrl(cachedPath);
+        } else {
+          const downloadedPath = await downloadIcon(item.path);
+          if (downloadedPath) {
+            dataUrl = getIconDataUrl(downloadedPath);
+          }
+        }
+        
+        if (dataUrl) {
+          return { ...item, iconDataUrl: dataUrl };
+        }
+      }
+      return item;
+    })
+  );
+  
+  return results;
+};
+
+const clearExpiredIconCache = () => {
+  try {
+    const index = loadIconCacheIndex();
+    const now = Date.now();
+    let cleared = 0;
+    
+    for (const [url, entry] of Object.entries(index.icons)) {
+      if (now - entry.timestamp > ICON_CACHE_TTL) {
+        const filePath = path.join(iconCacheDir, entry.file);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+        delete index.icons[url];
+        cleared++;
+      }
+    }
+    
+    if (cleared > 0) {
+      saveIconCacheIndex();
+      console.log(`Cleared ${cleared} expired icon cache entries`);
+    }
+  } catch (error) {
+    console.error('Failed to clear expired icon cache:', error);
+  }
+};
+
+const clearAllIconCache = () => {
+  try {
+    ensureIconCacheDir();
+    const files = fs.readdirSync(iconCacheDir);
+    for (const file of files) {
+      if (file !== 'index.json') {
+        fs.unlinkSync(path.join(iconCacheDir, file));
+      }
+    }
+    iconCacheIndex = { icons: {} };
+    saveIconCacheIndex();
+    console.log('Cleared all icon cache');
+  } catch (error) {
+    console.error('Failed to clear icon cache:', error);
+  }
+};
+
 module.exports = {
   loadSettings,
   saveSettings,
   loadShortcuts,
   saveShortcuts,
   loadFloatConfig,
+  loadFloatConfigWithIcons,
   saveFloatConfig,
+  clearExpiredIconCache,
+  clearAllIconCache,
   defaultSettings,
   defaultShortcuts,
   defaultFloatConfig,

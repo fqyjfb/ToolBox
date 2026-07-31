@@ -367,7 +367,7 @@ const registerIpcHandlers = () => {
   ipcHandlersRegistered = true;
   
   const { ipcMain } = require('electron');
-  const { loadShortcuts, saveShortcuts, loadFloatConfig, saveFloatConfig, defaultFloatConfig } = require('../lib/config.cjs');
+  const { loadShortcuts, saveShortcuts, loadFloatConfig, loadFloatConfigWithIcons, saveFloatConfig, defaultFloatConfig, clearExpiredIconCache, clearAllIconCache } = require('../lib/config.cjs');
   
   const { registerPluginIpc } = require('../ipc/pluginIpc.cjs');
   registerPluginIpc();
@@ -545,6 +545,28 @@ const registerIpcHandlers = () => {
   });
 
   ipcMain.handle('get-float-config', () => { return loadFloatConfig(); });
+
+  ipcMain.handle('get-float-config-with-icons', async () => {
+    try {
+      return await loadFloatConfigWithIcons();
+    } catch (error) {
+      console.error('Failed to load float config with icons:', error);
+      return loadFloatConfig();
+    }
+  });
+
+  ipcMain.handle('clear-icon-cache', async (_event, { type }) => {
+    try {
+      if (type === 'all') {
+        clearAllIconCache();
+      } else {
+        clearExpiredIconCache();
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
 
   ipcMain.handle('update-float-config', (event, config) => {
     saveFloatConfig(config);
