@@ -3,7 +3,7 @@ const path = require('path');
 const url = require('url');
 const fs = require('fs');
 const { execFile } = require('child_process');
-const { loadSettings, saveSettings } = require('../lib/config.cjs');
+const { loadSettings, saveSettings, getNetworkConfig, invalidateNetworkConfigCache } = require('../lib/config.cjs');
 const ShortcutManager = require('../lib/shortcutManager.cjs');
 const notesService = require('../services/notesService.cjs');
 const systemInfoService = require('../services/systemInfoService.cjs');
@@ -602,8 +602,33 @@ const registerIpcHandlers = () => {
       }
     }
 
+    if (setting.name === 'networkConfig') {
+      invalidateNetworkConfigCache();
+    }
+
     mainWindow?.webContents.send('setting-changed', { name: setting.name, value: setting.value });
     return { code: 0, msg: '设置已更新' };
+  });
+
+  ipcMain.handle('network:test', async (event, { url, timeout }) => {
+    const start = Date.now();
+    if (!url || typeof url !== 'string' || !/^https?:\/\//.test(url)) {
+      return { ok: false, statusCode: 0, latencyMs: 0, error: '无效的 URL' };
+    }
+    const lib = url.startsWith('https') ? require('https') : require('http');
+    return await new Promise((resolve) => {
+      const req = lib.get(url, { timeout: timeout || 8000 }, (res) => {
+        res.destroy();
+        resolve({ ok: res.statusCode < 400, statusCode: res.statusCode, latencyMs: Date.now() - start, error: null });
+      });
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ ok: false, statusCode: 0, latencyMs: Date.now() - start, error: '请求超时' });
+      });
+      req.on('error', (err) => {
+        resolve({ ok: false, statusCode: 0, latencyMs: Date.now() - start, error: err.message });
+      });
+    });
   });
 
   ipcMain.handle('clear-cache', async () => {
@@ -688,18 +713,20 @@ const registerIpcHandlers = () => {
   });
 
   ipcMain.handle('get-version', async () => {
+    const appUpdateConfig = getNetworkConfig().appUpdate;
     let newVersion = '未知';
-    let downloadUrl = 'https://github.com/fqyjfb/ToolBox';
-    
+    let downloadUrl = appUpdateConfig.repoUrl;
+
     try {
       const https = require('https');
+      const checkUrl = new URL(appUpdateConfig.checkUrl);
       const options = {
-        hostname: 'api.github.com',
-        path: '/repos/fqyjfb/ToolBox/releases/latest',
+        hostname: checkUrl.hostname,
+        path: checkUrl.pathname + checkUrl.search,
         headers: { 'User-Agent': 'ToolBox-App' },
-        timeout: 10000
+        timeout: appUpdateConfig.requestTimeout
       };
-      
+
       const response = await new Promise((resolve, reject) => {
         const req = https.get(options, (res) => {
           if (res.statusCode === 301 || res.statusCode === 302) {
@@ -713,7 +740,7 @@ const registerIpcHandlers = () => {
               hostname: new URL(redirectUrl).hostname,
               path: new URL(redirectUrl).pathname + new URL(redirectUrl).search,
               headers: { 'User-Agent': 'ToolBox-App' },
-              timeout: 10000
+              timeout: appUpdateConfig.requestTimeout
             };
             https.get(redirectOptions, (redirectRes) => {
               let data = '';
@@ -723,27 +750,27 @@ const registerIpcHandlers = () => {
             }).on('error', reject);
             return;
           }
-          
+
           let data = '';
           res.on('data', (chunk) => { data += chunk; });
           res.on('end', () => resolve(data));
           res.on('error', reject);
         });
-        
+
         req.on('timeout', () => {
           req.destroy();
           reject(new Error('请求超时'));
         });
-        
+
         req.on('error', reject);
       });
-      
+
       const release = JSON.parse(response);
-      
+
       if (release.tag_name) {
         newVersion = release.tag_name.replace('v', '');
       }
-      
+
       if (release.assets && release.assets.length > 0) {
         const installer = release.assets.find(a => a.name.endsWith('.exe'));
         if (installer) {
@@ -753,13 +780,13 @@ const registerIpcHandlers = () => {
     } catch (error) {
       console.error('Failed to check for updates:', getUpdateErrorMessage(error));
     }
-    
+
     return {
       version: require('electron').app.getVersion(),
       electron: process.versions.electron,
       chrome: process.versions.chrome,
       newVersion: newVersion,
-      github: 'https://github.com/fqyjfb/ToolBox',
+      github: appUpdateConfig.repoUrl,
       download: downloadUrl
     };
   });

@@ -95,6 +95,8 @@ contextBridge.exposeInMainWorld('electron', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   updateSetting: (setting) => ipcRenderer.invoke('update-setting', setting),
   clearCache: () => ipcRenderer.invoke('clear-cache'),
+  clearIconCache: (type) => ipcRenderer.invoke('clear-icon-cache', { type }),
+  networkTest: (payload) => ipcRenderer.invoke('network:test', payload),
   getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
   openUserDataFolder: () => ipcRenderer.invoke('open-user-data-folder'),
   getShortcuts: () => ipcRenderer.invoke('get-shortcuts'),

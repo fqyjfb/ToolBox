@@ -17,6 +17,82 @@ let shortcutsCache = null;
 let floatConfigCache = null;
 let iconCacheIndex = null;
 let iconCacheInitPromise = null;
+let cachedNetworkConfig = null;
+
+const defaultNetworkConfig = {
+  appUpdate: {
+    checkUrl: 'https://api.github.com/repos/fqyjfb/ToolBox/releases/latest',
+    repoUrl: 'https://github.com/fqyjfb/ToolBox',
+    requestTimeout: 10000,
+  },
+  hotNews: {
+    primaryUrl: 'https://60s.viki.moe/v2',
+    fallbackUrl: 'https://60s.mizhoubaobei.top/v2',
+    requestTimeout: 15000,
+  },
+  pluginStore: {
+    registryUrls: [
+      'https://raw.githubusercontent.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
+      'https://raw.fastgit.org/fqyjfb/toolbox-plugins-registry/main/registry.json',
+      'https://raw.gitmirror.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
+    ],
+    githubRawMirrors: [
+      'https://raw.githubusercontent.com',
+      'https://raw.fastgit.org',
+      'https://raw.gitmirror.com',
+    ],
+    githubApiMirrors: ['https://api.github.com'],
+    requestTimeout: 15000,
+  },
+  iconCache: {
+    ttl: ICON_CACHE_TTL,
+    maxItems: 500,
+    requestTimeout: 10000,
+  },
+};
+
+const getNetworkConfig = () => {
+  if (cachedNetworkConfig) return cachedNetworkConfig;
+  const saved = loadSettings().networkConfig || {};
+  const merged = {
+    appUpdate: { ...defaultNetworkConfig.appUpdate, ...(saved.appUpdate || {}) },
+    hotNews: { ...defaultNetworkConfig.hotNews, ...(saved.hotNews || {}) },
+    pluginStore: { ...defaultNetworkConfig.pluginStore, ...(saved.pluginStore || {}) },
+    iconCache: { ...defaultNetworkConfig.iconCache, ...(saved.iconCache || {}) },
+  };
+  cachedNetworkConfig = {
+    appUpdate: {
+      checkUrl: merged.appUpdate.checkUrl || defaultNetworkConfig.appUpdate.checkUrl,
+      repoUrl: merged.appUpdate.repoUrl || defaultNetworkConfig.appUpdate.repoUrl,
+      requestTimeout: merged.appUpdate.requestTimeout || defaultNetworkConfig.appUpdate.requestTimeout,
+    },
+    hotNews: {
+      primaryUrl: merged.hotNews.primaryUrl || defaultNetworkConfig.hotNews.primaryUrl,
+      fallbackUrl: merged.hotNews.fallbackUrl || defaultNetworkConfig.hotNews.fallbackUrl,
+      requestTimeout: merged.hotNews.requestTimeout || defaultNetworkConfig.hotNews.requestTimeout,
+    },
+    pluginStore: {
+      registryUrls: merged.pluginStore.registryUrls && merged.pluginStore.registryUrls.length
+        ? merged.pluginStore.registryUrls
+        : defaultNetworkConfig.pluginStore.registryUrls,
+      githubRawMirrors: merged.pluginStore.githubRawMirrors && merged.pluginStore.githubRawMirrors.length
+        ? merged.pluginStore.githubRawMirrors
+        : defaultNetworkConfig.pluginStore.githubRawMirrors,
+      githubApiMirrors: merged.pluginStore.githubApiMirrors && merged.pluginStore.githubApiMirrors.length
+        ? merged.pluginStore.githubApiMirrors
+        : defaultNetworkConfig.pluginStore.githubApiMirrors,
+      requestTimeout: merged.pluginStore.requestTimeout || defaultNetworkConfig.pluginStore.requestTimeout,
+    },
+    iconCache: {
+      ttl: merged.iconCache.ttl || defaultNetworkConfig.iconCache.ttl,
+      maxItems: merged.iconCache.maxItems || defaultNetworkConfig.iconCache.maxItems,
+      requestTimeout: merged.iconCache.requestTimeout || defaultNetworkConfig.iconCache.requestTimeout,
+    },
+  };
+  return cachedNetworkConfig;
+};
+
+const invalidateNetworkConfigCache = () => { cachedNetworkConfig = null; };
 
 const defaultSettings = {
   isWindowEdgeAdsorption: 0,
@@ -37,6 +113,7 @@ const defaultSettings = {
   isAutoLockEnabled: 0,
   autoLockTimeout: 600,
   dbPath: '',
+  networkConfig: defaultNetworkConfig,
 };
 
 const defaultFloatConfig = [
@@ -191,9 +268,9 @@ const getCachedIconPath = (url) => {
   const index = loadIconCacheIndex();
   const entry = index.icons[url];
   if (!entry) return null;
-  
+
   const now = Date.now();
-  if (now - entry.timestamp > ICON_CACHE_TTL) {
+  if (now - entry.timestamp > getNetworkConfig().iconCache.ttl) {
     delete index.icons[url];
     saveIconCacheIndex();
     return null;
@@ -217,10 +294,10 @@ const downloadIcon = (url) => {
     }
     
     const protocol = url.startsWith('https') ? https : http;
-    
+
     const timeout = setTimeout(() => {
       resolve(null);
-    }, 10000);
+    }, getNetworkConfig().iconCache.requestTimeout);
     
     protocol.get(url, (response) => {
       clearTimeout(timeout);
@@ -325,7 +402,7 @@ const clearExpiredIconCache = () => {
     let cleared = 0;
     
     for (const [url, entry] of Object.entries(index.icons)) {
-      if (now - entry.timestamp > ICON_CACHE_TTL) {
+      if (now - entry.timestamp > getNetworkConfig().iconCache.ttl) {
         const filePath = path.join(iconCacheDir, entry.file);
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
@@ -374,5 +451,8 @@ module.exports = {
   defaultSettings,
   defaultShortcuts,
   defaultFloatConfig,
+  defaultNetworkConfig,
+  getNetworkConfig,
+  invalidateNetworkConfigCache,
   lockPasswordPath,
 };

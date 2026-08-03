@@ -1,5 +1,19 @@
 # 更新日志
 
+## v2.6.6
+
+- 新增网络配置设置页：支持自定义应用更新源、60s 新闻 API、插件商店镜像、图标下载缓存
+- 配置空值即默认：用户留空字段自动回退默认值，老用户升级后行为不变
+- 复用现有 IPC：仅新增 `network:test` 一个测试连接 IPC，配置读写复用 `get-settings`/`update-setting`
+- 模块级缓存优化：`baseApi`、`PluginService`、`getNetworkConfig` 均带结果缓存，配置变更时通过 `setting-changed` 事件自动刷新
+- 主窗口 preload 暴露 `clearIconCache`，复用现有 `clear-icon-cache` IPC
+- 图标缓存 TTL 与下载超时支持用户配置
+- 应用更新检查 API 与仓库主页支持用户配置
+- 60s 新闻主源/备源支持用户配置
+- 插件商店注册表/Raw/API 镜像支持用户配置，多行 textarea 输入
+- 网络配置页提供"测试连接"按钮，仅返回状态码与延迟，不返回响应体（防劫持）
+- 网络配置页提供"全部恢复默认"、"清理过期/全部图标缓存"功能（带二次确认）
+
 ## v2.6.5
 
 - 修复非管理员账号登录后数据为空且无法添加的问题（account/cloud-clipboard/quick-reply/memo 页面）
@@ -14,7 +28,7 @@
 - 完善类型定义：移除 `ClipboardCategory` 和 `QuickReplyCategory` 中不存在的 `order` 字段
 - 调整云剪贴板和快捷回复分类排序功能为无操作（database schema 不包含 order 列）
 - 修复创建/更新分类时不再向云端发送无效字段，确保与数据库 schema 一致
-- SQLite 数据库文件按登录用户动态命名（格式：ToolBox_{用户名}.db），避免同一设备切换账号时数据污染
+- SQLite 数据库文件按登录用户动态命名（格式：ToolBox\_{用户名}.db），避免同一设备切换账号时数据污染
 - 优化用户切换时数据库自动切换机制，登出后重置初始化状态，登录时自动加载用户专属数据库
 
 ## v2.6.2
@@ -93,7 +107,7 @@
 - 插件商店功能优化：添加多个 GitHub 镜像源支持（github.com.cnpmjs.org、hub.fastgit.xyz、gh.fastgit.org），解决国内网络环境下无法下载安装插件的问题
 - 插件下载自动重试机制：当主源下载失败时，自动切换到备用镜像源继续尝试
 - 插件注册表和图标资源镜像支持：添加 fastgit.org、gitmirror.com 镜像源，确保插件列表和图标在国内网络正常加载
-- OCR插件服务增强：diagnose.py 添加包导入检测，install_deps.py 添加 --force 参数支持强制重装依赖，ocrIpc.cjs、preload.cjs、ToolPanel.tsx 支持 force 参数传递
+- OCR插件服务增强：diagnose.py 添加包导入检测，install\_deps.py 添加 --force 参数支持强制重装依赖，ocrIpc.cjs、preload.cjs、ToolPanel.tsx 支持 force 参数传递
 
 ## v2.5.3
 
@@ -196,7 +210,7 @@
 ## v2.3.9
 
 - 移除未使用的测试依赖：@testing-library/jest-dom、@testing-library/react、vitest
-- 减少 node_modules 体积
+- 减少 node\_modules 体积
 - 优化项目依赖结构，提升安装和构建速度
 - 清理 Vite 配置中冗余的 chunk 配置（jspdf、html2canvas）
 - 为高频渲染组件添加 React.memo 缓存：Toast、WeatherCard、Sidebar、TodoPage
@@ -392,7 +406,7 @@
 ## v2.1.7
 
 - 新增基于 IndexedDB 的本地数据持久化，支持离线优先架构
-- 新增数据同步模块，实现双向同步、冲突处理、增量同步（基于 updated_at 时间戳）
+- 新增数据同步模块，实现双向同步、冲突处理、增量同步（基于 updated\_at 时间戳）
 - 新增同步设置页面，提供同步开关、模块管理、存储管理等功能
 - 使用 AES-CBC 加密算法保护敏感数据，格式为 iv:encryptedData（base64编码）
 - 支持用户切换时自动清理旧数据，确保数据安全性
@@ -435,3 +449,4 @@
 ## v2.0.0
 
 - 新增 OCR 文字识别、浮动窗口、记事本等功能
+

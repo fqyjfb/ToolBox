@@ -1,5 +1,6 @@
 import { logError, logInfo } from './loggerService';
 import { PluginInfo, InstalledPlugin, PluginServiceResponse } from '../types/plugin';
+import type { NetworkConfig } from '../types/network';
 
 interface RegistryPlugin {
   id: string;
@@ -51,27 +52,68 @@ interface RawInstalledPlugin {
   isPinned?: boolean;
 }
 
-const PLUGIN_REGISTRY_URLS = [
+const DEFAULT_PLUGIN_REGISTRY_URLS = [
   'https://raw.githubusercontent.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
   'https://raw.fastgit.org/fqyjfb/toolbox-plugins-registry/main/registry.json',
   'https://raw.gitmirror.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
 ];
 
-const GITHUB_RAW_MIRRORS = [
+const DEFAULT_GITHUB_RAW_MIRRORS = [
   'https://raw.githubusercontent.com',
   'https://raw.fastgit.org',
   'https://raw.gitmirror.com',
 ];
 
-const GITHUB_API_MIRRORS = [
+const DEFAULT_GITHUB_API_MIRRORS = [
   'https://api.github.com',
 ];
 
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout: number = 15000): Promise<Response> {
+// 模块级缓存：首次调用时从主进程读 networkConfig.pluginStore，setting-changed 时置 null
+let cachedPluginStore: NetworkConfig['pluginStore'] | null = null;
+
+const loadPluginStoreConfig = async (): Promise<void> => {
+  if (cachedPluginStore) return;
+  if (window.electron) {
+    try {
+      const settings = await window.electron.getSettings();
+      const nc = settings.find(s => s.name === 'networkConfig')?.value as NetworkConfig | undefined;
+      if (nc?.pluginStore) {
+        const ps = nc.pluginStore;
+        cachedPluginStore = {
+          registryUrls: ps.registryUrls && ps.registryUrls.length ? ps.registryUrls : DEFAULT_PLUGIN_REGISTRY_URLS,
+          githubRawMirrors: ps.githubRawMirrors && ps.githubRawMirrors.length ? ps.githubRawMirrors : DEFAULT_GITHUB_RAW_MIRRORS,
+          githubApiMirrors: ps.githubApiMirrors && ps.githubApiMirrors.length ? ps.githubApiMirrors : DEFAULT_GITHUB_API_MIRRORS,
+          requestTimeout: ps.requestTimeout || 15000,
+        };
+        return;
+      }
+    } catch { /* 降级到默认 */ }
+  }
+  cachedPluginStore = {
+    registryUrls: DEFAULT_PLUGIN_REGISTRY_URLS,
+    githubRawMirrors: DEFAULT_GITHUB_RAW_MIRRORS,
+    githubApiMirrors: DEFAULT_GITHUB_API_MIRRORS,
+    requestTimeout: 15000,
+  };
+};
+
+if (window.electron) {
+  window.electron.onSettingChanged((setting) => {
+    if (setting.name === 'networkConfig') cachedPluginStore = null;
+  });
+}
+
+const getRegistryUrls = () => cachedPluginStore?.registryUrls || DEFAULT_PLUGIN_REGISTRY_URLS;
+const getGithubRawMirrors = () => cachedPluginStore?.githubRawMirrors || DEFAULT_GITHUB_RAW_MIRRORS;
+const getGithubApiMirrors = () => cachedPluginStore?.githubApiMirrors || DEFAULT_GITHUB_API_MIRRORS;
+const getPluginRequestTimeout = () => cachedPluginStore?.requestTimeout || 15000;
+
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout?: number): Promise<Response> {
+  const actualTimeout = timeout ?? getPluginRequestTimeout();
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error('请求超时'));
-    }, timeout);
+    }, actualTimeout);
 
     fetch(url, options)
       .then((response) => {
@@ -85,7 +127,7 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout:
   });
 }
 
-async function fetchWithMirrors(urls: string[], options: RequestInit = {}, timeout: number = 15000): Promise<Response> {
+async function fetchWithMirrors(urls: string[], options: RequestInit = {}, timeout?: number): Promise<Response> {
   let lastError = null;
 
   for (const url of urls) {
@@ -106,7 +148,7 @@ async function fetchWithMirrors(urls: string[], options: RequestInit = {}, timeo
 function getMirrorUrls(originalUrl: string): string[] {
   if (originalUrl.startsWith('https://raw.githubusercontent.com/')) {
     const path = originalUrl.slice('https://raw.githubusercontent.com'.length);
-    return GITHUB_RAW_MIRRORS.map(mirror => mirror + path);
+    return getGithubRawMirrors().map(mirror => mirror + path);
   }
   return [originalUrl];
 }
@@ -158,16 +200,18 @@ async function fetchLatestReleaseUrl(githubRepo: string): Promise<string | undef
     return cachedUrl;
   }
 
+  await loadPluginStoreConfig();
+
   const apiPaths = [
     `/repos/${githubRepo}/releases/latest`,
     `/repos/${githubRepo}/releases`,
   ];
 
-  for (const mirror of GITHUB_API_MIRRORS) {
+  for (const mirror of getGithubApiMirrors()) {
     for (const apiPath of apiPaths) {
       try {
         const url = `${mirror}${apiPath}`;
-        const res = await fetchWithTimeout(url, {}, 10000);
+        const res = await fetchWithTimeout(url, {});
         
         if (!res.ok) continue;
         
@@ -199,8 +243,9 @@ async function fetchLatestReleaseUrl(githubRepo: string): Promise<string | undef
 export default class PluginService {
   async fetchAvailablePlugins(): Promise<PluginInfo[]> {
     clearReleaseUrlCache();
+    await loadPluginStoreConfig();
     try {
-      const res = await fetchWithMirrors(PLUGIN_REGISTRY_URLS);
+      const res = await fetchWithMirrors(getRegistryUrls());
       const data = await res.json();
       const plugins = (Array.isArray(data) ? data : []).map((ext: RegistryPlugin) => ({
         id: ext.id,

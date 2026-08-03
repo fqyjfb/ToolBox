@@ -9,7 +9,7 @@ interface DesktopAppInfo {
 
 interface SettingItem {
   name: string;
-  value: string | number | boolean;
+  value: string | number | boolean | object;
 }
 
 interface ShortcutItem {
@@ -208,8 +208,10 @@ declare interface Window {
     getAutostartStatus: () => Promise<boolean>;
     setAutostartStatus: (enable: boolean) => Promise<boolean>;
     getSettings: () => Promise<SettingItem[]>;
-    updateSetting: (setting: { name: string; value: string | number | boolean }) => Promise<UpdateResult>;
+    updateSetting: (setting: { name: string; value: string | number | boolean | object }) => Promise<UpdateResult>;
     clearCache: () => Promise<UpdateResult>;
+    clearIconCache: (type: 'all' | 'expired') => Promise<{ code: number; msg: string }>;
+    networkTest: (payload: { url: string; timeout?: number }) => Promise<{ ok: boolean; statusCode: number; latencyMs: number; error: string | null }>;
     getUserDataPath: () => Promise<string>;
     openUserDataFolder: () => Promise<{ success: boolean }>;
     getShortcuts: () => Promise<ShortcutItem[]>;
@@ -349,7 +351,7 @@ declare interface Window {
     };
     onDownloadProgress: (callback: (progress: number) => void) => void;
     onNavigate: (callback: (path: string) => void) => void;
-    onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean }) => void) => void;
+    onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean | object }) => void) => void;
     onOpenAddTodo: (callback: () => void) => void;
     onOpenAddMemo: (callback: () => void) => void;
     onLaunchPlugin: (callback: (pluginId: string) => void) => void;

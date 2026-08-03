@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft } from 'lucide-react';
+import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft, Network } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
@@ -20,6 +20,7 @@ import {
   StorageTab,
   SyncTab,
   LogMonitorTab,
+  NetworkTab,
 } from '../../components/settings';
 
 import './Settings.css';
@@ -404,7 +405,8 @@ const Settings: React.FC = () => {
     { id: 'sync' as const, label: '数据同步', icon: RefreshCw },
     { id: 'shortcuts' as const, label: '快捷键设置', icon: Keyboard },
     { id: 'floatWindow' as const, label: '悬浮窗设置', icon: Circle },
-    { id: 'logMonitor' as const, label: '日志监控', icon: FileText }
+    { id: 'logMonitor' as const, label: '日志监控', icon: FileText },
+    { id: 'network' as const, label: '网络配置', icon: Network }
   ];
 
   return (
@@ -503,6 +505,8 @@ const Settings: React.FC = () => {
               onNotificationToggle={handleNotificationToggle}
             />
           )}
+
+          {activeTab === 'network' && <NetworkTab />}
         </div>
       </main>
     </div>
