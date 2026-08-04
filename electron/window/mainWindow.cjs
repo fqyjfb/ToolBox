@@ -994,6 +994,7 @@ const registerIpcHandlers = () => {
   ipcMain.handle('notes-open-file-in-folder', (event, filePath) => notesService.openFileInFolder(filePath));
   ipcMain.handle('notes-read-file-as-buffer', (event, filePath) => notesService.readFileAsBuffer(filePath));
   ipcMain.handle('notes-convert-office-to-html', async (event, filePath) => notesService.convertOfficeToHtml(filePath));
+  ipcMain.handle('notes-move-item', (event, itemPath, targetFolderPath) => notesService.moveItem(itemPath, targetFolderPath));
 
   ipcMain.handle('ip-info:query', async (event, ip) => {
     const https = require('https');

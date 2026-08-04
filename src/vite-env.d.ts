@@ -103,7 +103,7 @@ interface NotesFileTreeNode {
   name: string;
   type: 'file' | 'folder';
   path: string;
-  fileType?: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType?: 'md' | 'txt' | 'html' | 'docx' | 'xlsx' | 'image' | 'pdf';
   children?: NotesFileTreeNode[];
   expanded?: boolean;
   active?: boolean;
@@ -297,6 +297,7 @@ declare interface Window {
       indexAll: (rootPath: string) => Promise<{ success: boolean; error?: string }>;
       openFileInFolder: (filePath: string) => Promise<{ success: boolean; error?: string }>;
       convertOfficeToHtml: (filePath: string) => Promise<{ success: boolean; html?: string; error?: string }>;
+      moveItem: (itemPath: string, targetFolderPath: string) => Promise<{ success: boolean; newPath?: string; error?: string }>;
     };
     log: {
       open: () => void;

@@ -228,6 +228,7 @@ contextBridge.exposeInMainWorld('electron', {
     openFileInFolder: (filePath) => ipcRenderer.invoke('notes-open-file-in-folder', filePath),
     readFileAsBuffer: (filePath) => ipcRenderer.invoke('notes-read-file-as-buffer', filePath),
     convertOfficeToHtml: (filePath) => ipcRenderer.invoke('notes-convert-office-to-html', filePath),
+    moveItem: (itemPath, targetFolderPath) => ipcRenderer.invoke('notes-move-item', itemPath, targetFolderPath),
   },
   lock: {
     getStatus: () => ipcRenderer.invoke('lock:getStatus'),

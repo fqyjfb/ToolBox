@@ -3,6 +3,8 @@ const path = require('path');
 const FILE_TYPE_MAP = {
   '.md': 'md',
   '.txt': 'txt',
+  '.html': 'html',
+  '.htm': 'html',
   '.docx': 'docx',
   '.doc': 'docx',
   '.xlsx': 'xlsx',
@@ -12,7 +14,7 @@ const FILE_TYPE_MAP = {
   '.webp': 'image', '.ico': 'image',
 };
 
-const TEXT_FILE_EXTS = new Set(['.md', '.txt']);
+const TEXT_FILE_EXTS = new Set(['.md', '.txt', '.html', '.htm']);
 const IMAGE_FILE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.ico']);
 
 function getFileType(filePath) {
@@ -34,6 +36,7 @@ function getMimeType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   const mimeMap = {
     '.md': 'text/markdown', '.txt': 'text/plain',
+    '.html': 'text/html', '.htm': 'text/html',
     '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     '.doc': 'application/msword',
     '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

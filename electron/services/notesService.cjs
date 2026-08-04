@@ -498,6 +498,35 @@ function convertOfficeToHtml(filePath) {
 
 
 
+function moveItem(itemPath, targetFolderPath) {
+  try {
+    if (!fs.existsSync(itemPath)) {
+      return { success: false, error: '文件或文件夹不存在' };
+    }
+    if (!fs.existsSync(targetFolderPath)) {
+      return { success: false, error: '目标文件夹不存在' };
+    }
+    if (!fs.statSync(targetFolderPath).isDirectory()) {
+      return { success: false, error: '目标路径不是文件夹' };
+    }
+
+    const itemName = path.basename(itemPath);
+    const newPath = path.join(targetFolderPath, itemName);
+
+    if (fs.existsSync(newPath)) {
+      return { success: false, error: '目标位置已存在同名文件' };
+    }
+
+    fs.renameSync(itemPath, newPath);
+    return { success: true, newPath };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '移动失败',
+    };
+  }
+}
+
 module.exports = {
   getSetting,
   saveSetting,
@@ -520,4 +549,5 @@ module.exports = {
   openFileInFolder,
   readFileAsBuffer,
   convertOfficeToHtml,
+  moveItem,
 };

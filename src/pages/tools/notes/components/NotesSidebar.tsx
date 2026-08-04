@@ -1,13 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle, Table2, FileImage } from 'lucide-react';
-import ContextMenu, { ContextMenuItem } from '@/components/ui/ContextMenu';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle, Table2, FileImage, Code, MoveRight } from 'lucide-react';
+import ContextMenu, { ContextMenuItem, SubMenuItem } from '@/components/ui/ContextMenu';
 
 export interface FileTreeNode {
   id: string;
   name: string;
   type: 'file' | 'folder';
   path: string;
-  fileType?: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType?: 'md' | 'txt' | 'html' | 'docx' | 'xlsx' | 'image' | 'pdf';
   children?: FileTreeNode[];
   expanded?: boolean;
   active?: boolean;
@@ -15,6 +15,7 @@ export interface FileTreeNode {
 
 interface NotesSidebarProps {
   fileTree: FileTreeNode[];
+  rootPath: string | null;
   selectedFile: FileTreeNode | null;
   onSelectFile: (file: FileTreeNode) => void;
   onToggleFolder: (folderPath: string) => void;
@@ -24,6 +25,7 @@ interface NotesSidebarProps {
   onCreateNoteForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy') => Promise<boolean>;
   onRenameItem: (oldPath: string, newName: string) => Promise<boolean>;
   onDeleteItem: (itemPath: string) => Promise<boolean>;
+  onMoveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   onRefresh: () => void;
   onRebuildIndex?: () => Promise<void>;
   onChangeFolder?: () => Promise<boolean>;
@@ -98,6 +100,7 @@ const FileTreeItem: React.FC<{
             {node.fileType === 'xlsx' && <Table2 className="w-4 h-4 text-green-600" />}
             {node.fileType === 'image' && <FileImage className="w-4 h-4 text-purple-600" />}
             {node.fileType === 'txt' && <FileText className="w-4 h-4 text-gray-500" />}
+            {node.fileType === 'html' && <Code className="w-4 h-4 text-orange-500" />}
             {(!node.fileType || node.fileType === 'md') && <FileText className="w-4 h-4" />}
           </>
         )}
@@ -266,6 +269,7 @@ const DeleteConfirmDialog: React.FC<{
 
 const NotesSidebar: React.FC<NotesSidebarProps> = ({
   fileTree,
+  rootPath,
   selectedFile,
   onSelectFile,
   onToggleFolder,
@@ -275,6 +279,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   onCreateNoteForce,
   onRenameItem,
   onDeleteItem,
+  onMoveItem,
   onRefresh,
   onRebuildIndex,
   onChangeFolder,
@@ -415,6 +420,21 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     }
   };
 
+  const getFoldersFromTree = useCallback((nodes: FileTreeNode[], excludePath?: string): { path: string; label: string }[] => {
+    const folders: { path: string; label: string }[] = [];
+    const walk = (list: FileTreeNode[], depth: number) => {
+      for (const n of list) {
+        if (n.type === 'folder' && n.path !== excludePath) {
+          const indent = '　'.repeat(depth);
+          folders.push({ path: n.path, label: `${indent}${n.name}` });
+          if (n.children) walk(n.children, depth + 1);
+        }
+      }
+    };
+    walk(nodes, 0);
+    return folders;
+  }, []);
+
   const getContextMenuItems = (): ContextMenuItem[] => {
     if (!contextMenu) return [];
     
@@ -424,9 +444,10 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     const getParentPath = (): string | null => {
       if (!node) return null;
       if (node.type === 'folder') return node.path;
-      const pathParts = node.path.split('/');
+      const separator = node.path.includes('\\') ? '\\' : '/';
+      const pathParts = node.path.split(separator);
       pathParts.pop();
-      return pathParts.join('/') || null;
+      return pathParts.join(separator) || null;
     };
     
     items.push({
@@ -456,7 +477,46 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         id: 'divider1',
         divider: true,
       });
-      
+
+      const allFolders = getFoldersFromTree(fileTree, node.path);
+      const separator = node.path.includes('\\') ? '\\' : '/';
+      const nodeParentPath = node.path.includes(separator) ? node.path.substring(0, node.path.lastIndexOf(separator)) : null;
+      const normalizedRootPath = rootPath ? rootPath.replace(/[\\/]+$/, '') : null;
+      const normalizedParentPath = nodeParentPath ? nodeParentPath.replace(/[\\/]+$/, '') : null;
+      const normalizedNodePath = node.path.replace(/[\\/]+$/, '');
+
+      const moveSubItems: SubMenuItem[] = [];
+
+      if (normalizedRootPath && normalizedParentPath !== normalizedRootPath && normalizedRootPath !== normalizedNodePath) {
+        moveSubItems.push({
+          id: `move-to-root`,
+          label: '根目录',
+          onClick: async () => {
+            const success = await onMoveItem(node.path, normalizedRootPath);
+            if (success) setContextMenu(null);
+          },
+        });
+      }
+
+      allFolders.forEach((folder) => {
+        moveSubItems.push({
+          id: `move-to-${folder.path}`,
+          label: folder.label,
+          onClick: async () => {
+            const success = await onMoveItem(node.path, folder.path);
+            if (success) setContextMenu(null);
+          },
+        });
+      });
+
+      items.push({
+        id: 'move',
+        label: '移动',
+        icon: <MoveRight className="w-4 h-4" />,
+        subMenu: moveSubItems.length > 0 ? moveSubItems : undefined,
+        onClick: () => {},
+      });
+
       items.push({
         id: 'open-in-folder',
         label: '打开位置',

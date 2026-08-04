@@ -42,6 +42,7 @@ const NotesPage: React.FC = () => {
     createNoteForce,
     renameItem,
     deleteItem,
+    moveItem,
     toggleFolderExpand,
     refreshFileTree,
     rebuildIndex,
@@ -129,6 +130,7 @@ const NotesPage: React.FC = () => {
         {sidebarVisible && (
           <NotesSidebar
             fileTree={fileTree}
+            rootPath={rootPath}
             selectedFile={selectedFile}
             onSelectFile={handleSelectFile}
             onToggleFolder={toggleFolderExpand}
@@ -138,6 +140,7 @@ const NotesPage: React.FC = () => {
             onCreateNoteForce={createNoteForce}
             onRenameItem={renameItem}
             onDeleteItem={deleteItem}
+            onMoveItem={moveItem}
             onRefresh={refreshFileTree}
             onRebuildIndex={rebuildIndex}
             onChangeFolder={changeFolder}

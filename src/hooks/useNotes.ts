@@ -8,7 +8,7 @@ export interface FileTreeNode {
   name: string;
   type: 'file' | 'folder';
   path: string;
-  fileType?: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType?: 'md' | 'txt' | 'html' | 'docx' | 'xlsx' | 'image' | 'pdf';
   children?: FileTreeNode[];
   expanded?: boolean;
   active?: boolean;
@@ -16,7 +16,7 @@ export interface FileTreeNode {
 
 export interface FileMetadata {
   filePath: string;
-  fileType: 'md' | 'txt' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType: 'md' | 'txt' | 'html' | 'docx' | 'xlsx' | 'image' | 'pdf';
   mimeType?: string;
 }
 
@@ -47,6 +47,7 @@ export interface UseNotesReturn extends NotesState {
   createNoteForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy', content?: string) => Promise<boolean>;
   renameItem: (oldPath: string, newName: string) => Promise<boolean>;
   deleteItem: (itemPath: string) => Promise<boolean>;
+  moveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   toggleFolderExpand: (folderPath: string) => void;
   rebuildIndex: () => Promise<void>;
   clearError: () => void;
@@ -65,6 +66,30 @@ export function useNotes(): UseNotesReturn {
   const [error, setError] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [initialized, setInitialized] = useState(false);
+  const objectUrlRef = useRef<string | null>(null);
+
+  const base64ToBlobUrl = useCallback((base64: string, mimeType: string): string => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    objectUrlRef.current = url;
+    return url;
+  }, []);
+
+  const clearPreviewUrl = useCallback(() => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setFilePreviewUrl(null);
+  }, []);
 
   const findFileInTreeRef = useRef<((filePath: string, nodes: FileTreeNode[]) => FileTreeNode | null) | null>(null);
   findFileInTreeRef.current = (filePath: string, nodes: FileTreeNode[]): FileTreeNode | null => {
@@ -133,7 +158,7 @@ export function useNotes(): UseNotesReturn {
                 setSelectedFile(fileNode);
                 setFileMetadata({ filePath: fileNode.path, fileType: fileType || 'md' });
 
-                if (fileType === 'md' || fileType === 'txt') {
+                if (fileType === 'md' || fileType === 'txt' || fileType === 'html') {
                   const result = await window.electron.notes.readFile(fileNode.path);
                   if (result.success && result.content !== undefined) {
                     setFileContent(result.content);
@@ -141,7 +166,7 @@ export function useNotes(): UseNotesReturn {
                 } else if (fileType === 'image' || fileType === 'pdf') {
                   const result = await window.electron.notes.readFileAsBuffer(fileNode.path);
                   if (result.success && result.base64) {
-                    setFilePreviewUrl(`data:${result.mimeType};base64,${result.base64}`);
+                    setFilePreviewUrl(base64ToBlobUrl(result.base64, result.mimeType || 'application/octet-stream'));
                   }
                 } else if (fileType === 'docx' || fileType === 'xlsx') {
                   const result = await window.electron.notes.convertOfficeToHtml(fileNode.path);
@@ -253,10 +278,10 @@ export function useNotes(): UseNotesReturn {
       const fileType = file.fileType;
       setFileContent('');
       setFileMetadata({ filePath: file.path, fileType: fileType || 'md' });
-      setFilePreviewUrl(null);
+      clearPreviewUrl();
       setOfficeHtmlPreview(null);
 
-      if (fileType === 'md' || fileType === 'txt') {
+      if (fileType === 'md' || fileType === 'txt' || fileType === 'html') {
         const result = await window.electron.notes.readFile(file.path);
         if (result.success && result.content !== undefined) {
           setFileContent(result.content);
@@ -266,7 +291,7 @@ export function useNotes(): UseNotesReturn {
       } else if (fileType === 'image' || fileType === 'pdf') {
         const result = await window.electron.notes.readFileAsBuffer(file.path);
         if (result.success && result.base64) {
-          setFilePreviewUrl(`data:${result.mimeType};base64,${result.base64}`);
+          setFilePreviewUrl(base64ToBlobUrl(result.base64, result.mimeType || 'application/octet-stream'));
         } else {
           setError(result.error || '读取文件失败');
         }
@@ -497,7 +522,7 @@ export function useNotes(): UseNotesReturn {
             setSelectedFile(null);
             setFileContent('');
             setFileMetadata(null);
-            setFilePreviewUrl(null);
+            clearPreviewUrl();
             setOfficeHtmlPreview(null);
             localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
           }
@@ -510,6 +535,40 @@ export function useNotes(): UseNotesReturn {
       } catch (err) {
         logError('删除失败', 'useNotes', err as Error);
         setError('删除失败');
+        return false;
+      }
+    },
+    [refreshFileTree, selectedFile]
+  );
+
+  const moveItem = useCallback(
+    async (itemPath: string, targetFolderPath: string): Promise<boolean> => {
+      if (!window.electron) return false;
+      try {
+        const result = await window.electron.notes.moveItem(itemPath, targetFolderPath);
+
+        if (result.success && result.newPath) {
+          await refreshFileTree();
+
+          if (selectedFile?.path === itemPath) {
+            const newName = itemPath.split(/[/\\]/).pop();
+            setSelectedFile({
+              ...selectedFile,
+              id: result.newPath,
+              name: newName || selectedFile.name,
+              path: result.newPath,
+            });
+            localStorageService.setString(STORAGE_KEYS.NOTES_LAST_OPENED_FILE, result.newPath);
+          }
+
+          return true;
+        } else {
+          setError(result.error || '移动失败');
+          return false;
+        }
+      } catch (err) {
+        logError('移动失败', 'useNotes', err as Error);
+        setError('移动失败');
         return false;
       }
     },
@@ -554,7 +613,7 @@ export function useNotes(): UseNotesReturn {
       setSelectedFile(null);
       setFileContent('');
       setFileMetadata(null);
-      setFilePreviewUrl(null);
+      clearPreviewUrl();
       setOfficeHtmlPreview(null);
       localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
 
@@ -639,6 +698,7 @@ export function useNotes(): UseNotesReturn {
     createNoteForce,
     renameItem,
     deleteItem,
+    moveItem,
     toggleFolderExpand,
     rebuildIndex,
     clearError,
