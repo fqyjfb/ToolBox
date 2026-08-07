@@ -344,7 +344,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
                       {visibleColumns.includes('platform') && (
                         <td className="px-4 py-3 w-24">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-600 whitespace-nowrap">
-                            {platformIcon && <img src={platformIcon} alt={shop.platform} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                            {platformIcon && <img loading="lazy" src={platformIcon} alt={shop.platform} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                             {shop.platform}
                           </span>
                         </td>

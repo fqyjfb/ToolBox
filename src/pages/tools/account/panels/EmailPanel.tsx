@@ -335,7 +335,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
                       {visibleColumns.includes('platform') && (
                         <td className="px-4 py-3 w-24">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-600 whitespace-nowrap">
-                            <img src={platform.icon} alt={platform.label} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                            <img loading="lazy" src={platform.icon} alt={platform.label} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                             {platform.label}
                           </span>
                         </td>

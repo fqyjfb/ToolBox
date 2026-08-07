@@ -57,6 +57,7 @@ export const renderFloatIcon = (
     return {
       element: (
         <img
+          loading="lazy"
           src={iconSrc!}
           alt=""
           style={{ width: size, height: size, objectFit: 'contain', borderRadius: '4px' }}

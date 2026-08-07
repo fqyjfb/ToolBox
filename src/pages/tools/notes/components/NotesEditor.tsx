@@ -5,7 +5,6 @@ import { useThemeStore } from '@/store/themeStore';
 import { FileViewer } from '@open-file-viewer/react';
 import { imagePlugin, pdfPlugin, officePlugin, fallbackPlugin } from '@open-file-viewer/core';
 import '@open-file-viewer/core/style.css';
-import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
 interface FileTreeNode {
   id: string;
@@ -60,7 +59,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   const viewerPlugins = useMemo(
     () => [
       imagePlugin(),
-      pdfPlugin({ workerSrc: pdfWorkerSrc }),
+      pdfPlugin(),
       officePlugin(),
       fallbackPlugin(),
     ],

@@ -373,7 +373,7 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
                       {visibleColumns.includes('platform') && (
                         <td className="px-4 py-3 w-24">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-purple-50 text-purple-600 whitespace-nowrap">
-                            {iconPath && <img src={iconPath} alt={platformLabel} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                            {iconPath && <img loading="lazy" src={iconPath} alt={platformLabel} className="w-3 h-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                             {platformLabel}
                           </span>
                         </td>

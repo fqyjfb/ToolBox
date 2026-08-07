@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { Trash2, ChevronUp, ChevronDown } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndSensors } from '../../hooks/useDndSensors';
 import ContextMenu, { ContextMenuItem } from '../ui/ContextMenu';
 import type { QuickLaunchItem } from '../../utils/quickLaunch';
 
@@ -62,16 +63,7 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
     y: 0,
   });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
 
   const handleContextMenu = useCallback((e: React.MouseEvent, appId: string) => {
     e.preventDefault();

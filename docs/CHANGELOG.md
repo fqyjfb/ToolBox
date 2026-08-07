@@ -1,5 +1,23 @@
 # 更新日志
 
+## v2.6.9
+
+- 移除无用依赖 iconv-lite（全项目无引用）
+- 修复加密模块 Bug：解密失败时不再静默返回原文，改为抛出异常以确保调用方能感知错误
+- 清理死代码：删除未使用的 CountryCodeSearch.tsx 组件和 services/entities/index.ts 桶文件
+- 统一 ErrorBoundary 组件：合并重复实现，移除旧版 components/ErrorBoundary.tsx，新组件支持 fallback 属性、重试按钮和错误详情折叠
+- 移除未使用的 checkPasswordStrength 导出函数
+- 抽取 useDndSensors 公共 Hook：消除 9 个组件中重复的 @dnd-kit 传感器配置代码
+- 构建体积优化：修复 manualChunks 分包逻辑，vendor-react 从 4,969 kB 降至 234 kB（-95%）
+- 构建体积优化：拆分 vendor-ui（921 kB）、vendor-tools（240 kB）、vendor-viewer（544 kB）等独立 chunk，首屏加载体积大幅降低
+- 构建体积优化：显式 externalize Electron 主进程依赖（@aws-sdk、adm-zip、sql.js 等）防止误打包
+- 构建体积优化：提升构建目标为 esnext，减少语法转换产物体积
+- 移除 82 处低效的 lucide-react 图标 React.lazy 懒加载，改用共享 iconMap 静态导入，消除瀑布式请求
+- 移除 PDF Worker 手动导入（2.2 MB），交由 @open-file-viewer/core 内部管理
+- 运行时性能优化：6 个组件的 useAuthStore() 全量订阅改为选择器订阅，避免不必要的重渲染
+- 运行时性能优化：9 个 img 标签添加 loading="lazy" 原生懒加载
+- 启动性能优化：sql.js 改为懒加载，移除启动时 sqliteService.init() 阻塞调用，窗口创建不再等待数据库初始化
+
 ## v2.6.8
 
 - 记事本新增 JSON 格式支持（列表图标、编辑、保存）

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Clipboard } from 'lucide-react';
 import type { HomeToolItem } from '../../utils/homeTools';
+import { iconMap } from '../../utils/iconMap';
 import WeatherCard from './WeatherCard';
 
 interface ToolGridProps {
@@ -8,40 +8,9 @@ interface ToolGridProps {
   onToolClick: (path: string) => void;
 }
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Phone: React.lazy(() => import('lucide-react').then(m => ({ default: m.Phone }))),
-  RefreshCw: React.lazy(() => import('lucide-react').then(m => ({ default: m.RefreshCw }))),
-  MessageSquare: React.lazy(() => import('lucide-react').then(m => ({ default: m.MessageSquare }))),
-  Clipboard,
-  CheckSquare: React.lazy(() => import('lucide-react').then(m => ({ default: m.CheckSquare }))),
-  Key: React.lazy(() => import('lucide-react').then(m => ({ default: m.Key }))),
-  FileCode: React.lazy(() => import('lucide-react').then(m => ({ default: m.FileCode }))),
-  Globe: React.lazy(() => import('lucide-react').then(m => ({ default: m.Globe }))),
-  Smile: React.lazy(() => import('lucide-react').then(m => ({ default: m.Smile }))),
-  Clock: React.lazy(() => import('lucide-react').then(m => ({ default: m.Clock }))),
-  ArrowUpDown: React.lazy(() => import('lucide-react').then(m => ({ default: m.ArrowUpDown }))),
-  Hash: React.lazy(() => import('lucide-react').then(m => ({ default: m.Hash }))),
-  Copy: React.lazy(() => import('lucide-react').then(m => ({ default: m.Copy }))),
-  Table: React.lazy(() => import('lucide-react').then(m => ({ default: m.Table }))),
-  Link: React.lazy(() => import('lucide-react').then(m => ({ default: m.Link }))),
-  Map: React.lazy(() => import('lucide-react').then(m => ({ default: m.Map }))),
-  QrCode: React.lazy(() => import('lucide-react').then(m => ({ default: m.QrCode }))),
-  Code: React.lazy(() => import('lucide-react').then(m => ({ default: m.Code }))),
-  AtSign: React.lazy(() => import('lucide-react').then(m => ({ default: m.AtSign }))),
-  Tag: React.lazy(() => import('lucide-react').then(m => ({ default: m.Tag }))),
-  AlignLeft: React.lazy(() => import('lucide-react').then(m => ({ default: m.AlignLeft }))),
-  Code2: React.lazy(() => import('lucide-react').then(m => ({ default: m.Code2 }))),
-  Binary: React.lazy(() => import('lucide-react').then(m => ({ default: m.Binary }))),
-  Braces: React.lazy(() => import('lucide-react').then(m => ({ default: m.Braces }))),
-  Navigation: React.lazy(() => import('lucide-react').then(m => ({ default: m.Navigation }))),
-  Newspaper: React.lazy(() => import('lucide-react').then(m => ({ default: m.Newspaper }))),
-  Languages: React.lazy(() => import('lucide-react').then(m => ({ default: m.Languages }))),
-  FileText: React.lazy(() => import('lucide-react').then(m => ({ default: m.FileText }))),
-};
-
 const ToolGrid: React.FC<ToolGridProps> = ({ tools, onToolClick }) => {
   const renderToolItem = (tool: HomeToolItem) => {
-    const IconComponent = iconMap[tool.iconName] || Clipboard;
+    const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
     return (
       <div
         key={tool.id}
@@ -86,7 +55,7 @@ const ToolGrid: React.FC<ToolGridProps> = ({ tools, onToolClick }) => {
             style={{ backgroundColor: tools[4].color }}
             onClick={() => onToolClick(tools[4].path)}
           >
-            {React.createElement(iconMap[tools[4].iconName] || Clipboard, { className: 'w-10 h-10' })}
+            {React.createElement(iconMap[tools[4].iconName] || iconMap.Clipboard, { className: 'w-10 h-10' })}
             <span className="tools-name" style={{ color: tools[4].textColor }}>{tools[4].name}</span>
           </div>
         )}

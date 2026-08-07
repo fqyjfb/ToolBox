@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clipboard, Plus, Trash2, Edit, ClipboardPaste, Tag } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndSensors } from '../../../hooks/useDndSensors';
 import { quickReplyService } from '../../../services/QuickReplyService';
 import { QuickReplyCategory, QuickReply } from '../../../types/quickReply';
 import { useAuthStore } from '../../../store/AuthStore';
@@ -65,16 +66,7 @@ const QuickReplyPage: React.FC = () => {
   const { searchQuery, isSearchActive } = useNavSearch();
   const [categories, setCategories] = useState<QuickReplyCategory[]>([]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [newQuickReplyContent, setNewQuickReplyContent] = useState<string>('');

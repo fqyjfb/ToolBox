@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../store/AuthStore'
+import { useAuthStore } from '../../store/AuthStore'
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
 import { authService } from '../../services/AuthService'
 import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService'
@@ -8,7 +8,11 @@ import './LoginPage.css'
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate()
-  const { login, register, isLoading, error, isAuthenticated } = useAuth()
+  const login = useAuthStore((s) => s.login)
+  const register = useAuthStore((s) => s.register)
+  const isLoading = useAuthStore((s) => s.isLoading)
+  const error = useAuthStore((s) => s.error)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   
   const [activeTab, setActiveTab] = useState<'login' | 'register' | 'reset'>('login')
   const [showPassword, setShowPassword] = useState(false)

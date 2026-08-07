@@ -5,7 +5,9 @@ import { useToastStore } from '../../../store/toastStore';
 import { useNavigate } from 'react-router-dom';
 
 const ProfilePage: React.FC = () => {
-  const { user, updateUserProfile, logout } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const updateUserProfile = useAuthStore((s) => s.updateUserProfile);
+  const logout = useAuthStore((s) => s.logout);
   const addToast = useToastStore((state) => state.addToast);
   const navigate = useNavigate();
 

@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useCallbackRef } from '../../../hooks/useCallbackRef';
 import { useNavigate } from 'react-router-dom';
 import { StickyNote, Plus, Trash2, Edit, Tag, AlertCircle, Copy } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndSensors } from '../../../hooks/useDndSensors';
 import { memoService } from '../../../services/MemoService';
 import { openUrl } from '../../../services/browserService';
 import { MemoCategory, Memo } from '../../../types/memo';
@@ -120,16 +121,7 @@ const MemoPage: React.FC = () => {
   const { searchQuery, isSearchActive } = useNavSearch();
   const [categories, setCategories] = useState<MemoCategory[]>([]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
   const [memos, setMemos] = useState<Memo[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [newMemoTitle, setNewMemoTitle] = useState<string>('');

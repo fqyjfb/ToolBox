@@ -86,13 +86,6 @@ app.whenReady().then(async () => {
   registerFloatIpcHandlers();
   registerLogIpcHandlers();
 
-  try {
-    await sqliteService.init(app.getPath('userData'));
-    console.log('[Main] SQLite 数据库初始化完成');
-  } catch (error) {
-    console.error('[Main] SQLite 初始化失败:', error.message);
-  }
-
   const isLocked = checkLockOnStartup();
   if (!isLocked) {
     createWindow(onWindowReady, true);

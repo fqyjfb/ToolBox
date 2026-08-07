@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, ClipboardList, User, Search } from 'lucide-react';
-import { useAuth } from '../../store/AuthStore';
+import { useAuthStore } from '../../store/AuthStore';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 
 const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/memo', '/tools/quick-reply', '/tools/cloud-clipboard', '/tools/account', '/nav'];
@@ -18,7 +18,9 @@ const WebNavbar: React.FC = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { isAuthenticated, logout, admin } = useAuth();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const logout = useAuthStore((s) => s.logout);
+  const admin = useAuthStore((s) => s.admin);
   const { searchQuery, setSearchQuery, handleSearch, clearSearch, performSearch } = useNavSearch();
   const menuRef = useRef<HTMLDivElement>(null);
 

@@ -15,7 +15,8 @@ import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManag
 import CachedIcon from '../../components/ui/CachedIcon'
 
 const AdminWebsitesPage: React.FC = () => {
-  const { isAuthenticated, getCurrentUser } = useAuthStore()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const getCurrentUser = useAuthStore((s) => s.getCurrentUser)
   const addToast = useToastStore((state) => state.addToast)
   const queryClient = useQueryClient()
 

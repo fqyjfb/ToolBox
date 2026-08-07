@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const initSqlJs = require('sql.js');
+let initSqlJs = null;
 
 let SQL = null;
 let db = null;
@@ -44,6 +44,7 @@ async function init(userDataPath, username) {
   currentUsername = normalizedUsername;
 
   initPromise = (async () => {
+    if (!initSqlJs) initSqlJs = require('sql.js');
     SQL = await initSqlJs();
 
     const defaultDir = getDefaultDbDir(userDataPath);

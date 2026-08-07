@@ -1,7 +1,0 @@
-export { shopService } from './ShopService'
-export { socialAccountService } from './SocialAccountService'
-export { emailService } from './EmailService'
-export { phoneService } from './PhoneService'
-export { companyService } from './CompanyService'
-export { credentialService } from './CredentialService'
-export { generalAccountService } from './GeneralAccountService'

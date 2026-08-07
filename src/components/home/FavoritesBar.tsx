@@ -1,8 +1,9 @@
 import React from 'react';
 import { Globe } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndSensors } from '../../hooks/useDndSensors';
 import { openUrl } from '../../services/browserService';
 import { DISPLAY_LIMITS } from '../../constants/timers';
 
@@ -78,16 +79,7 @@ const SortableFavoriteItem: React.FC<{ bookmark: Bookmark; onClick: () => void; 
 };
 
 const FavoritesBar: React.FC<FavoritesBarProps> = ({ favorites, onReorder }) => {
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
 
   if (favorites.length === 0) return null;
 

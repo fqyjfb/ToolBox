@@ -22,26 +22,6 @@ export const validateEncryptionKey = (): boolean => {
   }
 };
 
-export const checkPasswordStrength = (password: string): { strength: 'weak' | 'medium' | 'strong', message: string } => {
-  let score = 0;
-  
-  if (password.length >= 8) score++;
-  if (password.length >= 12) score++;
-  
-  if (/[A-Z]/.test(password)) score++;
-  if (/[a-z]/.test(password)) score++;
-  if (/[0-9]/.test(password)) score++;
-  if (/[^A-Za-z0-9]/.test(password)) score++;
-  
-  if (score < 3) {
-    return { strength: 'weak', message: '密码强度弱，请使用更长、更复杂的密码' };
-  } else if (score < 5) {
-    return { strength: 'medium', message: '密码强度中等' };
-  } else {
-    return { strength: 'strong', message: '密码强度强' };
-  }
-};
-
 const stringToUint8Array = (str: string): Uint8Array => {
   return new TextEncoder().encode(str);
 };
@@ -117,6 +97,6 @@ export const decrypt = async (text: string): Promise<string> => {
   } catch (error) {
     logEncryptionOperation('decrypt', Date.now() - startTime, false);
     console.error('Decryption error:', error);
-    return text;
+    throw new Error('解密失败');
   }
 };

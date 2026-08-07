@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clipboard, Plus, Trash2, Edit, ClipboardPaste, Tag } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndSensors } from '../../../hooks/useDndSensors';
 import { clipboardService } from '../../../services/ClipboardService';
 import { openUrl } from '../../../services/browserService';
 import { ClipboardCategory, ClipboardItem } from '../../../types/clipboard';
@@ -89,16 +90,7 @@ const CloudClipboardPage: React.FC = () => {
   const { searchQuery, isSearchActive } = useNavSearch();
   const [categories, setCategories] = useState<ClipboardCategory[]>([]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
   const [items, setItems] = useState<ClipboardItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [newItemContent, setNewItemContent] = useState<string>('');

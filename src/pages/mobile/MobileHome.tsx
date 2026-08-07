@@ -9,37 +9,8 @@ import { isWeb } from '../../utils/environment';
 import { getWeatherCity } from '../../utils/weatherLocation';
 import type { WeatherInfo } from '../../types/weather';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
+import { iconMap } from '../../utils/iconMap';
 import { DISPLAY_LIMITS } from '../../constants/timers';
-
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Phone: React.lazy(() => import('lucide-react').then(m => ({ default: m.Phone }))),
-  RefreshCw: React.lazy(() => import('lucide-react').then(m => ({ default: m.RefreshCw }))),
-  MessageSquare: React.lazy(() => import('lucide-react').then(m => ({ default: m.MessageSquare }))),
-  Clipboard: React.lazy(() => import('lucide-react').then(m => ({ default: m.Clipboard }))),
-  CheckSquare: React.lazy(() => import('lucide-react').then(m => ({ default: m.CheckSquare }))),
-  Key: React.lazy(() => import('lucide-react').then(m => ({ default: m.Key }))),
-  FileCode: React.lazy(() => import('lucide-react').then(m => ({ default: m.FileCode }))),
-  Globe: React.lazy(() => import('lucide-react').then(m => ({ default: m.Globe }))),
-  Smile: React.lazy(() => import('lucide-react').then(m => ({ default: m.Smile }))),
-  Clock: React.lazy(() => import('lucide-react').then(m => ({ default: m.Clock }))),
-  ArrowUpDown: React.lazy(() => import('lucide-react').then(m => ({ default: m.ArrowUpDown }))),
-  Hash: React.lazy(() => import('lucide-react').then(m => ({ default: m.Hash }))),
-  Copy: React.lazy(() => import('lucide-react').then(m => ({ default: m.Copy }))),
-  Table: React.lazy(() => import('lucide-react').then(m => ({ default: m.Table }))),
-  Link: React.lazy(() => import('lucide-react').then(m => ({ default: m.Link }))),
-  Map: React.lazy(() => import('lucide-react').then(m => ({ default: m.Map }))),
-  QrCode: React.lazy(() => import('lucide-react').then(m => ({ default: m.QrCode }))),
-  Code: React.lazy(() => import('lucide-react').then(m => ({ default: m.Code }))),
-  AtSign: React.lazy(() => import('lucide-react').then(m => ({ default: m.AtSign }))),
-  Tag: React.lazy(() => import('lucide-react').then(m => ({ default: m.Tag }))),
-  AlignLeft: React.lazy(() => import('lucide-react').then(m => ({ default: m.AlignLeft }))),
-  Code2: React.lazy(() => import('lucide-react').then(m => ({ default: m.Code2 }))),
-  Binary: React.lazy(() => import('lucide-react').then(m => ({ default: m.Binary }))),
-  Braces: React.lazy(() => import('lucide-react').then(m => ({ default: m.Braces }))),
-  Navigation: React.lazy(() => import('lucide-react').then(m => ({ default: m.Navigation }))),
-  Newspaper: React.lazy(() => import('lucide-react').then(m => ({ default: m.Newspaper }))),
-  Languages: React.lazy(() => import('lucide-react').then(m => ({ default: m.Languages }))),
-};
 
 const searchTypes = [
   { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=%s%', placeholder: '百度一下' },

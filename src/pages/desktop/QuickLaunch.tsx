@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndSensors } from '../../hooks/useDndSensors';
 import { QuickLaunchCategory, QuickLaunchItem, addHomeQuickLaunchApp, isAppInHomeQuickLaunch, loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps, ensureAppIconsCached } from '../../utils/quickLaunch';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useToastStore } from '../../store/toastStore';
@@ -36,8 +37,9 @@ const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'med
       onContextMenu={onContextMenu}
     >
       {app.icon ? (
-        <img 
-          src={`data:image/png;base64,${app.icon}`} 
+        <img
+          loading="lazy"
+          src={`data:image/png;base64,${app.icon}`}
           alt={app.name}
           className={`object-contain mb-1 ${
             iconSize === 'small' ? 'w-8 h-8' : 'w-12 h-12'
@@ -125,16 +127,7 @@ const QuickLaunch: React.FC = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
 
   useEffect(() => {
     const savedApps = localStorageService.get<QuickLaunchItem[]>(STORAGE_KEYS.QUICK_LAUNCH_APPS, []);

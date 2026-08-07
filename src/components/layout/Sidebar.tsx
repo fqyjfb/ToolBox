@@ -1,9 +1,10 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Zap, FileText, Clock, User, Settings, Info, X, Grid3X3, LayoutDashboard, Package } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndSensors } from '../../hooks/useDndSensors';
 import { useAuthStore } from '../../store/AuthStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
@@ -19,7 +20,8 @@ const Sidebar: React.FC = () => {
   const isDesktop = isElectron();
 
   const { isCollapsed, isVisible, pinnedToolIds, removePinnedTool, reorderPinnedTools } = useSidebarStore();
-  const { isAuthenticated, isAdmin } = useAuthStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
   const { installedPlugins } = usePluginStore();
   const [pluginButtons, setPluginButtons] = useState<{ id: string; icon: React.ReactNode; label: string; onClick: () => void }[]>([]);
 
@@ -55,10 +57,7 @@ const Sidebar: React.FC = () => {
     { id: 'recents', title: '最近使用', icon: <Clock className="w-4 h-4 flex-shrink-0" />, path: '/recents', active: isActive('/recents') },
   ];
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor)
-  );
+  const sensors = useDndSensors(false);
 
   useEffect(() => {
     const handleButtonsChange = (buttons: { id: string; icon: string; label: string; onClick: () => void }[]) => {
@@ -117,7 +116,7 @@ const Sidebar: React.FC = () => {
                 {pinnedTools.map((tool) => {
                   const Icon = iconMap[tool.iconName] || iconMap.Package;
                   const iconElement = tool.iconUrl ? (
-                    <img src={tool.iconUrl} alt={tool.name} className="w-4 h-4 flex-shrink-0 object-contain" />
+                    <img loading="lazy" src={tool.iconUrl} alt={tool.name} className="w-4 h-4 flex-shrink-0 object-contain" />
                   ) : (
                     <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} />
                   );
@@ -147,7 +146,7 @@ const Sidebar: React.FC = () => {
           pinnedTools.map((tool) => {
               const Icon = iconMap[tool.iconName] || iconMap.Package;
               const iconElement = tool.iconUrl ? (
-                <img src={tool.iconUrl} alt={tool.name} className="w-4 h-4 flex-shrink-0 object-contain" />
+                <img loading="lazy" src={tool.iconUrl} alt={tool.name} className="w-4 h-4 flex-shrink-0 object-contain" />
               ) : (
                 <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} />
               );

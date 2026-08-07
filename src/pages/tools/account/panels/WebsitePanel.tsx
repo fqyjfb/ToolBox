@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Plus, Edit, Trash2, Copy, Share2, Tag, ChevronDown, RefreshCw, ExternalLink, Eye } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndSensors } from '../../../../hooks/useDndSensors';
 import { websiteAccountService } from '../../../../services/WebsiteAccountService';
 import { accountService } from '../../../../services/AccountService';
 import { WebsiteAccount, WebsiteAccountCategory, WebsiteAccountRequest } from '../../../../types/websiteAccount';
@@ -132,16 +133,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     };
   }, []);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
 
   const handleCategoriesDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;

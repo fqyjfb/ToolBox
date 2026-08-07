@@ -29,24 +29,40 @@ export default defineConfig(({ mode }) => {
       port: isElectron ? 5174 : 5173,
     },
     build: {
+      target: 'esnext',
       rollupOptions: {
+        external: [
+          '@aws-sdk/client-s3',
+          '@aws-sdk/s3-request-presigner',
+          'adm-zip',
+          'sql.js',
+          'electron-log',
+          'follow-redirects',
+          'electron',
+        ],
         output: {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
-              if (id.includes('@open-file-viewer') || id.includes('pdfjs-dist')) {
+              if (id.includes('node_modules/@open-file-viewer') || id.includes('node_modules/pdfjs-dist')) {
                 return 'vendor-viewer';
               }
-              if (['react', 'react-dom', 'react-router-dom', 'zustand'].some(pkg => id.includes(pkg))) {
-                return 'vendor-react';
-              }
-              if (id.includes('vditor')) {
+              if (id.includes('node_modules/vditor')) {
                 return 'vendor-editor';
               }
-              if (id.includes('lucide-react')) {
+              if (id.includes('node_modules/lucide-react')) {
                 return 'vendor-ui';
               }
-              if (['qrcode', '@supabase/supabase-js', '@tanstack/react-query'].some(pkg => id.includes(pkg))) {
+              if (id.includes('node_modules/@supabase') || id.includes('node_modules/@tanstack')) {
                 return 'vendor-tools';
+              }
+              if (
+                id.includes('node_modules/react/') ||
+                id.includes('node_modules/react-dom/') ||
+                id.includes('node_modules/react-router') ||
+                id.includes('node_modules/scheduler') ||
+                id.includes('node_modules/zustand')
+              ) {
+                return 'vendor-react';
               }
               return 'vendor-other';
             }

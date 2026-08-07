@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, Globe, Mail, Phone, Building, FileText, Layers, Plus, Share2 } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndSensors } from '../../../hooks/useDndSensors';
 import { PlatformVisibility } from '../../../types/account';
 import { useAuthStore } from '../../../store/AuthStore';
 import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
@@ -201,16 +202,7 @@ const AccountManagerPage: React.FC = () => {
 
   const [platformOrder, setPlatformOrder] = useState<PlatformType[]>(loadPlatformOrder);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useDndSensors();
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
