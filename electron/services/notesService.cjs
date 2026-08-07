@@ -1,9 +1,10 @@
 const { dialog, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
+const { execFileSync } = require('child_process');
 const fileTypeUtils = require('./fileTypeUtils.cjs');
-const officePreview = require('./officePreview.cjs');
 
 const SETTINGS_FILE_NAME = 'notes_settings.json';
 
@@ -474,30 +475,6 @@ function readFileAsBuffer(filePath) {
   }
 }
 
-function convertOfficeToHtml(filePath) {
-  return new Promise((resolve) => {
-    const fileType = fileTypeUtils.getFileType(filePath);
-    if (!fileType) {
-      return resolve({ success: false, error: '不支持的文件类型' });
-    }
-
-    if (fileType === 'docx') {
-      const ext = path.extname(filePath).toLowerCase();
-      if (ext === '.doc') {
-        officePreview.docToHtml(filePath).then(resolve);
-      } else {
-        officePreview.docxToHtml(filePath).then(resolve);
-      }
-    } else if (fileType === 'xlsx') {
-      officePreview.xlsxToHtml(filePath).then(resolve);
-    } else {
-      resolve({ success: false, error: '不是 Office 文件' });
-    }
-  });
-}
-
-
-
 function moveItem(itemPath, targetFolderPath) {
   try {
     if (!fs.existsSync(itemPath)) {
@@ -527,6 +504,117 @@ function moveItem(itemPath, targetFolderPath) {
   }
 }
 
+function runPsScript(scriptContent) {
+  const tmpScript = path.join(os.tmpdir(), `tb_clip_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.ps1`);
+  fs.writeFileSync(tmpScript, scriptContent, 'utf-8');
+  try {
+    return execFileSync('powershell.exe', [
+      '-NoProfile', '-NonInteractive', '-Sta', '-ExecutionPolicy', 'Bypass', '-File', tmpScript
+    ], {
+      encoding: 'utf-8',
+      timeout: 10000,
+      windowsHide: true,
+    });
+  } finally {
+    try { fs.unlinkSync(tmpScript); } catch {}
+  }
+}
+
+function writeFilesToSystemClipboard(filePaths) {
+  const filesJson = JSON.stringify(filePaths);
+  const script = `Add-Type -AssemblyName System.Windows.Forms
+$paths = [string[]] (ConvertFrom-Json '${filesJson.replace(/'/g, "''")}')
+$sc = New-Object System.Collections.Specialized.StringCollection
+foreach ($p in $paths) { if (Test-Path $p) { [void]$sc.Add($p) } }
+if ($sc.Count -gt 0) { [System.Windows.Forms.Clipboard]::SetFileDropList($sc) }`;
+  runPsScript(script);
+}
+
+function copyItem(sourcePath) {
+  try {
+    if (!fs.existsSync(sourcePath)) {
+      return { success: false, error: '文件或文件夹不存在' };
+    }
+    writeFilesToSystemClipboard([sourcePath]);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : '复制失败' };
+  }
+}
+
+function copyFolderRecursive(source, dest) {
+  if (!fs.existsSync(dest)) {
+    fs.mkdirSync(dest, { recursive: true });
+  }
+  const entries = fs.readdirSync(source, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(source, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyFolderRecursive(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+function importDroppedFiles(rootPath, filePaths) {
+  try {
+    if (!rootPath || !fs.existsSync(rootPath)) {
+      return { success: false, error: '目标文件夹不存在' };
+    }
+    if (!fs.statSync(rootPath).isDirectory()) {
+      return { success: false, error: '目标路径不是文件夹' };
+    }
+    if (!filePaths || filePaths.length === 0) {
+      return { success: false, error: '没有有效的文件' };
+    }
+
+    const imported = [];
+    const errors = [];
+
+    for (const sourcePath of filePaths) {
+      try {
+        if (!fs.existsSync(sourcePath)) {
+          errors.push(`${path.basename(sourcePath)}: 文件不存在`);
+          continue;
+        }
+
+        const itemName = path.basename(sourcePath);
+        let newPath = path.join(rootPath, itemName);
+
+        if (fs.existsSync(newPath)) {
+          const ext = path.extname(itemName);
+          const baseName = ext ? itemName.slice(0, -ext.length) : itemName;
+          let counter = 1;
+          while (fs.existsSync(newPath)) {
+            newPath = path.join(rootPath, `${baseName} (${counter})${ext}`);
+            counter++;
+          }
+        }
+
+        const stat = fs.statSync(sourcePath);
+        if (stat.isDirectory()) {
+          copyFolderRecursive(sourcePath, newPath);
+        } else {
+          fs.copyFileSync(sourcePath, newPath);
+        }
+        imported.push(newPath);
+      } catch (err) {
+        errors.push(`${path.basename(sourcePath)}: ${err.message}`);
+      }
+    }
+
+    return {
+      success: imported.length > 0,
+      imported,
+      errors: errors.length > 0 ? errors : undefined,
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : '导入失败' };
+  }
+}
+
 module.exports = {
   getSetting,
   saveSetting,
@@ -548,6 +636,7 @@ module.exports = {
   indexAllNotes,
   openFileInFolder,
   readFileAsBuffer,
-  convertOfficeToHtml,
   moveItem,
+  copyItem,
+  importDroppedFiles,
 };

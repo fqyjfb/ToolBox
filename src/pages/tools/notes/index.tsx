@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PanelLeft } from 'lucide-react';
 import { useNotes } from '@/hooks/useNotes';
 import { useChatNotes } from './hooks/useChatNotes';
+import { CHAT_ORGANIZE_FOLDER } from './constants/paths';
 import FolderSelectModal from './components/FolderSelectModal';
 import NotesSidebar, { CreateDialog } from './components/NotesSidebar';
 import NotesEditor from './components/NotesEditor';
@@ -30,7 +31,6 @@ const NotesPage: React.FC = () => {
     fileContent,
     fileMetadata,
     filePreviewUrl,
-    officeHtmlPreview,
     loading,
     selectRootFolder,
     selectFile,
@@ -43,6 +43,8 @@ const NotesPage: React.FC = () => {
     renameItem,
     deleteItem,
     moveItem,
+    copyItem,
+    importDroppedFiles,
     toggleFolderExpand,
     refreshFileTree,
     rebuildIndex,
@@ -77,6 +79,39 @@ const NotesPage: React.FC = () => {
   const handleToggleChatMode = () => {
     setIsChatMode(!isChatMode);
   };
+
+  const sep = rootPath && rootPath.includes('\\') ? '\\' : '/';
+  const chatOrganizePath = rootPath ? `${rootPath}${sep}${CHAT_ORGANIZE_FOLDER}` : null;
+
+  const ensureOrganizeFolder = useCallback(async () => {
+    if (!rootPath) return;
+    try {
+      await window.electron?.notes.createFolder(rootPath, CHAT_ORGANIZE_FOLDER);
+      const s = rootPath.includes('\\') ? '\\' : '/';
+      const oldChatPath = `${rootPath}${s}对话.md`;
+      const newChatPath = `${rootPath}${s}${CHAT_ORGANIZE_FOLDER}${s}对话.md`;
+      const result = await window.electron?.notes.readFile(oldChatPath);
+      if (result?.success && result.content) {
+        const newResult = await window.electron?.notes.readFile(newChatPath);
+        if (!newResult?.success) {
+          await window.electron?.notes.saveFile(newChatPath, result.content);
+          await window.electron?.notes.deleteItem(oldChatPath);
+        }
+      }
+      await refreshFileTree();
+    } catch {}
+  }, [rootPath, refreshFileTree]);
+
+  useEffect(() => {
+    if (rootPath) {
+      ensureOrganizeFolder();
+    }
+  }, [rootPath, ensureOrganizeFolder]);
+
+  const handleSelectOrganizeFolder = useCallback(() => {
+    if (!chatOrganizePath) return;
+    toggleFolderExpand(chatOrganizePath);
+  }, [chatOrganizePath, toggleFolderExpand]);
 
   const handleToggleSidebar = () => {
     const newValue = !sidebarVisible;
@@ -147,6 +182,10 @@ const NotesPage: React.FC = () => {
             loading={loading}
             isChatMode={isChatMode}
             onToggleChatMode={handleToggleChatMode}
+            chatOrganizePath={chatOrganizePath}
+            onSelectOrganizeFolder={handleSelectOrganizeFolder}
+            onCopyItem={copyItem}
+            onImportDroppedFiles={importDroppedFiles}
           />
         )}
 
@@ -189,7 +228,6 @@ const NotesPage: React.FC = () => {
             content={fileContent}
             fileMetadata={fileMetadata}
             filePreviewUrl={filePreviewUrl}
-            officeHtmlPreview={officeHtmlPreview}
             onContentChange={updateFileContent}
             onSave={saveFile}
             sidebarVisible={sidebarVisible}

@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle, Table2, FileImage, Code, MoveRight } from 'lucide-react';
 import ContextMenu, { ContextMenuItem, SubMenuItem } from '@/components/ui/ContextMenu';
+import { useToastStore } from '@/store/toastStore';
 
 export interface FileTreeNode {
   id: string;
   name: string;
   type: 'file' | 'folder';
   path: string;
-  fileType?: 'md' | 'txt' | 'html' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType?: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf';
   children?: FileTreeNode[];
   expanded?: boolean;
   active?: boolean;
@@ -32,25 +33,46 @@ interface NotesSidebarProps {
   loading: boolean;
   isChatMode: boolean;
   onToggleChatMode: () => void;
+  chatOrganizePath?: string | null;
+  onSelectOrganizeFolder?: () => void;
+  onCopyItem: (sourcePath: string) => Promise<boolean>;
+  onImportDroppedFiles: (filePaths: string[], targetFolderPath?: string) => Promise<{ success: boolean; imported?: string[]; errors?: string[] }>;
 }
 
 const FileTreeItem: React.FC<{
   node: FileTreeNode;
   depth: number;
   selectedFile: FileTreeNode | null;
+  listSelection: string | null;
   onSelectFile: (file: FileTreeNode) => void;
+  onSelectItem: (path: string) => void;
   onToggleFolder: (folderPath: string) => void;
   onContextMenu: (e: React.MouseEvent, node: FileTreeNode) => void;
+  onItemDragStart: (e: React.DragEvent, node: FileTreeNode) => void;
+  onItemDragOver: (e: React.DragEvent, node: FileTreeNode) => void;
+  onItemDrop: (e: React.DragEvent, node: FileTreeNode) => void;
+  onItemDragEnd: () => void;
+  dragOverPath: string | null;
+  dragSourcePath: string | null;
 }> = ({
   node,
   depth,
   selectedFile,
+  listSelection,
   onSelectFile,
+  onSelectItem,
   onToggleFolder,
   onContextMenu,
+  onItemDragStart,
+  onItemDragOver,
+  onItemDrop,
+  onItemDragEnd,
+  dragOverPath,
+  dragSourcePath,
 }) => {
   const isExpanded = node.expanded ?? false;
   const isSelected = selectedFile?.path === node.path;
+  const isListSelected = listSelection === node.path;
   const itemRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,6 +87,7 @@ const FileTreeItem: React.FC<{
   }, [isSelected]);
 
   const handleClick = () => {
+    onSelectItem(node.path);
     if (node.type === 'folder') {
       onToggleFolder(node.path);
     } else {
@@ -77,14 +100,19 @@ const FileTreeItem: React.FC<{
       <div
         ref={itemRef}
         className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${
-          isSelected
-            ? 'bg-primary/10 text-primary'
+          isSelected || isListSelected
+            ? 'bg-primary text-button-text'
             : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-        }`}
+        } ${dragOverPath === node.path ? '!ring-2 !ring-primary' : ''} ${dragSourcePath === node.path ? 'opacity-50' : ''}`}
         style={{ paddingLeft: `${12 + depth * 16}px` }}
         onClick={handleClick}
         onContextMenu={(e) => onContextMenu(e, node)}
         title={node.path}
+        draggable
+        onDragStart={(e) => onItemDragStart(e, node)}
+        onDragEnd={onItemDragEnd}
+        onDragOver={node.type === 'folder' ? (e) => onItemDragOver(e, node) : undefined}
+        onDrop={node.type === 'folder' ? (e) => onItemDrop(e, node) : undefined}
       >
         {node.type === 'folder' && (
           <ChevronRight
@@ -101,6 +129,7 @@ const FileTreeItem: React.FC<{
             {node.fileType === 'image' && <FileImage className="w-4 h-4 text-purple-600" />}
             {node.fileType === 'txt' && <FileText className="w-4 h-4 text-gray-500" />}
             {node.fileType === 'html' && <Code className="w-4 h-4 text-orange-500" />}
+            {node.fileType === 'json' && <Code className="w-4 h-4 text-yellow-600" />}
             {(!node.fileType || node.fileType === 'md') && <FileText className="w-4 h-4" />}
           </>
         )}
@@ -116,9 +145,17 @@ const FileTreeItem: React.FC<{
             node={child}
             depth={depth + 1}
             selectedFile={selectedFile}
+            listSelection={listSelection}
             onSelectFile={onSelectFile}
+            onSelectItem={onSelectItem}
             onToggleFolder={onToggleFolder}
             onContextMenu={onContextMenu}
+            onItemDragStart={onItemDragStart}
+            onItemDragOver={onItemDragOver}
+            onItemDrop={onItemDrop}
+            onItemDragEnd={onItemDragEnd}
+            dragOverPath={dragOverPath}
+            dragSourcePath={dragSourcePath}
           />
         ))}
         </div>
@@ -286,6 +323,10 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   loading,
   isChatMode,
   onToggleChatMode,
+  chatOrganizePath,
+  onSelectOrganizeFolder,
+  onCopyItem,
+  onImportDroppedFiles,
 }) => {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -293,6 +334,12 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     node?: FileTreeNode;
   } | null>(null);
   const [isRebuilding, setIsRebuilding] = useState(false);
+  const [listSelection, setListSelection] = useState<string | null>(null);
+  const [isOrganizeExpanded, setIsOrganizeExpanded] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragSourcePath, setDragSourcePath] = useState<string | null>(null);
+  const [dragOverPath, setDragOverPath] = useState<string | null>(null);
+  const addToast = useToastStore(state => state.addToast);
 
   const [createDialog, setCreateDialog] = useState<{
     type: 'folder' | 'note';
@@ -419,6 +466,205 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
       setIsRebuilding(false);
     }
   };
+
+  const findNodeInTree = useCallback((nodes: FileTreeNode[], path: string): FileTreeNode | null => {
+    for (const node of nodes) {
+      if (node.path === path) return node;
+      if (node.children) {
+        const found = findNodeInTree(node.children, path);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, []);
+
+  const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      return;
+    }
+
+    const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+    if (isCtrlOrMeta && e.key === 'c') {
+      if (listSelection) {
+        e.preventDefault();
+        const success = await onCopyItem(listSelection);
+        addToast({ type: success ? 'success' : 'error', message: success ? '已复制到剪贴板' : '复制失败' });
+      }
+    }
+  }, [listSelection, onCopyItem, addToast]);
+
+  const getTargetFolderPath = useCallback((): string | undefined => {
+    if (!listSelection) return undefined;
+    const node = findNodeInTree(fileTree, listSelection);
+    if (!node) return undefined;
+    if (node.type === 'folder') return node.path;
+    const separator = node.path.includes('\\') ? '\\' : '/';
+    const lastSep = node.path.lastIndexOf(separator);
+    if (lastSep > 0) return node.path.substring(0, lastSep);
+    return undefined;
+  }, [listSelection, fileTree, findNodeInTree]);
+
+  const handleItemDragStart = useCallback((e: React.DragEvent, node: FileTreeNode) => {
+    setDragSourcePath(node.path);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', node.path);
+  }, []);
+
+  const handleItemDragOver = useCallback((e: React.DragEvent, node: FileTreeNode) => {
+    if (!dragSourcePath) return;
+    if (node.type !== 'folder') return;
+    const sep = node.path.includes('\\') ? '\\' : '/';
+    if (dragSourcePath === node.path || node.path.startsWith(dragSourcePath + sep)) return;
+    if (dragSourcePath.substring(0, dragSourcePath.lastIndexOf(sep)) === node.path) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverPath(node.path);
+  }, [dragSourcePath]);
+
+  const handleItemDrop = useCallback(async (e: React.DragEvent, node: FileTreeNode) => {
+    if (!dragSourcePath) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverPath(null);
+    const sourcePath = dragSourcePath;
+    setDragSourcePath(null);
+    if (sourcePath !== node.path) {
+      const success = await onMoveItem(sourcePath, node.path);
+      addToast({ type: success ? 'success' : 'error', message: success ? '已移动到所选目录' : '移动失败' });
+    }
+  }, [dragSourcePath, onMoveItem, addToast]);
+
+  const handleItemDragEnd = useCallback(() => {
+    setDragSourcePath(null);
+    setDragOverPath(null);
+  }, []);
+
+  const handlePaste = useCallback(async (e: ClipboardEvent) => {
+    const target = e.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      return;
+    }
+
+    if (!rootPath) return;
+
+    const items = e.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    const filePaths: string[] = [];
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file && window.electron?.getFileOrFolderPath) {
+          const filePath = await window.electron.getFileOrFolderPath(file);
+          if (filePath) {
+            filePaths.push(filePath);
+          }
+        }
+      }
+    }
+
+    if (filePaths.length > 0) {
+      e.preventDefault();
+      const result = await onImportDroppedFiles(filePaths, getTargetFolderPath());
+      addToast({ type: result.success ? 'success' : 'error', message: result.success ? '已粘贴到当前目录' : '粘贴失败' });
+    }
+  }, [rootPath, onImportDroppedFiles, addToast, getTargetFolderPath]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [handleKeyDown, handlePaste]);
+
+  useEffect(() => {
+    if (selectedFile) {
+      setListSelection(selectedFile.path);
+    } else {
+      setListSelection(null);
+    }
+  }, [selectedFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (dragSourcePath) {
+      if (dragOverPath) setDragOverPath(null);
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, [dragSourcePath, dragOverPath]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    if (dragSourcePath) {
+      setDragSourcePath(null);
+      setDragOverPath(null);
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    if (!rootPath) {
+      addToast({ type: 'error', message: '请先设置笔记存储路径' });
+      return;
+    }
+
+    const filePaths: string[] = [];
+    const items = e.dataTransfer.items;
+
+    if (items && items.length > 0) {
+      for (const item of Array.from(items)) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file && window.electron?.getFileOrFolderPath) {
+            const filePath = await window.electron.getFileOrFolderPath(file);
+            if (filePath) {
+              filePaths.push(filePath);
+            }
+          }
+        }
+      }
+    } else {
+      for (const file of Array.from(e.dataTransfer.files)) {
+        if (window.electron?.getFileOrFolderPath) {
+          const filePath = await window.electron.getFileOrFolderPath(file);
+          if (filePath) {
+            filePaths.push(filePath);
+          }
+        }
+      }
+    }
+
+    if (filePaths.length === 0) {
+      addToast({ type: 'error', message: '无法获取文件路径' });
+      return;
+    }
+
+    const result = await onImportDroppedFiles(filePaths, getTargetFolderPath());
+    if (result.success) {
+      const msg = result.imported && result.imported.length > 0
+        ? `已导入 ${result.imported.length} 个文件`
+        : '导入成功';
+      addToast({ type: 'success', message: msg });
+    } else {
+      const msg = result.errors && result.errors.length > 0
+        ? result.errors[0]
+        : '导入失败';
+      addToast({ type: 'error', message: msg });
+    }
+  }, [rootPath, onImportDroppedFiles, addToast, getTargetFolderPath, dragSourcePath]);
 
   const getFoldersFromTree = useCallback((nodes: FileTreeNode[], excludePath?: string): { path: string; label: string }[] => {
     const folders: { path: string; label: string }[] = [];
@@ -554,7 +800,19 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   };
 
   return (
-    <aside className="flex h-full w-48 flex-shrink-0 flex-col bg-white dark:bg-gray-900">
+    <aside
+      className={`flex h-full w-48 flex-shrink-0 flex-col bg-white dark:bg-gray-900 ${isDragOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragOver && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 pointer-events-none">
+          <div className="rounded-lg bg-white dark:bg-gray-800 px-4 py-2 text-sm text-primary shadow-lg">
+            释放以导入文件
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center gap-1">
           <button
@@ -604,15 +862,9 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         </div>
       </div>
 
-      <div 
-        className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide"
-        onContextMenu={(e) => {
-          if ((e.target as HTMLElement).closest('.cursor-pointer')) return;
-          handleContextMenu(e);
-        }}
-      >
+      <div className="flex-shrink-0 border-t border-gray-100 dark:border-gray-800 px-2 py-2 space-y-1">
         <div
-          className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 mb-2 transition-colors ${
+          className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${
             isChatMode
               ? 'bg-primary/10 text-primary'
               : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -623,6 +875,62 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
           <span className="flex-1 truncate text-sm">对话</span>
         </div>
 
+        {chatOrganizePath && (() => {
+          const organizeNode = findNodeInTree(fileTree, chatOrganizePath);
+          const organizeChildren = organizeNode?.children || [];
+          return (
+            <div>
+              <div
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                onClick={() => {
+                  setIsOrganizeExpanded(!isOrganizeExpanded);
+                  if (!isOrganizeExpanded) {
+                    onSelectOrganizeFolder?.();
+                  }
+                }}
+                title={chatOrganizePath}
+              >
+                <ChevronRight
+                  className={`w-4 h-4 transition-transform ${isOrganizeExpanded ? 'rotate-90' : ''}`}
+                />
+                <Folder className="w-4 h-4" />
+                <span className="flex-1 truncate text-sm">对话整理</span>
+              </div>
+              {isOrganizeExpanded && organizeChildren.length > 0 && (
+                <div className="mt-0.5 space-y-0.5">
+                  {organizeChildren.map((child) => (
+                    <FileTreeItem
+                      key={child.id}
+                      node={child}
+                      depth={1}
+                      selectedFile={selectedFile}
+                      listSelection={listSelection}
+                      onSelectFile={onSelectFile}
+                      onSelectItem={setListSelection}
+                      onToggleFolder={onToggleFolder}
+                      onContextMenu={handleContextMenu}
+                      onItemDragStart={handleItemDragStart}
+                      onItemDragOver={handleItemDragOver}
+                      onItemDrop={handleItemDrop}
+                      onItemDragEnd={handleItemDragEnd}
+                      dragOverPath={dragOverPath}
+                      dragSourcePath={dragSourcePath}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+
+      <div 
+        className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide"
+        onContextMenu={(e) => {
+          if ((e.target as HTMLElement).closest('.cursor-pointer')) return;
+          handleContextMenu(e);
+        }}
+      >
         {fileTree.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-gray-400">
             <FolderOpen className="mb-2 h-12 w-12" />
@@ -631,17 +939,27 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
           </div>
         ) : (
           <div className="space-y-0.5">
-            {fileTree.map((node) => (
-              <FileTreeItem
-                key={node.id}
-                node={node}
-                depth={0}
-                selectedFile={selectedFile}
-                onSelectFile={onSelectFile}
-                onToggleFolder={onToggleFolder}
-                onContextMenu={handleContextMenu}
-              />
-            ))}
+            {fileTree
+              .filter((node) => node.path !== chatOrganizePath)
+              .map((node) => (
+                <FileTreeItem
+                  key={node.id}
+                  node={node}
+                  depth={0}
+                  selectedFile={selectedFile}
+                  listSelection={listSelection}
+                  onSelectFile={onSelectFile}
+                  onSelectItem={setListSelection}
+                  onToggleFolder={onToggleFolder}
+                  onContextMenu={handleContextMenu}
+                  onItemDragStart={handleItemDragStart}
+                  onItemDragOver={handleItemDragOver}
+                  onItemDrop={handleItemDrop}
+                  onItemDragEnd={handleItemDragEnd}
+                  dragOverPath={dragOverPath}
+                  dragSourcePath={dragSourcePath}
+                />
+              ))}
           </div>
         )}
       </div>

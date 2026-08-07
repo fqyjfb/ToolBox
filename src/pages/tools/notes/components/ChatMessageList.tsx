@@ -124,7 +124,10 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                   </span>
 
                   <ChatActionButtons
-                    isVisible={hoveredMessage === message.id || selectedMessages.includes(message.id)}
+                    isVisible={
+                      (selectedMessages.length === 0 && hoveredMessage === message.id) ||
+                      (selectedMessages.length > 0 && selectedMessages[selectedMessages.length - 1] === message.id)
+                    }
                     onMove={onMove}
                   />
                 </div>

@@ -1,14 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { FileText, Save, Edit3, PanelLeft, FolderPlus, FilePlus, FileText as FileWord, Table2, FileImage, Code } from 'lucide-react';
 import WMarkdownEditor from '@/components/WMarkdownEditor';
 import { useThemeStore } from '@/store/themeStore';
+import { FileViewer } from '@open-file-viewer/react';
+import { imagePlugin, pdfPlugin, officePlugin, fallbackPlugin } from '@open-file-viewer/core';
+import '@open-file-viewer/core/style.css';
+import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
 interface FileTreeNode {
   id: string;
   name: string;
   type: 'file' | 'folder';
   path: string;
-  fileType?: 'md' | 'txt' | 'html' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType?: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf';
   children?: FileTreeNode[];
   expanded?: boolean;
   active?: boolean;
@@ -16,7 +20,7 @@ interface FileTreeNode {
 
 interface FileMetadata {
   filePath: string;
-  fileType: 'md' | 'txt' | 'html' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf';
   mimeType?: string;
 }
 
@@ -25,7 +29,6 @@ interface NotesEditorProps {
   content: string;
   fileMetadata: FileMetadata | null;
   filePreviewUrl: string | null;
-  officeHtmlPreview: string | null;
   onContentChange: (content: string) => void;
   onSave: (content: string) => Promise<boolean>;
   sidebarVisible?: boolean;
@@ -39,7 +42,6 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   content,
   fileMetadata,
   filePreviewUrl,
-  officeHtmlPreview,
   onContentChange,
   onSave,
   sidebarVisible = true,
@@ -51,13 +53,21 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [htmlViewMode, setHtmlViewMode] = useState<'preview' | 'source'>('preview');
-  const [imageScale, setImageScale] = useState(1);
-  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
-  const [isImageDragging, setIsImageDragging] = useState(false);
-  const imageDragRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
   const lastSavedContentRef = useRef(content);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentFilePathRef = useRef<string | null>(null);
+
+  const viewerPlugins = useMemo(
+    () => [
+      imagePlugin(),
+      pdfPlugin({ workerSrc: pdfWorkerSrc }),
+      officePlugin(),
+      fallbackPlugin(),
+    ],
+    []
+  );
+
+  const viewerTheme = isDark ? 'dark' : 'light';
 
   const handleUpload = useCallback(async () => {
     const filePath = await window.electron?.selectFile();
@@ -67,47 +77,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     return '';
   }, []);
 
-  const handleImageWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.1 : -0.1;
-    setImageScale((prev) => {
-      const next = Math.round((prev + delta) * 10) / 10;
-      const clamped = Math.min(3, Math.max(0.2, next));
-      if (clamped === 1) {
-        setImageOffset({ x: 0, y: 0 });
-      }
-      return clamped;
-    });
-  }, []);
-
-  const handleImageMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsImageDragging(true);
-    imageDragRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      posX: imageOffset.x,
-      posY: imageOffset.y,
-    };
-  }, [imageOffset]);
-
-  const handleImageMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isImageDragging) return;
-    const dx = e.clientX - imageDragRef.current.x;
-    const dy = e.clientY - imageDragRef.current.y;
-    setImageOffset({
-      x: imageDragRef.current.posX + dx,
-      y: imageDragRef.current.posY + dy,
-    });
-  }, [isImageDragging]);
-
-  const handleImageMouseUp = useCallback(() => {
-    setIsImageDragging(false);
-  }, []);
-
   useEffect(() => {
-    setImageScale(1);
-    setImageOffset({ x: 0, y: 0 });
     setHtmlViewMode('preview');
   }, [selectedFile?.path]);
 
@@ -173,6 +143,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
       md: 'Markdown',
       txt: '纯文本',
       html: 'HTML',
+      json: 'JSON',
       docx: 'Word 文档',
       xlsx: 'Excel 表格',
       image: '图片',
@@ -190,6 +161,8 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
         return <FileText className="h-5 w-5 text-gray-500" />;
       case 'html':
         return <Code className="h-5 w-5 text-orange-500" />;
+      case 'json':
+        return <Code className="h-5 w-5 text-yellow-600" />;
       case 'docx':
         return <FileWord className="h-5 w-5 text-blue-600" />;
       case 'xlsx':
@@ -206,63 +179,20 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   const renderEditor = () => {
     const fileType = fileMetadata?.fileType;
 
-    if (fileType === 'image' && filePreviewUrl) {
+    if ((fileType === 'image' || fileType === 'pdf' || fileType === 'docx' || fileType === 'xlsx') && filePreviewUrl) {
       return (
-        <div
-          className="flex flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 relative"
-          style={{ overflow: 'hidden' }}
-          onWheel={handleImageWheel}
-          onMouseDown={handleImageMouseDown}
-          onMouseMove={handleImageMouseMove}
-          onMouseUp={handleImageMouseUp}
-          onMouseLeave={handleImageMouseUp}
-        >
-          <img
-            src={filePreviewUrl}
-            alt={selectedFile?.name || 'preview'}
-            className="object-contain rounded-lg shadow-sm transition-transform duration-75"
-            style={{
-              transform: `translate(${imageOffset.x}px, ${imageOffset.y}px) scale(${imageScale})`,
-              transformOrigin: 'center center',
-              maxWidth: '100%',
-              maxHeight: '100%',
-              cursor: isImageDragging ? 'grabbing' : 'grab',
-              userSelect: 'none',
-            }}
-            draggable={false}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          <FileViewer
+            file={filePreviewUrl}
+            fileName={selectedFile?.name || ''}
+            width="100%"
+            height="100%"
+            fit="contain"
+            toolbar
+            theme={viewerTheme}
+            locale="zh-CN"
+            plugins={viewerPlugins}
           />
-          <div className="absolute bottom-3 left-3 text-xs text-gray-500 bg-white/80 dark:bg-gray-800/80 rounded px-2 py-1 select-none pointer-events-none">
-            滚轮缩放 · 拖拽移动 · {Math.round(imageScale * 100)}%
-          </div>
-        </div>
-      );
-    }
-
-    if (fileType === 'pdf' && filePreviewUrl) {
-      return (
-        <div className="flex-1 bg-gray-50 dark:bg-gray-900 min-h-0 overflow-hidden">
-          <embed
-            src={filePreviewUrl}
-            type="application/pdf"
-            className="w-full h-full"
-            title={selectedFile?.name || 'PDF Preview'}
-          />
-        </div>
-      );
-    }
-
-    if (fileType === 'docx' || fileType === 'xlsx') {
-      if (officeHtmlPreview) {
-        return (
-          <div
-            className="flex-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 p-6"
-            dangerouslySetInnerHTML={{ __html: officeHtmlPreview }}
-          />
-        );
-      }
-      return (
-        <div className="flex flex-1 items-center justify-center text-gray-400 min-h-0">
-          加载中...
         </div>
       );
     }
@@ -420,7 +350,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
           </div>
         </div>
 
-        {(fileMetadata?.fileType === 'md' || fileMetadata?.fileType === 'txt' || fileMetadata?.fileType === 'html') ? (
+        {(fileMetadata?.fileType === 'md' || fileMetadata?.fileType === 'txt' || fileMetadata?.fileType === 'html' || fileMetadata?.fileType === 'json') ? (
           <button
             className="flex items-center rounded-lg bg-primary px-2 py-1.5 text-button-text transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => handleSave(content)}

@@ -33,6 +33,9 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
+              if (id.includes('@open-file-viewer') || id.includes('pdfjs-dist')) {
+                return 'vendor-viewer';
+              }
               if (['react', 'react-dom', 'react-router-dom', 'zustand'].some(pkg => id.includes(pkg))) {
                 return 'vendor-react';
               }

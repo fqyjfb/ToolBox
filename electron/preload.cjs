@@ -227,8 +227,9 @@ contextBridge.exposeInMainWorld('electron', {
     indexAll: (rootPath) => ipcRenderer.invoke('notes-index-all', rootPath),
     openFileInFolder: (filePath) => ipcRenderer.invoke('notes-open-file-in-folder', filePath),
     readFileAsBuffer: (filePath) => ipcRenderer.invoke('notes-read-file-as-buffer', filePath),
-    convertOfficeToHtml: (filePath) => ipcRenderer.invoke('notes-convert-office-to-html', filePath),
     moveItem: (itemPath, targetFolderPath) => ipcRenderer.invoke('notes-move-item', itemPath, targetFolderPath),
+    copyItem: (sourcePath) => ipcRenderer.invoke('notes-copy-item', sourcePath),
+    importDroppedFiles: (rootPath, filePaths) => ipcRenderer.invoke('notes-import-dropped-files', rootPath, filePaths),
   },
   lock: {
     getStatus: () => ipcRenderer.invoke('lock:getStatus'),

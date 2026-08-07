@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useCallbackRef } from '../../../../hooks/useCallbackRef';
 import { ChatMessage, ChatTarget } from '../types/chat';
-import { CHAT_FILENAME, LATER_FILENAME, READ_FILENAME, WATCH_FILENAME, SHOP_FILENAME, JOURNAL_FOLDER, ARCHIVE_FOLDER } from '../constants/paths';
+import { CHAT_FILENAME, CHAT_ORGANIZE_FOLDER, LATER_FILENAME, READ_FILENAME, WATCH_FILENAME, SHOP_FILENAME, JOURNAL_FOLDER, ARCHIVE_FOLDER } from '../constants/paths';
 import { parseChatContent, generateChatContent, generateTimestamp, generateTodayHeader, generateJournalFilename } from '../utils/chatParser';
 import { DISPLAY_LIMITS } from '../../../../constants/timers';
 
@@ -28,10 +28,12 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
 
+  const sep = rootPath && rootPath.includes('\\') ? '\\' : '/';
+
   const chatFilePath = useMemo(() => {
     if (!rootPath) return '';
-    return `${rootPath}/${CHAT_FILENAME}`;
-  }, [rootPath]);
+    return `${rootPath}${sep}${CHAT_ORGANIZE_FOLDER}${sep}${CHAT_FILENAME}`;
+  }, [rootPath, sep]);
 
   const refreshMessages = useCallback(async () => {
     if (!rootPath) return;
@@ -52,6 +54,9 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
     if (!rootPath || !text.trim()) return;
 
     const timestamp = generateTimestamp();
+
+    const organizeFolder = `${rootPath}${sep}${CHAT_ORGANIZE_FOLDER}`;
+    await ensureFolderExists(organizeFolder);
 
     const currentContent = await (window.electron?.notes.readFile(chatFilePath) || Promise.resolve({ success: false }));
     let content = currentContent.success && currentContent.content ? currentContent.content : '';
@@ -114,7 +119,11 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
 
   const ensureFolderExists = useCallbackRef(async (folderPath: string) => {
     try {
-      const result = await (window.electron?.notes.createFolder(null, folderPath) || Promise.resolve({ success: true }));
+      const sep = folderPath.includes('\\') ? '\\' : '/';
+      const lastSep = folderPath.lastIndexOf(sep);
+      const parentPath = lastSep > 0 ? folderPath.substring(0, lastSep) : null;
+      const folderName = lastSep > 0 ? folderPath.substring(lastSep + 1) : folderPath;
+      const result = await (window.electron?.notes.createFolder(parentPath, folderName) || Promise.resolve({ success: true }));
       return result.success;
     } catch {
       return true;
@@ -141,13 +150,15 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
     const messagesToMove = getMessagesToMove();
     if (messagesToMove.length === 0) return;
 
+    const organizeFolder = `${rootPath}${sep}${CHAT_ORGANIZE_FOLDER}`;
+
     switch (target) {
       case 'journal': {
         const journalFilename = generateJournalFilename();
-        const destinationPath = `${rootPath}/${JOURNAL_FOLDER}/${journalFilename}`;
+        const destinationPath = `${organizeFolder}${sep}${JOURNAL_FOLDER}${sep}${journalFilename}`;
         const header = `## ${generateTodayHeader()}`;
         const contentToAppend = messagesToMove.map(m => `- ${m.text}`).join('\n');
-        await ensureFolderExists(`${rootPath}/${JOURNAL_FOLDER}`);
+        await ensureFolderExists(`${organizeFolder}${sep}${JOURNAL_FOLDER}`);
         await appendToFile(destinationPath, header, contentToAppend);
         break;
       }
@@ -161,9 +172,10 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
           watch: WATCH_FILENAME,
           shop: SHOP_FILENAME,
         };
-        const destinationPath = `${rootPath}/${filenameMap[target]}`;
+        const destinationPath = `${organizeFolder}${sep}${filenameMap[target]}`;
         const header = `#### ${generateTodayHeader()}`;
         const contentToAppend = messagesToMove.map(m => `- [ ] ${m.text}`).join('\n');
+        await ensureFolderExists(organizeFolder);
         await appendToFile(destinationPath, header, contentToAppend);
         break;
       }
@@ -171,8 +183,8 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
         for (const msg of messagesToMove) {
           const header = msg.text.slice(0, DISPLAY_LIMITS.CHAT_HEADER_LENGTH);
           const archiveFilename = `${header.replace(/[^\w\s]/g, '_')}.md`;
-          const destinationPath = `${rootPath}/${ARCHIVE_FOLDER}/${archiveFilename}`;
-          await ensureFolderExists(`${rootPath}/${ARCHIVE_FOLDER}`);
+          const destinationPath = `${organizeFolder}${sep}${ARCHIVE_FOLDER}${sep}${archiveFilename}`;
+          await ensureFolderExists(`${organizeFolder}${sep}${ARCHIVE_FOLDER}`);
           await appendToFile(destinationPath, `# ${header}`, msg.text);
         }
         break;

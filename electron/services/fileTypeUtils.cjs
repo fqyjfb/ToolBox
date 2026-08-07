@@ -5,6 +5,7 @@ const FILE_TYPE_MAP = {
   '.txt': 'txt',
   '.html': 'html',
   '.htm': 'html',
+  '.json': 'json',
   '.docx': 'docx',
   '.doc': 'docx',
   '.xlsx': 'xlsx',
@@ -14,7 +15,7 @@ const FILE_TYPE_MAP = {
   '.webp': 'image', '.ico': 'image',
 };
 
-const TEXT_FILE_EXTS = new Set(['.md', '.txt', '.html', '.htm']);
+const TEXT_FILE_EXTS = new Set(['.md', '.txt', '.html', '.htm', '.json']);
 const IMAGE_FILE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.ico']);
 
 function getFileType(filePath) {
@@ -37,6 +38,7 @@ function getMimeType(filePath) {
   const mimeMap = {
     '.md': 'text/markdown', '.txt': 'text/plain',
     '.html': 'text/html', '.htm': 'text/html',
+    '.json': 'application/json',
     '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     '.doc': 'application/msword',
     '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
