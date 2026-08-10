@@ -113,20 +113,10 @@ const WebHome: React.FC = () => {
 
   return (
     <>
-      <section style={{ marginBottom: 'var(--space-5)' }}>
-        <div className="shadow-sm relative" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
-          <div className="hidden lg:block absolute top-4 right-4">
-            <button
-              onClick={() => handleToolClick('/tools/weather')}
-              className="cursor-pointer"
-              style={{ width: '110px', height: '65px' }}
-            >
-              <WeatherCard />
-            </button>
-          </div>
-
-          <div className="flex flex-col lg:flex-row items-center justify-center gap-4 lg:pr-32">
-            <div className="flex-1 max-w-xl w-full">
+      <section style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-4">
+            <div className="flex-1 max-w-md w-full">
               <div className="flex flex-wrap justify-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                 {searchTypes.map((type) => (
                   <button
@@ -155,10 +145,10 @@ const WebHome: React.FC = () => {
                   placeholder={searchTypes.find(t => t.id === activeSearchType)?.placeholder || '搜索...'}
                   className="w-full outline-none border rounded-xl placeholder-gray-400"
                   style={{
-                    paddingLeft: 'var(--space-10)',
-                    paddingRight: 'var(--space-4)',
-                    paddingTop: 'var(--space-3)',
-                    paddingBottom: 'var(--space-3)',
+                    paddingLeft: 'var(--space-9)',
+                    paddingRight: 'var(--space-3)',
+                    paddingTop: 'var(--space-2)',
+                    paddingBottom: 'var(--space-2)',
                     backgroundColor: 'var(--color-bg-tertiary)',
                     fontSize: 'var(--text-sm)',
                     color: 'var(--color-text-primary)',
@@ -174,7 +164,7 @@ const WebHome: React.FC = () => {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'var(--space-4)' }}>
-        <div className="lg:col-span-2" style={{ gap: 'var(--space-4)' }}>
+        <div className="lg:col-span-2 flex flex-col" style={{ gap: 'var(--space-4)' }}>
           <section className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
             <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-3)' }}>
               <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
@@ -322,7 +312,17 @@ const WebHome: React.FC = () => {
           </section>
         </div>
 
-        <div style={{ gap: 'var(--space-4)' }}>
+        <div className="flex flex-col" style={{ gap: 'var(--space-4)' }}>
+          <section className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
+            <button
+              onClick={() => handleToolClick('/tools/weather')}
+              className="cursor-pointer block w-full"
+              style={{ height: '80px' }}
+            >
+              <WeatherCard />
+            </button>
+          </section>
+
           <section className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
             <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
               <Zap className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
