@@ -8,7 +8,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { position: sidebarPosition } = useSidebarStore();
+  const sidebarPosition = useSidebarStore((s) => s.position);
 
   return (
     <div className={`flex h-screen overflow-hidden ${sidebarPosition === 'right' ? 'flex-row-reverse' : ''}`}>

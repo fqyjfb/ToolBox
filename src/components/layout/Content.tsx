@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Minus, Maximize2, X, Search, X as XIcon, Bell, Settings, PanelLeft, PanelLeftClose } from 'lucide-react';
+import { useShallow } from 'zustand/shallow';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useThemeStore } from '../../store/themeStore';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -19,8 +20,8 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
   const { searchQuery, setSearchQuery, performSearch, clearSearch, handleSearch } = useNavSearch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDark, toggleTheme } = useThemeStore();
-  const { isCollapsed, toggleSidebar } = useSidebarStore();
+  const { isDark, toggleTheme } = useThemeStore(useShallow((s) => ({ isDark: s.isDark, toggleTheme: s.toggleTheme })));
+  const { isCollapsed, toggleSidebar } = useSidebarStore(useShallow((s) => ({ isCollapsed: s.isCollapsed, toggleSidebar: s.toggleSidebar })));
   const { pendingCount } = useTodoNotification();
 
 

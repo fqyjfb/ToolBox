@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft, Network } from 'lucide-react';
+import { useShallow } from 'zustand/shallow';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
@@ -27,7 +28,12 @@ import './Settings.css';
 
 const Settings: React.FC = () => {
   const addToast = useToastStore(state => state.addToast);
-  const { isVisible: isMenuVisible, position: leftMenuPosition, setVisible, setPosition } = useSidebarStore();
+  const { isVisible: isMenuVisible, position: leftMenuPosition, setVisible, setPosition } = useSidebarStore(useShallow((s) => ({
+    isVisible: s.isVisible,
+    position: s.position,
+    setVisible: s.setVisible,
+    setPosition: s.setPosition,
+  })));
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

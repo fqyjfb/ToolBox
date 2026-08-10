@@ -7,7 +7,7 @@ import { pluginApi } from '../../services/pluginApi';
 const PluginPage: React.FC = () => {
   const { pluginId } = useParams<{ pluginId: string }>();
   const navigate = useNavigate();
-  const { installedPlugins } = usePluginStore();
+  const installedPlugins = usePluginStore((s) => s.installedPlugins);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

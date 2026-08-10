@@ -25,7 +25,7 @@ interface UserItem {
 
 const UserListPage: React.FC = () => {
   const queryClient = useQueryClient()
-  const { addToast } = useToastStore()
+  const addToast = useToastStore((s) => s.addToast)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')

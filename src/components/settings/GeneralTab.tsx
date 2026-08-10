@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, MapPin, Loader2 } from 'lucide-react';
+import { useShallow } from 'zustand/shallow';
 import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
 import Modal from '../ui/Modal';
@@ -65,7 +66,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   onAutoLockTimeoutChange,
 }) => {
   const addToast = useToastStore(state => state.addToast);
-  const { isDark, setTheme } = useThemeStore();
+  const { isDark, setTheme } = useThemeStore(useShallow((s) => ({ isDark: s.isDark, setTheme: s.setTheme })));
   const [locationLoading, setLocationLoading] = React.useState(false);
   const [passwordSet, setPasswordSet] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);

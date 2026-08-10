@@ -48,7 +48,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   onCreateNote,
   onCreateFolder,
 }) => {
-  const { isDark } = useThemeStore();
+  const isDark = useThemeStore((s) => s.isDark);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [htmlViewMode, setHtmlViewMode] = useState<'preview' | 'source'>('preview');

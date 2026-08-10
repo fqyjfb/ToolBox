@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Zap, FileText, Clock, User, Settings, Info, X, Grid3X3, LayoutDashboard, Package } from 'lucide-react';
+import { useShallow } from 'zustand/shallow';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -19,10 +20,16 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const isDesktop = isElectron();
 
-  const { isCollapsed, isVisible, pinnedToolIds, removePinnedTool, reorderPinnedTools } = useSidebarStore();
+  const { isCollapsed, isVisible, pinnedToolIds, removePinnedTool, reorderPinnedTools } = useSidebarStore(useShallow((s) => ({
+    isCollapsed: s.isCollapsed,
+    isVisible: s.isVisible,
+    pinnedToolIds: s.pinnedToolIds,
+    removePinnedTool: s.removePinnedTool,
+    reorderPinnedTools: s.reorderPinnedTools,
+  })));
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isAdmin = useAuthStore((s) => s.isAdmin);
-  const { installedPlugins } = usePluginStore();
+  const installedPlugins = usePluginStore((s) => s.installedPlugins);
   const [pluginButtons, setPluginButtons] = useState<{ id: string; icon: React.ReactNode; label: string; onClick: () => void }[]>([]);
 
   const isActive = (path: string) => location.pathname === path;

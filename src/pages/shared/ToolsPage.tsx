@@ -10,6 +10,7 @@ import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import { HomeToolItem, loadHomeTools, replaceHomeTool } from '../../utils/homeTools';
 import { ALL_TOOLS } from '../../constants/tools';
 import { isElectron } from '../../utils/environment';
+import { useShallow } from 'zustand/shallow';
 import { useSidebarStore } from '../../store/sidebarStore';
 import './ToolsPage.css';
 
@@ -53,7 +54,11 @@ const BASE_TOOLS_IDS = ['todo', 'memo', 'quick-reply', 'cloud-clipboard', 'accou
 const ToolsPage = () => {
   const navigate = useNavigate();
   const isDesktop = isElectron();
-  const { pinnedToolIds, addPinnedTool, removePinnedTool } = useSidebarStore();
+  const { pinnedToolIds, addPinnedTool, removePinnedTool } = useSidebarStore(useShallow((s) => ({
+    pinnedToolIds: s.pinnedToolIds,
+    addPinnedTool: s.addPinnedTool,
+    removePinnedTool: s.removePinnedTool,
+  })));
   
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuX, setContextMenuX] = useState(0);

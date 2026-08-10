@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Trash2, ArrowRight } from 'lucide-react';
+import { useShallow } from 'zustand/shallow';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { ALL_TOOLS } from '../../constants/tools';
 import { iconMap } from '../../utils/iconMap';
@@ -8,7 +9,10 @@ import './RecentsPage.css';
 
 const RecentsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { recentToolIds, clearRecentTools } = useSidebarStore();
+  const { recentToolIds, clearRecentTools } = useSidebarStore(useShallow((s) => ({
+    recentToolIds: s.recentToolIds,
+    clearRecentTools: s.clearRecentTools,
+  })));
 
   const tools = recentToolIds
     .map((id) => ALL_TOOLS.find((t) => t.id === id))

@@ -11,7 +11,7 @@ interface SettingsState {
 }
 
 const DatabasePage: React.FC = () => {
-  const { addToast } = useToastStore()
+  const addToast = useToastStore((s) => s.addToast)
   const [state, setState] = useState<SettingsState>({
     isLoading: false,
     showRestoreDialog: false,

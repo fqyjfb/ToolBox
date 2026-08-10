@@ -208,14 +208,18 @@ export default NewToolPage;
 
 ### 通用组件使用规范
 
-优先使用项目已有的通用组件：
+优先使用项目已有的通用组件（位于 `src/components/ui/`）：
 
 ```typescript
 // 导入路径统一使用 @/ 别名
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Modal } from '@/components/ui/Modal';
-import { Toast } from '@/components/ui/Toast';
+import Modal from '@/components/ui/Modal';
+import Toast from '@/components/ui/Toast';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Pagination from '@/components/ui/Pagination';
+import Tooltip from '@/components/ui/Tooltip';
+import Switch from '@/components/ui/Switch';
+import ContextMenu from '@/components/ui/ContextMenu';
 ```
 
 **不重复造轮子**：在创建新组件前，先检查 `src/components/` 是否已有类似组件。
@@ -234,6 +238,7 @@ import { Toast } from '@/components/ui/Toast';
 | `toastStore` | 通知消息 | 否 |
 | `syncStore` | 数据同步状态 | 否 |
 | `storageStore` | 存储模式状态 | 是 |
+| `pluginStore` | 插件商店状态 | 是（installedPlugins） |
 
 ### 创建新 Store
 
@@ -282,10 +287,19 @@ export const useNewFeatureStore = create<NewFeatureState>()(
 ### Store 使用规范
 
 ```typescript
-// ✅ 推荐：只订阅需要的状态
-const addToast = useToastStore((state) => state.addToast);
+import { useShallow } from 'zustand/shallow';
 
-// ❌ 避免：订阅整个 store
+// ✅ 推荐：单字段直接选择器订阅
+const addToast = useToastStore((state) => state.addToast);
+const isDark = useThemeStore((s) => s.isDark);
+
+// ✅ 推荐：多字段使用 useShallow 避免不必要的重渲染
+const { isDark, toggleTheme } = useThemeStore(
+  useShallow((s) => ({ isDark: s.isDark, toggleTheme: s.toggleTheme }))
+);
+
+// ❌ 避免：全量订阅整个 store
+const { isDark, toggleTheme } = useThemeStore();
 const allState = useToastStore();
 ```
 
@@ -503,29 +517,37 @@ import ToolPage from '@/pages/tools/tool';
 ```javascript
 contextBridge.exposeInMainWorld('newFeature', {
   // 方法调用
-  doAction: (data) => ipcRenderer.invoke('new-feature:action', data),
+  doAction: (data) => ipcRenderer.invoke('newFeature:action', data),
   
   // 事件监听
   onProgress: (callback) => {
     const subscription = (event, data) => callback(data);
-    ipcRenderer.on('new-feature:progress', subscription);
-    return () => ipcRenderer.removeListener('new-feature:progress', subscription);
+    ipcRenderer.on('newFeature:progress', subscription);
+    return () => ipcRenderer.removeListener('newFeature:progress', subscription);
   },
 });
 ```
 
 ### 主进程处理
 
-在 `electron/ipc/` 下创建对应处理逻辑：
+在 `electron/ipc/` 下创建对应处理逻辑（统一使用 `.cjs` 扩展名，文件名以 `Ipc` 结尾）：
 
 ```javascript
-// electron/ipc/newFeature.js
-const ipcMain = require('electron').ipcMain;
+// electron/ipc/newFeatureIpc.cjs
+const { ipcMain } = require('electron');
 
-ipcMain.handle('new-feature:action', async (event, data) => {
-  // 处理业务逻辑
-  return result;
-});
+let registered = false;
+function registerNewFeatureIpc() {
+  if (registered) return;
+  registered = true;
+
+  ipcMain.handle('newFeature:action', async (event, data) => {
+    // 处理业务逻辑
+    return result;
+  });
+}
+
+module.exports = { registerNewFeatureIpc };
 ```
 
 ### TypeScript 类型声明
@@ -547,8 +569,9 @@ interface Window {
 
 ### IPC 命名规范
 
-- 通道名使用 `snake_case`，格式 `{模块}:{操作}`
-- 示例：`new-feature:action`、`file-manager:list`
+- 通道名使用 `camelCase`，格式 `{模块}:{操作}`
+- 模块名与操作名均为 camelCase
+- 示例：`fileManager:listFiles`、`log:addLog`、`sqlite:init`
 
 ---
 
@@ -600,29 +623,37 @@ interface Window {
 
 ### Tailwind 类名使用
 
+项目已在 `tailwind.config.js` 中将 CSS 变量映射为 Tailwind 颜色类，优先使用主题类名而非硬编码颜色：
+
 ```typescript
 // ✅ 页面容器
 <div className="h-full flex flex-col p-4">
 
-// ✅ 卡片
-<div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+// ✅ 卡片（边框或阴影二选一，圆角 ≤ 8px）
+<div className="border border-border rounded-md p-4">
 
-// ✅ 按钮
-<button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+// ✅ 主按钮（使用项目主题色，禁止硬编码 blue/gray）
+<button className="px-4 py-2 bg-primary text-button-text rounded-md hover:bg-primary-hover">
 
-// ✅ 暗色模式适配
-<div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+// ✅ 次按钮（描边/幽灵式）
+<button className="px-4 py-2 border border-border rounded-md hover:bg-bg-secondary">
+
+// ✅ 主题适配（使用主题类名自动支持深色模式）
+<div className="bg-bg-primary text-text-primary">
 ```
 
 ### 暗色模式适配
 
-新功能必须支持暗色模式切换：
+新功能必须支持暗色模式切换。项目通过 `theme.css` 中 `:root` 与 `.dark` 两套 CSS 变量自动切换，优先使用主题类名（已在 `tailwind.config.js` 映射），无需手写 `dark:` 前缀：
 
 ```typescript
-// 使用 CSS 变量
+// ✅ 推荐：使用主题类名（自动适配深色模式）
+<div className="bg-bg-primary text-text-primary">
+
+// ✅ 备选：直接使用 CSS 变量
 <div className="bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
 
-// 或使用 Tailwind 暗色类
+// ❌ 避免：硬编码颜色 + dark: 前缀
 <div className="bg-white dark:bg-gray-900">
 ```
 
@@ -667,7 +698,9 @@ npx tsc --noEmit
 | 函数/方法名 | camelCase | `handleClick` |
 | 变量名 | camelCase | `userList` |
 | 常量 | UPPER_SNAKE_CASE | `MAX_ITEMS` |
-| 文件名 | kebab-case | `todo-list.tsx` |
+| 组件文件名 | PascalCase | `TodoFormModal.tsx`、`Modal.tsx` |
+| 服务/Hook/工具文件名 | camelCase | `baseService.ts`、`useDndSensors.ts`、`iconMap.ts` |
+| 页面入口文件名 | 固定 `index.tsx` | `src/pages/tools/todo/index.tsx` |
 | 路由 ID | kebab-case | `new-tool` |
 
 ---
@@ -679,24 +712,24 @@ npx tsc --noEmit
 涉及敏感数据的功能必须使用项目加密工具：
 
 ```typescript
-import { encrypt, decrypt } from '@/utils/encryption';
+import { encrypt, decrypt } from '@/utils/crypto';
 
-const encryptedData = encrypt(sensitiveData);
-const decryptedData = decrypt(encryptedData);
+// encrypt/decrypt 均为异步函数，返回 Promise<string>
+const encryptedData = await encrypt(sensitiveData);
+const decryptedData = await decrypt(encryptedData);
 ```
 
 ### 输入验证
 
-所有用户输入必须验证：
+所有用户输入必须验证（项目当前采用手动验证，如需引入 schema 校验可考虑 zod）：
 
 ```typescript
-// ✅ 使用 zod 进行验证
-import { z } from 'zod';
-
-const schema = z.object({
-  title: z.string().min(1).max(100),
-  email: z.string().email(),
-});
+// ✅ 手动验证（项目当前方式）
+const validateInput = (data: unknown): data is CreateItemData => {
+  if (!data || typeof data !== 'object') return false;
+  const obj = data as Record<string, unknown>;
+  return typeof obj.title === 'string' && obj.title.trim().length > 0 && obj.title.length <= 100;
+};
 
 // ❌ 直接使用未验证的输入
 const data = await save(userInput);  // 不安全
@@ -709,18 +742,18 @@ const data = await save(userInput);  // 不安全
 - 敏感操作需要权限检查
 
 ```javascript
-// electron/ipc/newFeature.js
-ipcMain.handle('new-feature:action', async (event, data) => {
+// electron/ipc/newFeatureIpc.cjs
+ipcMain.handle('newFeature:action', async (event, data) => {
   // 验证输入
   if (!isValidInput(data)) {
     throw new Error('Invalid input');
   }
-  
+
   // 权限检查
   if (!hasPermission(event)) {
     throw new Error('Permission denied');
   }
-  
+
   // 执行业务逻辑
   return result;
 });
@@ -730,9 +763,11 @@ ipcMain.handle('new-feature:action', async (event, data) => {
 
 ## 🧪 测试要求
 
+> **当前状态**：项目暂未配置测试框架（v2.3.9 已移除 Vitest/Testing Library 依赖），以下为引入测试时建议遵循的规范。
+
 ### 测试分类
 
-| 测试类型 | 覆盖范围 | 工具 |
+| 测试类型 | 覆盖范围 | 推荐工具 |
 |----------|----------|------|
 | 单元测试 | 工具函数、Hook | Vitest |
 | 组件测试 | 组件渲染、交互 | Vitest + Testing Library |
@@ -748,10 +783,10 @@ src/
 ├── hooks/
 │   └── useData.test.ts
 └── components/
-    └── Button.test.tsx
+    └── Modal.test.tsx
 ```
 
-### 测试覆盖率要求
+### 测试覆盖率要求（引入测试后）
 
 - 工具函数：≥ 80%
 - 业务 Hook：≥ 70%
@@ -837,13 +872,13 @@ const CounterPage: React.FC = () => {
       <h1 className="text-xl font-semibold mb-4">计数器</h1>
       <div className="text-4xl font-bold mb-8">{count}</div>
       <div className="flex gap-4">
-        <button onClick={decrement} className="px-4 py-2 bg-gray-200 rounded-md">
+        <button onClick={decrement} className="px-4 py-2 border border-border rounded-md hover:bg-bg-secondary">
           -1
         </button>
-        <button onClick={reset} className="px-4 py-2 bg-gray-300 rounded-md">
+        <button onClick={reset} className="px-4 py-2 border border-border rounded-md hover:bg-bg-secondary">
           重置
         </button>
-        <button onClick={increment} className="px-4 py-2 bg-blue-600 text-white rounded-md">
+        <button onClick={increment} className="px-4 py-2 bg-primary text-button-text rounded-md hover:bg-primary-hover">
           +1
         </button>
       </div>

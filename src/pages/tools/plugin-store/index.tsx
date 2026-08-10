@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Search, RefreshCw, Upload, Package, FolderOpen } from 'lucide-react';
+import { useShallow } from 'zustand/shallow';
 import PluginCard from '../../../components/plugins/PluginCard';
 import PluginDetail from '../../../components/plugins/PluginDetail';
 import DragOverlay from '../../../components/plugins/DragOverlay';
@@ -24,10 +25,21 @@ const PluginStorePage: React.FC = () => {
     installingPluginId,
     setInstallingPluginId,
     setIsLoading,
-  } = usePluginStore();
+  } = usePluginStore(useShallow((s) => ({
+    availablePlugins: s.availablePlugins,
+    installedPlugins: s.installedPlugins,
+    isLoading: s.isLoading,
+    searchQuery: s.searchQuery,
+    setSearchQuery: s.setSearchQuery,
+    setAvailablePlugins: s.setAvailablePlugins,
+    setInstalledPlugins: s.setInstalledPlugins,
+    installingPluginId: s.installingPluginId,
+    setInstallingPluginId: s.setInstallingPluginId,
+    setIsLoading: s.setIsLoading,
+  })));
 
-  const { removePinnedTool } = useSidebarStore();
-  const { addToast } = useToastStore();
+  const removePinnedTool = useSidebarStore((s) => s.removePinnedTool);
+  const addToast = useToastStore((s) => s.addToast);
 
   const [activeTab, setActiveTab] = useState<'explore' | 'installed'>('explore');
   const [selectedCategory, setSelectedCategory] = useState('all');

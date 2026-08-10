@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/shallow';
 import { useToastStore } from '../../store/toastStore';
 import { X, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
 
 const Toast: React.FC = () => {
-  const { toasts, removeToast } = useToastStore();
+  const { toasts, removeToast } = useToastStore(useShallow((s) => ({ toasts: s.toasts, removeToast: s.removeToast })));
   const toastRefs = useRef<HTMLLIElement[]>([]);
 
   useEffect(() => {

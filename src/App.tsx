@@ -1,5 +1,6 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate as useRouterNavigate } from 'react-router-dom';
+import { useShallow } from 'zustand/shallow';
 import Layout from './components/layout/Layout';
 import WebLayout from './components/layout/WebLayout';
 import MobileLayout from './components/layout/MobileLayout';
@@ -180,7 +181,7 @@ const isMobile = (): boolean => {
 };
 
 function App() {
-  const { isDark, setTheme } = useThemeStore();
+  const { isDark, setTheme } = useThemeStore(useShallow((s) => ({ isDark: s.isDark, setTheme: s.setTheme })));
   const { setLastSyncTime, setStorageLocation, setSyncEnabled, setSyncModules, setSyncOnStartupEnabled } = useSyncStore();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
@@ -188,7 +189,7 @@ function App() {
   const isLoading = useAuthStore((state) => state.isLoading);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const { setVisible, setPosition } = useSidebarStore();
+  const { setVisible, setPosition } = useSidebarStore(useShallow((s) => ({ setVisible: s.setVisible, setPosition: s.setPosition })));
 
   usePreloadTools();
 

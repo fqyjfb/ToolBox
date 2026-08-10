@@ -128,7 +128,7 @@ const ToolsPage: React.FC = () => {
   
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tool: Tool } | null>(null)
 
-  const { addToast } = useToastStore()
+  const addToast = useToastStore((s) => s.addToast)
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['toolCategories'],

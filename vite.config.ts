@@ -30,6 +30,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: 'esnext',
+      cssMinify: 'lightningcss',
       rollupOptions: {
         external: [
           '@aws-sdk/client-s3',

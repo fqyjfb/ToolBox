@@ -9,7 +9,7 @@ import { formatBytes } from '../../utils/format';
 type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'installing' | 'error';
 
 const About: React.FC = () => {
-  const { addToast } = useToastStore();
+  const addToast = useToastStore((s) => s.addToast);
   const [webVersion] = useState(APP_VERSION);
   const [electronVersion, setElectronVersion] = useState<string | null>(null);
   const [chromeVersion, setChromeVersion] = useState<string | null>(null);
