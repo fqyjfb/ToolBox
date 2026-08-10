@@ -1,41 +1,32 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { hotNewsApi } from '../../services/hotNews';
-import { supabase } from '../../services/supabase';
-import { websiteService } from '../../services/WebsiteService';
 import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps, ensureAppIconsCached } from '../../utils/quickLaunch';
 import { loadHomeTools } from '../../utils/homeTools';
 import { isElectron } from '../../utils/environment';
-import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
 import SearchBar from '../../components/home/SearchBar';
-import FavoritesBar, { Bookmark } from '../../components/home/FavoritesBar';
+import FavoritesBar from '../../components/home/FavoritesBar';
 import ToolGrid from '../../components/home/ToolGrid';
 import NewsContainer from '../../components/home/NewsContainer';
 import QuickLaunchBar from '../../components/home/QuickLaunchBar';
 import MoyuCard from '../../components/home/MoyuCard';
+import { useHomeFavorites } from '../../hooks/useHomeFavorites';
 import './Home.css';
 
 const Home: React.FC = () => {
   const isDesktop = isElectron();
-  
+
   const [sixtySecondsData, setSixtySecondsData] = useState<string[] | null>(null);
   const [sixtySecondsLoading, setSixtySecondsLoading] = useState(false);
   const [sixtySecondsError, setSixtySecondsError] = useState('');
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [favorites, setFavorites] = useState<Bookmark[]>(() => {
-    const cached = localStorageService.get<{ favorites: Bookmark[]; timestamp: number }>(STORAGE_KEYS.HOME_FAVORITES, null as unknown as { favorites: Bookmark[]; timestamp: number });
-    if (cached) {
-      return cached.favorites || [];
-    }
-    return [];
-  });
-  
+  const { favorites, handleFavoritesReorder } = useHomeFavorites();
+
   const [homeQuickLaunchApps, setHomeQuickLaunchApps] = useState<QuickLaunchItem[]>([]);
   const [homeTools, setHomeTools] = useState(() => loadHomeTools());
-  
+
   const navigate = useNavigate();
-  
+
   const searchTypes = [
     { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=%s%', placeholder: '百度一下' },
     { id: 'google', name: 'Google', url: 'https://www.google.com/search?q=%s%', placeholder: 'Google搜索' },
@@ -48,7 +39,7 @@ const Home: React.FC = () => {
   const fetchSixtySeconds = useCallback(async () => {
     setSixtySecondsLoading(true);
     setSixtySecondsError('');
-    
+
     try {
       const data = await hotNewsApi.getSixtySecondsData();
       if (data) {
@@ -62,51 +53,6 @@ const Home: React.FC = () => {
       setSixtySecondsLoading(false);
     }
   }, []);
-
-  const checkAuth = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
-    } catch {
-      setIsAuthenticated(false);
-    }
-  }, []);
-
-  const fetchFavorites = useCallback(async (forceRefresh = false) => {
-    if (!isAuthenticated) return;
-    
-    const now = Date.now();
-    const cacheExpiry = 5 * 60 * 1000;
-    
-    const cached = localStorageService.get<{ favorites: Bookmark[]; timestamp: number }>(STORAGE_KEYS.HOME_FAVORITES, null as unknown as { favorites: Bookmark[]; timestamp: number });
-    const cachedTimestamp = cached?.timestamp || 0;
-    
-    if (!forceRefresh && cached?.favorites && (now - cachedTimestamp) < cacheExpiry) {
-      if (favorites.length === 0 && cached.favorites.length > 0) {
-        setFavorites(cached.favorites);
-      }
-      return;
-    }
-    
-    try {
-      const userFavorites = await websiteService.getFavorites();
-      setFavorites(userFavorites);
-      localStorageService.set(STORAGE_KEYS.HOME_FAVORITES, {
-        favorites: userFavorites,
-        timestamp: now
-      });
-    } catch {
-      if (!cached?.favorites || cached.favorites.length === 0) {
-        setFavorites([]);
-      } else if (favorites.length === 0) {
-        setFavorites(cached.favorites);
-      }
-    }
-  }, [isAuthenticated, favorites.length]);
-
-  const shouldFetchFavorites = useMemo(() => {
-    return isAuthenticated && favorites.length === 0;
-  }, [isAuthenticated, favorites.length]);
 
   const fetchHomeQuickLaunchApps = useCallback(() => {
     const apps = loadHomeQuickLaunchApps();
@@ -125,14 +71,6 @@ const Home: React.FC = () => {
     window.electron?.openFile(path);
   }, []);
 
-  const handleFavoritesReorder = useCallback((reorderedFavorites: Bookmark[]) => {
-    setFavorites(reorderedFavorites);
-    localStorageService.set(STORAGE_KEYS.HOME_FAVORITES, {
-      favorites: reorderedFavorites,
-      timestamp: Date.now()
-    });
-  }, []);
-
   const handleQuickLaunchReorder = useCallback((reorderedApps: QuickLaunchItem[]) => {
     setHomeQuickLaunchApps(reorderedApps);
     saveHomeQuickLaunchApps(reorderedApps);
@@ -148,20 +86,10 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     fetchSixtySeconds();
-    checkAuth();
     if (isDesktop) {
       fetchHomeQuickLaunchApps();
     }
-  }, [fetchSixtySeconds, checkAuth, fetchHomeQuickLaunchApps, isDesktop]);
-
-  useEffect(() => {
-    if (shouldFetchFavorites) {
-      fetchFavorites();
-    } else if (!isAuthenticated) {
-      setFavorites([]);
-      localStorageService.remove(STORAGE_KEYS.HOME_FAVORITES);
-    }
-  }, [shouldFetchFavorites, isAuthenticated, fetchFavorites]);
+  }, [fetchSixtySeconds, fetchHomeQuickLaunchApps, isDesktop]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -169,7 +97,7 @@ const Home: React.FC = () => {
         refreshHomeTools();
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);

@@ -10,6 +10,8 @@ import { getWeatherCity } from '../../utils/weatherLocation';
 import type { WeatherInfo } from '../../types/weather';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 import { iconMap } from '../../utils/iconMap';
+import FavoritesBar from '../../components/home/FavoritesBar';
+import { useHomeFavorites } from '../../hooks/useHomeFavorites';
 import { DISPLAY_LIMITS } from '../../constants/timers';
 
 const searchTypes = [
@@ -23,6 +25,7 @@ const MobileHome: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearchType, setActiveSearchType] = useState('baidu');
   const [homeTools] = useState(() => loadHomeTools());
+  const { favorites, handleFavoritesReorder } = useHomeFavorites();
 
   const [sixtySecondsData, setSixtySecondsData] = useState<string[] | null>(null);
   const [itNewsData, setItNewsData] = useState<ItNewsItem[] | null>(null);
@@ -163,6 +166,8 @@ const MobileHome: React.FC = () => {
               }}
             />
           </div>
+
+          <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />
         </div>
       </section>
 

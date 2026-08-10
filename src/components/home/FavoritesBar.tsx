@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDndSensors } from '../../hooks/useDndSensors';
 import { openUrl } from '../../services/browserService';
 import { DISPLAY_LIMITS } from '../../constants/timers';
+import './FavoritesBar.css';
 
 export interface Bookmark {
   id: string;

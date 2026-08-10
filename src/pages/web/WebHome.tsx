@@ -6,6 +6,8 @@ import { loadHomeTools, type HomeToolItem } from '../../utils/homeTools';
 import { iconMap } from '../../utils/iconMap';
 import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../../types/hotNews';
 import WeatherCard from '../../components/home/WeatherCard';
+import FavoritesBar from '../../components/home/FavoritesBar';
+import { useHomeFavorites } from '../../hooks/useHomeFavorites';
 import { DISPLAY_LIMITS } from '../../constants/timers';
 
 const searchTypes = [
@@ -19,6 +21,7 @@ const WebHome: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearchType, setActiveSearchType] = useState('baidu');
   const [homeTools] = useState(() => loadHomeTools());
+  const { favorites, handleFavoritesReorder } = useHomeFavorites();
 
   const [sixtySecondsData, setSixtySecondsData] = useState<string[] | null>(null);
   const [sixtySecondsLoading, setSixtySecondsLoading] = useState(false);
@@ -141,7 +144,7 @@ const WebHome: React.FC = () => {
                   </button>
                 ))}
               </div>
-              
+
               <div className="relative">
                 <Search className="absolute top-1/2 -translate-y-1/2 w-5 h-5" style={{ left: 'var(--space-3)', color: 'var(--color-text-tertiary)' }} />
                 <input
@@ -165,6 +168,8 @@ const WebHome: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />
         </div>
       </section>
 
