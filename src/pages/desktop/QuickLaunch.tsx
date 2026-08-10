@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor } from 'lucide-react';
+import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor, Type, Image as ImageIcon } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, useSortable, rectSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDndSensors } from '../../hooks/useDndSensors';
 import { QuickLaunchCategory, QuickLaunchItem, addHomeQuickLaunchApp, isAppInHomeQuickLaunch, loadApps, loadCategories, getDefaultCategoryId, scanAndAddDesktopApps, ensureAppIconsCached } from '../../utils/quickLaunch';
@@ -13,15 +13,14 @@ import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import { logDebug, logInfo, logWarn } from '../../services/loggerService';
 import './QuickLaunch.css';
 
-const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'medium'; onLaunch: (path: string) => void; onContextMenu: (e: React.MouseEvent) => void; }> = ({ app, iconSize, onLaunch, onContextMenu }) => {
+const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'medium'; showText: boolean; onLaunch: (path: string) => void; onContextMenu: (e: React.MouseEvent) => void; }> = ({ app, iconSize, showText, onLaunch, onContextMenu }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: app.id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 'auto',
     opacity: isDragging ? 0.5 : 1,
-    scale: isDragging ? 1.1 : 1,
   };
 
   return (
@@ -30,9 +29,9 @@ const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'med
       style={style}
       {...attributes}
       {...listeners}
-      className={`flex flex-col items-center justify-center cursor-grab active:cursor-grabbing transition-all duration-200 ${
-        iconSize === 'small' ? 'w-quick-launch-sm h-quick-launch-sm' : 'w-quick-launch-lg h-quick-launch-lg'
-      } ${isDragging ? 'shadow-lg' : 'hover:-translate-y-1 hover:scale-105'}`}
+      className={`flex flex-col items-center justify-center cursor-grab active:cursor-grabbing rounded-md transition-colors w-full ${
+        iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'
+      } ${isDragging ? 'shadow-lg' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}
       onClick={() => onLaunch(app.path)}
       onContextMenu={onContextMenu}
     >
@@ -41,20 +40,22 @@ const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'med
           loading="lazy"
           src={`data:image/png;base64,${app.icon}`}
           alt={app.name}
-          className={`object-contain mb-1 ${
+          className={`object-contain ${showText ? 'mb-1' : ''} ${
             iconSize === 'small' ? 'w-8 h-8' : 'w-12 h-12'
           }`}
         />
       ) : (
-        <Rocket className={`text-gray-500 dark:text-gray-400 mb-1 ${
+        <Rocket className={`text-gray-500 dark:text-gray-400 ${showText ? 'mb-1' : ''} ${
           iconSize === 'small' ? 'w-8 h-8' : 'w-12 h-12'
         }`} />
       )}
-      <span className={`font-medium text-gray-700 dark:text-gray-200 truncate w-full text-center ${
-        iconSize === 'small' ? 'text-4xs' : 'text-2xs'
-      }`}>
-        {app.name}
-      </span>
+      {showText && (
+        <span className={`font-medium text-gray-700 dark:text-gray-200 truncate w-full text-center ${
+          iconSize === 'small' ? 'text-4xs' : 'text-2xs'
+        }`}>
+          {app.name}
+        </span>
+      )}
     </div>
   );
 };
@@ -62,12 +63,11 @@ const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'med
 const SortableCategoryItem: React.FC<{ category: QuickLaunchCategory; isActive: boolean; onClick: () => void; onContextMenu: (e: React.MouseEvent) => void; }> = ({ category, isActive, onClick, onContextMenu }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 'auto',
     opacity: isDragging ? 0.5 : 1,
-    scale: isDragging ? 1.1 : 1,
   };
 
   return (
@@ -124,6 +124,10 @@ const QuickLaunch: React.FC = () => {
     const saved = localStorageService.getString(STORAGE_KEYS.QUICK_LAUNCH_ICON_SIZE);
     return (saved === 'small' || saved === 'medium') ? saved : 'medium';
   });
+  const [showText, setShowText] = useState<boolean>(() => {
+    const saved = localStorageService.getString(STORAGE_KEYS.QUICK_LAUNCH_SHOW_TEXT);
+    return saved === undefined ? true : saved === 'true';
+  });
   const [isDragOver, setIsDragOver] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
@@ -153,6 +157,10 @@ const QuickLaunch: React.FC = () => {
   useEffect(() => {
     localStorageService.setString(STORAGE_KEYS.QUICK_LAUNCH_ICON_SIZE, iconSize);
   }, [iconSize]);
+
+  useEffect(() => {
+    localStorageService.setString(STORAGE_KEYS.QUICK_LAUNCH_SHOW_TEXT, String(showText));
+  }, [showText]);
 
   useEffect(() => {
     localStorageService.set(STORAGE_KEYS.QUICK_LAUNCH_APPS, apps);
@@ -668,6 +676,14 @@ const QuickLaunch: React.FC = () => {
               <path d="M160 64c0-17.7-14.3-32-32-32s-32 14.3-32 32v64H32c-17.7 0-32 14.3-32 32s14.3 32 32 32h96c17.7 0 32-14.3 32-32V64zM32 320c-17.7 0-32 14.3-32 32s14.3 32 32 32H96v64c0 17.7 14.3 32 32 32s32-14.3 32-32V352c0-17.7-14.3-32-32-32H32zM352 64c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7 14.3 32 32 32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H352V64zM320 320c-17.7 0-32 14.3-32 32v96c0 17.7 14.3 32 32 32s32-14.3 32-32V384h64c17.7 0 32-14.3 32-32s-14.3-32-32-32H320z" />
             </svg>
           </label>
+          <button
+            type="button"
+            className="icon-toggle-container text-gray-400 dark:text-gray-400"
+            title={showText ? '当前：图标+文字' : '当前：仅图标'}
+            onClick={() => setShowText(prev => !prev)}
+          >
+            {showText ? <Type size={16} /> : <ImageIcon size={16} />}
+          </button>
         </div>
       </div>
 
@@ -685,8 +701,8 @@ const QuickLaunch: React.FC = () => {
             collisionDetection={closestCenter}
             onDragEnd={handleAppsDragEnd}
           >
-            <SortableContext items={filteredApps.map(app => app.id)} strategy={verticalListSortingStrategy}>
-              <div className={`grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3.5 min-h-quick-launch transition-all duration-200 ${
+            <SortableContext items={filteredApps.map(app => app.id)} strategy={rectSortingStrategy}>
+              <div className={`grid ${iconSize === 'small' ? 'grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2' : 'grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-3.5'} min-h-quick-launch transition-colors duration-200 ${
                 isDragOver ? 'border-2 border-dashed border-green-400 rounded-lg p-4' : ''
               }`}>
                 {filteredApps.map((app) => (
@@ -694,6 +710,7 @@ const QuickLaunch: React.FC = () => {
                     key={app.id}
                     app={app}
                     iconSize={iconSize}
+                    showText={showText}
                     onLaunch={handleLaunch}
                     onContextMenu={(e) => handleContextMenu(e, 'app', app.id)}
                   />

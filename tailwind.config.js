@@ -10,12 +10,10 @@ module.exports = {
       width: {
         'sidebar': '165px',
         'sidebar-collapsed': '55px',
-        'quick-launch-sm': '80px',
-        'quick-launch-lg': '100px',
         'home-card': '280px',
       },
       height: {
-        'quick-launch-sm': '68px',
+        'quick-launch-sm': '56px',
         'quick-launch-lg': '84px',
       },
       minWidth: {
