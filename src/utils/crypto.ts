@@ -1,16 +1,22 @@
 import { logEncryptionOperation } from '../services/loggerService';
 import { CRYPTO_CONSTANTS } from '../constants/timers';
 
-const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY;
+// 环境变量值作为默认（web/手机端使用），桌面端可通过 setEncryptionKey 覆盖
+let encryptionKey = import.meta.env.VITE_ENCRYPTION_KEY || '';
+
+// 桌面端用户自定义配置后调用此函数覆盖密钥
+export const setEncryptionKey = (key: string) => {
+  encryptionKey = key;
+};
 
 const getEncryptionKey = (): string => {
-  if (!ENCRYPTION_KEY) {
-    throw new Error('加密密钥未配置，请设置 VITE_ENCRYPTION_KEY 环境变量');
+  if (!encryptionKey) {
+    throw new Error('加密密钥未配置，桌面端请在设置中配置');
   }
-  if (ENCRYPTION_KEY.length < CRYPTO_CONSTANTS.MIN_KEY_LENGTH) {
+  if (encryptionKey.length < CRYPTO_CONSTANTS.MIN_KEY_LENGTH) {
     throw new Error(`加密密钥长度不足，至少需要${CRYPTO_CONSTANTS.MIN_KEY_LENGTH}个字符`);
   }
-  return ENCRYPTION_KEY;
+  return encryptionKey;
 };
 
 export const validateEncryptionKey = (): boolean => {

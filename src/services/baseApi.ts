@@ -1,7 +1,8 @@
 import type { NetworkConfig } from '../types/network';
 
-const DEFAULT_MAIN_URL = import.meta.env.VITE_HOTNEWS_API_URL || 'https://60s.viki.moe/v2';
-const DEFAULT_FALLBACK_URL = import.meta.env.VITE_HOTNEWS_API_URL_FALLBACK || 'https://60s.mizhoubaobei.top/v2';
+// HotNews API 默认值（用户未在网络配置中自定义时使用）
+const DEFAULT_MAIN_URL = 'https://60s.viki.moe/v2';
+const DEFAULT_FALLBACK_URL = 'https://60s.mizhoubaobei.top/v2';
 
 const isWebDev = !import.meta.env.VITE_ELECTRON && import.meta.env.DEV;
 

@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Star, StarOff, Menu, Globe, ChevronDown, Search } from 'lucide-react'
+import { Star, StarOff, Menu, ChevronDown, Search } from 'lucide-react'
 import CachedIcon from '../../components/ui/CachedIcon'
 import { websiteService } from '../../services/WebsiteService'
 import { supabase } from '../../services/supabase'
 import { useNavSearch } from '../../contexts/NavSearchContext'
 import { openUrl } from '../../services/browserService'
 import './NavPage.css'
+
+// 默认书签图标（与首页收藏保持一致，使用 public/网址.png）
+const DefaultBookmarkIcon = <img src="./网址.png" alt="" className="w-full h-full object-contain" />
 
 // 类型定义
 export interface Category {
@@ -560,6 +563,74 @@ const NavPage: React.FC = () => {
     )
   }
 
+  // 渲染书签卡片（搜索结果/收藏/分类共用）
+  const renderBookmarkCard = (bookmark: Bookmark, isSearchResult = false, index = 0) => (
+    <div
+      key={bookmark.id}
+      className={`bookmark-card-wrapper${isSearchResult ? ' search-result-card' : ''}`}
+      style={isSearchResult ? { animationDelay: `${index * 50}ms` } : undefined}
+      onMouseEnter={(e) => {
+        if (bookmark.description) {
+          const rect = e.currentTarget.getBoundingClientRect()
+          setHoveredBookmark({
+            id: bookmark.id,
+            x: rect.left + rect.width / 2,
+            y: rect.bottom + 8
+          })
+        }
+      }}
+      onMouseLeave={() => setHoveredBookmark(null)}
+    >
+      <div
+        className={`bookmark-card${isSearchResult ? ' search-highlight' : ''}`}
+        onClick={() => navigateToBookmark(bookmark.url)}
+      >
+        <div className="card-content">
+          <div className="icon-category-container">
+            {bookmark.ico_url ? (
+              <CachedIcon
+                src={bookmark.ico_url || null}
+                alt={bookmark.title}
+                className="bookmark-icon"
+                defaultIcon={
+                  <div className="bookmark-icon flex items-center justify-center">
+                    {DefaultBookmarkIcon}
+                  </div>
+                }
+              />
+            ) : (
+              <div className="bookmark-icon flex items-center justify-center">
+                {DefaultBookmarkIcon}
+              </div>
+            )}
+            {bookmark.category && (
+              <div className="bookmark-meta">
+                <span className="category-badge">{bookmark.category.name}</span>
+              </div>
+            )}
+          </div>
+          <div className="bookmark-info">
+            <div className="title-row">
+              <h4 className="bookmark-name">{bookmark.title}</h4>
+              <button
+                className={`favorite-btn ${bookmark.is_favorite ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
+                }}
+              >
+                {bookmark.is_favorite ? <Star className="favorite-icon" /> : <StarOff className="favorite-icon" />}
+              </button>
+            </div>
+            {bookmark.description && (
+              <p className="bookmark-desc">{bookmark.description}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div className="homenav-page flex flex-col h-full p-4 overflow-hidden">
       {/* 收藏夹效果导航 */}
@@ -738,72 +809,7 @@ const NavPage: React.FC = () => {
               </div>
               
               <div className="search-results-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                {searchResults.map((bookmark, index) => (
-                  <div
-                    key={bookmark.id}
-                    className="bookmark-card-wrapper search-result-card"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                    onMouseEnter={(e) => {
-                      if (bookmark.description) {
-                        const rect = e.currentTarget.getBoundingClientRect()
-                        setHoveredBookmark({ 
-                          id: bookmark.id, 
-                          x: rect.left + rect.width / 2, 
-                          y: rect.bottom + 8 
-                        })
-                      }
-                    }}
-                    onMouseLeave={() => setHoveredBookmark(null)}
-                  >
-                    <div
-                      className="bookmark-card search-highlight"
-                      onClick={() => navigateToBookmark(bookmark.url)}
-                    >
-                      <div className="card-content">
-                        <div className="icon-category-container">
-                          {bookmark.ico_url ? (
-                            <CachedIcon
-                              src={bookmark.ico_url || null}
-                              alt={bookmark.title}
-                              className="bookmark-icon"
-                              defaultIcon={
-                                <div className="bookmark-icon flex items-center justify-center">
-                                  <Globe className="w-4 h-4 text-gray-500" />
-                                </div>
-                              }
-                            />
-                          ) : (
-                            <div className="bookmark-icon flex items-center justify-center">
-                              <Globe className="w-4 h-4 text-gray-500" />
-                            </div>
-                          )}
-                          {bookmark.category && (
-                            <div className="bookmark-meta">
-                              <span className="category-badge">{bookmark.category.name}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="bookmark-info">
-                          <div className="title-row">
-                            <h4 className="bookmark-name">{bookmark.title}</h4>
-                            <button
-                              className={`favorite-btn ${bookmark.is_favorite ? 'active' : ''}`}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
-                              }}
-                            >
-                              {bookmark.is_favorite ? <Star className="favorite-icon" /> : <StarOff className="favorite-icon" />}
-                            </button>
-                          </div>
-                          {bookmark.description && (
-                            <p className="bookmark-desc">{bookmark.description}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                {searchResults.map((bookmark, index) => renderBookmarkCard(bookmark, true, index))}
               </div>
             </div>
           ) : searchResults.length === 0 && isSearchActive ? (
@@ -830,71 +836,7 @@ const NavPage: React.FC = () => {
                         </button>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                        {favorites.map((bookmark) => (
-                          <div
-                            key={bookmark.id}
-                            className="bookmark-card-wrapper"
-                            onMouseEnter={(e) => {
-                              if (bookmark.description) {
-                                const rect = e.currentTarget.getBoundingClientRect()
-                                setHoveredBookmark({ 
-                                  id: bookmark.id, 
-                                  x: rect.left + rect.width / 2, 
-                                  y: rect.bottom + 8 
-                                })
-                              }
-                            }}
-                            onMouseLeave={() => setHoveredBookmark(null)}
-                          >
-                            <div
-                              className="bookmark-card"
-                              onClick={() => navigateToBookmark(bookmark.url)}
-                            >
-                              <div className="card-content">
-                                <div className="icon-category-container">
-                                  {bookmark.ico_url ? (
-                                    <CachedIcon
-                                      src={bookmark.ico_url || null}
-                                      alt={bookmark.title}
-                                      className="bookmark-icon"
-                                      defaultIcon={
-                                        <div className="bookmark-icon flex items-center justify-center">
-                                          <Globe className="w-4 h-4 text-gray-500" />
-                                        </div>
-                                      }
-                                    />
-                                  ) : (
-                                    <div className="bookmark-icon flex items-center justify-center">
-                                      <Globe className="w-4 h-4 text-gray-500" />
-                                    </div>
-                                  )}
-                                  {bookmark.category && (
-                                    <div className="bookmark-meta">
-                                      <span className="category-badge">{bookmark.category.name}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="bookmark-info">
-                                  <div className="title-row">
-                                    <h4 className="bookmark-name">{bookmark.title}</h4>
-                                    <button
-                                      className="favorite-btn active"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
-                                      }}
-                                    >
-                                      <Star className="favorite-icon" />
-                                    </button>
-                                  </div>
-                                  {bookmark.description && (
-                                    <p className="bookmark-desc">{bookmark.description}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                        {favorites.map((bookmark) => renderBookmarkCard(bookmark))}
                       </div>
                     </div>
                   ) : (
@@ -917,71 +859,7 @@ const NavPage: React.FC = () => {
                   {/* 网址卡片 */}
                   {getCategoryBookmarks(activeMainCategoryId).length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                      {getCategoryBookmarks(activeMainCategoryId).map((bookmark) => (
-                        <div
-                          key={bookmark.id}
-                          className="bookmark-card-wrapper"
-                          onMouseEnter={(e) => {
-                            if (bookmark.description) {
-                              const rect = e.currentTarget.getBoundingClientRect()
-                              setHoveredBookmark({ 
-                                id: bookmark.id, 
-                                x: rect.left + rect.width / 2, 
-                                y: rect.bottom + 8 
-                              })
-                            }
-                          }}
-                          onMouseLeave={() => setHoveredBookmark(null)}
-                        >
-                          <div
-                            className="bookmark-card"
-                            onClick={() => navigateToBookmark(bookmark.url)}
-                          >
-                            <div className="card-content">
-                              <div className="icon-category-container">
-                                {bookmark.ico_url ? (
-                                  <CachedIcon
-                                    src={bookmark.ico_url || null}
-                                    alt={bookmark.title}
-                                    className="bookmark-icon"
-                                    defaultIcon={
-                                      <div className="bookmark-icon flex items-center justify-center">
-                                        <Globe className="w-4 h-4 text-gray-500" />
-                                      </div>
-                                    }
-                                  />
-                                ) : (
-                                  <div className="bookmark-icon flex items-center justify-center">
-                                    <Globe className="w-4 h-4 text-gray-500" />
-                                  </div>
-                                )}
-                                {bookmark.category && (
-                                  <div className="bookmark-meta">
-                                    <span className="category-badge">{bookmark.category.name}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="bookmark-info">
-                                <div className="title-row">
-                                  <h4 className="bookmark-name">{bookmark.title}</h4>
-                                  <button
-                                    className={`favorite-btn ${bookmark.is_favorite ? 'active' : ''}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleFavoriteChange(bookmark.id, !bookmark.is_favorite)
-                                    }}
-                                  >
-                                    {bookmark.is_favorite ? <Star className="favorite-icon" /> : <StarOff className="favorite-icon" />}
-                                  </button>
-                                </div>
-                                {bookmark.description && (
-                                  <p className="bookmark-desc">{bookmark.description}</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                      {getCategoryBookmarks(activeMainCategoryId).map((bookmark) => renderBookmarkCard(bookmark))}
                     </div>
                   ) : (
                     <div className="text-center py-8 bg-gray-50/80 dark:bg-gray-700/50 backdrop-blur-sm rounded-lg">

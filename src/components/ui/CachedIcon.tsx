@@ -40,8 +40,9 @@ const fetchWithFallback = async (url: string): Promise<Response> => {
       return response;
     }
   } catch {
+    // 直接 fetch 失败（通常是 CORS），继续尝试代理
   }
-  
+
   const proxiedUrl = getProxiedUrl(url);
   return fetch(proxiedUrl, {
     mode: 'cors',
@@ -126,7 +127,10 @@ const CachedIcon: React.FC<CachedIconProps> = ({
       setIsLoading(false);
 
     } catch {
-      setHasError(true);
+      // fetch 失败（通常是浏览器 CORS 限制），回退到 <img> 直接加载
+      // <img> 标签加载跨域图片不受 CORS 限制，仍可正常显示
+      previousImageSrc.current = src;
+      setImageSrc(src);
       setIsLoading(false);
     }
   }, [src, type]);
@@ -177,6 +181,9 @@ const CachedIcon: React.FC<CachedIconProps> = ({
   }
 
   if (isLoading) {
+    if (defaultIcon) {
+      return <div ref={iconRef} className={className}>{defaultIcon}</div>;
+    }
     return (
       <div ref={iconRef} className={`${className} flex items-center justify-center`}>
         <Globe className="w-4 h-4 text-gray-400 animate-pulse" />

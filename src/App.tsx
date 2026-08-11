@@ -14,7 +14,8 @@ import { useSidebarStore } from './store/sidebarStore';
 import { useSyncStore } from './store/syncStore';
 import { logError, logInfo } from './services/loggerService';
 import { syncManager } from './services/syncManager';
-import { validateEncryptionKey } from './utils/crypto';
+import { validateEncryptionKey, setEncryptionKey } from './utils/crypto';
+import { reinitSupabase } from './services/supabase';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes, RouteConfig } from './config/routes';
@@ -234,12 +235,29 @@ function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
+        // 桌面端：优先应用用户自定义的 Supabase 和加密密钥配置
+        if (isElectron() && window.electron?.getSettings) {
+          try {
+            const settings = await window.electron.getSettings();
+            const sc = settings.find(s => s.name === 'supabaseConfig')?.value as { url?: string; anonKey?: string } | undefined;
+            if (sc?.url && sc?.anonKey) {
+              reinitSupabase(sc.url, sc.anonKey);
+            }
+            const customKey = settings.find(s => s.name === 'encryptionKey')?.value as string | undefined;
+            if (customKey) {
+              setEncryptionKey(customKey);
+            }
+          } catch (error) {
+            logError('加载桌面端自定义配置失败', 'App', error as Error);
+          }
+        }
+
         if (validateEncryptionKey()) {
           logInfo('加密密钥加载成功', 'App');
         } else {
-          logError('加密密钥加载失败，请检查 VITE_ENCRYPTION_KEY 环境变量', 'App');
+          logError('加密密钥加载失败，桌面端请在设置中配置', 'App');
         }
-        
+
         useAuthStore.getState().getCurrentUser().catch(() => {
           logError('初始化认证状态失败', 'App');
         });

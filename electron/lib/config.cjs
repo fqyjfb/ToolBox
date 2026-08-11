@@ -114,6 +114,10 @@ const defaultSettings = {
   autoLockTimeout: 600,
   dbPath: '',
   networkConfig: defaultNetworkConfig,
+  // Supabase 桌面端用户自定义配置（空字符串表示使用打包时的环境变量值）
+  supabaseConfig: { url: '', anonKey: '' },
+  // 加密密钥桌面端用户自定义配置（空字符串表示使用打包时的环境变量值）
+  encryptionKey: '',
 };
 
 const defaultFloatConfig = [

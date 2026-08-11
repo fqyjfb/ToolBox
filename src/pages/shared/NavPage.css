@@ -420,10 +420,6 @@ main::-webkit-scrollbar-thumb:hover {
 }
 
 .content {
-  display: block;
-}
-
-.content {
   width: 100%;
   flex: 1;
   display: flex;

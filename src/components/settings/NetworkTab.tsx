@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Network, RefreshCw, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { Network, RefreshCw, Check, X, Loader2, Database, Key } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
-import { logError } from '../../services/loggerService';
+import { logError, logInfo } from '../../services/loggerService';
+import { reinitSupabase } from '../../services/supabase';
+import { setEncryptionKey, validateEncryptionKey } from '../../utils/crypto';
 import SettingCard from './SettingCard';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import type { NetworkConfig, NetworkTestResult } from '../../types/network';
@@ -51,12 +53,12 @@ const isValidUrl = (url: string): boolean => /^https?:\/\/.+/.test(url.trim());
 const NetworkTab: React.FC = () => {
   const addToast = useToastStore(state => state.addToast);
   const [form, setForm] = useState(createEmptyForm());
+  const [supabaseForm, setSupabaseForm] = useState({ url: '', anonKey: '' });
+  const [encryptionKeyInput, setEncryptionKeyInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [testStates, setTestStates] = useState<Record<string, 'loading' | NetworkTestResult | null>>({});
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showClearExpiredConfirm, setShowClearExpiredConfirm] = useState(false);
-  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -89,6 +91,12 @@ const NetworkTab: React.FC = () => {
               },
             });
           }
+          // 加载 Supabase 自定义配置
+          const sc = settings.find(s => s.name === 'supabaseConfig')?.value as { url?: string; anonKey?: string } | undefined;
+          if (sc?.url) setSupabaseForm({ url: sc.url, anonKey: sc.anonKey || '' });
+          // 加载加密密钥自定义配置
+          const ek = settings.find(s => s.name === 'encryptionKey')?.value as string | undefined;
+          if (ek) setEncryptionKeyInput(ek);
         }
       } catch (error) {
         logError('Failed to load network config', 'NetworkTab', error as Error);
@@ -124,6 +132,23 @@ const NetworkTab: React.FC = () => {
     try {
       if (window.electron) {
         await window.electron.updateSetting({ name: 'networkConfig', value: form });
+        // 保存 Supabase 配置（空值表示使用打包时的环境变量）
+        await window.electron.updateSetting({ name: 'supabaseConfig', value: supabaseForm });
+        // 保存加密密钥（空值表示使用打包时的环境变量）
+        await window.electron.updateSetting({ name: 'encryptionKey', value: encryptionKeyInput });
+
+        // 运行时应用 Supabase 和加密密钥
+        if (supabaseForm.url && supabaseForm.anonKey) {
+          reinitSupabase(supabaseForm.url, supabaseForm.anonKey);
+        }
+        if (encryptionKeyInput) {
+          setEncryptionKey(encryptionKeyInput);
+        }
+
+        if (validateEncryptionKey()) {
+          logInfo('加密密钥已应用', 'NetworkTab');
+        }
+
         addToast({ type: 'success', message: '网络配置已保存' });
       }
     } catch (error) {
@@ -136,24 +161,11 @@ const NetworkTab: React.FC = () => {
 
   const handleResetAll = () => {
     setForm(createEmptyForm());
+    setSupabaseForm({ url: '', anonKey: '' });
+    setEncryptionKeyInput('');
     setTestStates({});
     setShowResetConfirm(false);
     addToast({ type: 'success', message: '已恢复默认，请点击保存生效' });
-  };
-
-  const handleClearIconCache = async (type: 'all' | 'expired') => {
-    try {
-      if (window.electron) {
-        const result = await window.electron.clearIconCache(type);
-        addToast({ type: 'success', message: result.msg || '清理完成' });
-      }
-    } catch (error) {
-      logError('Failed to clear icon cache', 'NetworkTab', error as Error);
-      addToast({ type: 'error', message: '清理失败' });
-    } finally {
-      if (type === 'all') setShowClearAllConfirm(false);
-      else setShowClearExpiredConfirm(false);
-    }
   };
 
   const updateField = <K extends keyof typeof form, F extends keyof typeof form[K]>(
@@ -420,28 +432,77 @@ const NetworkTab: React.FC = () => {
               className={numInputCls}
             />
           </div>
-          <div className="flex items-center gap-2 pt-2">
-            <button
-              onClick={() => setShowClearExpiredConfirm(true)}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <Trash2 size={12} />
-              清理过期
-            </button>
-            <button
-              onClick={() => setShowClearAllConfirm(true)}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 border border-red-300 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
-            >
-              <Trash2 size={12} />
-              清理全部
-            </button>
+        </div>
+      </SettingCard>
+
+      {/* Supabase 配置 */}
+      <SettingCard>
+        <div className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <Database size={16} className="text-blue-600" />
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Supabase 配置</h3>
+        </div>
+        <div className="p-3 space-y-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400">留空表示使用打包时的默认配置。配置后无需重启即可生效。</p>
+          <div className="flex items-center justify-between">
+            <span className={labelCls}>Supabase URL</span>
+            <div className="flex items-center">
+              <input
+                type="text"
+                value={supabaseForm.url}
+                onChange={e => setSupabaseForm(prev => ({ ...prev, url: e.target.value }))}
+                placeholder="https://xxxx.supabase.co"
+                className={inputCls}
+              />
+              {renderDefaultButton(() => setSupabaseForm(prev => ({ ...prev, url: '' })))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className={labelCls}>Anon Key</span>
+            <div className="flex items-center">
+              <input
+                type="text"
+                value={supabaseForm.anonKey}
+                onChange={e => setSupabaseForm(prev => ({ ...prev, anonKey: e.target.value }))}
+                placeholder="eyJhbGciOiJIUzI1NiIs..."
+                className={inputCls}
+              />
+              {renderDefaultButton(() => setSupabaseForm(prev => ({ ...prev, anonKey: '' })))}
+            </div>
+          </div>
+        </div>
+      </SettingCard>
+
+      {/* 加密密钥配置 */}
+      <SettingCard>
+        <div className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <Key size={16} className="text-blue-600" />
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">加密密钥</h3>
+        </div>
+        <div className="p-3 space-y-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400">用于本地敏感数据加密。留空表示使用打包时的默认配置。修改后新数据将使用新密钥，旧数据需用旧密钥解密。</p>
+          <div className="flex items-center justify-between">
+            <span className={labelCls}>加密密钥</span>
+            <div className="flex items-center">
+              <input
+                type="text"
+                value={encryptionKeyInput}
+                onChange={e => setEncryptionKeyInput(e.target.value)}
+                placeholder="留空使用默认"
+                className={inputCls}
+              />
+              {renderDefaultButton(() => setEncryptionKeyInput(''))}
+            </div>
           </div>
         </div>
       </SettingCard>
 
       <div className="flex justify-end gap-2 pt-2">
         <button
-          onClick={() => setForm(createEmptyForm())}
+          onClick={() => {
+            setForm(createEmptyForm());
+            setSupabaseForm({ url: '', anonKey: '' });
+            setEncryptionKeyInput('');
+          }}
           className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
         >
           取消
@@ -462,20 +523,6 @@ const NetworkTab: React.FC = () => {
         message="将清空所有网络配置字段（仅清空表单，不影响已保存配置）。确认继续？"
         onConfirm={handleResetAll}
         onClose={() => setShowResetConfirm(false)}
-      />
-      <ConfirmDialog
-        isOpen={showClearExpiredConfirm}
-        title="清理过期图标缓存"
-        message="将删除所有已过期的图标缓存文件。确认继续？"
-        onConfirm={() => handleClearIconCache('expired')}
-        onClose={() => setShowClearExpiredConfirm(false)}
-      />
-      <ConfirmDialog
-        isOpen={showClearAllConfirm}
-        title="清理全部图标缓存"
-        message="将删除所有图标缓存文件，下次使用时会重新下载。确认继续？"
-        onConfirm={() => handleClearIconCache('all')}
-        onClose={() => setShowClearAllConfirm(false)}
       />
     </div>
   );
