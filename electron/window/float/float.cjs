@@ -5,6 +5,7 @@ let isDragging = false;
 let moved = false;
 let floatConfig = [];
 let collapseTimer = null;
+let currentAppearance = null;
 
 function getTooltipContainer() {
   return document.getElementById('tooltipContainer');
@@ -60,8 +61,13 @@ function getIconByName(name, item) {
 
 function renderFloatBall() {
   if (!isExpanded) {
-    floatBall.innerHTML = '<span class="main-icon">' + defaultFloatIcon + '</span><div id="tooltipContainer"></div>';
+    const hasAppearance = currentAppearance && currentAppearance.dataUrl;
+    const iconHTML = hasAppearance
+      ? '<img class="appearance-img" src="' + currentAppearance.dataUrl + '" alt="" draggable="false" />'
+      : '<span class="main-icon">' + defaultFloatIcon + '</span>';
+    floatBall.innerHTML = iconHTML + '<div id="tooltipContainer"></div>';
     floatBall.classList.remove('expanded');
+    floatBall.classList.toggle('has-appearance', !!hasAppearance);
   } else {
     const tooltipContainer = getTooltipContainer();
     if (floatConfig.length === 0) {
@@ -255,7 +261,27 @@ function initFloatBall() {
   }
   
   loadData();
-  
+
+  // 加载持久化的悬浮球形象
+  if (window.electronAPI.getAppearance) {
+    window.electronAPI.getAppearance().then(function(data) {
+      currentAppearance = (data && data.dataUrl) ? data : null;
+      if (!isExpanded) {
+        renderFloatBall();
+      }
+    }).catch(function() {});
+  }
+
+  // 监听形象切换
+  if (window.electronAPI.onAppearanceChanged) {
+    window.electronAPI.onAppearanceChanged(function(data) {
+      currentAppearance = data;
+      if (!isExpanded) {
+        renderFloatBall();
+      }
+    });
+  }
+
   window.electronAPI.onConfigChanged(async function(newConfig) {
     // Try to load config with icons when config changes
     if (window.electronAPI.getFloatConfigWithIcons) {

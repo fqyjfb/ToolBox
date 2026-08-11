@@ -79,10 +79,5 @@
 
 .sidebar-bottom {
   padding: 0 8px 8px;
-  border-top: 1px solid var(--color-border);
   flex-shrink: 0;
-}
-
-.dark .sidebar-bottom {
-  border-top-color: var(--color-border);
 }

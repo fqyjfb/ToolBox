@@ -1,4 +1,4 @@
-const { BrowserWindow, Menu, screen, ipcMain } = require('electron');
+const { BrowserWindow, Menu, screen, ipcMain, app } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
@@ -8,6 +8,36 @@ let floatWindow = null;
 let dragOffset = { x: 0, y: 0 };
 let pollIgnoring = true;
 let isExpanded = false;
+
+// ── 悬浮球形象辅助函数 ──
+
+// 使用 __dirname 解析路径，在 dev 和 asar 打包环境下均能正确工作
+const getFloatImgDir = () => path.join(__dirname, '../../public', 'float-img');
+
+const getFloatImgList = () => {
+  try {
+    const dir = getFloatImgDir();
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir)
+      .filter(f => f.toLowerCase().endsWith('.png'))
+      .map(f => f.replace(/\.png$/i, ''))
+      .sort();
+  } catch {
+    return [];
+  }
+};
+
+const getFloatImgDataUrl = (name) => {
+  if (!name) return '';
+  try {
+    const filePath = path.join(getFloatImgDir(), name + '.png');
+    if (!fs.existsSync(filePath)) return '';
+    const buffer = fs.readFileSync(filePath);
+    return 'data:image/png;base64,' + buffer.toString('base64');
+  } catch {
+    return '';
+  }
+};
 
 const createFloatWindow = () => {
   if (floatWindow) {
@@ -37,8 +67,6 @@ const createFloatWindow = () => {
       y = settings.floatBallPosition.y;
     }
   }
-
-  const { app } = require('electron');
 
   floatWindow = new BrowserWindow({
     width: 300,
@@ -139,6 +167,47 @@ const toggleFloatWindow = () => {
   require('./tray.cjs').refreshTrayMenu();
   
   return settings.isFloatWindowEnabled;
+};
+
+// 构建"切换形象"子菜单
+const buildAppearanceMenu = (settings) => {
+  const imgList = getFloatImgList();
+  if (imgList.length === 0) return [];
+  const current = settings.floatBallAppearance || '';
+  const items = imgList.map(name => ({
+    label: name,
+    type: 'radio',
+    checked: current === name,
+    click: () => {
+      const s = loadSettings();
+      s.floatBallAppearance = name;
+      saveSettings(s);
+      const dataUrl = getFloatImgDataUrl(name);
+      if (floatWindow && !floatWindow.isDestroyed()) {
+        floatWindow.webContents.send('appearance-changed', { name, dataUrl });
+      }
+    }
+  }));
+  return [{
+    label: '切换形象',
+    submenu: [
+      {
+        label: '默认',
+        type: 'radio',
+        checked: current === '',
+        click: () => {
+          const s = loadSettings();
+          s.floatBallAppearance = '';
+          saveSettings(s);
+          if (floatWindow && !floatWindow.isDestroyed()) {
+            floatWindow.webContents.send('appearance-changed', { name: '', dataUrl: '' });
+          }
+        }
+      },
+      { type: 'separator' },
+      ...items
+    ]
+  }];
 };
 
 let floatIpcHandlersRegistered = false;
@@ -300,6 +369,7 @@ const registerFloatIpcHandlers = () => {
           });
         }
       },
+      ...buildAppearanceMenu(settings),
       { type: 'separator' },
       {
         label: '关闭',
@@ -336,6 +406,13 @@ const registerFloatIpcHandlers = () => {
     if (floatWindow) {
       floatWindow.webContents.send('float-config-changed', loadFloatConfig());
     }
+  });
+
+  ipcMain.handle('float-get-appearance', () => {
+    const settings = loadSettings();
+    const name = settings.floatBallAppearance || '';
+    const dataUrl = name ? getFloatImgDataUrl(name) : '';
+    return { name, dataUrl };
   });
 };
 

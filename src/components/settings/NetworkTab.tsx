@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Network, RefreshCw, Check, X, Loader2, Database, Key } from 'lucide-react';
+import { Network, RefreshCw, Check, X, Loader2, Database, Key, Package, Download, Save } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { logError, logInfo } from '../../services/loggerService';
 import { reinitSupabase } from '../../services/supabase';
@@ -240,290 +240,206 @@ const NetworkTab: React.FC = () => {
           全部恢复默认
         </button>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400">留空表示使用默认值。修改后请点击"保存配置"。</p>
 
-      {/* 应用更新 */}
       <SettingCard>
-        <div className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">应用更新</h3>
+        {/* 应用更新 */}
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+                <Network size={16} />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">应用更新</h3>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>检查更新 API</span>
+              <div className="flex items-center gap-2">
+                <input type="text" value={form.appUpdate.checkUrl} onChange={e => updateField('appUpdate', 'checkUrl', e.target.value)} placeholder={DEFAULT_CONFIG.appUpdate.checkUrl} className={inputCls} />
+                {renderTestButton('appUpdate.checkUrl', form.appUpdate.checkUrl)}
+                {renderTestResult('appUpdate.checkUrl')}
+                {renderDefaultButton(() => updateField('appUpdate', 'checkUrl', ''))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>仓库主页</span>
+              <div className="flex items-center gap-2">
+                <input type="text" value={form.appUpdate.repoUrl} onChange={e => updateField('appUpdate', 'repoUrl', e.target.value)} placeholder={DEFAULT_CONFIG.appUpdate.repoUrl} className={inputCls} />
+                {renderDefaultButton(() => updateField('appUpdate', 'repoUrl', ''))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>请求超时 (ms)</span>
+              <input type="number" value={form.appUpdate.requestTimeout || ''} onChange={e => updateField('appUpdate', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.appUpdate.requestTimeout)} className={numInputCls} />
+            </div>
+          </div>
         </div>
-        <div className="p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>检查更新 API</span>
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={form.appUpdate.checkUrl}
-                onChange={e => updateField('appUpdate', 'checkUrl', e.target.value)}
-                placeholder={DEFAULT_CONFIG.appUpdate.checkUrl}
-                className={inputCls}
-              />
-              {renderTestButton('appUpdate.checkUrl', form.appUpdate.checkUrl)}
-              {renderTestResult('appUpdate.checkUrl')}
-              {renderDefaultButton(() => updateField('appUpdate', 'checkUrl', ''))}
+
+        {/* 60s 新闻 API */}
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+                <Network size={16} />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">60s 新闻 API</h3>
             </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>仓库主页</span>
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={form.appUpdate.repoUrl}
-                onChange={e => updateField('appUpdate', 'repoUrl', e.target.value)}
-                placeholder={DEFAULT_CONFIG.appUpdate.repoUrl}
-                className={inputCls}
-              />
-              {renderDefaultButton(() => updateField('appUpdate', 'repoUrl', ''))}
+          <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>主源</span>
+              <div className="flex items-center gap-2">
+                <input type="text" value={form.hotNews.primaryUrl} onChange={e => updateField('hotNews', 'primaryUrl', e.target.value)} placeholder={DEFAULT_CONFIG.hotNews.primaryUrl} className={inputCls} />
+                {renderTestButton('hotNews.primaryUrl', form.hotNews.primaryUrl)}
+                {renderTestResult('hotNews.primaryUrl')}
+                {renderDefaultButton(() => updateField('hotNews', 'primaryUrl', ''))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>备源</span>
+              <div className="flex items-center gap-2">
+                <input type="text" value={form.hotNews.fallbackUrl} onChange={e => updateField('hotNews', 'fallbackUrl', e.target.value)} placeholder={DEFAULT_CONFIG.hotNews.fallbackUrl} className={inputCls} />
+                {renderTestButton('hotNews.fallbackUrl', form.hotNews.fallbackUrl)}
+                {renderTestResult('hotNews.fallbackUrl')}
+                {renderDefaultButton(() => updateField('hotNews', 'fallbackUrl', ''))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>请求超时 (ms)</span>
+              <input type="number" value={form.hotNews.requestTimeout || ''} onChange={e => updateField('hotNews', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.hotNews.requestTimeout)} className={numInputCls} />
             </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>请求超时 (ms)</span>
-            <input
-              type="number"
-              value={form.appUpdate.requestTimeout || ''}
-              onChange={e => updateField('appUpdate', 'requestTimeout', Number(e.target.value) || 0)}
-              placeholder={String(DEFAULT_CONFIG.appUpdate.requestTimeout)}
-              className={numInputCls}
-            />
+        </div>
+
+        {/* 插件商店镜像 */}
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+                <Package size={16} />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">插件商店镜像</h3>
+            </div>
           </div>
+          <div className="p-4 space-y-3">
+            <div className="flex items-start justify-between">
+              <span className={labelCls}>注册表镜像</span>
+              <div className="flex items-center gap-2">
+                <textarea rows={4} value={urlsToText(form.pluginStore.registryUrls)} onChange={e => updateField('pluginStore', 'registryUrls', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.registryUrls.join('\n')} className={textareaCls} />
+                {renderDefaultButton(() => updateField('pluginStore', 'registryUrls', []))}
+              </div>
+            </div>
+            <div className="flex items-start justify-between">
+              <span className={labelCls}>GitHub Raw</span>
+              <div className="flex items-center gap-2">
+                <textarea rows={4} value={urlsToText(form.pluginStore.githubRawMirrors)} onChange={e => updateField('pluginStore', 'githubRawMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubRawMirrors.join('\n')} className={textareaCls} />
+                {renderDefaultButton(() => updateField('pluginStore', 'githubRawMirrors', []))}
+              </div>
+            </div>
+            <div className="flex items-start justify-between">
+              <span className={labelCls}>GitHub API</span>
+              <div className="flex items-center gap-2">
+                <textarea rows={3} value={urlsToText(form.pluginStore.githubApiMirrors)} onChange={e => updateField('pluginStore', 'githubApiMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubApiMirrors.join('\n')} className={textareaCls} />
+                {renderDefaultButton(() => updateField('pluginStore', 'githubApiMirrors', []))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>请求超时 (ms)</span>
+              <input type="number" value={form.pluginStore.requestTimeout || ''} onChange={e => updateField('pluginStore', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.pluginStore.requestTimeout)} className={numInputCls} />
+            </div>
+          </div>
+        </div>
+
+        {/* 图标下载缓存 */}
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+                <Download size={16} />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">图标下载缓存</h3>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>缓存有效期 (ms)</span>
+              <input type="number" value={form.iconCache.ttl || ''} onChange={e => updateField('iconCache', 'ttl', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.iconCache.ttl)} className={numInputCls} />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>最大条目</span>
+              <input type="number" value={form.iconCache.maxItems || ''} onChange={e => updateField('iconCache', 'maxItems', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.iconCache.maxItems)} className={numInputCls} />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>下载超时 (ms)</span>
+              <input type="number" value={form.iconCache.requestTimeout || ''} onChange={e => updateField('iconCache', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.iconCache.requestTimeout)} className={numInputCls} />
+            </div>
+          </div>
+        </div>
+
+        {/* Supabase 配置 */}
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+                <Database size={16} />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Supabase 配置</h3>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">留空表示使用打包时的默认配置。配置后无需重启即可生效。</p>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>Supabase URL</span>
+              <div className="flex items-center gap-2">
+                <input type="text" value={supabaseForm.url} onChange={e => setSupabaseForm(prev => ({ ...prev, url: e.target.value }))} placeholder="https://xxxx.supabase.co" className={inputCls} />
+                {renderDefaultButton(() => setSupabaseForm(prev => ({ ...prev, url: '' })))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>Anon Key</span>
+              <div className="flex items-center gap-2">
+                <input type="text" value={supabaseForm.anonKey} onChange={e => setSupabaseForm(prev => ({ ...prev, anonKey: e.target.value }))} placeholder="eyJhbGciOiJIUzI1NiIs..." className={inputCls} />
+                {renderDefaultButton(() => setSupabaseForm(prev => ({ ...prev, anonKey: '' })))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 加密密钥配置 */}
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+                <Key size={16} />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">加密密钥</h3>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">用于本地敏感数据加密。留空表示使用打包时的默认配置。修改后新数据将使用新密钥，旧数据需用旧密钥解密。</p>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>加密密钥</span>
+              <div className="flex items-center gap-2">
+                <input type="text" value={encryptionKeyInput} onChange={e => setEncryptionKeyInput(e.target.value)} placeholder="留空使用默认" className={inputCls} />
+                {renderDefaultButton(() => setEncryptionKeyInput(''))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 保存按钮 */}
+        <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <button onClick={() => { setForm(createEmptyForm()); setSupabaseForm({ url: '', anonKey: '' }); setEncryptionKeyInput(''); }} className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">取消</button>
+          <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white bg-gray-800 dark:bg-gray-700 rounded-md hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors disabled:opacity-50">
+            {isSaving && <Loader2 size={14} className="animate-spin" />}
+            <Save size={14} />
+            保存配置
+          </button>
         </div>
       </SettingCard>
 
-      {/* 60s 新闻 API */}
-      <SettingCard>
-        <div className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">60s 新闻 API</h3>
-        </div>
-        <div className="p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>主源</span>
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={form.hotNews.primaryUrl}
-                onChange={e => updateField('hotNews', 'primaryUrl', e.target.value)}
-                placeholder={DEFAULT_CONFIG.hotNews.primaryUrl}
-                className={inputCls}
-              />
-              {renderTestButton('hotNews.primaryUrl', form.hotNews.primaryUrl)}
-              {renderTestResult('hotNews.primaryUrl')}
-              {renderDefaultButton(() => updateField('hotNews', 'primaryUrl', ''))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>备源</span>
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={form.hotNews.fallbackUrl}
-                onChange={e => updateField('hotNews', 'fallbackUrl', e.target.value)}
-                placeholder={DEFAULT_CONFIG.hotNews.fallbackUrl}
-                className={inputCls}
-              />
-              {renderTestButton('hotNews.fallbackUrl', form.hotNews.fallbackUrl)}
-              {renderTestResult('hotNews.fallbackUrl')}
-              {renderDefaultButton(() => updateField('hotNews', 'fallbackUrl', ''))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>请求超时 (ms)</span>
-            <input
-              type="number"
-              value={form.hotNews.requestTimeout || ''}
-              onChange={e => updateField('hotNews', 'requestTimeout', Number(e.target.value) || 0)}
-              placeholder={String(DEFAULT_CONFIG.hotNews.requestTimeout)}
-              className={numInputCls}
-            />
-          </div>
-        </div>
-      </SettingCard>
-
-      {/* 插件商店镜像 */}
-      <SettingCard>
-        <div className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">插件商店镜像</h3>
-        </div>
-        <div className="p-3 space-y-2">
-          <div className="flex items-start justify-between">
-            <span className={labelCls}>注册表镜像</span>
-            <div className="flex items-center">
-              <textarea
-                rows={4}
-                value={urlsToText(form.pluginStore.registryUrls)}
-                onChange={e => updateField('pluginStore', 'registryUrls', textToUrls(e.target.value))}
-                placeholder={DEFAULT_CONFIG.pluginStore.registryUrls.join('\n')}
-                className={textareaCls}
-              />
-              {renderDefaultButton(() => updateField('pluginStore', 'registryUrls', []))}
-            </div>
-          </div>
-          <div className="flex items-start justify-between">
-            <span className={labelCls}>GitHub Raw</span>
-            <div className="flex items-center">
-              <textarea
-                rows={4}
-                value={urlsToText(form.pluginStore.githubRawMirrors)}
-                onChange={e => updateField('pluginStore', 'githubRawMirrors', textToUrls(e.target.value))}
-                placeholder={DEFAULT_CONFIG.pluginStore.githubRawMirrors.join('\n')}
-                className={textareaCls}
-              />
-              {renderDefaultButton(() => updateField('pluginStore', 'githubRawMirrors', []))}
-            </div>
-          </div>
-          <div className="flex items-start justify-between">
-            <span className={labelCls}>GitHub API</span>
-            <div className="flex items-center">
-              <textarea
-                rows={3}
-                value={urlsToText(form.pluginStore.githubApiMirrors)}
-                onChange={e => updateField('pluginStore', 'githubApiMirrors', textToUrls(e.target.value))}
-                placeholder={DEFAULT_CONFIG.pluginStore.githubApiMirrors.join('\n')}
-                className={textareaCls}
-              />
-              {renderDefaultButton(() => updateField('pluginStore', 'githubApiMirrors', []))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>请求超时 (ms)</span>
-            <input
-              type="number"
-              value={form.pluginStore.requestTimeout || ''}
-              onChange={e => updateField('pluginStore', 'requestTimeout', Number(e.target.value) || 0)}
-              placeholder={String(DEFAULT_CONFIG.pluginStore.requestTimeout)}
-              className={numInputCls}
-            />
-          </div>
-        </div>
-      </SettingCard>
-
-      {/* 图标下载缓存 */}
-      <SettingCard>
-        <div className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">图标下载缓存</h3>
-        </div>
-        <div className="p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>缓存有效期 (ms)</span>
-            <input
-              type="number"
-              value={form.iconCache.ttl || ''}
-              onChange={e => updateField('iconCache', 'ttl', Number(e.target.value) || 0)}
-              placeholder={String(DEFAULT_CONFIG.iconCache.ttl)}
-              className={numInputCls}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>最大条目</span>
-            <input
-              type="number"
-              value={form.iconCache.maxItems || ''}
-              onChange={e => updateField('iconCache', 'maxItems', Number(e.target.value) || 0)}
-              placeholder={String(DEFAULT_CONFIG.iconCache.maxItems)}
-              className={numInputCls}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>下载超时 (ms)</span>
-            <input
-              type="number"
-              value={form.iconCache.requestTimeout || ''}
-              onChange={e => updateField('iconCache', 'requestTimeout', Number(e.target.value) || 0)}
-              placeholder={String(DEFAULT_CONFIG.iconCache.requestTimeout)}
-              className={numInputCls}
-            />
-          </div>
-        </div>
-      </SettingCard>
-
-      {/* Supabase 配置 */}
-      <SettingCard>
-        <div className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <Database size={16} className="text-blue-600" />
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Supabase 配置</h3>
-        </div>
-        <div className="p-3 space-y-2">
-          <p className="text-xs text-gray-500 dark:text-gray-400">留空表示使用打包时的默认配置。配置后无需重启即可生效。</p>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>Supabase URL</span>
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={supabaseForm.url}
-                onChange={e => setSupabaseForm(prev => ({ ...prev, url: e.target.value }))}
-                placeholder="https://xxxx.supabase.co"
-                className={inputCls}
-              />
-              {renderDefaultButton(() => setSupabaseForm(prev => ({ ...prev, url: '' })))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>Anon Key</span>
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={supabaseForm.anonKey}
-                onChange={e => setSupabaseForm(prev => ({ ...prev, anonKey: e.target.value }))}
-                placeholder="eyJhbGciOiJIUzI1NiIs..."
-                className={inputCls}
-              />
-              {renderDefaultButton(() => setSupabaseForm(prev => ({ ...prev, anonKey: '' })))}
-            </div>
-          </div>
-        </div>
-      </SettingCard>
-
-      {/* 加密密钥配置 */}
-      <SettingCard>
-        <div className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <Key size={16} className="text-blue-600" />
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">加密密钥</h3>
-        </div>
-        <div className="p-3 space-y-2">
-          <p className="text-xs text-gray-500 dark:text-gray-400">用于本地敏感数据加密。留空表示使用打包时的默认配置。修改后新数据将使用新密钥，旧数据需用旧密钥解密。</p>
-          <div className="flex items-center justify-between">
-            <span className={labelCls}>加密密钥</span>
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={encryptionKeyInput}
-                onChange={e => setEncryptionKeyInput(e.target.value)}
-                placeholder="留空使用默认"
-                className={inputCls}
-              />
-              {renderDefaultButton(() => setEncryptionKeyInput(''))}
-            </div>
-          </div>
-        </div>
-      </SettingCard>
-
-      <div className="flex justify-end gap-2 pt-2">
-        <button
-          onClick={() => {
-            setForm(createEmptyForm());
-            setSupabaseForm({ url: '', anonKey: '' });
-            setEncryptionKeyInput('');
-          }}
-          className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
-        >
-          取消
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex items-center gap-1 px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isSaving && <Loader2 size={14} className="animate-spin" />}
-          保存配置
-        </button>
-      </div>
-
-      <ConfirmDialog
-        isOpen={showResetConfirm}
-        title="全部恢复默认"
-        message="将清空所有网络配置字段（仅清空表单，不影响已保存配置）。确认继续？"
-        onConfirm={handleResetAll}
-        onClose={() => setShowResetConfirm(false)}
-      />
+      <ConfirmDialog isOpen={showResetConfirm} title="全部恢复默认" message="将清空所有网络配置字段（仅清空表单，不影响已保存配置）。确认继续？" onConfirm={handleResetAll} onClose={() => setShowResetConfirm(false)} />
     </div>
   );
 };

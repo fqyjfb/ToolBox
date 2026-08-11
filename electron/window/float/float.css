@@ -16,48 +16,64 @@ html, body {
   cursor: default;
 }
 
+/* ── 悬浮球 ── */
 .float-ball {
-  background: rgb(3, 169, 244);
-  background: linear-gradient(
-    138deg,
-    rgba(3, 169, 244, 1) 15%,
-    rgba(63, 180, 233, 1) 65%
-  );
-  position: relative;
-  cursor: pointer;
-  font-size: 17px;
   width: 44px;
   height: 44px;
+  border-radius: 50%;
+  background: rgb(3, 169, 244);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: background 0.3s ease, transform 0.15s ease;
+  cursor: pointer;
+  position: relative;
+  will-change: transform;
+  backface-visibility: hidden;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* 有形象图片时移除背景 */
+.float-ball.has-appearance {
+  background: transparent;
+}
+
+/* Hover：轻微放大 */
+.float-ball:hover {
+  transform: scale(1.12);
+}
+
+/* 拖拽中 */
 .float-ball.dragging {
   cursor: grabbing;
-  transform: scale(1.1);
+  transform: scale(1.08);
+  opacity: 0.85;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
+/* 点击展开 */
 .float-ball.expanded {
-  background: #fff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: none;
 }
 
+/* 形象图片（用户自定义形象） */
+.float-ball .appearance-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 默认 SVG 图标（无形象时） */
 .float-ball .main-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   fill: #fff;
-  transition: fill 0.3s ease;
 }
 
-.float-ball.expanded .main-icon {
-  fill: rgb(3, 169, 244);
-}
-
+/* ── 展开菜单项 ── */
 .float-ball .tooltip-item {
   position: absolute;
   left: 50%;
@@ -142,13 +158,7 @@ html, body {
   border-radius: 4px;
 }
 
+/* ── 拖放激活态 ── */
 .float-ball.drop-active {
   transform: scale(1.2);
-  box-shadow: 0 0 24px rgba(100, 180, 255, 0.8), 0 0 48px rgba(100, 180, 255, 0.4);
-  animation: drop-pulse 1s ease-in-out infinite;
-}
-
-@keyframes drop-pulse {
-  0%, 100% { box-shadow: 0 0 24px rgba(100, 180, 255, 0.8), 0 0 48px rgba(100, 180, 255, 0.4); }
-  50% { box-shadow: 0 0 32px rgba(100, 180, 255, 1), 0 0 64px rgba(100, 180, 255, 0.6); }
 }

@@ -79,9 +79,9 @@ const SortableCategoryItem: React.FC<{ category: QuickLaunchCategory; isActive: 
       className={`cursor-grab active:cursor-grabbing`}
     >
       <button
-        className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex items-center gap-1 ${
-          isActive 
-            ? 'text-white' 
+        className={`px-3 py-1 text-sm font-medium rounded-full transition-colors flex items-center gap-1 ${
+          isActive
+            ? 'text-white'
             : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
         }`}
         style={isActive ? { backgroundColor: category.color } : {}}
@@ -613,10 +613,10 @@ const QuickLaunch: React.FC = () => {
         onContextMenu={(e) => handleContextMenu(e, 'empty')}
       >
         
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-6 py-2">
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
+            className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
               activeCategoryId === 'all' 
                 ? 'bg-primary text-button-text' 
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'

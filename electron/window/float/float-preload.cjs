@@ -1,10 +1,17 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 let configChangedCallback = null;
+let appearanceChangedCallback = null;
 
 ipcRenderer.on('float-config-changed', (event, config) => {
   if (configChangedCallback) {
     configChangedCallback(config);
+  }
+});
+
+ipcRenderer.on('appearance-changed', (event, data) => {
+  if (appearanceChangedCallback) {
+    appearanceChangedCallback(data);
   }
 });
 
@@ -26,4 +33,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     configChangedCallback = callback;
   },
   getLockStatus: () => ipcRenderer.invoke('lock:get-status'),
+  getAppearance: () => ipcRenderer.invoke('float-get-appearance'),
+  onAppearanceChanged: (callback) => {
+    appearanceChangedCallback = callback;
+  },
 });

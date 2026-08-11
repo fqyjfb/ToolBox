@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Zap, FileText, Clock, User, Settings, Info, X, Grid3X3, LayoutDashboard, Package } from 'lucide-react';
+import { Home, Zap, FileText, User, Settings, Info, X, Grid3X3, LayoutDashboard, Package } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -61,7 +61,6 @@ const Sidebar: React.FC = () => {
     { id: 'notes', title: '记事本', icon: <FileText className="w-4 h-4 flex-shrink-0" />, path: '/tools/notes', active: isStartsWith('/tools/notes') },
     { id: 'tools', title: '工具中心', icon: <Grid3X3 className="w-4 h-4 flex-shrink-0" />, path: '/tools', active: isActive('/tools') },
     { id: 'plugin-store', title: '插件商店', icon: <Package className="w-4 h-4 flex-shrink-0" />, path: '/tools/plugin-store', active: isActive('/tools/plugin-store') },
-    { id: 'recents', title: '最近使用', icon: <Clock className="w-4 h-4 flex-shrink-0" />, path: '/recents', active: isActive('/recents') },
   ];
 
   const sensors = useDndSensors(false);
@@ -188,7 +187,6 @@ const Sidebar: React.FC = () => {
             ))}
           </div>
         )}
-        {!isCollapsed && <div className="sidebar-divider" />}
         <div className={`flex items-center gap-1 px-1 ${isCollapsed ? 'flex-col' : ''}`}>
           <SidebarBottomButton icon={<User className="w-4 h-4" />} title={isAuthenticated ? '个人信息' : '登录'} onClick={() => navigate(isAuthenticated ? '/tools/profile' : '/login')} />
           {isAdmin && (

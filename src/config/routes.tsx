@@ -18,7 +18,6 @@ const LoginPage = React.lazy(() => import('../pages/shared/LoginPage'));
 const Settings = React.lazy(() => import('../pages/shared/Settings'));
 const About = React.lazy(() => import('../pages/shared/About'));
 const ToolsPage = React.lazy(() => import('../pages/shared/ToolsPage'));
-const RecentsPage = React.lazy(() => import('../pages/shared/RecentsPage'));
 const LogsPage = React.lazy(() => import('../pages/logs/index'));
 
 const CountryCodePage = React.lazy(() => import('../pages/tools/country-code'));
@@ -115,7 +114,6 @@ const publicToolsRoutes: RouteConfig[] = [
 export const desktopRoutes: RouteConfig[] = [
   { path: '/', element: <Home /> },
   { path: '/launch', element: <QuickLaunch /> },
-  { path: '/recents', element: <RecentsPage /> },
   { path: '/settings', element: <Settings /> },
   { path: '/logs', element: <LogsPage /> },
   ...sharedRoutes,

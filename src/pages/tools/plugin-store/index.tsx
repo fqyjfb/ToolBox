@@ -268,67 +268,63 @@ const PluginStorePage: React.FC = () => {
             <Package className="w-4 h-4 text-button-text" />
           </div>
           <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">插件商店</h1>
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-md p-0.5">
+            <button
+              onClick={() => setActiveTab('explore')}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                activeTab === 'explore'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              }`}
+            >
+              发现
+            </button>
+            <button
+              onClick={() => setActiveTab('installed')}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                activeTab === 'installed'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              }`}
+            >
+              已安装 ({installedPlugins.length})
+            </button>
+          </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="搜索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-48 pl-8 pr-3 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md focus:outline-none focus:border-primary text-gray-900 dark:text-gray-100 placeholder-gray-400"
+            />
+          </div>
           <button
             onClick={() => {
               window.electron?.plugin?.openExtensionsDir();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
-            <FolderOpen className="w-3.5 h-3.5" />
-            插件目录
+            <FolderOpen className="w-3 h-3" />
+            目录
           </button>
           <button
             onClick={handleInstallFromFile}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
-            <Upload className="w-3.5 h-3.5" />
-            上传插件
+            <Upload className="w-3 h-3" />
+            上传
           </button>
           <button
             onClick={handleRefresh}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
+            className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
             title="刷新"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50">
-        <div className="relative w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="搜索插件..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md focus:outline-none focus:border-primary text-gray-900 dark:text-gray-100 placeholder-gray-400"
-          />
-        </div>
-        
-        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-md p-0.5">
-          <button
-            onClick={() => setActiveTab('explore')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'explore'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
-          >
-            发现
-          </button>
-          <button
-            onClick={() => setActiveTab('installed')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'installed'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
-          >
-            已安装 ({installedPlugins.length})
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
