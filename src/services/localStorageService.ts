@@ -33,6 +33,9 @@ export const STORAGE_KEYS = {
   MARKDOWN_WECHAT_CONTENT: 'markdown-wechat-content',
   
   NOTES_SIDEBAR_VISIBLE: 'notes_sidebar_visible',
+  NOTES_PINNED_FOLDERS: 'notes_pinned_folders',
+  NOTES_CHAT_PATH: 'notes_chat_path',
+  NOTES_ROOT_PATH: 'notes_root_path',
   
   FILE_MANAGER_WIDTHS: 'file_manager_widths',
   PLUGINS: 'toolbox_plugins',

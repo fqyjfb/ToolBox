@@ -48,7 +48,15 @@ const NotesPage: React.FC = () => {
     toggleFolderExpand,
     refreshFileTree,
     rebuildIndex,
-    changeFolder,
+    pinnedFolders,
+    currentViewPath,
+    chatPath,
+    chatOrganizeTree,
+    addPinnedFolder,
+    removePinnedFolder,
+    reorderPinnedFolder,
+    switchToFolder,
+    setChatPath,
   } = useNotes();
 
   const {
@@ -62,7 +70,7 @@ const NotesPage: React.FC = () => {
     clearSelection,
     moveMessages,
     refreshMessages,
-  } = useChatNotes({ rootPath, onRefreshFileTree: refreshFileTree });
+  } = useChatNotes({ rootPath: chatPath || rootPath, onRefreshFileTree: refreshFileTree });
 
   useEffect(() => {
     if (isChatMode) {
@@ -80,16 +88,17 @@ const NotesPage: React.FC = () => {
     setIsChatMode(!isChatMode);
   };
 
-  const sep = rootPath && rootPath.includes('\\') ? '\\' : '/';
-  const chatOrganizePath = rootPath ? `${rootPath}${sep}${CHAT_ORGANIZE_FOLDER}` : null;
+  const chatBasePath = chatPath || rootPath;
+  const sep = chatBasePath && chatBasePath.includes('\\') ? '\\' : '/';
+  const chatOrganizePath = chatBasePath ? `${chatBasePath}${sep}${CHAT_ORGANIZE_FOLDER}` : null;
 
   const ensureOrganizeFolder = useCallback(async () => {
-    if (!rootPath) return;
+    if (!chatBasePath) return;
     try {
-      await window.electron?.notes.createFolder(rootPath, CHAT_ORGANIZE_FOLDER);
-      const s = rootPath.includes('\\') ? '\\' : '/';
-      const oldChatPath = `${rootPath}${s}对话.md`;
-      const newChatPath = `${rootPath}${s}${CHAT_ORGANIZE_FOLDER}${s}对话.md`;
+      await window.electron?.notes.createFolder(chatBasePath, CHAT_ORGANIZE_FOLDER);
+      const s = chatBasePath.includes('\\') ? '\\' : '/';
+      const oldChatPath = `${chatBasePath}${s}对话.md`;
+      const newChatPath = `${chatBasePath}${s}${CHAT_ORGANIZE_FOLDER}${s}对话.md`;
       const result = await window.electron?.notes.readFile(oldChatPath);
       if (result?.success && result.content) {
         const newResult = await window.electron?.notes.readFile(newChatPath);
@@ -100,13 +109,13 @@ const NotesPage: React.FC = () => {
       }
       await refreshFileTree();
     } catch {}
-  }, [rootPath, refreshFileTree]);
+  }, [chatBasePath, refreshFileTree]);
 
   useEffect(() => {
-    if (rootPath) {
+    if (chatBasePath) {
       ensureOrganizeFolder();
     }
-  }, [rootPath, ensureOrganizeFolder]);
+  }, [chatBasePath, ensureOrganizeFolder]);
 
   const handleSelectOrganizeFolder = useCallback(() => {
     if (!chatOrganizePath) return;
@@ -178,7 +187,6 @@ const NotesPage: React.FC = () => {
             onMoveItem={moveItem}
             onRefresh={refreshFileTree}
             onRebuildIndex={rebuildIndex}
-            onChangeFolder={changeFolder}
             loading={loading}
             isChatMode={isChatMode}
             onToggleChatMode={handleToggleChatMode}
@@ -186,6 +194,15 @@ const NotesPage: React.FC = () => {
             onSelectOrganizeFolder={handleSelectOrganizeFolder}
             onCopyItem={copyItem}
             onImportDroppedFiles={importDroppedFiles}
+            pinnedFolders={pinnedFolders}
+            currentViewPath={currentViewPath}
+            onAddPinnedFolder={addPinnedFolder}
+            onRemovePinnedFolder={removePinnedFolder}
+            onReorderPinnedFolder={reorderPinnedFolder}
+            onSwitchToFolder={switchToFolder}
+            onSetChatPath={setChatPath}
+            chatPath={chatPath}
+            chatOrganizeTree={chatOrganizeTree}
           />
         )}
 

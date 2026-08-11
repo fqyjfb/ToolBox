@@ -16,6 +16,10 @@ module.exports = {
         'quick-launch-sm': '56px',
         'quick-launch-lg': '84px',
       },
+      gridAutoRows: {
+        'quick-launch-sm': '56px',
+        'quick-launch-lg': '84px',
+      },
       minWidth: {
         'dropdown': '120px',
         'dropdown-lg': '150px',

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import path from 'path';
 import { logError } from '../services/loggerService';
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
+import { CHAT_ORGANIZE_FOLDER } from '../pages/tools/notes/constants/paths';
 
 export interface FileTreeNode {
   id: string;
@@ -20,6 +21,11 @@ export interface FileMetadata {
   mimeType?: string;
 }
 
+export interface PinnedFolder {
+  path: string;
+  name: string;
+}
+
 export interface NotesState {
   hasRootPath: boolean;
   rootPath: string | null;
@@ -33,9 +39,12 @@ export interface NotesState {
 }
 
 export interface UseNotesReturn extends NotesState {
+  pinnedFolders: PinnedFolder[];
+  currentViewPath: string | null;
+  chatPath: string | null;
+  chatOrganizeTree: FileTreeNode[];
   selectRootFolder: () => Promise<boolean>;
   setRootPath: (path: string) => Promise<void>;
-  changeFolder: () => Promise<boolean>;
   refreshFileTree: () => Promise<void>;
   selectFile: (file: FileTreeNode) => Promise<void>;
   updateFileContent: (content: string) => void;
@@ -52,6 +61,11 @@ export interface UseNotesReturn extends NotesState {
   toggleFolderExpand: (folderPath: string) => void;
   rebuildIndex: () => Promise<void>;
   clearError: () => void;
+  addPinnedFolder: () => Promise<boolean>;
+  removePinnedFolder: (folderPath: string) => void;
+  reorderPinnedFolder: (fromIndex: number, toIndex: number) => void;
+  switchToFolder: (folderPath: string) => Promise<void>;
+  setChatPath: () => Promise<boolean>;
 }
 
 export function useNotes(): UseNotesReturn {
@@ -66,6 +80,22 @@ export function useNotes(): UseNotesReturn {
   const [error, setError] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [initialized, setInitialized] = useState(false);
+  const [pinnedFolders, setPinnedFolders] = useState<PinnedFolder[]>(() => {
+    const stored = localStorageService.get<PinnedFolder[] | string[]>(STORAGE_KEYS.NOTES_PINNED_FOLDERS, []);
+    if (stored.length > 0 && typeof stored[0] === 'string') {
+      return (stored as string[]).map(p => ({ path: p, name: p.split(/[/\\]/).pop() || p }));
+    }
+    return stored as PinnedFolder[];
+  });
+  const [currentViewPath, setCurrentViewPath] = useState<string | null>(null);
+  const [chatPath, setChatPathState] = useState<string | null>(() => {
+    return localStorageService.getString(STORAGE_KEYS.NOTES_CHAT_PATH) || null;
+  });
+  const [chatOrganizeTree, setChatOrganizeTree] = useState<FileTreeNode[]>([]);
+  const currentViewPathRef = useRef<string | null>(null);
+  currentViewPathRef.current = currentViewPath;
+  const chatOrganizeTreeRef = useRef<FileTreeNode[]>([]);
+  chatOrganizeTreeRef.current = chatOrganizeTree;
   const objectUrlRef = useRef<string | null>(null);
 
   const base64ToBlobUrl = useCallback((base64: string, mimeType: string): string => {
@@ -142,13 +172,25 @@ export function useNotes(): UseNotesReturn {
         setHasRootPath(hasRoot);
 
         if (hasRoot) {
-          const root = await window.electron.notes.getRootPath();
+          const savedRoot = localStorageService.getString(STORAGE_KEYS.NOTES_ROOT_PATH);
+          const root = savedRoot || await window.electron.notes.getRootPath();
+          if (savedRoot) {
+            await window.electron.notes.setRootPath(savedRoot);
+          }
           setRootPathState(root);
 
           if (root) {
             await window.electron.notes.scanFolder(root);
             const tree = await window.electron.notes.getFileTree();
             setFileTree(tree);
+
+            const savedChatPath = localStorageService.getString(STORAGE_KEYS.NOTES_CHAT_PATH);
+            const chatBasePath = savedChatPath || root;
+            if (chatBasePath && chatBasePath !== root) {
+              await loadChatOrganizeTree(chatBasePath);
+              await window.electron.notes.setRootPath(root);
+              await window.electron.notes.scanFolder(root);
+            }
 
             const lastOpenedFile = localStorageService.getString(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
             if (lastOpenedFile) {
@@ -216,6 +258,7 @@ export function useNotes(): UseNotesReturn {
       }
 
       await window.electron.notes.setRootPath(selectedPath);
+      localStorageService.setString(STORAGE_KEYS.NOTES_ROOT_PATH, selectedPath);
       setRootPathState(selectedPath);
       setHasRootPath(true);
 
@@ -248,21 +291,76 @@ export function useNotes(): UseNotesReturn {
     setFileTree(tree);
   }, []);
 
+  const loadChatOrganizeTree = useCallback(async (basePath: string | null) => {
+    if (!basePath || !window.electron) {
+      setChatOrganizeTree([]);
+      return;
+    }
+    try {
+      await window.electron.notes.setRootPath(basePath);
+      await window.electron.notes.scanFolder(basePath);
+      const tree = await window.electron.notes.getFileTree();
+      const sep = basePath.includes('\\') ? '\\' : '/';
+      const organizePath = `${basePath}${sep}${CHAT_ORGANIZE_FOLDER}`;
+      const findOrganize = (nodes: FileTreeNode[]): FileTreeNode | null => {
+        for (const node of nodes) {
+          if (node.path === organizePath) return node;
+          if (node.children) {
+            const found = findOrganize(node.children);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const organizeNode = findOrganize(tree);
+      setChatOrganizeTree(organizeNode ? [organizeNode] : []);
+    } catch {
+      setChatOrganizeTree([]);
+    }
+  }, []);
+
   const refreshFileTree = useCallback(async () => {
-    if (!rootPath || !window.electron) return;
+    const scanPath = currentViewPathRef.current || rootPath;
+    if (!scanPath || !window.electron) return;
 
     try {
       setLoading(true);
-      await window.electron.notes.scanFolder(rootPath);
+      setError(null);
+
+      const chatBasePath = chatPath || rootPath;
+
+      await window.electron.notes.setRootPath(scanPath);
+      await window.electron.notes.scanFolder(scanPath);
       const tree = await window.electron.notes.getFileTree();
       setFileTree(tree);
+
+      if (chatBasePath && chatBasePath !== scanPath) {
+        await loadChatOrganizeTree(chatBasePath);
+        await window.electron.notes.setRootPath(scanPath);
+      } else if (chatBasePath && chatBasePath === scanPath) {
+        const sep = chatBasePath.includes('\\') ? '\\' : '/';
+        const organizePath = `${chatBasePath}${sep}${CHAT_ORGANIZE_FOLDER}`;
+        const findOrganize = (nodes: FileTreeNode[]): FileTreeNode | null => {
+          for (const node of nodes) {
+            if (node.path === organizePath) return node;
+            if (node.children) {
+              const found = findOrganize(node.children);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const organizeNode = findOrganize(tree);
+        setChatOrganizeTree(organizeNode ? [organizeNode] : []);
+      }
+
       setLoading(false);
     } catch (err) {
       logError('刷新文件树失败', 'useNotes', err as Error);
       setError('刷新文件树失败');
       setLoading(false);
     }
-  }, [rootPath]);
+  }, [rootPath, chatPath, loadChatOrganizeTree]);
 
   const selectFile = useCallback(async (file: FileTreeNode) => {
     if (file.type !== 'file' || !window.electron) return;
@@ -462,6 +560,21 @@ export function useNotes(): UseNotesReturn {
             return newSet;
           });
 
+          setPinnedFolders((prev) => {
+            const next = prev.map((pinned) => {
+              if (pinned.path === oldPath) {
+                const newName = result.newPath!.split(/[/\\]/).pop() || pinned.name;
+                return { path: result.newPath!, name: newName };
+              }
+              if (pinned.path.startsWith(oldPath + '/') || pinned.path.startsWith(oldPath + '\\')) {
+                return { ...pinned, path: pinned.path.replace(oldPath, result.newPath!) };
+              }
+              return pinned;
+            });
+            localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
+            return next;
+          });
+
           if (selectedFile?.path === oldPath && result.newPath) {
             setSelectedFile({
               ...selectedFile,
@@ -513,6 +626,16 @@ export function useNotes(): UseNotesReturn {
             localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
           }
 
+          setPinnedFolders((prev) => {
+            const next = prev.filter((pinned) => {
+              return pinned.path !== itemPath &&
+                !pinned.path.startsWith(itemPath + '/') &&
+                !pinned.path.startsWith(itemPath + '\\');
+            });
+            localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
+            return next;
+          });
+
           return true;
         } else {
           setError(result.error || '删除失败');
@@ -546,6 +669,21 @@ export function useNotes(): UseNotesReturn {
             });
             localStorageService.setString(STORAGE_KEYS.NOTES_LAST_OPENED_FILE, result.newPath);
           }
+
+          setPinnedFolders((prev) => {
+            const next = prev.map((pinned) => {
+              if (pinned.path === itemPath) {
+                const newName = result.newPath!.split(/[/\\]/).pop() || pinned.name;
+                return { path: result.newPath!, name: newName };
+              }
+              if (pinned.path.startsWith(itemPath + '/') || pinned.path.startsWith(itemPath + '\\')) {
+                return { ...pinned, path: pinned.path.replace(itemPath, result.newPath!) };
+              }
+              return pinned;
+            });
+            localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
+            return next;
+          });
 
           return true;
         } else {
@@ -584,7 +722,7 @@ export function useNotes(): UseNotesReturn {
     async (filePaths: string[], targetFolderPath?: string): Promise<{ success: boolean; imported?: string[]; errors?: string[] }> => {
       if (!window.electron || !rootPath) return { success: false, errors: ['未设置根目录'] };
       try {
-        const dest = targetFolderPath || rootPath;
+        const dest = targetFolderPath || currentViewPathRef.current || rootPath;
         const result = await window.electron.notes.importDroppedFiles(dest, filePaths);
         if (result.success) {
           await refreshFileTree();
@@ -618,6 +756,107 @@ export function useNotes(): UseNotesReturn {
     setError(null);
   }, []);
 
+  const addPinnedFolder = useCallback(async (): Promise<boolean> => {
+    if (!window.electron) return false;
+    try {
+      const result = await window.electron.notes.selectFolder();
+      if (result.canceled || result.filePaths.length === 0) return false;
+
+      const folderPath = result.filePaths[0];
+      const folderName = folderPath.split(/[/\\]/).pop() || folderPath;
+
+      setPinnedFolders((prev) => {
+        if (prev.some(p => p.path === folderPath)) return prev;
+        const next = [...prev, { path: folderPath, name: folderName }];
+        localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
+        return next;
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const removePinnedFolder = useCallback((folderPath: string) => {
+    setPinnedFolders((prev) => {
+      const next = prev.filter(p => p.path !== folderPath);
+      localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
+      return next;
+    });
+    setCurrentViewPath((prev) => {
+      if (prev === folderPath) return null;
+      return prev;
+    });
+  }, []);
+
+  const reorderPinnedFolder = useCallback((fromIndex: number, toIndex: number) => {
+    setPinnedFolders((prev) => {
+      if (fromIndex === toIndex) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
+      return next;
+    });
+  }, []);
+
+  const switchToFolder = useCallback(async (folderPath: string) => {
+    if (!window.electron) return;
+    try {
+      setLoading(true);
+      setCurrentViewPath(folderPath);
+
+      const chatBasePath = chatPath || rootPath;
+
+      await window.electron.notes.setRootPath(folderPath);
+      const tree = await window.electron.notes.getFileTree();
+      setFileTree(tree);
+
+      if (chatBasePath && chatBasePath !== folderPath) {
+        await loadChatOrganizeTree(chatBasePath);
+        await window.electron.notes.setRootPath(folderPath);
+      } else if (chatBasePath && chatBasePath === folderPath) {
+        const sep = chatBasePath.includes('\\') ? '\\' : '/';
+        const organizePath = `${chatBasePath}${sep}${CHAT_ORGANIZE_FOLDER}`;
+        const findOrganize = (nodes: FileTreeNode[]): FileTreeNode | null => {
+          for (const node of nodes) {
+            if (node.path === organizePath) return node;
+            if (node.children) {
+              const found = findOrganize(node.children);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const organizeNode = findOrganize(tree);
+        setChatOrganizeTree(organizeNode ? [organizeNode] : []);
+      }
+
+      setExpandedFolders(new Set());
+      setLoading(false);
+    } catch (err) {
+      logError('切换目录失败', 'useNotes', err as Error);
+      setError('切换目录失败');
+      setLoading(false);
+    }
+  }, [chatPath, rootPath, loadChatOrganizeTree]);
+
+  const setChatPath = useCallback(async (): Promise<boolean> => {
+    if (!window.electron) return false;
+    try {
+      const result = await window.electron.notes.selectFolder();
+      if (result.canceled || result.filePaths.length === 0) return false;
+
+      const folderPath = result.filePaths[0];
+      setChatPathState(folderPath);
+      localStorageService.setString(STORAGE_KEYS.NOTES_CHAT_PATH, folderPath);
+      loadChatOrganizeTree(folderPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const rebuildIndex = useCallback(async () => {
     if (!rootPath || !window.electron) return;
     try {
@@ -630,59 +869,6 @@ export function useNotes(): UseNotesReturn {
       setLoading(false);
     }
   }, [rootPath]);
-
-  const changeFolder = useCallback(async (): Promise<boolean> => {
-    if (!window.electron) return false;
-    try {
-      setLoading(true);
-      setError(null);
-
-      setSelectedFile(null);
-      setFileContent('');
-      setFileMetadata(null);
-      clearPreviewUrl();
-      localStorageService.remove(STORAGE_KEYS.NOTES_LAST_OPENED_FILE);
-
-      const result = await window.electron.notes.selectFolder();
-
-      if (result.canceled || result.filePaths.length === 0) {
-        setLoading(false);
-        return false;
-      }
-
-      const selectedPath = result.filePaths[0];
-
-      const validation = await window.electron.notes.validateFolder(selectedPath);
-      if (!validation.valid) {
-        setError(validation.error || '文件夹验证失败');
-        setLoading(false);
-        return false;
-      }
-
-      await window.electron.notes.setRootPath(selectedPath);
-      setRootPathState(selectedPath);
-      setHasRootPath(true);
-
-      const scanResult = await window.electron.notes.scanFolder(selectedPath);
-      if (!scanResult.success) {
-        setError(scanResult.error || '扫描文件夹失败');
-        setLoading(false);
-        return false;
-      }
-
-      const tree = await window.electron.notes.getFileTree();
-      setFileTree(tree);
-      setExpandedFolders(new Set());
-
-      setLoading(false);
-      return true;
-    } catch (err) {
-      logError('切换目录失败', 'useNotes', err as Error);
-      setError('切换目录失败');
-      setLoading(false);
-      return false;
-    }
-  }, []);
 
   const updateTreeExpandStateRef = useRef<((nodes: FileTreeNode[]) => FileTreeNode[]) | null>(null);
   updateTreeExpandStateRef.current = (nodes: FileTreeNode[]): FileTreeNode[] => {
@@ -710,9 +896,12 @@ export function useNotes(): UseNotesReturn {
     filePreviewUrl,
     loading,
     error,
+    pinnedFolders,
+    currentViewPath,
+    chatPath,
+    chatOrganizeTree,
     selectRootFolder,
     setRootPath,
-    changeFolder,
     refreshFileTree,
     selectFile,
     updateFileContent,
@@ -729,5 +918,10 @@ export function useNotes(): UseNotesReturn {
     toggleFolderExpand,
     rebuildIndex,
     clearError,
+    addPinnedFolder,
+    removePinnedFolder,
+    reorderPinnedFolder,
+    switchToFolder,
+    setChatPath,
   };
 }

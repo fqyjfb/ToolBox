@@ -224,7 +224,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
           {htmlViewMode === 'preview' ? (
             <div className="flex flex-1 min-h-0 overflow-hidden bg-gray-50">
               <iframe
-                key={selectedFile?.path}
+                key={`${selectedFile?.path}-${!!content}`}
                 srcDoc={content}
                 sandbox="allow-scripts allow-forms allow-links allow-popups"
                 className="w-full flex-1 border-0"

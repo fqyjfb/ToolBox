@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle, Table2, FileImage, Code, MoveRight } from 'lucide-react';
+import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle, Table2, FileImage, Code, MoveRight, Pin, MessageSquare, Plus, Trash } from 'lucide-react';
 import ContextMenu, { ContextMenuItem, SubMenuItem } from '@/components/ui/ContextMenu';
 import { useToastStore } from '@/store/toastStore';
+import type { PinnedFolder } from '@/hooks/useNotes';
 
 export interface FileTreeNode {
   id: string;
@@ -29,7 +30,6 @@ interface NotesSidebarProps {
   onMoveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   onRefresh: () => void;
   onRebuildIndex?: () => Promise<void>;
-  onChangeFolder?: () => Promise<boolean>;
   loading: boolean;
   isChatMode: boolean;
   onToggleChatMode: () => void;
@@ -37,6 +37,15 @@ interface NotesSidebarProps {
   onSelectOrganizeFolder?: () => void;
   onCopyItem: (sourcePath: string) => Promise<boolean>;
   onImportDroppedFiles: (filePaths: string[], targetFolderPath?: string) => Promise<{ success: boolean; imported?: string[]; errors?: string[] }>;
+  pinnedFolders: PinnedFolder[];
+  currentViewPath: string | null;
+  onAddPinnedFolder: () => Promise<boolean>;
+  onRemovePinnedFolder: (folderPath: string) => void;
+  onReorderPinnedFolder: (fromIndex: number, toIndex: number) => void;
+  onSwitchToFolder: (folderPath: string) => Promise<void>;
+  onSetChatPath: () => Promise<boolean>;
+  chatPath: string | null;
+  chatOrganizeTree: FileTreeNode[];
 }
 
 const FileTreeItem: React.FC<{
@@ -319,7 +328,6 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   onMoveItem,
   onRefresh,
   onRebuildIndex,
-  onChangeFolder,
   loading,
   isChatMode,
   onToggleChatMode,
@@ -327,6 +335,15 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   onSelectOrganizeFolder,
   onCopyItem,
   onImportDroppedFiles,
+  pinnedFolders,
+  currentViewPath,
+  onAddPinnedFolder,
+  onRemovePinnedFolder,
+  onReorderPinnedFolder,
+  onSwitchToFolder,
+  onSetChatPath,
+  chatPath,
+  chatOrganizeTree,
 }) => {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -339,6 +356,13 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragSourcePath, setDragSourcePath] = useState<string | null>(null);
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
+  const [pinnedDragIndex, setPinnedDragIndex] = useState<number | null>(null);
+  const [pinnedDragOverIndex, setPinnedDragOverIndex] = useState<number | null>(null);
+  const [pinnedContextMenu, setPinnedContextMenu] = useState<{
+    x: number;
+    y: number;
+    index: number;
+  } | null>(null);
   const addToast = useToastStore(state => state.addToast);
 
   const [createDialog, setCreateDialog] = useState<{
@@ -591,14 +615,14 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   }, [selectedFile]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (dragSourcePath) {
+    if (dragSourcePath || pinnedDragIndex !== null) {
       if (dragOverPath) setDragOverPath(null);
       return;
     }
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(true);
-  }, [dragSourcePath, dragOverPath]);
+  }, [dragSourcePath, dragOverPath, pinnedDragIndex]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -607,7 +631,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   }, []);
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
-    if (dragSourcePath) {
+    if (dragSourcePath || pinnedDragIndex !== null) {
       setDragSourcePath(null);
       setDragOverPath(null);
       return;
@@ -664,7 +688,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         : '导入失败';
       addToast({ type: 'error', message: msg });
     }
-  }, [rootPath, onImportDroppedFiles, addToast, getTargetFolderPath, dragSourcePath]);
+  }, [rootPath, onImportDroppedFiles, addToast, getTargetFolderPath, dragSourcePath, pinnedDragIndex]);
 
   const getFoldersFromTree = useCallback((nodes: FileTreeNode[], excludePath?: string): { path: string; label: string }[] => {
     const folders: { path: string; label: string }[] = [];
@@ -833,20 +857,26 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
               <RotateCcw className={`w-4 h-4 ${isRebuilding ? 'animate-spin' : ''}`} />
             </button>
           )}
-          {onChangeFolder && (
-            <button
-              className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
-              onClick={onChangeFolder}
-              disabled={loading}
-              title="切换目录"
-            >
-              <FolderOpen className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+            onClick={onAddPinnedFolder}
+            disabled={loading}
+            title="添加固定目录"
+          >
+            <Pin className="w-4 h-4" />
+          </button>
+          <button
+            className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+            onClick={onSetChatPath}
+            disabled={loading}
+            title={chatPath ? `对话路径: ${chatPath}` : '设置对话路径'}
+          >
+            <MessageSquare className="w-4 h-4" />
+          </button>
           <button
             className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
             onClick={() =>
-              setCreateDialog({ type: 'folder', parentPath: null })
+              setCreateDialog({ type: 'folder', parentPath: currentViewPath })
             }
             title="新建文件夹"
           >
@@ -854,7 +884,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
           </button>
           <button
             className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
-            onClick={() => setCreateDialog({ type: 'note', parentPath: null })}
+            onClick={() => setCreateDialog({ type: 'note', parentPath: currentViewPath })}
             title="新建笔记"
           >
             <FilePlus className="w-4 h-4" />
@@ -875,8 +905,8 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
           <span className="flex-1 truncate text-sm">对话</span>
         </div>
 
-        {chatOrganizePath && (() => {
-          const organizeNode = findNodeInTree(fileTree, chatOrganizePath);
+        {chatOrganizePath && chatOrganizeTree.length > 0 && (() => {
+          const organizeNode = chatOrganizeTree[0];
           const organizeChildren = organizeNode?.children || [];
           return (
             <div>
@@ -924,8 +954,102 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         })()}
       </div>
 
+      {pinnedFolders.length > 0 && (
+        <div className="flex-shrink-0 border-t border-gray-100 dark:border-gray-800 px-2 py-2">
+          <div className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-gray-400">
+            <Pin className="w-3 h-3" />
+            <span>固定目录</span>
+          </div>
+          <div className="space-y-0.5">
+            {pinnedFolders.map((pinned, index) => (
+              <div
+                key={pinned.path}
+                draggable
+                className={`group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${
+                  currentViewPath === pinned.path
+                    ? 'bg-accent/10 text-accent border-l-2 border-accent'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-l-2 border-transparent'
+                } ${pinnedDragOverIndex === index && pinnedDragIndex !== index ? 'ring-2 ring-accent' : ''} ${pinnedDragIndex === index ? 'opacity-50' : ''}`}
+                onClick={() => onSwitchToFolder(pinned.path)}
+                onDragStart={(e) => {
+                  setPinnedDragIndex(index);
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', String(index));
+                }}
+                onDragOver={(e) => {
+                  if (pinnedDragIndex === null) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (pinnedDragOverIndex !== index) setPinnedDragOverIndex(index);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (pinnedDragIndex !== null && pinnedDragIndex !== index) {
+                    onReorderPinnedFolder(pinnedDragIndex, index);
+                  }
+                  setPinnedDragIndex(null);
+                  setPinnedDragOverIndex(null);
+                }}
+                onDragEnd={() => {
+                  setPinnedDragIndex(null);
+                  setPinnedDragOverIndex(null);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setPinnedContextMenu({ x: e.clientX, y: e.clientY, index });
+                }}
+                title={pinned.path}
+              >
+                <Folder className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 truncate text-sm">{pinned.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {pinnedContextMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-50"
+            onClick={() => setPinnedContextMenu(null)}
+            onContextMenu={(e) => { e.preventDefault(); setPinnedContextMenu(null); }}
+          />
+          <div
+            className="fixed z-50 min-w-[120px] rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+            style={{ left: pinnedContextMenu.x, top: pinnedContextMenu.y }}
+          >
+            <button
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+              onClick={() => {
+                setPinnedContextMenu(null);
+                onAddPinnedFolder();
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              <span>添加固定目录</span>
+            </button>
+            <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+            <button
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-error hover:bg-error/10"
+              onClick={() => {
+                const p = pinnedFolders[pinnedContextMenu.index];
+                if (p) {
+                  onRemovePinnedFolder(p.path);
+                  addToast({ type: 'success', message: `已移除固定目录: ${p.name}` });
+                }
+                setPinnedContextMenu(null);
+              }}
+            >
+              <Trash className="w-4 h-4" />
+              <span>移除</span>
+            </button>
+          </div>
+        </>
+      )}
+
       <div 
-        className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide border-t border-gray-100 dark:border-gray-800"
         onContextMenu={(e) => {
           if ((e.target as HTMLElement).closest('.cursor-pointer')) return;
           handleContextMenu(e);

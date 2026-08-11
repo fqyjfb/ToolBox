@@ -702,7 +702,7 @@ const QuickLaunch: React.FC = () => {
             onDragEnd={handleAppsDragEnd}
           >
             <SortableContext items={filteredApps.map(app => app.id)} strategy={rectSortingStrategy}>
-              <div className={`grid ${iconSize === 'small' ? 'grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2' : 'grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-3.5'} min-h-quick-launch transition-colors duration-200 ${
+              <div className={`grid ${iconSize === 'small' ? 'grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2 auto-rows-quick-launch-sm' : 'grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-3.5 auto-rows-quick-launch-lg'} min-h-quick-launch transition-colors duration-200 ${
                 isDragOver ? 'border-2 border-dashed border-green-400 rounded-lg p-4' : ''
               }`}>
                 {filteredApps.map((app) => (
