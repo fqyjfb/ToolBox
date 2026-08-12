@@ -373,15 +373,15 @@ const AdminWebsitesPage: React.FC = () => {
     setIsFetchingWebsiteInfo(true)
     
     try {
-      const response = await fetch(`https://api.ahfi.cn/api/websiteinfo?url=${encodeURIComponent(url)}`)
+      const response = await fetch(`https://oiapi.net/api/WebInfo?url=${encodeURIComponent(url)}&type=json`)
       const result = await response.json()
-      
-      if (result.code === 200 && result.data) {
+
+      if (result.code === 1 && result.data) {
         setBookmarkFormData(prev => ({
           ...prev,
           title: result.data.title || prev.title,
-          description: result.data.description || prev.description,
-          ico_url: result.data.ico_url || prev.ico_url
+          description: result.data.desc || prev.description,
+          ico_url: result.data.icon || prev.ico_url
         }))
         addToast({ message: '获取网站信息成功', type: 'success' })
       } else {

@@ -5,7 +5,7 @@ const { registerOcrIpc } = require('./ipc/ocrIpc.cjs');
 const { registerFileManagerIpc } = require('./ipc/fileManagerIpc.cjs');
 const { registerSqliteIpc } = require('./ipc/sqliteIpc.cjs');
 const { registerPluginIpc } = require('./ipc/pluginIpc.cjs');
-const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization, getMainWindow } = require('./window/mainWindow.cjs');
+const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization, getMainWindow, setIsQuitting } = require('./window/mainWindow.cjs');
 const { createFloatWindow, registerFloatIpcHandlers } = require('./window/floatWindow.cjs');
 const { createTray } = require('./window/tray.cjs');
 const { registerLogIpcHandlers } = require('./logs/window.cjs');
@@ -120,6 +120,7 @@ app.on('activate', () => {
 });
 
 app.on('before-quit', () => {
+  setIsQuitting(true);
   stopBackendServices();
   stopMemoryOptimization();
   try {

@@ -14,6 +14,7 @@ let mainWindow = null;
 let memoryCleanupTimer = null;
 let autoLockTimer = null;
 let lastActivityTime = Date.now();
+let isQuitting = false;
 
 const shortcutManager = new ShortcutManager();
 
@@ -306,6 +307,13 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
         onReadyCallback();
       }
     }, 100);
+  });
+
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
   });
 
   mainWindow.on('closed', () => {
@@ -1055,4 +1063,5 @@ module.exports = {
   stopAutoLock,
   resetAutoLockTimer,
   getMainWindow: () => mainWindow,
+  setIsQuitting: (val) => { isQuitting = val; },
 };
