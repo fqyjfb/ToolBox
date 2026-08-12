@@ -9,7 +9,7 @@ export interface FileTreeNode {
   name: string;
   type: 'file' | 'folder';
   path: string;
-  fileType?: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType?: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf' | 'video';
   children?: FileTreeNode[];
   expanded?: boolean;
   active?: boolean;
@@ -17,7 +17,7 @@ export interface FileTreeNode {
 
 export interface FileMetadata {
   filePath: string;
-  fileType: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf' | 'video';
   mimeType?: string;
 }
 
@@ -205,6 +205,8 @@ export function useNotes(): UseNotesReturn {
                   if (result.success && result.content !== undefined) {
                     setFileContent(result.content);
                   }
+                } else if (fileType === 'video') {
+                  setFilePreviewUrl(`local-media://host/${encodeURIComponent(fileNode.path.replace(/\\/g, '/'))}`);
                 } else if (fileType === 'image' || fileType === 'pdf' || fileType === 'docx' || fileType === 'xlsx') {
                   const result = await window.electron.notes.readFileAsBuffer(fileNode.path);
                   if (result.success && result.base64) {
@@ -381,6 +383,8 @@ export function useNotes(): UseNotesReturn {
         } else {
           setError(result.error || '读取文件失败');
         }
+      } else if (fileType === 'video') {
+        setFilePreviewUrl(`local-media://host/${encodeURIComponent(file.path.replace(/\\/g, '/'))}`);
       } else if (fileType === 'image' || fileType === 'pdf' || fileType === 'docx' || fileType === 'xlsx') {
         const result = await window.electron.notes.readFileAsBuffer(file.path);
         if (result.success && result.base64) {

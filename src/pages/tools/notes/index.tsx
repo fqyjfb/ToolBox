@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PanelLeft } from 'lucide-react';
-import { useNotes } from '@/hooks/useNotes';
+import { useNotes, type FileTreeNode } from '@/hooks/useNotes';
 import { useChatNotes } from './hooks/useChatNotes';
 import { CHAT_ORGANIZE_FOLDER } from './constants/paths';
 import FolderSelectModal from './components/FolderSelectModal';
@@ -128,11 +128,9 @@ const NotesPage: React.FC = () => {
     localStorageService.setString(STORAGE_KEYS.NOTES_SIDEBAR_VISIBLE, String(newValue));
   };
 
-  const handleSelectFile = (file: typeof selectedFile) => {
-    if (file) {
-      setIsChatMode(false);
-      selectFile(file);
-    }
+  const handleSelectFile = (file: FileTreeNode) => {
+    setIsChatMode(false);
+    selectFile(file);
   };
 
   const handleOpenCreateDialog = (type: 'folder' | 'note') => {

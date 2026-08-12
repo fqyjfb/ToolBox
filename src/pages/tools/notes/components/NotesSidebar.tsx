@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle, Table2, FileImage, Code, MoveRight, Pin, MessageSquare, Plus, Trash } from 'lucide-react';
+import { FolderOpen, Folder, FileText, ChevronRight, RefreshCw, FolderPlus, FilePlus, Edit, Trash2, RotateCcw, ExternalLink, MessageCircle, Table2, FileImage, Code, MoveRight, Pin, MessageSquare, Plus, Trash, Play } from 'lucide-react';
 import ContextMenu, { ContextMenuItem, SubMenuItem } from '@/components/ui/ContextMenu';
 import { useToastStore } from '@/store/toastStore';
 import type { PinnedFolder } from '@/hooks/useNotes';
@@ -9,7 +9,7 @@ export interface FileTreeNode {
   name: string;
   type: 'file' | 'folder';
   path: string;
-  fileType?: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  fileType?: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf' | 'video';
   children?: FileTreeNode[];
   expanded?: boolean;
   active?: boolean;
@@ -136,6 +136,7 @@ const FileTreeItem: React.FC<{
             {node.fileType === 'docx' && <FileText className="w-4 h-4 text-blue-600" />}
             {node.fileType === 'xlsx' && <Table2 className="w-4 h-4 text-green-600" />}
             {node.fileType === 'image' && <FileImage className="w-4 h-4 text-purple-600" />}
+            {node.fileType === 'video' && <Play className="w-4 h-4 text-blue-600" />}
             {node.fileType === 'txt' && <FileText className="w-4 h-4 text-gray-500" />}
             {node.fileType === 'html' && <Code className="w-4 h-4 text-orange-500" />}
             {node.fileType === 'json' && <Code className="w-4 h-4 text-yellow-600" />}

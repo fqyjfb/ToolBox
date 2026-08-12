@@ -1,27 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { FileText, Save, Edit3, PanelLeft, FolderPlus, FilePlus, FileText as FileWord, Table2, FileImage, Code } from 'lucide-react';
+import { FileText, Save, Edit3, PanelLeft, FolderPlus, FilePlus, FileText as FileWord, Table2, FileImage, Code, Play } from 'lucide-react';
 import WMarkdownEditor from '@/components/WMarkdownEditor';
 import { useThemeStore } from '@/store/themeStore';
 import { FileViewer } from '@open-file-viewer/react';
 import { imagePlugin, pdfPlugin, officePlugin, fallbackPlugin } from '@open-file-viewer/core';
 import '@open-file-viewer/core/style.css';
-
-interface FileTreeNode {
-  id: string;
-  name: string;
-  type: 'file' | 'folder';
-  path: string;
-  fileType?: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf';
-  children?: FileTreeNode[];
-  expanded?: boolean;
-  active?: boolean;
-}
-
-interface FileMetadata {
-  filePath: string;
-  fileType: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf';
-  mimeType?: string;
-}
+import { FileTreeNode, FileMetadata } from '@/hooks/useNotes';
 
 interface NotesEditorProps {
   selectedFile: FileTreeNode | null;
@@ -147,6 +131,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
       xlsx: 'Excel 表格',
       image: '图片',
       pdf: 'PDF 文档',
+      video: '视频',
     };
     return labels[fileMetadata.fileType] || '';
   };
@@ -170,6 +155,8 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
         return <FileImage className="h-5 w-5 text-purple-600" />;
       case 'pdf':
         return <FileText className="h-5 w-5 text-orange-600" />;
+      case 'video':
+        return <Play className="h-5 w-5 text-blue-600" />;
       default:
         return <FileText className="h-5 w-5 text-gray-500" />;
     }
@@ -177,6 +164,19 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
 
   const renderEditor = () => {
     const fileType = fileMetadata?.fileType;
+
+    if (fileType === 'video' && filePreviewUrl) {
+      return (
+        <div className="flex flex-1 min-h-0 overflow-hidden bg-black">
+          <video
+            src={filePreviewUrl}
+            controls
+            className="w-full h-full object-contain"
+            preload="metadata"
+          />
+        </div>
+      );
+    }
 
     if ((fileType === 'image' || fileType === 'pdf' || fileType === 'docx' || fileType === 'xlsx') && filePreviewUrl) {
       return (

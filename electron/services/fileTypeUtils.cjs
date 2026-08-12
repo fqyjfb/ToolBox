@@ -13,6 +13,8 @@ const FILE_TYPE_MAP = {
   '.jpg': 'image', '.jpeg': 'image', '.png': 'image',
   '.gif': 'image', '.bmp': 'image', '.svg': 'image',
   '.webp': 'image', '.ico': 'image',
+  '.mp4': 'video', '.avi': 'video', '.mov': 'video',
+  '.mkv': 'video', '.webm': 'video', '.flv': 'video', '.wmv': 'video',
 };
 
 const TEXT_FILE_EXTS = new Set(['.md', '.txt', '.html', '.htm', '.json']);
@@ -46,6 +48,8 @@ function getMimeType(filePath) {
     '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
     '.gif': 'image/gif', '.bmp': 'image/bmp', '.svg': 'image/svg+xml',
     '.webp': 'image/webp', '.ico': 'image/x-icon',
+    '.mp4': 'video/mp4', '.avi': 'video/x-msvideo', '.mov': 'video/quicktime',
+    '.mkv': 'video/x-matroska', '.webm': 'video/webm', '.flv': 'video/x-flv', '.wmv': 'video/x-ms-wmv',
   };
   return mimeMap[ext] || 'application/octet-stream';
 }

@@ -1,4 +1,5 @@
-const { app } = require('electron');
+const { app, protocol, net } = require('electron');
+const { pathToFileURL } = require('node:url');
 const { stopPythonService } = require('./services/pythonProcessService.cjs');
 const { registerOcrIpc } = require('./ipc/ocrIpc.cjs');
 const { registerFileManagerIpc } = require('./ipc/fileManagerIpc.cjs');
@@ -33,6 +34,13 @@ function getCachedSettings() {
 function invalidateSettingsCache() {
   cachedSettings = null;
 }
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'local-media',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
+  },
+]);
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -77,6 +85,12 @@ function onWindowReady() {
 }
 
 app.whenReady().then(async () => {
+  protocol.handle('local-media', (request) => {
+    const url = new URL(request.url);
+    const filePath = decodeURIComponent(url.pathname.slice(1));
+    return net.fetch(pathToFileURL(filePath).toString());
+  });
+
   initLogger();
   registerLockIpcHandlers();
   registerSqliteIpc();
