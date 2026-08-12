@@ -37,9 +37,11 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   
   const [platformVisibility, setPlatformVisibility] = useState<PlatformVisibility | null>(null);
   const [iconCacheStats, setIconCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
+  const [generalCacheStats, setGeneralCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
   const [pluginCacheStats, setPluginCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
   const [appCacheStats, setAppCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
   const [isClearingIconCache, setIsClearingIconCache] = useState(false);
+  const [isClearingGeneralCache, setIsClearingGeneralCache] = useState(false);
   const [isClearingPluginCache, setIsClearingPluginCache] = useState(false);
   const [isClearingAppCache, setIsClearingAppCache] = useState(false);
   const [isRefreshingIconCache, setIsRefreshingIconCache] = useState(false);
@@ -62,6 +64,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       iconCacheService.getStatsByType()
     ]);
     setIconCacheStats(stats);
+    setGeneralCacheStats(typeStats.general);
     setPluginCacheStats(typeStats.plugin);
     setAppCacheStats(typeStats.app);
     setIsRefreshingIconCache(false);
@@ -118,6 +121,18 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       addToast({ type: 'error', message: '清理失败，请重试' });
     }
     setIsClearingIconCache(false);
+  };
+
+  const clearGeneralIconCache = async () => {
+    setIsClearingGeneralCache(true);
+    try {
+      await iconCacheService.clearByType('general');
+      addToast({ type: 'success', message: '通用图标缓存已清除' });
+      await refreshIconCacheStats();
+    } catch {
+      addToast({ type: 'error', message: '清理失败，请重试' });
+    }
+    setIsClearingGeneralCache(false);
   };
 
   const clearPluginIconCache = async () => {
@@ -495,7 +510,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
           </div>
         </div>
         <div className="p-4">
-          <div className="grid grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-5 gap-3 mb-4">
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
               <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">缓存图标数量</div>
               <div className="text-lg font-bold text-gray-900 dark:text-white">
@@ -513,6 +528,16 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
                   formatBytes(iconCacheStats.size)
+                )}
+              </div>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">通用图标缓存</div>
+              <div className="text-lg font-bold text-gray-900 dark:text-white">
+                {isRefreshingIconCache ? (
+                  <Loader2 className="w-4 h-4 inline animate-spin" />
+                ) : (
+                  `${generalCacheStats.count} / ${formatBytes(generalCacheStats.size)}`
                 )}
               </div>
             </div>
@@ -538,7 +563,19 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            <button
+              onClick={clearGeneralIconCache}
+              disabled={isClearingGeneralCache || generalCacheStats.count === 0}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isClearingGeneralCache ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Database className="w-3 h-3" />
+              )}
+              清理通用缓存
+            </button>
             <button
               onClick={clearPluginIconCache}
               disabled={isClearingPluginCache || pluginCacheStats.count === 0}
@@ -578,7 +615,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
           </div>
 
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            图标缓存使用浏览器 Cache API 存储，自动保存 7 天。插件图标缓存支持离线使用，可单独清理。
+            图标缓存使用浏览器 Cache API 存储，自动保存 7 天。通用缓存用于网址收藏和导航页面，插件缓存支持离线使用，可单独清理。
           </p>
         </div>
       </div>

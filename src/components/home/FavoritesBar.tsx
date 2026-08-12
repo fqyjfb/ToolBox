@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDndSensors } from '../../hooks/useDndSensors';
 import { openUrl } from '../../services/browserService';
 import { DISPLAY_LIMITS } from '../../constants/timers';
+import CachedIcon from '../ui/CachedIcon';
 import './FavoritesBar.css';
 
 export interface Bookmark {
@@ -31,30 +32,6 @@ const SortableFavoriteItem: React.FC<{ bookmark: Bookmark; onClick: () => void; 
     scale: isDragging ? 1.1 : 1,
   };
 
-  const proxyImageUrl = (url: string): string => {
-    const raw = (url || '').trim();
-    if (!raw) return './网址.png';
-    if (/^(data|blob):/i.test(raw)) return raw;
-    try {
-      return `https://images.weserv.nl/?url=${encodeURIComponent(raw)}`;
-    } catch {
-      return './网址.png';
-    }
-  };
-
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, originalUrl: string) => {
-    const target = e.target as HTMLImageElement;
-    if (target.src === originalUrl) {
-      try {
-        target.src = `https://images.weserv.nl/?url=${encodeURIComponent(originalUrl)}`;
-      } catch {
-        target.src = './网址.png';
-      }
-    } else {
-      target.src = './网址.png';
-    }
-  };
-
   return (
     <div
       ref={setNodeRef}
@@ -66,11 +43,12 @@ const SortableFavoriteItem: React.FC<{ bookmark: Bookmark; onClick: () => void; 
     >
       <span className="favorite-title">{bookmark.title}</span>
       {bookmark.ico_url ? (
-        <img
-          src={proxyImageUrl(bookmark.ico_url)}
+        <CachedIcon
+          src={bookmark.ico_url}
           alt={bookmark.title}
           className="w-8 h-8 object-contain"
-          onError={(e) => handleImageError(e, bookmark.ico_url || '')}
+          defaultIcon={<Globe className="w-8 h-8 text-gray-500 dark:text-gray-400" />}
+          type="general"
         />
       ) : (
         <Globe className="w-8 h-8 text-gray-500 dark:text-gray-400" />
