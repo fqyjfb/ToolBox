@@ -1,6 +1,7 @@
 # 更新日志
 
 ## v2.7.6
+- 网络设配置页面UI统一
 - 悬浮球切换形象功能：右键菜单问题修复
 - 冗余代码清理：删除未使用的导出函数、常量、类型定义及过期 SQL 文档（P1×6）
 - 组件合并：合并 Switch/ToggleSwitch、CachedIcon/CachedPluginIcon，消除重复实现（P2-1/2）

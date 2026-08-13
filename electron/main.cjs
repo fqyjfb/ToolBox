@@ -67,8 +67,6 @@ async function stopBackendServices() {
 }
 
 function onWindowReady() {
-  registerIpcHandlers();
-
   setTimeout(() => createTray(), DELAY_CREATE_TRAY);
 
   setTimeout(() => {
@@ -93,6 +91,7 @@ app.whenReady().then(async () => {
   registerFileManagerIpc();
   registerFloatIpcHandlers();
   registerLogIpcHandlers();
+  registerIpcHandlers();
 
   const isLocked = checkLockOnStartup();
   if (!isLocked) {
