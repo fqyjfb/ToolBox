@@ -903,7 +903,7 @@ export function useNotes(): UseNotesReturn {
     pinnedFolders,
     currentViewPath,
     chatPath,
-    chatOrganizeTree,
+    chatOrganizeTree: updateTreeExpandState(chatOrganizeTree),
     selectRootFolder,
     setRootPath,
     refreshFileTree,
