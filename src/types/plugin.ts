@@ -27,33 +27,6 @@ export interface InstalledPlugin extends PluginInfo {
   isPinned: boolean;
 }
 
-export interface PluginStoreState {
-  availablePlugins: PluginInfo[];
-  installedPlugins: InstalledPlugin[];
-  isLoading: boolean;
-  searchQuery: string;
-  selectedCategories: string[];
-  installingPluginId: string | null;
-  installProgress: number;
-}
-
-export interface PluginManifest {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  author: string;
-  icon: string;
-  image?: string;
-  color: string;
-  textColor?: string;
-  categories: string[];
-  tags?: string[];
-  githubRepo?: string;
-  entry?: string;
-  isBeta?: boolean;
-}
-
 export interface PluginServiceResponse<T = unknown> {
   success: boolean;
   data?: T;

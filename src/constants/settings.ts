@@ -38,12 +38,6 @@ export const AVAILABLE_ICONS = [
   { name: 'Computer', label: '电脑' },
 ];
 
-export const AVAILABLE_COLORS = [
-  '#03a9f4', '#0462df', '#1db954', '#8c9eff', '#bd081c', '#ea4c89', '#333', '#ff4500',
-  '#f5a623', '#bc8acf', '#00bcd4', '#e91e63', '#2196f3', '#9c27b0', '#009688', '#ff9800',
-  '#795548', '#607d8b', '#e74c3c', '#9b59b6', '#3498db', '#1abc9c', '#2ecc71', '#f39c12',
-];
-
 export const NAV_ACTIONS = [
   { action: 'home', label: '主页' },
   { action: 'tools', label: '工具中心' },
@@ -84,41 +78,3 @@ export const FLOAT_TYPE_OPTIONS = [
 ];
 
 export const DEFAULT_WINDOW_SIZE = { width: 1024, height: 800 };
-
-export const PAGINATION = {
-  DEFAULT_PAGE: 1,
-  DEFAULT_PAGE_SIZE: 10,
-  MAX_PAGE_SIZE: 100,
-};
-
-export const CACHE = {
-  DEFAULT_TTL: 5 * 60 * 1000,
-  CATEGORIES_TTL: 10 * 60 * 1000,
-};
-
-export const TODO = {
-  DEFAULT_PRIORITY: '中' as const,
-  DEFAULT_STATUS: '待办' as const,
-};
-
-export const SYNC = {
-  BATCH_SIZE: 20,
-  BATCH_DELAY: 100,
-};
-
-export const AI_CHAT = {
-  MAX_REFERENCE_IMAGES: 4,
-  MAX_MESSAGE_HISTORY: 50,
-};
-
-export const QUICK_PANEL_EDGE_OPTIONS = [
-  { value: 'left', label: '左边缘' },
-  { value: 'right', label: '右边缘' },
-  { value: 'top', label: '上边缘' },
-];
-
-export const QUICK_PANEL_ITEM_TYPE_LABELS: Record<string, string> = {
-  app: '应用',
-  url: '网址',
-  folder: '文件夹',
-};

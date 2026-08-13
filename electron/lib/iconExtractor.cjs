@@ -9,9 +9,6 @@ if (!fs.existsSync(iconCacheFolder)) {
   fs.mkdirSync(iconCacheFolder, { recursive: true });
 }
 
-const MAX_CACHE_SIZE = 100;
-const CACHE_EXPIRY_DAYS = 30;
-
 const generateCacheFileName = (filePath) => {
   return crypto.createHash('sha1').update(filePath).digest('hex');
 };
@@ -122,32 +119,4 @@ Get-Associated-Icon -InFilePath "${escapedPath}" -OutFilePath "${cacheFilePath.r
   });
 };
 
-const cleanupIconCache = () => {
-  if (!fs.existsSync(iconCacheFolder)) return;
-  
-  const files = fs.readdirSync(iconCacheFolder)
-    .map(file => ({
-      name: file,
-      path: path.join(iconCacheFolder, file),
-      mtime: fs.statSync(path.join(iconCacheFolder, file)).mtime,
-    }))
-    .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-  
-  if (files.length > MAX_CACHE_SIZE) {
-    const filesToDelete = files.slice(MAX_CACHE_SIZE);
-    filesToDelete.forEach(file => {
-      try { fs.unlinkSync(file.path); } catch (e) {}
-    });
-  }
-  
-  const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() - CACHE_EXPIRY_DAYS);
-  
-  files.forEach(file => {
-    if (file.mtime < expiryDate) {
-      try { fs.unlinkSync(file.path); } catch (e) {}
-    }
-  });
-};
-
-module.exports = { getFileIcon, cleanupIconCache, isSupportedFileType, getShortcutTarget, getCacheFilePath };
+module.exports = { getFileIcon, isSupportedFileType, getShortcutTarget, getCacheFilePath };

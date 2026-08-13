@@ -11,6 +11,19 @@ export const debounce = <T extends (...args: unknown[]) => void>(func: T, wait: 
   };
 };
 
+export const throttle = <T extends (...args: unknown[]) => void>(func: T, delay: number): ((...args: Parameters<T>) => void) => {
+  let inThrottle = false;
+  return (...args: Parameters<T>) => {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => {
+        inThrottle = false;
+      }, delay);
+    }
+  };
+};
+
 export const formatHotValue = (value: number | string): string => {
   if (typeof value === 'number') {
     if (value >= 10000) {

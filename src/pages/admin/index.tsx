@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Globe, Users, Wrench, Database } from 'lucide-react';
-import '../../styles/theme.css';
 
 const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();

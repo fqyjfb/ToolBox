@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { pluginApi } from '../../services/pluginApi';
-import { PanelRegistration } from '../../services/pluginApi';
+import { pluginApi, PanelRegistration } from '../../services/pluginApi';
 
 const PluginPanels: React.FC = () => {
   const [panels, setPanels] = useState<PanelRegistration[]>([]);

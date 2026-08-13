@@ -177,6 +177,7 @@ const buildAppearanceMenu = (settings) => {
   const items = imgList.map(name => ({
     label: name,
     type: 'radio',
+    radioGroupChecked: 'appearance',
     checked: current === name,
     click: () => {
       const s = loadSettings();
@@ -194,6 +195,7 @@ const buildAppearanceMenu = (settings) => {
       {
         label: '默认',
         type: 'radio',
+        radioGroupChecked: 'default',
         checked: current === '',
         click: () => {
           const s = loadSettings();
@@ -204,7 +206,6 @@ const buildAppearanceMenu = (settings) => {
           }
         }
       },
-      { type: 'separator' },
       ...items
     ]
   }];

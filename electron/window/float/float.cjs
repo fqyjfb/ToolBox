@@ -243,8 +243,12 @@ function initFloatBall() {
       if (window.electronAPI.getFloatConfigWithIcons) {
         try {
           const config = await window.electronAPI.getFloatConfigWithIcons();
-          if (config && Array.isArray(config)) {
+          if (config && Array.isArray(config) && config.length > 0) {
             floatConfig = config;
+            // 如果悬浮球已展开，重新渲染以显示加载完成的配置
+            if (isExpanded) {
+              renderFloatBall();
+            }
             return;
           }
         } catch (e) {
@@ -253,10 +257,13 @@ function initFloatBall() {
       }
       // Fallback to basic config without icons
       const config = await window.electronAPI.getFloatConfig();
-      floatConfig = config || [];
+      floatConfig = (config && Array.isArray(config) && config.length > 0) ? config : floatConfig;
+      if (isExpanded) {
+        renderFloatBall();
+      }
     } catch (error) {
       console.error('Failed to get float config:', error);
-      floatConfig = [];
+      // 加载失败时保留现有配置，不清空
     }
   }
   
@@ -287,7 +294,7 @@ function initFloatBall() {
     if (window.electronAPI.getFloatConfigWithIcons) {
       try {
         const configWithIcons = await window.electronAPI.getFloatConfigWithIcons();
-        if (configWithIcons && Array.isArray(configWithIcons)) {
+        if (configWithIcons && Array.isArray(configWithIcons) && configWithIcons.length > 0) {
           floatConfig = configWithIcons;
           if (isExpanded) {
             renderFloatBall();
@@ -298,10 +305,25 @@ function initFloatBall() {
         console.warn('Failed to load config with icons on change');
       }
     }
-    // Fallback to the provided config
-    floatConfig = newConfig || [];
-    if (isExpanded) {
-      renderFloatBall();
+    // Fallback to the provided config（仅在 newConfig 是非空数组时才更新，避免清空）
+    if (newConfig && Array.isArray(newConfig) && newConfig.length > 0) {
+      floatConfig = newConfig;
+      if (isExpanded) {
+        renderFloatBall();
+      }
+    } else if (newConfig && Array.isArray(newConfig) && newConfig.length === 0) {
+      // 空配置可能是重置操作，重新从后端加载默认配置
+      try {
+        const reloaded = await window.electronAPI.getFloatConfig();
+        if (reloaded && Array.isArray(reloaded) && reloaded.length > 0) {
+          floatConfig = reloaded;
+          if (isExpanded) {
+            renderFloatBall();
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to reload float config after empty config received');
+      }
     }
   });
 }

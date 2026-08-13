@@ -2,7 +2,7 @@ import React from 'react';
 import { Download, Pin, PinOff, ExternalLink, ChevronRight, Play, RefreshCw } from 'lucide-react';
 import { PluginInfo, InstalledPlugin } from '../../types/plugin';
 import { iconMap } from '../../utils/iconMap';
-import CachedPluginIcon from './CachedPluginIcon';
+import CachedIcon from '../ui/CachedIcon';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { pluginApi } from '../../services/pluginApi';
@@ -60,12 +60,13 @@ const PluginCard: React.FC<PluginCardProps> = ({
         className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-700"
       >
         {plugin.iconUrl ? (
-          <CachedPluginIcon
+          <CachedIcon
             url={plugin.iconUrl}
             name={plugin.name}
             type="plugin"
             className="w-full h-full object-contain"
             fallbackIcon={<Icon className="w-5 h-5 text-gray-600 dark:text-gray-300" />}
+            iconOnly
           />
         ) : (
           <Icon className="w-5 h-5 text-gray-600 dark:text-gray-300" />

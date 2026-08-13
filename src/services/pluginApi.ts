@@ -1,3 +1,5 @@
+import { localStorageService, STORAGE_KEYS } from './localStorageService';
+
 interface ToolRegistration {
   id: string;
   name: string;
@@ -140,10 +142,9 @@ class PluginApi {
     try {
       let userId: string | null = null;
       try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          userId = user?.id || null;
+        const user = localStorageService.get<{ id?: string } | null>(STORAGE_KEYS.USER, null);
+        if (user) {
+          userId = user.id || null;
         }
       } catch { /* ignore */ }
       await window.electron?.plugin?.openWindow(pluginId, userId);

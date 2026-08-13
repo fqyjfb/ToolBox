@@ -4,7 +4,6 @@ const { stopPythonService } = require('./services/pythonProcessService.cjs');
 const { registerOcrIpc } = require('./ipc/ocrIpc.cjs');
 const { registerFileManagerIpc } = require('./ipc/fileManagerIpc.cjs');
 const { registerSqliteIpc } = require('./ipc/sqliteIpc.cjs');
-const { registerPluginIpc } = require('./ipc/pluginIpc.cjs');
 const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization, getMainWindow, setIsQuitting } = require('./window/mainWindow.cjs');
 const { createFloatWindow, registerFloatIpcHandlers } = require('./window/floatWindow.cjs');
 const { createTray } = require('./window/tray.cjs');
@@ -29,10 +28,6 @@ function getCachedSettings() {
     }
   }
   return cachedSettings;
-}
-
-function invalidateSettingsCache() {
-  cachedSettings = null;
 }
 
 protocol.registerSchemesAsPrivileged([
@@ -96,7 +91,6 @@ app.whenReady().then(async () => {
   registerSqliteIpc();
   registerOcrIpc();
   registerFileManagerIpc();
-  registerPluginIpc();
   registerFloatIpcHandlers();
   registerLogIpcHandlers();
 

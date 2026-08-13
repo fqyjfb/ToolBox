@@ -2,6 +2,7 @@ const { ipcMain, dialog, desktopCapturer, screen, clipboard, nativeImage, Browse
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { getMimeType } = require('../services/fileTypeUtils.cjs');
 
 let pluginIpcRegistered = false;
 const { app } = require('electron');
@@ -12,34 +13,16 @@ const pluginWindows = new Map();
 let screenshotOverlayWindow = null;
 
 const S3_CLIENTS = new Map();
+const MAX_S3_CLIENTS = 5;
 
-function getMimeType(filename) {
-  const ext = filename.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'png': return 'image/png';
-    case 'jpg':
-    case 'jpeg': return 'image/jpeg';
-    case 'gif': return 'image/gif';
-    case 'svg': return 'image/svg+xml';
-    case 'webp': return 'image/webp';
-    case 'pdf': return 'application/pdf';
-    case 'txt': return 'text/plain';
-    case 'json': return 'application/json';
-    case 'js': return 'application/javascript';
-    case 'ts': return 'text/plain';
-    case 'tsx': return 'text/plain';
-    case 'jsx': return 'text/plain';
-    case 'css': return 'text/css';
-    case 'html': return 'text/html';
-    case 'zip':
-    case 'rar':
-    case '7z': return 'application/zip';
-    case 'mp4':
-    case 'mov': return 'video/mp4';
-    case 'mp3':
-    case 'wav': return 'audio/mpeg';
-    default: return 'application/octet-stream';
-  }
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function normalizeEndpoint(endpoint) {
@@ -55,7 +38,12 @@ function getS3Client(config) {
   if (S3_CLIENTS.has(key)) {
     return S3_CLIENTS.get(key);
   }
-  
+
+  if (S3_CLIENTS.size >= MAX_S3_CLIENTS) {
+    const firstKey = S3_CLIENTS.keys().next().value;
+    if (firstKey) S3_CLIENTS.delete(firstKey);
+  }
+
   const { S3Client } = require('@aws-sdk/client-s3');
   const normalizedEndpoint = normalizeEndpoint(config.endpoint);
   const region = config.region || 'us-east-1';
@@ -302,20 +290,17 @@ async function openPluginWindow(pluginId, userId) {
       if (fs.existsSync(themeConfigPath)) {
         const config = JSON.parse(fs.readFileSync(themeConfigPath, 'utf-8'));
         isDark = config.theme === 'dark' || config.isDark === true;
-      } else {
-        const theme = localStorageService?.getString?.('theme') || 
-                      localStorageService?.getString?.('theme-isDark');
-        isDark = theme === 'dark' || (theme && JSON.parse(theme) === true);
       }
     } catch { /* ignore */ }
 
+    const escapedName = escapeHtml(manifest.name);
     const htmlContent = `
         <!DOCTYPE html>
         <html lang="zh-CN"${isDark ? ' class="dark"' : ''}>
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${manifest.name}</title>
+          <title>${escapedName}</title>
           <script>
             tailwind.config = {
               darkMode: 'class',
@@ -350,7 +335,7 @@ async function openPluginWindow(pluginId, userId) {
         </head>
         <body class="${isDark ? 'dark' : ''}">
           <div class="plugin-header">
-            <span class="plugin-header-title">${manifest.name}</span>
+            <span class="plugin-header-title">${escapedName}</span>
             <div class="plugin-header-controls">
               <button onclick="window.electron?.plugin?.minimizeWindow()" title="最小化">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg>
@@ -392,7 +377,7 @@ async function openPluginWindow(pluginId, userId) {
           <script>
             try {
               var script = document.createElement('script');
-              script.src = '${entryUrl}';
+              script.src = ${JSON.stringify(entryUrl)};
               script.onload = function() {
                 console.log('Plugin script loaded successfully');
               };
@@ -565,10 +550,10 @@ function registerPluginIpc() {
 }
 
 ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) => {
+    const extensionsDir = getExtensionsDir();
+    const pluginDir = path.join(extensionsDir, pluginId);
+
     try {
-      const extensionsDir = getExtensionsDir();
-      const pluginDir = path.join(extensionsDir, pluginId);
-      
       if (fs.existsSync(pluginDir)) {
         await fs.promises.rm(pluginDir, { recursive: true, force: true });
       }
@@ -583,14 +568,14 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
           message: '获取插件版本信息...',
           progress: 0
         });
-        
+
         releaseUrl = await fetchReleaseUrlFromGithub(repo);
-        
+
         if (!releaseUrl) {
           return { success: false, error: '无法获取插件发布版本，请检查网络连接或插件仓库是否已发布 Release' };
         }
       }
-      
+
       if (!releaseUrl) {
         return { success: false, error: '插件暂未发布可用版本' };
       }
@@ -616,6 +601,13 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
       return { success: true };
     } catch (error) {
       console.error('Failed to install plugin:', error);
+      try {
+        if (fs.existsSync(pluginDir)) {
+          await fs.promises.rm(pluginDir, { recursive: true, force: true });
+        }
+      } catch (cleanupError) {
+        console.error('Failed to cleanup plugin directory:', cleanupError);
+      }
       return { success: false, error: error.message };
     }
   });

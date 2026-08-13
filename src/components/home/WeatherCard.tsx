@@ -7,6 +7,7 @@ import { getWeatherCity } from '../../utils/weatherLocation';
 import type { WeatherInfo, DailyForecast } from '../../types/weather';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
+import { getDayName } from '../../utils/format';
 
 const getWeatherIcon = (condition: string, size: 'sm' | 'md' | 'lg' = 'md', color?: string) => {
   const lowerCondition = condition.toLowerCase();
@@ -97,19 +98,6 @@ const WeatherCard: React.FC = () => {
       setPopupPosition({ x: rect.right + 8, y: rect.top });
     }
   }, [showDetail]);
-
-  const getDayName = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (date.toDateString() === today.toDateString()) return '明天';
-    if (date.toDateString() === tomorrow.toDateString()) return '后天';
-
-    const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-    return days[date.getDay()];
-  };
 
   const formatDate = (date: Date) => {
     const month = (date.getMonth() + 1).toString().padStart(2, '0');

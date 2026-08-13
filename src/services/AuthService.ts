@@ -419,9 +419,19 @@ export const authService = {
         redirectTo: `${window.location.origin}/reset-password`
       })
 
-      return { error: error?.message }
+      if (error) {
+        if (error.message.includes('rate limit')) {
+          return { error: '请求过于频繁，请稍后再试' }
+        }
+        if (error.message.includes('not found') || error.message.includes('User not found')) {
+          return { error: '该邮箱未注册' }
+        }
+        return { error: `重置失败: ${error.message}` }
+      }
+
+      return {}
     } catch (error) {
-      return { error: error instanceof Error ? error.message : '重置密码失败' }
+      return { error: error instanceof Error ? error.message : '重置密码失败，请检查网络连接' }
     }
   },
 

@@ -23,7 +23,7 @@ async function init(userDataPath, username) {
 
   // 用户名变化时，先关闭现有数据库连接再重新打开
   if (db && currentUsername !== normalizedUsername) {
-    persist();
+    flushPersist();
     db.close();
     db = null;
     dbPath = null;
@@ -94,6 +94,23 @@ function persist() {
   }
 }
 
+let persistTimer = null;
+function schedulePersist() {
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    persist();
+  }, 500);
+}
+
+function flushPersist() {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  persist();
+}
+
 function loadSettingsSafe() {
   try {
     const { loadSettings } = require('../lib/config.cjs');
@@ -160,7 +177,7 @@ function queryScalar(sql, params) {
 function run(sql, params) {
   const database = requireDb();
   database.run(sql, params);
-  persist();
+  schedulePersist();
 }
 
 function extractUserAndId(data) {
@@ -203,7 +220,7 @@ function batchInsertOrReplace(table, list) {
     database.run('ROLLBACK');
     throw e;
   }
-  persist();
+  schedulePersist();
 }
 
 function get(table, id) {
@@ -255,7 +272,7 @@ function clearByUser(table, userId) {
 
 async function changePath(newPath) {
   if (db) {
-    persist();
+    flushPersist();
     db.close();
     db = null;
   }
@@ -437,7 +454,7 @@ function importUserData(userId, jsonStr) {
 
 function close() {
   if (db) {
-    persist();
+    flushPersist();
     db.close();
     db = null;
   }

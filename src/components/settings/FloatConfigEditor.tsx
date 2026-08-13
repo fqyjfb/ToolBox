@@ -11,7 +11,7 @@ import {
 import { ALL_TOOLS } from '../../constants/tools';
 import { renderFloatIcon, isPredefinedIcon, formatIconSrc } from '../../utils/floatIconRenderer';
 import { usePluginStore } from '../../store/pluginStore';
-import CachedPluginIcon from '../plugins/CachedPluginIcon';
+import CachedIcon from '../ui/CachedIcon';
 import { iconMap } from '../../utils/iconMap';
 
 interface FloatConfigEditorProps {
@@ -149,7 +149,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
           style={{ backgroundColor: 'var(--color-primary)' }}
         >
           {localConfig.type === 'plugin' && localConfig.path ? (
-            <CachedPluginIcon
+            <CachedIcon
               url={localConfig.path}
               name={localConfig.name}
               type="plugin"
@@ -160,6 +160,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                   return <span className="text-white">{element}</span>;
                 })()
               }
+              iconOnly
             />
           ) : (
             (() => {
@@ -307,12 +308,13 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                       }`}
                     >
                       {plugin.iconUrl ? (
-                        <CachedPluginIcon
+                        <CachedIcon
                           url={plugin.iconUrl}
                           name={plugin.name}
                           type="plugin"
                           className="w-4 h-4"
                           fallbackIcon={<PluginIcon className="w-3 h-3" />}
+                          iconOnly
                         />
                       ) : (
                         <PluginIcon className="w-3 h-3" />
@@ -331,11 +333,12 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 dark:bg-gray-600 overflow-hidden">
               {localConfig.type === 'plugin' && localConfig.path ? (
-                <CachedPluginIcon
+                <CachedIcon
                   url={localConfig.path}
                   name={localConfig.name}
                   type="plugin"
                   className="w-full h-full object-contain"
+                  iconOnly
                   fallbackIcon={
                     (() => {
                       const { element } = renderFloatIcon(localConfig.icon, 20);

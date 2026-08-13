@@ -84,6 +84,9 @@ export const decrypt = async (text: string): Promise<string> => {
   const startTime = Date.now();
   try {
     if (!text || !text.includes(':')) {
+      if (text) {
+        console.warn('[Crypto] decrypt 收到非加密格式数据，按原文返回（兼容历史数据或已篡改数据）');
+      }
       logEncryptionOperation('decrypt', Date.now() - startTime, true);
       return text;
     }

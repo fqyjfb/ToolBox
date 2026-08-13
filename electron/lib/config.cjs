@@ -200,14 +200,28 @@ const saveShortcuts = (shortcuts) => {
 };
 
 const loadFloatConfig = () => {
-  if (floatConfigCache) return floatConfigCache;
+  // 使用 !== null 检查，避免空数组 []（truthy）被错误缓存后永远返回空
+  if (floatConfigCache !== null) return floatConfigCache;
   try {
     if (fs.existsSync(floatConfigPath)) {
       const data = fs.readFileSync(floatConfigPath, 'utf-8');
       const config = JSON.parse(data);
+      if (!Array.isArray(config)) {
+        floatConfigCache = [...defaultFloatConfig];
+        return floatConfigCache;
+      }
+      // 合并默认配置和用户自定义配置：先处理默认项，再追加用户自定义项
+      const usedIds = new Set();
       const mergedConfig = defaultFloatConfig.map((defaultItem) => {
         const savedItem = config.find(c => c.id === defaultItem.id);
+        usedIds.add(defaultItem.id);
         return savedItem ? { ...defaultItem, ...savedItem } : defaultItem;
+      });
+      // 追加用户自定义项（不在默认配置中的）
+      config.forEach((item) => {
+        if (item && !usedIds.has(item.id)) {
+          mergedConfig.push(item);
+        }
       });
       floatConfigCache = mergedConfig;
       return mergedConfig;
@@ -221,8 +235,10 @@ const loadFloatConfig = () => {
 
 const saveFloatConfig = (config) => {
   try {
-    floatConfigCache = config;
-    fs.writeFileSync(floatConfigPath, JSON.stringify(config, null, 2));
+    // 防御性检查：如果传入的不是非空数组，使用默认配置
+    const configToSave = (Array.isArray(config) && config.length > 0) ? config : [...defaultFloatConfig];
+    floatConfigCache = configToSave;
+    fs.writeFileSync(floatConfigPath, JSON.stringify(configToSave, null, 2));
   } catch (error) {
     console.error('Failed to save float config:', error);
   }
@@ -454,11 +470,8 @@ module.exports = {
   saveFloatConfig,
   clearExpiredIconCache,
   clearAllIconCache,
-  defaultSettings,
   defaultShortcuts,
   defaultFloatConfig,
-  defaultNetworkConfig,
   getNetworkConfig,
   invalidateNetworkConfigCache,
-  lockPasswordPath,
 };

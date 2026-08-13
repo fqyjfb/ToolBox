@@ -31,6 +31,20 @@ function filterValidModules(modules: SyncMetadata['syncModules']): SyncMetadata[
 // 同步并发控制锁
 let isSyncingLock = false;
 
+// 表同步最大并发数
+const SYNC_CONCURRENCY = 3;
+
+// 分批并发执行表同步任务
+async function syncTablesWithConcurrency(
+  tables: string[],
+  task: (table: string) => Promise<void>
+): Promise<void> {
+  for (let i = 0; i < tables.length; i += SYNC_CONCURRENCY) {
+    const batch = tables.slice(i, i + SYNC_CONCURRENCY);
+    await Promise.all(batch.map(task));
+  }
+}
+
 // 同步项类型（云端/本地通用结构）
 type SyncItem = SyncRecord;
 
@@ -118,6 +132,11 @@ export const syncManager = {
     const dal = getDataAccessLayer(userId);
     dal.setLocationMemoryOnly(location);
 
+    if (isSyncingLock) {
+      logInfo('同步正在进行中，跳过存储位置切换时的数据同步', 'syncManager');
+      return;
+    }
+
     if (location === 'local' && oldLocation === 'cloud') {
       await this.syncCloudToLocal(userId);
     } else if (location === 'cloud' && oldLocation === 'local') {
@@ -130,7 +149,7 @@ export const syncManager = {
     try {
       const allTables = Object.values(MODULE_TABLE_MAP).flat();
 
-      await Promise.all(allTables.map(async (table) => {
+      await syncTablesWithConcurrency(allTables, async (table) => {
         try {
           const { data, error } = await supabase.from(table).select('*').eq('user_id', userId);
           if (!error && data && data.length > 0) {
@@ -140,7 +159,7 @@ export const syncManager = {
         } catch (error) {
           logError(`同步表 ${table} 失败`, 'syncManager', error as Error);
         }
-      }));
+      });
 
       logInfo('云端到本地同步完成', 'syncManager');
     } catch (error) {
@@ -157,7 +176,7 @@ export const syncManager = {
 
       const allTables = Object.values(MODULE_TABLE_MAP).flat();
 
-      await Promise.all(allTables.map(async (table) => {
+      await syncTablesWithConcurrency(allTables, async (table) => {
         try {
           interface TableRecord {
             id: string;
@@ -169,23 +188,13 @@ export const syncManager = {
           for (let i = 0; i < localData.length; i += BATCH_SIZE) {
             const batch = localData.slice(i, i + BATCH_SIZE);
 
-            await Promise.all(batch.map(async (item) => {
-              try {
-                const { data, error } = await supabase
-                  .from(table)
-                  .select('id')
-                  .eq('id', item.id)
-                  .single();
+            const { error: upsertError } = await supabase
+              .from(table)
+              .upsert(batch, { onConflict: 'id' });
 
-                if (error || !data) {
-                  await supabase.from(table).insert(item);
-                } else {
-                  await supabase.from(table).update(item).eq('id', item.id);
-                }
-              } catch (itemError) {
-                logError(`同步记录失败: ${table}/${item.id}`, 'syncManager', itemError as Error);
-              }
-            }));
+            if (upsertError) {
+              logError(`批量同步失败: ${table}`, 'syncManager', upsertError as Error);
+            }
 
             if (i + BATCH_SIZE < localData.length) {
               await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
@@ -196,7 +205,7 @@ export const syncManager = {
         } catch (error) {
           logError(`同步表 ${table} 到云端失败`, 'syncManager', error as Error);
         }
-      }));
+      });
 
       logInfo('本地到云端同步完成', 'syncManager');
     } catch (error) {
@@ -293,9 +302,11 @@ export const syncManager = {
 
       const cloudOnly: SyncItem[] = [];
       const conflicts: ConflictItem[] = [];
+      const cloudIds = new Set<string>();
 
       for (const cloudItem of cloudData || []) {
         const cloudItemTyped = cloudItem as SyncItem;
+        cloudIds.add(cloudItemTyped.id);
         if (!localIds.has(cloudItemTyped.id)) {
           cloudOnly.push(cloudItemTyped);
         } else {
@@ -312,8 +323,27 @@ export const syncManager = {
         }
       }
 
+      // 检测本地新增/修改但云端没有的记录（仅检查上次同步后的记录，避免误判已同步数据）
+      const lastSyncDate = new Date(lastSyncTime);
+      const localOnly: SyncItem[] = localData.filter(item =>
+        new Date(item.updated_at) > lastSyncDate && !cloudIds.has(item.id)
+      );
+
       if (cloudOnly.length > 0) {
         await offlineStorage.batchPut(storeName, cloudOnly);
+      }
+
+      if (localOnly.length > 0) {
+        const BATCH_SIZE = 20;
+        for (let i = 0; i < localOnly.length; i += BATCH_SIZE) {
+          const batch = localOnly.slice(i, i + BATCH_SIZE);
+          const { error: upsertError } = await supabase
+            .from(tableName)
+            .upsert(batch, { onConflict: 'id' });
+          if (upsertError) {
+            logError(`上传本地独有记录失败: ${tableName}`, 'syncManager', upsertError as Error);
+          }
+        }
       }
 
       if (conflicts.length > 0) {
@@ -322,9 +352,9 @@ export const syncManager = {
 
       return {
         cloudOnly,
-        localOnly: [],
+        localOnly,
         conflicts,
-        synced: cloudOnly.length,
+        synced: cloudOnly.length + localOnly.length,
         conflictsHandled: conflicts.length
       };
     } catch (error) {

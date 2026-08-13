@@ -145,7 +145,11 @@ class StorageContext {
       logError(`本地查询失败: ${table}`, 'StorageContext', error as Error)
     }
 
-    if (this.storageLocation === 'local' && !localQueryFailed) {
+    if (this.storageLocation === 'local') {
+      if (localQueryFailed) {
+        logInfo(`本地模式查询失败，返回空数据: ${table}`, 'StorageContext')
+        return { data: [], total: 0 }
+      }
       if (options?.filters) localData = this.applyFilters(localData, options.filters)
       if (options?.orderBy) localData = this.applyOrderBy(localData, options.orderBy.column, options.orderBy.ascending ?? true)
       const total = localData.length
@@ -214,7 +218,11 @@ class StorageContext {
       logError(`本地搜索失败: ${table}`, 'StorageContext', error as Error)
     }
 
-    if (this.storageLocation === 'local' && !localQueryFailed) {
+    if (this.storageLocation === 'local') {
+      if (localQueryFailed) {
+        logInfo(`本地模式搜索失败，返回空数据: ${table}`, 'StorageContext')
+        return { data: [], total: 0 }
+      }
       const filtered = this.applySearch(localData, keyword, searchFields)
       if (options?.orderBy) {
         filtered.sort((a, b) => this.compareValues(a, b, options.orderBy!.column) * (options.orderBy!.ascending ? 1 : -1))

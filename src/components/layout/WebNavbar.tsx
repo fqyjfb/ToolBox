@@ -81,7 +81,7 @@ const WebNavbar: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center" style={{ gap: 'var(--space-2)' }} onClick={() => navigate('/')}>
             <img 
-              src="./favicon.png" 
+              src="./favicon.svg"
               alt="ToolBox Logo" 
               className="rounded-lg logo-icon object-contain"
               style={{ width: 'calc(var(--space-5) * 0.8)', height: 'calc(var(--space-5) * 0.8)' }}

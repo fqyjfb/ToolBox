@@ -177,10 +177,6 @@ function setLogWindow(window) {
   logWindow = window;
 }
 
-function getLogWindow() {
-  return logWindow;
-}
-
 module.exports = {
   initLogger,
   addLog,
@@ -191,7 +187,6 @@ module.exports = {
   exportLogs,
   getStats,
   setLogWindow,
-  getLogWindow,
   importLogs,
   log
 };

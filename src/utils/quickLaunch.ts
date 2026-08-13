@@ -45,10 +45,6 @@ export const loadCategories = (): QuickLaunchCategory[] => {
   return localStorageService.get<QuickLaunchCategory[]>(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, []);
 };
 
-export const saveCategories = (categories: QuickLaunchCategory[]): void => {
-  localStorageService.set(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, categories);
-};
-
 export const getDefaultCategoryId = (categories: QuickLaunchCategory[]): string => {
   return categories[0]?.id || '';
 };

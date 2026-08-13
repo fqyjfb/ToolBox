@@ -1,7 +1,6 @@
 import React from 'react'
 import Modal from '../../../components/ui/Modal'
-import { Todo, TodoCategory } from '../../../services/TodoService'
-import { CreateTodoRequest } from '../../../services/TodoService'
+import { Todo, TodoCategory, CreateTodoRequest } from '../../../services/TodoService'
 
 interface TodoFormModalProps {
   isOpen: boolean

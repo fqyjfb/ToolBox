@@ -6,37 +6,12 @@ import { websiteService } from '../../services/WebsiteService'
 import { supabase } from '../../services/supabase'
 import { useNavSearch } from '../../contexts/NavSearchContext'
 import { openUrl } from '../../services/browserService'
+import { throttle } from '../../utils'
+import type { Bookmark, Category } from '../../types/website'
 import './NavPage.css'
 
 // 默认书签图标（与首页收藏保持一致，使用 public/网址.png）
 const DefaultBookmarkIcon = <img src="./网址.png" alt="" className="w-full h-full object-contain" />
-
-// 类型定义
-export interface Category {
-  id: string
-  name: string
-  parent_id: string | null
-  order?: number
-  children: Category[]
-  created_at?: string
-  updated_at?: string
-}
-
-export interface Bookmark {
-  id: string
-  title: string
-  url: string
-  description: string
-  category_id: string
-  user_id: string | null
-  is_public: boolean
-  is_favorite: boolean
-  order: number
-  created_at: string
-  updated_at: string
-  ico_url?: string
-  category?: Category
-}
 
 
 
@@ -441,20 +416,6 @@ const NavPage: React.FC = () => {
   const navigateToBookmark = (url: string) => {
     if (url) {
       openUrl(url)
-    }
-  }
-
-  // 节流函数
-  const throttle = <T extends (...args: unknown[]) => void>(func: T, delay: number) => {
-    let inThrottle = false
-    return (...args: Parameters<T>) => {
-      if (!inThrottle) {
-        func(...args)
-        inThrottle = true
-        setTimeout(() => {
-          inThrottle = false
-        }, delay)
-      }
     }
   }
 

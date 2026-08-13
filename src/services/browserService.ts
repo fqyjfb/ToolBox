@@ -2,7 +2,7 @@ import localStorageService, { STORAGE_KEYS } from './localStorageService';
 
 export const openUrl = (url: string): void => {
   const browserMode = localStorageService.getString(STORAGE_KEYS.BROWSER_MODE) as 'internal' | 'external' || 'internal';
-  
+
   if (window.electron) {
     if (browserMode === 'external') {
       window.electron.openExternal(url);
@@ -12,10 +12,6 @@ export const openUrl = (url: string): void => {
   } else {
     window.open(url, '_blank');
   }
-};
-
-export const getBrowserMode = (): 'internal' | 'external' => {
-  return localStorageService.getString(STORAGE_KEYS.BROWSER_MODE) as 'internal' | 'external' || 'internal';
 };
 
 export const setBrowserMode = (mode: 'internal' | 'external'): void => {

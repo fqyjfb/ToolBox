@@ -8,7 +8,7 @@ import Pagination from '../../components/ui/Pagination'
 import Modal from '../../components/ui/Modal'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import ContextMenu from '../../components/ui/ContextMenu'
-import Switch from '../../components/ui/Switch'
+import ToggleSwitch from '../../components/settings/ToggleSwitch'
 import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager';
 import { openUrl } from '../../services/browserService'
 
@@ -559,7 +559,7 @@ const ToolsPage: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
-                          <Switch
+                          <ToggleSwitch
                             checked={tool.is_active}
                             onChange={() => handleToolToggleActive(tool.id, tool.is_active)}
                           />

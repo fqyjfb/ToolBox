@@ -99,7 +99,7 @@ const Sidebar: React.FC = () => {
   return (
     <aside className={`sidebar-root ${isCollapsed ? 'collapsed' : 'expanded'}`} style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
       <div className="sidebar-logo" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties} onClick={() => navigate('/')}>
-        <img src="./favicon.png" alt="ToolBox" className="w-8 h-8 flex-shrink-0" />
+        <img src="./favicon.svg" alt="ToolBox" className="w-8 h-8 flex-shrink-0" />
         {!isCollapsed && <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">ToolBox</span>}
       </div>
 

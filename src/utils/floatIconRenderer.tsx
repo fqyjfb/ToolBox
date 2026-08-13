@@ -1,5 +1,5 @@
 import React from 'react';
-import { iconMap, InfoIcon } from '../components/icons/CustomIcons';
+import { customSvgIconMap, InfoIcon } from '../components/icons/CustomIcons';
 import { AVAILABLE_ICONS } from '../constants/settings';
 
 export const isPredefinedIcon = (icon: string): boolean => {
@@ -73,7 +73,7 @@ export const renderFloatIcon = (
     };
   }
 
-  const Icon = iconMap[isPredefined ? icon : 'HelpCircle'] || InfoIcon;
+  const Icon = customSvgIconMap[isPredefined ? icon : 'HelpCircle'] || InfoIcon;
   return {
     element: <Icon size={size} />,
     isImg: false,

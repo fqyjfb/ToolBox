@@ -250,11 +250,3 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 )
-
-export const useAuth = () => useAuthStore()
-
-export const useAuthUser = () => useAuthStore((state) => state.user)
-export const useAuthAdmin = () => useAuthStore((state) => state.admin)
-export const useAuthStatus = () => useAuthStore(
-  (state) => [state.isAuthenticated, state.isLoading, state.isAdmin]
-)

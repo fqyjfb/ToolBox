@@ -13,12 +13,6 @@ function setPort(port) {
   }
 }
 
-function setHost(host) {
-  if (host && typeof host === 'string') {
-    PYTHON_API_HOST = host;
-  }
-}
-
 function getBaseUrl() {
   return `http://${PYTHON_API_HOST}:${PYTHON_API_PORT}`;
 }
@@ -81,14 +75,6 @@ async function get(path, options) {
 
 async function post(path, body, options) {
   return request(path, { ...options, method: "POST", body });
-}
-
-async function put(path, body, options) {
-  return request(path, { ...options, method: "PUT", body });
-}
-
-async function del(path, options) {
-  return request(path, { ...options, method: "DELETE" });
 }
 
 async function request(path, options = {}) {
@@ -187,18 +173,8 @@ function sleep(ms) {
 }
 
 module.exports = {
-  checkPythonApiHealth,
   waitForPythonApi,
   get,
   post,
-  put,
-  delete: del,
   setPort,
-  setHost,
-  getBaseUrl,
-  config: {
-    get host() { return PYTHON_API_HOST; },
-    get port() { return PYTHON_API_PORT; },
-    get baseUrl() { return getBaseUrl(); },
-  },
 };

@@ -1,4 +1,4 @@
-import { BaseService } from './baseService'
+import { BaseServiceCompat as BaseService } from './entities/baseEntityService'
 import { getDataAccessLayer } from './dataAccessLayer'
 import { QuickReply, QuickReplyCategory } from '../types/quickReply'
 import { logError, logInfo } from './loggerService'

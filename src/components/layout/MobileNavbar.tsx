@@ -86,7 +86,7 @@ const MobileNavbar: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center" style={{ gap: 'var(--space-2)' }} onClick={() => navigate('/')}>
               <img 
-                src="./favicon.png" 
+                src="./favicon.svg"
                 alt="ToolBox Logo" 
                 className="rounded-lg object-contain"
                 style={{ width: 'calc(var(--space-5) * 0.7)', height: 'calc(var(--space-5) * 0.7)' }}

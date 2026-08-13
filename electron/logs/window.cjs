@@ -9,7 +9,6 @@ const {
   exportLogs,
   getStats,
   setLogWindow,
-  getLogWindow,
   importLogs
 } = require('./logger.cjs');
 
@@ -115,6 +114,5 @@ function openLogWindow() {
 
 module.exports = {
   registerLogIpcHandlers,
-  openLogWindow,
-  getLogWindow
+  openLogWindow
 };

@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+﻿const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -364,95 +364,6 @@ function getPythonServiceInfo() {
   };
 }
 
-async function createTestService(serviceDir, scriptPath) {
-  if (!fs.existsSync(serviceDir)) {
-    fs.mkdirSync(serviceDir, { recursive: true });
-  }
-
-  const testScript = `#!/usr/bin/env python3
-"""
-AI Agent Python Service - Test Mode
-"""
-import os
-import sys
-import time
-import json
-from datetime import datetime
-from http.server import HTTPServer, BaseHTTPRequestHandler
-
-class OCRHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == '/api/ocr/status':
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                'success': True,
-                'data': {'available': True, 'message': 'OCR service ready'}
-            }).encode('utf-8'))
-        elif self.path == '/health':
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'ocr_available': True}).encode('utf-8'))
-    
-    def do_POST(self):
-        if self.path == '/api/ocr/recognize':
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            try:
-                data = json.loads(post_data)
-                image_data = data.get('image_base64', '')
-                text = '测试识别结果 - 这是一个测试文本' if image_data else ''
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({
-                    'success': True,
-                    'data': {
-                        'text': text,
-                        'blocks': [{'text': text, 'confidence': 95, 'box': [[0,0], [100,0], [100,20], [0,20]]}]
-                    }
-                }).encode('utf-8'))
-            except Exception as e:
-                self.send_response(500)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({'success': False, 'error': str(e)}).encode('utf-8'))
-
-def main():
-    port = int(os.environ.get("HTTP_PORT", 8766))
-    print(f"[Python Service] Starting HTTP server on port {port}")
-    print(f"[Python Service] Python version: {sys.version}")
-    
-    server = HTTPServer(('127.0.0.1', port), OCRHandler)
-    print(f"[Python Service] Server running on http://127.0.0.1:{port}")
-    
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("[Python Service] Shutting down...")
-        server.server_close()
-
-if __name__ == "__main__":
-    main()
-`;
-
-  fs.writeFileSync(scriptPath, testScript, 'utf-8');
-  addLog('info', `已创建测试服务脚本: ${scriptPath}`);
-}
-
-function cleanup() {
-  if (serviceProcess) {
-    serviceProcess.kill('SIGTERM');
-    serviceProcess = null;
-  }
-}
-
-function getHttpPort() {
-  return serviceConfig.httpPort || 8766;
-}
-
 function isRunning() {
   return serviceStatus === 'running';
 }
@@ -528,9 +439,6 @@ module.exports = {
   startPythonService,
   stopPythonService,
   getPythonServiceInfo,
-  cleanup,
-  getHttpPort,
   isRunning,
-  waitForPort,
   resetIdleTimer,
 };

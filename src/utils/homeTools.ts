@@ -48,12 +48,3 @@ export const replaceHomeTool = (index: number, newTool: HomeToolItem): boolean =
   }
   return false;
 };
-
-export const getHomeToolByIndex = (index: number): HomeToolItem | undefined => {
-  const tools = loadHomeTools();
-  return tools[index];
-};
-
-export const resetHomeTools = (): void => {
-  saveHomeTools([...defaultHomeTools]);
-};

@@ -95,6 +95,10 @@ const TodoManagerPage: React.FC = () => {
   });
 
   const debouncedLoadTodosRef = useRef<(() => void) | null>(null);
+  const todosRef = useRef<Todo[]>(todos);
+  useEffect(() => {
+    todosRef.current = todos;
+  }, [todos]);
 
   const { createTodo, updateTodo, toggleComplete, deleteTodo } = useTodoOperations();
   const { createCategory, updateCategory, deleteCategory } = useCategoryOperations();
@@ -205,14 +209,14 @@ const TodoManagerPage: React.FC = () => {
 
   const handleToggleCompleteLocal = useCallback(async (id: string) => {
     if (!user) return;
-    const todo = todos.find(t => t.id === id);
+    const todo = todosRef.current.find(t => t.id === id);
     if (!todo) return;
 
     const success = await toggleComplete(id, !todo.is_completed);
     if (success) {
       loadTodos();
     }
-  }, [user, todos, toggleComplete, loadTodos]);
+  }, [user, toggleComplete, loadTodos]);
 
   const handleEditTodo = useCallback((todo: Todo) => {
     setEditingTodo(todo);

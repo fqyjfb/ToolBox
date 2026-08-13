@@ -17,15 +17,3 @@ export interface QuickReply {
   updated_at: string;
   category?: QuickReplyCategory;
 }
-
-export interface CreateQuickReplyCategoryRequest {
-  user_id: string;
-  name: string;
-  parent_id?: string | null;
-}
-
-export interface CreateQuickReplyRequest {
-  user_id: string;
-  category_id?: string | null;
-  content: string;
-}

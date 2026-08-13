@@ -8,9 +8,6 @@ const execAsync = promisify(exec);
 
 const DEFAULT_OPTIONS = {
   timeout: 30000,
-  checkPip: true,
-  checkPoetry: true,
-  checkConda: false,
 };
 
 let cachedEnv = null;

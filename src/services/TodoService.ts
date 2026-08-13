@@ -1,4 +1,4 @@
-import { BaseService } from './baseService'
+import { BaseServiceCompat as BaseService } from './entities/baseEntityService'
 import { getDataAccessLayer } from './dataAccessLayer'
 import { TodoCategory, Todo, CreateTodoCategoryRequest, CreateTodoRequest } from '../types/todo'
 import { logError, logInfo } from './loggerService'

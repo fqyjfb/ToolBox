@@ -41,6 +41,9 @@ function getMimeType(filePath) {
     '.md': 'text/markdown', '.txt': 'text/plain',
     '.html': 'text/html', '.htm': 'text/html',
     '.json': 'application/json',
+    '.js': 'application/javascript',
+    '.ts': 'text/plain', '.tsx': 'text/plain', '.jsx': 'text/plain',
+    '.css': 'text/css',
     '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     '.doc': 'application/msword',
     '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -50,6 +53,10 @@ function getMimeType(filePath) {
     '.webp': 'image/webp', '.ico': 'image/x-icon',
     '.mp4': 'video/mp4', '.avi': 'video/x-msvideo', '.mov': 'video/quicktime',
     '.mkv': 'video/x-matroska', '.webm': 'video/webm', '.flv': 'video/x-flv', '.wmv': 'video/x-ms-wmv',
+    '.zip': 'application/zip',
+    '.rar': 'application/vnd.rar',
+    '.7z': 'application/x-7z-compressed',
+    '.mp3': 'audio/mpeg', '.wav': 'audio/wav',
   };
   return mimeMap[ext] || 'application/octet-stream';
 }

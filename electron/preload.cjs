@@ -185,18 +185,6 @@ contextBridge.exposeInMainWorld('electron', {
     copyToClipboard: (dataUrl) => ipcRenderer.send('copy-screenshot-to-clipboard', dataUrl),
     complete: () => ipcRenderer.send('screenshot-session-complete'),
   },
-  api: {
-    startScreenshotCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
-    cancelScreenshot: () => ipcRenderer.send('cancel-screenshot'),
-    saveScreenshot: (data) => ipcRenderer.invoke('save-screenshot', data),
-    copyScreenshotToClipboard: (dataUrl) => ipcRenderer.send('copy-screenshot-to-clipboard', dataUrl),
-    screenshotSessionComplete: () => ipcRenderer.send('screenshot-session-complete'),
-  },
-  python: {
-    start: () => ipcRenderer.invoke('python:start'),
-    stop: () => ipcRenderer.invoke('python:stop'),
-    status: () => ipcRenderer.invoke('python:status'),
-  },
   log: {
     open: () => ipcRenderer.send('log:open'),
     addLog: (level, message, context, stack) => ipcRenderer.invoke('log:addLog', { level, message, context, stack }),
@@ -260,11 +248,3 @@ contextBridge.exposeInMainWorld('electron', {
     off: (channel, listener) => ipcRenderer.off(channel, listener),
   },
 });
-
-contextBridge.exposeInMainWorld('api', screenshotApi);
-
-const noopStore = {
-  getState: () => ({ activeExtensionPanelId: null }),
-  setState: () => {},
-};
-contextBridge.exposeInMainWorld('useAppStore', noopStore);

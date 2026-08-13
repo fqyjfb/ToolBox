@@ -218,7 +218,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Pagination from '@/components/ui/Pagination';
 import Tooltip from '@/components/ui/Tooltip';
-import Switch from '@/components/ui/Switch';
+import ToggleSwitch from '@/components/settings/ToggleSwitch';
 import ContextMenu from '@/components/ui/ContextMenu';
 ```
 
@@ -318,7 +318,6 @@ const allState = useToastStore();
 
 ```
 src/services/
-├── baseService.ts              # 通用 CRUD 基类
 ├── entities/baseEntityService.ts # 实体基类（含搜索）
 ├── dataAccessLayer.ts          # 数据访问层（本地/云端切换）
 ├── supabase.ts                 # Supabase 客户端初始化
@@ -326,21 +325,18 @@ src/services/
 └── {Feature}Service.ts         # 具体业务服务
 ```
 
-### 继承 BaseService
+### 继承 BaseEntityService
 
-当新功能需要 CRUD 操作时，继承 `BaseService`：
+当新功能需要 CRUD 操作时，继承 `BaseEntityService`（位于 `src/services/entities/baseEntityService.ts`）：
 
 ```typescript
 // src/services/NewFeatureService.ts
-import { BaseService } from './baseService';
+import { BaseEntityService } from './entities/baseEntityService';
 import { NewFeature } from '@/types/newFeature';
 
-export class NewFeatureService extends BaseService<NewFeature> {
+export class NewFeatureService extends BaseEntityService<NewFeature> {
   constructor() {
-    super({
-      tableName: 'new_features',
-      serviceName: 'NewFeatureService',
-    });
+    super('new_features', 'NewFeatureService', ['title', 'description']);
   }
 
   // 可覆盖基类方法或添加特定业务逻辑

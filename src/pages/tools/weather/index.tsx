@@ -8,6 +8,7 @@ import type { WeatherInfo, DailyForecast, HourlyForecast } from '../../../types/
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 import { DISPLAY_LIMITS } from '../../../constants/timers';
+import { getDayName } from '../../../utils/format';
 
 const WeatherPage: React.FC = () => {
   const navigate = useNavigate();
@@ -87,20 +88,6 @@ const WeatherPage: React.FC = () => {
       setTimeout(() => fetchWeather(), 0);
     }
   }, [isInitialized, fetchWeather]);
-
-  const getDayName = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const today = new Date();
-    
-    if (date.toDateString() === today.toDateString()) return '今天';
-    
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    if (date.toDateString() === tomorrow.toDateString()) return '明天';
-
-    const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-    return days[date.getDay()];
-  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -423,7 +410,7 @@ const WeatherPage: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
               {dailyForecast.map((day, index) => (
                 <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-0.5">{getDayName(day.date)}</p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-0.5">{getDayName(day.date, { includeAfterTomorrow: false })}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{formatDate(day.date)}</p>
                   <div className="flex items-center justify-center gap-1 mb-2">
                     {getWeatherIcon(day.day_condition || '')}

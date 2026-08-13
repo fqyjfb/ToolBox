@@ -12,7 +12,7 @@ export interface ShortcutItem {
   name?: string;
 }
 
-export type FloatConfigType = 'nav' | 'tool' | 'app' | 'system' | 'plugin';
+type FloatConfigType = 'nav' | 'tool' | 'app' | 'system' | 'plugin';
 
 export interface FloatConfigItem {
   id: number;
@@ -33,26 +33,4 @@ export interface NotificationSettings {
 export interface WindowSize {
   width: number;
   height: number;
-}
-
-export interface QuickPanelItem {
-  id: string;
-  type: 'app' | 'url' | 'folder';
-  name: string;
-  icon: string;
-  action: string;
-  color: string;
-  order: number;
-}
-
-export interface QuickPanelPosition {
-  edge: 'left' | 'right' | 'top';
-  x: number;
-  y: number;
-}
-
-export interface QuickPanelConfig {
-  isEnabled: number;
-  position: QuickPanelPosition;
-  items: QuickPanelItem[];
 }

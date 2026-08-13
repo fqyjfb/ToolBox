@@ -182,7 +182,7 @@ const About: React.FC = () => {
     <div className="h-full flex flex-col p-4 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
-            <img loading="lazy" src="./favicon.png" alt="ToolBox Logo" className="w-12 h-12 mr-4" />
+            <img loading="lazy" src="./favicon.svg" alt="ToolBox Logo" className="w-12 h-12 mr-4" />
             <div>
               <h2 className="text-sm font-semibold">ToolBox</h2>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">一站式工具平台</p>

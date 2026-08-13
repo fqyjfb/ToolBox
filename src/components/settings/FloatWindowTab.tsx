@@ -4,7 +4,7 @@ import SettingCard from './SettingCard';
 import { FloatConfigItem } from '../../types/settings';
 import { QuickLaunchItem } from '../../utils/quickLaunch';
 import { renderFloatIcon, isPluginIcon } from '../../utils/floatIconRenderer';
-import CachedPluginIcon from '../plugins/CachedPluginIcon';
+import CachedIcon from '../ui/CachedIcon';
 
 interface FloatWindowTabProps {
   floatConfig: FloatConfigItem[];
@@ -80,12 +80,13 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
                   title={config.name}
                 >
                   {isPlugin && config.path ? (
-                    <CachedPluginIcon
+                    <CachedIcon
                       url={config.path}
                       name={config.name}
                       type="plugin"
                       className="w-full h-full object-contain"
                       fallbackIcon={<span className="text-white">{element}</span>}
+                      iconOnly
                     />
                   ) : (
                     <span className="text-white">{element}</span>

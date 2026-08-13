@@ -33,11 +33,6 @@ export interface NetworkConfig {
   iconCache: IconCacheConfig;
 }
 
-export interface NetworkTestPayload {
-  url: string;
-  timeout?: number;
-}
-
 export interface NetworkTestResult {
   ok: boolean;
   statusCode: number;

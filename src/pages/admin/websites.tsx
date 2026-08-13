@@ -10,7 +10,7 @@ import Modal from '../../components/ui/Modal'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import Pagination from '../../components/ui/Pagination'
 import ContextMenu from '../../components/ui/ContextMenu'
-import Switch from '../../components/ui/Switch'
+import ToggleSwitch from '../../components/settings/ToggleSwitch'
 import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager'
 import CachedIcon from '../../components/ui/CachedIcon'
 
@@ -618,7 +618,7 @@ const AdminWebsitesPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                        <Switch
+                        <ToggleSwitch
                           checked={bookmark.is_public}
                           onChange={() => handleBookmarkTogglePublic(bookmark.id, bookmark.is_public)}
                         />
@@ -681,7 +681,7 @@ const AdminWebsitesPage: React.FC = () => {
         )}
         <form className="space-y-4">
           <div className="flex items-center justify-between">
-            <Switch
+            <ToggleSwitch
               checked={bookmarkFormData.is_public}
               onChange={(checked) => setBookmarkFormData(prev => ({ ...prev, is_public: checked }))}
               label="公开"
@@ -828,7 +828,7 @@ const AdminWebsitesPage: React.FC = () => {
         )}
         <form className="space-y-4">
           <div className="flex items-center justify-between">
-            <Switch
+            <ToggleSwitch
               checked={bookmarkFormData.is_public}
               onChange={(checked) => setBookmarkFormData(prev => ({ ...prev, is_public: checked }))}
               label="公开"

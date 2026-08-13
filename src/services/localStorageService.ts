@@ -3,17 +3,16 @@ import { logError } from './loggerService';
 export const STORAGE_KEYS = {
   USER: 'user',
   ADMIN: 'admin',
-  AUTH: 'auth',
   USERNAME: 'toolbox_username',
   PASSWORD: 'toolbox_password',
   LAST_LOGIN_TIME: 'toolbox_last_login_time',
-  
+
   THEME: 'toolbox_theme',
   BROWSER_MODE: 'toolbox_browser_mode',
   WEATHER_CITY: 'weatherCity',
   NOTIFICATION_ERRORS: 'toolbox_notification_errors',
   SIDEBAR: 'sidebar-storage-v1',
-  
+
   QUICK_LAUNCH_APPS: 'quickLaunchApps',
   QUICK_LAUNCH_CATEGORIES: 'quickLaunchCategories',
   QUICK_LAUNCH_ICON_SIZE: 'quickLaunchIconSize',
@@ -21,23 +20,21 @@ export const STORAGE_KEYS = {
   HOME_FAVORITES: 'homeFavorites',
   HOME_TOOLS: 'homeTools',
   HOME_QUICK_LAUNCH: 'homeQuickLaunchApps',
-  
-  LAST_OPENED_FILE: 'toolbox_last_opened_file',
+
   NOTES_LAST_OPENED_FILE: 'notes_last_opened_file',
-  
+
   ACCOUNT_COLUMNS: 'account_columns_visible',
   PLATFORM_VISIBILITY: 'account_platform_visibility',
   PLATFORM_ORDER: 'account_platform_order',
   WEBSITE_ACCOUNT_CATEGORY_ORDER: 'websiteAccountCategoryOrder',
-  
+
   MARKDOWN_WECHAT_CONTENT: 'markdown-wechat-content',
-  
+
   NOTES_SIDEBAR_VISIBLE: 'notes_sidebar_visible',
   NOTES_PINNED_FOLDERS: 'notes_pinned_folders',
   NOTES_CHAT_PATH: 'notes_chat_path',
   NOTES_ROOT_PATH: 'notes_root_path',
-  
-  FILE_MANAGER_WIDTHS: 'file_manager_widths',
+
   PLUGINS: 'toolbox_plugins',
 };
 

@@ -176,14 +176,6 @@ const unlock = () => {
   }, 500);
 };
 
-const destroyLockWindow = () => {
-  if (lockWindow) {
-    lockWindow.removeAllListeners('close');
-    lockWindow.close();
-    lockWindow = null;
-  }
-};
-
 const toggleLock = () => {
   const settings = loadSettings();
   if (settings.isLockEnabled === 1) {
@@ -297,10 +289,6 @@ const registerLockIpcHandlers = () => {
     const { x, y } = screen.getCursorScreenPoint();
     lockWindow.setPosition(Math.round(x - dragOffset.x), Math.round(y - dragOffset.y));
   });
-
-  ipcMain.on('lock-drag-end', () => {
-    // 位置已保存
-  });
 };
 
 const checkLockOnStartup = () => {
@@ -320,17 +308,13 @@ const checkLockOnStartup = () => {
   return false;
 };
 
-const getLockWindow = () => lockWindow;
-
 module.exports = {
   lock,
   lockOrPrompt,
   unlock,
   toggleLock,
   getLockStatus,
-  getLockWindow,
   createLockWindow,
   registerLockIpcHandlers,
   checkLockOnStartup,
-  destroyLockWindow,
 };

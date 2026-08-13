@@ -186,7 +186,7 @@ const LoginPage: React.FC = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <img src="./favicon.png" alt="ToolBox Logo" />
+          <img src="./favicon.svg" alt="ToolBox Logo" />
           <h1 className="shine">ToolBox</h1>
         </div>
 

@@ -343,7 +343,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
             </>
           )}
 
-          {('email' in item && !('platform' in item) && !('shop_name' in item) && !('platform_name' in item)) && (
+          {('email' in item && !('platform' in item) && !('shop_name' in item) && !('platform_name' in item) && !('category_id' in item) && !('username' in item)) && (
             <>
               <div className="border-b border-gray-100 dark:border-gray-700 pb-3 mb-3">
                 {renderField('邮箱地址', (item as Email).email, true)}

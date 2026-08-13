@@ -95,11 +95,6 @@ function validateFolder(folderPath) {
   }
 }
 
-function calculateFileHash(filePath) {
-  const content = fs.readFileSync(filePath);
-  return crypto.createHash('md5').update(content).digest('hex');
-}
-
 function scanFolder(rootPath) {
   try {
     let fileCount = 0;
@@ -616,8 +611,6 @@ function importDroppedFiles(rootPath, filePaths) {
 }
 
 module.exports = {
-  getSetting,
-  saveSetting,
   getRootPath,
   setRootPath,
   selectFolder,

@@ -186,8 +186,3 @@ export const getIconSvgByName = (name: string): string => {
   const icon = iconDataList.find(item => item.name === name);
   return icon?.svg || iconDataList.find(item => item.name === 'Info')?.svg || '';
 };
-
-export const iconNameToLabel = (name: string): string => {
-  const icon = iconDataList.find(item => item.name === name);
-  return icon?.label || name;
-};
