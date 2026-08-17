@@ -329,6 +329,7 @@ main::-webkit-scrollbar-thumb:hover {
 
 .homenav-page {
   position: relative;
+  background-color: var(--color-bg-primary);
 }
 
 .nav-container {

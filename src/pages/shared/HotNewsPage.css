@@ -2,8 +2,7 @@
 
 .hot-news-content {
   min-height: 90vh;
-  background-color: var(--color-bg-secondary);
-  padding: var(--space-4);
+  background-color: var(--color-bg-primary);
 }
 
 .refresh-btn {

@@ -8,13 +8,38 @@ import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../../types/hot
 import WeatherCard from '../../components/home/WeatherCard';
 import FavoritesBar from '../../components/home/FavoritesBar';
 import { useHomeFavorites } from '../../hooks/useHomeFavorites';
+import { useRevealAnimation } from '../../hooks/useScrollParallax';
 import { DISPLAY_LIMITS } from '../../constants/timers';
+import './WebHome.css';
 
 const searchTypes = [
   { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=%s%', placeholder: '百度一下' },
   { id: 'google', name: 'Google', url: 'https://www.google.com/search?q=%s%', placeholder: 'Google搜索' },
   { id: 'bing', name: 'Bing', url: 'https://cn.bing.com/search?q=%s%', placeholder: 'Bing搜索' },
 ];
+
+const RevealSection: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+}> = ({ children, className = '' }) => {
+  const { ref, isVisible } = useRevealAnimation(0.1);
+  return (
+    <div
+      ref={ref as React.RefObject<HTMLDivElement>}
+      className={`web-home__reveal${isVisible ? ' web-home__reveal--visible' : ''} ${className}`}
+    >
+      {children}
+    </div>
+  );
+};
+
+const LoadingDots: React.FC = () => (
+  <div className="web-home__loading-dots">
+    <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '0ms' }} />
+    <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '150ms' }} />
+    <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '300ms' }} />
+  </div>
+);
 
 const WebHome: React.FC = () => {
   const navigate = useNavigate();
@@ -97,7 +122,7 @@ const WebHome: React.FC = () => {
   const performSearch = () => {
     const query = searchQuery.trim();
     if (!query) return;
-    
+
     const currentSearchType = searchTypes.find(type => type.id === activeSearchType);
     if (currentSearchType?.url) {
       const searchUrl = currentSearchType.url.replace('%s%', encodeURIComponent(query));
@@ -112,293 +137,268 @@ const WebHome: React.FC = () => {
   const quickTools = useMemo<HomeToolItem[]>(() => homeTools.slice(0, DISPLAY_LIMITS.WEB_QUICK_TOOLS), [homeTools]);
 
   return (
-    <>
-      <section style={{ marginBottom: 'var(--space-4)' }}>
-        <div className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
-          <div className="flex flex-col lg:flex-row items-center justify-center gap-4">
-            <div className="flex-1 max-w-md w-full">
-              <div className="flex flex-wrap justify-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                {searchTypes.map((type) => (
-                  <button
-                    key={type.id}
-                    onClick={() => setActiveSearchType(type.id)}
-                    className="font-medium transition-all rounded-full"
-                    style={{
-                      padding: 'var(--space-1-5) var(--space-4)',
-                      fontSize: 'var(--text-xs)',
-                      backgroundColor: activeSearchType === type.id ? 'var(--color-text-primary)' : 'var(--color-bg-tertiary)',
-                      color: activeSearchType === type.id ? 'var(--color-bg-primary)' : 'var(--color-text-secondary)',
-                    }}
-                  >
-                    {type.name}
-                  </button>
-                ))}
-              </div>
+    <div className="web-home p-4">
+      <section className="web-home__hero">
+        <div className="web-home__hero-content">
+          <RevealSection>
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="flex-1 max-w-md w-full">
+                <div className="flex flex-wrap justify-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                  {searchTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => setActiveSearchType(type.id)}
+                      className="font-medium transition-all rounded-full"
+                      style={{
+                        padding: 'var(--space-1-5) var(--space-4)',
+                        fontSize: 'var(--text-xs)',
+                        backgroundColor: activeSearchType === type.id ? 'var(--color-text-primary)' : 'transparent',
+                        color: activeSearchType === type.id ? 'var(--color-bg-primary)' : 'var(--color-text-secondary)',
+                        border: activeSearchType === type.id ? 'none' : '1px solid var(--color-border)',
+                      }}
+                    >
+                      {type.name}
+                    </button>
+                  ))}
+                </div>
 
-              <div className="relative">
-                <Search className="absolute top-1/2 -translate-y-1/2 w-5 h-5" style={{ left: 'var(--space-3)', color: 'var(--color-text-tertiary)' }} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && performSearch()}
-                  placeholder={searchTypes.find(t => t.id === activeSearchType)?.placeholder || '搜索...'}
-                  className="w-full outline-none border rounded-xl placeholder-gray-400"
-                  style={{
-                    paddingLeft: 'var(--space-9)',
-                    paddingRight: 'var(--space-3)',
-                    paddingTop: 'var(--space-2)',
-                    paddingBottom: 'var(--space-2)',
-                    backgroundColor: 'var(--color-bg-tertiary)',
-                    fontSize: 'var(--text-sm)',
-                    color: 'var(--color-text-primary)',
-                    borderColor: 'var(--color-border)',
-                  }}
-                />
+                <div className="relative">
+                  <Search className="absolute top-1/2 -translate-y-1/2 w-5 h-5" style={{ left: 'var(--space-3)', color: 'var(--color-text-tertiary)' }} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && performSearch()}
+                    placeholder={searchTypes.find(t => t.id === activeSearchType)?.placeholder || '搜索...'}
+                    className="w-full outline-none border rounded-xl placeholder-gray-400"
+                    style={{
+                      paddingLeft: 'var(--space-9)',
+                      paddingRight: 'var(--space-3)',
+                      paddingTop: 'var(--space-2)',
+                      paddingBottom: 'var(--space-2)',
+                      backgroundColor: 'var(--color-bg-primary)',
+                      fontSize: 'var(--text-sm)',
+                      color: 'var(--color-text-primary)',
+                      borderColor: 'var(--color-border)',
+                    }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </RevealSection>
 
-          <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />
+          <RevealSection>
+            <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />
+          </RevealSection>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'var(--space-4)' }}>
-        <div className="lg:col-span-2 flex flex-col" style={{ gap: 'var(--space-4)' }}>
-          <section className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-3)' }}>
-              <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
-                <Sparkles className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-                <h2 className="font-semibold" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>60秒速览</h2>
-              </div>
-              {sixtySecondsData && sixtySecondsData.length > 5 && (
-                <button
-                  onClick={() => setExpandedNews(expandedNews === 'sixtySeconds' ? null : 'sixtySeconds')}
-                  className="flex items-center transition-all"
-                  style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
-                >
-                  {expandedNews === 'sixtySeconds' ? '收起' : '更多'}
-                  <ChevronRight className={`w-4 h-4 transition-transform ${expandedNews === 'sixtySeconds' ? 'rotate-90' : ''}`} />
-                </button>
-              )}
-            </div>
-            
-            {sixtySecondsLoading ? (
-              <div className="flex items-center justify-center" style={{ padding: 'var(--space-5)' }}>
-                <div className="flex" style={{ gap: 'var(--space-2)' }}>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '300ms' }}></div>
+      <div className="web-home__main-grid">
+        <div className="web-home__col">
+          <RevealSection>
+            <section className="web-home__section">
+              <div className="web-home__section-header">
+                <div className="web-home__section-title web-home__section-title--accent">
+                  <Sparkles className="web-home__section-icon w-5 h-5" />
+                  60秒速览
                 </div>
-              </div>
-            ) : sixtySecondsData?.length ? (
-              <div style={{ gap: 'var(--space-3)' }}>
-                {(expandedNews === 'sixtySeconds' ? sixtySecondsData : sixtySecondsData.slice(0, DISPLAY_LIMITS.WEB_SIXTY_SECONDS_NEWS)).map((news, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start rounded-lg transition-colors"
-                    style={{ gap: 'var(--space-3)', padding: 'var(--space-3)' }}
+                {sixtySecondsData && sixtySecondsData.length > 5 && (
+                  <button
+                    onClick={() => setExpandedNews(expandedNews === 'sixtySeconds' ? null : 'sixtySeconds')}
+                    className="web-home__expand-btn"
                   >
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}>
-                      {index + 1}
-                    </span>
-                    <p className="line-clamp-2" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>{news}</p>
-                  </div>
-                ))}
+                    {expandedNews === 'sixtySeconds' ? '收起' : '更多'}
+                    <ChevronRight className={`web-home__expand-icon${expandedNews === 'sixtySeconds' ? ' web-home__expand-icon--rotated' : ''}`} />
+                  </button>
+                )}
               </div>
-            ) : (
-              <p className="text-center" style={{ padding: 'var(--space-4)', color: 'var(--color-text-tertiary)' }}>暂无数据</p>
-            )}
-          </section>
 
-          <section className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-3)' }}>
-              <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
-                <BookOpen className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
-                <h2 className="font-semibold" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>科技资讯</h2>
-              </div>
-              {itNewsData && itNewsData.length > 6 && (
-                <button
-                  onClick={() => setExpandedNews(expandedNews === 'itNews' ? null : 'itNews')}
-                  className="flex items-center transition-all"
-                  style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
-                >
-                  {expandedNews === 'itNews' ? '收起' : '更多'}
-                  <ChevronRight className={`w-4 h-4 transition-transform ${expandedNews === 'itNews' ? 'rotate-90' : ''}`} />
-                </button>
-              )}
-            </div>
-            
-            {itNewsLoading ? (
-              <div className="flex items-center justify-center" style={{ padding: 'var(--space-5)' }}>
-                <div className="flex" style={{ gap: 'var(--space-2)' }}>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '300ms' }}></div>
-                </div>
-              </div>
-            ) : itNewsData?.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 'var(--space-3)' }}>
-                {(expandedNews === 'itNews' ? itNewsData : itNewsData.slice(0, DISPLAY_LIMITS.WEB_IT_NEWS)).map((news, index) => (
-                  <div
-                    key={index}
-                    className="rounded-lg cursor-pointer transition-all"
-                    style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border)' }}
-                    onClick={() => window.open(news.link, '_blank')}
-                  >
-                    <h3 className="font-medium line-clamp-2" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-primary)' }}>{news.title}</h3>
-                    <p className="flex items-center" style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
-                      <Clock className="w-3 h-3" />
-                      {news.created}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center" style={{ padding: 'var(--space-4)', color: 'var(--color-text-tertiary)' }}>暂无数据</p>
-            )}
-          </section>
-
-          <section className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-3)' }}>
-              <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
-                <Clock className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
-                <h2 className="font-semibold" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>历史今天</h2>
-              </div>
-              {todayInHistoryData && todayInHistoryData.length > 5 && (
-                <button
-                  onClick={() => setExpandedNews(expandedNews === 'todayInHistory' ? null : 'todayInHistory')}
-                  className="flex items-center transition-all"
-                  style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
-                >
-                  {expandedNews === 'todayInHistory' ? '收起' : '更多'}
-                  <ChevronRight className={`w-4 h-4 transition-transform ${expandedNews === 'todayInHistory' ? 'rotate-90' : ''}`} />
-                </button>
-              )}
-            </div>
-            
-            {todayInHistoryLoading ? (
-              <div className="flex items-center justify-center" style={{ padding: 'var(--space-5)' }}>
-                <div className="flex" style={{ gap: 'var(--space-2)' }}>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '300ms' }}></div>
-                </div>
-              </div>
-            ) : todayInHistoryData?.length ? (
-              <div style={{ gap: 'var(--space-3)' }}>
-                {(expandedNews === 'todayInHistory' ? todayInHistoryData : todayInHistoryData.slice(0, DISPLAY_LIMITS.WEB_TODAY_IN_HISTORY)).map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start rounded-lg cursor-pointer transition-colors"
-                    style={{ gap: 'var(--space-3)', padding: 'var(--space-3)' }}
-                    onClick={() => item.link && window.open(item.link, '_blank')}
-                  >
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}>
-                      {index + 1}
-                    </span>
-                    <div className="flex-1">
-                      <p className="font-medium line-clamp-2" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-primary)' }}>{item.title}</p>
-                      {item.description && (
-                        <p className="line-clamp-2" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>{item.description}</p>
-                      )}
+              {sixtySecondsLoading ? (
+                <LoadingDots />
+              ) : sixtySecondsData?.length ? (
+                <div className="web-home__news-list">
+                  {(expandedNews === 'sixtySeconds' ? sixtySecondsData : sixtySecondsData.slice(0, DISPLAY_LIMITS.WEB_SIXTY_SECONDS_NEWS)).map((news, index) => (
+                    <div key={index} className="web-home__news-item">
+                      <span className="web-home__news-index">{index + 1}</span>
+                      <p className="web-home__news-text">{news}</p>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              ) : (
+                <p className="web-home__empty">暂无数据</p>
+              )}
+            </section>
+          </RevealSection>
+
+          <RevealSection>
+            <section className="web-home__section">
+              <div className="web-home__section-header">
+                <div className="web-home__section-title">
+                  <BookOpen className="web-home__section-icon w-5 h-5" />
+                  科技资讯
+                </div>
+                {itNewsData && itNewsData.length > 6 && (
+                  <button
+                    onClick={() => setExpandedNews(expandedNews === 'itNews' ? null : 'itNews')}
+                    className="web-home__expand-btn"
+                  >
+                    {expandedNews === 'itNews' ? '收起' : '更多'}
+                    <ChevronRight className={`web-home__expand-icon${expandedNews === 'itNews' ? ' web-home__expand-icon--rotated' : ''}`} />
+                  </button>
+                )}
               </div>
-            ) : (
-              <p className="text-center" style={{ padding: 'var(--space-4)', color: 'var(--color-text-tertiary)' }}>暂无数据</p>
-            )}
-          </section>
+
+              {itNewsLoading ? (
+                <LoadingDots />
+              ) : itNewsData?.length ? (
+                <div className="web-home__news-grid web-home__news-grid--2">
+                  {(expandedNews === 'itNews' ? itNewsData : itNewsData.slice(0, DISPLAY_LIMITS.WEB_IT_NEWS)).map((news, index) => (
+                    <div
+                      key={index}
+                      className="web-home__news-card"
+                      onClick={() => window.open(news.link, '_blank')}
+                    >
+                      <h3 className="web-home__news-card-title line-clamp-2">{news.title}</h3>
+                      <p className="web-home__news-card-meta">
+                        <Clock className="w-3 h-3" />
+                        {news.created}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="web-home__empty">暂无数据</p>
+              )}
+            </section>
+          </RevealSection>
+
+          <RevealSection>
+            <section className="web-home__section">
+              <div className="web-home__section-header">
+                <div className="web-home__section-title">
+                  <Clock className="web-home__section-icon w-5 h-5" />
+                  历史今天
+                </div>
+                {todayInHistoryData && todayInHistoryData.length > 5 && (
+                  <button
+                    onClick={() => setExpandedNews(expandedNews === 'todayInHistory' ? null : 'todayInHistory')}
+                    className="web-home__expand-btn"
+                  >
+                    {expandedNews === 'todayInHistory' ? '收起' : '更多'}
+                    <ChevronRight className={`web-home__expand-icon${expandedNews === 'todayInHistory' ? ' web-home__expand-icon--rotated' : ''}`} />
+                  </button>
+                )}
+              </div>
+
+              {todayInHistoryLoading ? (
+                <LoadingDots />
+              ) : todayInHistoryData?.length ? (
+                <div className="web-home__news-list">
+                  {(expandedNews === 'todayInHistory' ? todayInHistoryData : todayInHistoryData.slice(0, DISPLAY_LIMITS.WEB_TODAY_IN_HISTORY)).map((item, index) => (
+                    <div
+                      key={index}
+                      className="web-home__news-item"
+                      onClick={() => item.link && window.open(item.link, '_blank')}
+                    >
+                      <span className="web-home__news-index">{index + 1}</span>
+                      <div className="flex-1">
+                        <p className="web-home__news-item-title line-clamp-2">{item.title}</p>
+                        {item.description && (
+                          <p className="web-home__news-item-desc line-clamp-2">{item.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="web-home__empty">暂无数据</p>
+              )}
+            </section>
+          </RevealSection>
         </div>
 
-        <div className="flex flex-col" style={{ gap: 'var(--space-4)' }}>
-          <section className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-            <button
-              onClick={() => handleToolClick('/tools/weather')}
-              className="cursor-pointer block w-full"
-              style={{ height: '80px' }}
-            >
-              <WeatherCard />
-            </button>
-          </section>
-
-          <section className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
-            <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-              <Zap className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-              <h2 className="font-semibold" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>快捷工具</h2>
-            </div>
-            
-            <div className="grid grid-cols-2" style={{ gap: 'var(--space-2)' }}>
-              {quickTools.map((tool) => {
-                const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
-                return (
-                  <button
-                    key={tool.id}
-                    onClick={() => handleToolClick(tool.path)}
-                    className="flex flex-col items-center transition-colors"
-                    style={{ gap: 'var(--space-1-5)', padding: 'var(--space-3)', backgroundColor: 'var(--color-bg-tertiary)', borderRadius: 'var(--radius-lg)' }}
-                  >
-                    <div
-                      className="rounded-xl flex items-center justify-center"
-                      style={{ width: 'calc(var(--space-5) * 1.4)', height: 'calc(var(--space-5) * 1.4)', backgroundColor: tool.color }}
-                    >
-                      <IconComponent className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="font-medium" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>{tool.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="shadow-sm" style={{ backgroundColor: 'var(--color-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', border: '1px solid var(--color-border)' }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-3)' }}>
-              <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
-                <Sparkles className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
-                <h2 className="font-semibold" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>AI 资讯</h2>
+        <div className="web-home__col">
+          <RevealSection>
+            <section className="web-home__section">
+              <div
+                className="web-home__weather-inline"
+                onClick={() => handleToolClick('/tools/weather')}
+              >
+                <WeatherCard />
               </div>
-              {aiNewsData && aiNewsData.length > 4 && (
-                <button
-                  onClick={() => setExpandedNews(expandedNews === 'aiNews' ? null : 'aiNews')}
-                  className="flex items-center transition-all"
-                  style={{ gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
-                >
-                  {expandedNews === 'aiNews' ? '收起' : '更多'}
-                  <ChevronRight className={`w-4 h-4 transition-transform ${expandedNews === 'aiNews' ? 'rotate-90' : ''}`} />
-                </button>
-              )}
-            </div>
-            
-            {aiNewsLoading ? (
-              <div className="flex items-center justify-center" style={{ padding: 'var(--space-5)' }}>
-                <div className="flex" style={{ gap: 'var(--space-2)' }}>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-text-secondary)', animationDelay: '300ms' }}></div>
+            </section>
+          </RevealSection>
+
+          <RevealSection>
+            <section className="web-home__section">
+              <div className="web-home__section-header">
+                <div className="web-home__section-title web-home__section-title--blue">
+                  <Zap className="web-home__section-icon w-5 h-5" />
+                  快捷工具
                 </div>
               </div>
-            ) : aiNewsData?.length ? (
-              <div style={{ gap: 'var(--space-3)' }}>
-                {(expandedNews === 'aiNews' ? aiNewsData : aiNewsData.slice(0, DISPLAY_LIMITS.AI_NEWS)).map((news, index) => (
-                  <div
-                    key={index}
-                    className="rounded-lg cursor-pointer transition-colors"
-                    style={{ padding: 'var(--space-3)' }}
-                    onClick={() => window.open(news.link, '_blank')}
-                  >
-                    <h3 className="font-medium line-clamp-2" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-primary)' }}>{news.title}</h3>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>{news.source}</p>
-                  </div>
-                ))}
+
+              <div className="web-home__tools-grid">
+                {quickTools.map((tool) => {
+                  const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
+                  return (
+                    <button
+                      key={tool.id}
+                      onClick={() => handleToolClick(tool.path)}
+                      className="web-home__tool-btn"
+                    >
+                      <div className="web-home__tool-icon" style={{ backgroundColor: tool.color }}>
+                        <IconComponent className="w-6 h-6 text-white" />
+                      </div>
+                      <span className="web-home__tool-name">{tool.name}</span>
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <p className="text-center" style={{ padding: 'var(--space-4)', color: 'var(--color-text-tertiary)' }}>暂无数据</p>
-            )}
-          </section>
+            </section>
+          </RevealSection>
+
+          <RevealSection>
+            <section className="web-home__section">
+              <div className="web-home__section-header">
+                <div className="web-home__section-title">
+                  <Sparkles className="web-home__section-icon w-5 h-5" />
+                  AI 资讯
+                </div>
+                {aiNewsData && aiNewsData.length > 4 && (
+                  <button
+                    onClick={() => setExpandedNews(expandedNews === 'aiNews' ? null : 'aiNews')}
+                    className="web-home__expand-btn"
+                  >
+                    {expandedNews === 'aiNews' ? '收起' : '更多'}
+                    <ChevronRight className={`web-home__expand-icon${expandedNews === 'aiNews' ? ' web-home__expand-icon--rotated' : ''}`} />
+                  </button>
+                )}
+              </div>
+
+              {aiNewsLoading ? (
+                <LoadingDots />
+              ) : aiNewsData?.length ? (
+                <div className="web-home__news-list">
+                  {(expandedNews === 'aiNews' ? aiNewsData : aiNewsData.slice(0, DISPLAY_LIMITS.AI_NEWS)).map((news, index) => (
+                    <div
+                      key={index}
+                      className="web-home__newsletter-item"
+                      onClick={() => window.open(news.link, '_blank')}
+                    >
+                      <h3 className="web-home__newsletter-title line-clamp-2">{news.title}</h3>
+                      <p className="web-home__newsletter-source">{news.source}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="web-home__empty">暂无数据</p>
+              )}
+            </section>
+          </RevealSection>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

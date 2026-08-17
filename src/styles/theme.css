@@ -315,6 +315,16 @@
   --gradient-admin: linear-gradient(135deg, #dda36c 0%, #d4955a 100%);
 }
 
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   margin: 0;
   min-width: 320px;
