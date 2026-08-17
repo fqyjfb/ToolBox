@@ -2,6 +2,18 @@
 
 declare module '*.svg'
 
+interface QuickLoginField {
+  label: string;
+  value: string;
+}
+
+interface QuickLoginPayload {
+  title: string;
+  url: string;
+  isDark: boolean;
+  fields: QuickLoginField[];
+}
+
 interface DesktopAppInfo {
   name: string;
   path: string;
@@ -197,6 +209,7 @@ declare interface Window {
     restart: () => Promise<{ code: number; msg: string }>;
     openExternal: (url: string) => void;
     openInternal: (url: string) => void;
+    openQuickLogin: (payload: QuickLoginPayload) => Promise<{ success: boolean }>;
     openFile: (path: string) => void;
     selectFile: () => Promise<string | null>;
     selectFolder: () => Promise<string | null>;

@@ -79,6 +79,7 @@ contextBridge.exposeInMainWorld('electron', {
   restart: () => ipcRenderer.invoke('restart-app'),
   openExternal: (url) => ipcRenderer.send('open-external', url),
   openInternal: (url) => ipcRenderer.send('open-internal', url),
+  openQuickLogin: (payload) => ipcRenderer.invoke('quick-login:open', payload),
   openFile: (path) => ipcRenderer.send('open-file', path),
   selectFile: () => ipcRenderer.invoke('select-file'),
   selectFolder: () => ipcRenderer.invoke('select-folder'),

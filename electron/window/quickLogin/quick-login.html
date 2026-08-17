@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToolBox - 便捷登录</title>
+  <style>
+    :root {
+      --color-text-primary: #18181B;
+      --color-text-secondary: #71717A;
+      --color-text-tertiary: #A1A1AA;
+      --color-bg-primary: #FFFFFF;
+      --color-bg-secondary: #F4F4F5;
+      --color-bg-tertiary: #E4E4E7;
+      --color-border: #E4E4E7;
+      --color-success: #22c55e;
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --text-xs: 12px;
+      --text-sm: 14px;
+      --text-lg: 20px;
+      --transition-fast: 0.15s ease;
+    }
+
+    .dark {
+      --color-text-primary: #EAF1F8;
+      --color-text-secondary: #94A3B8;
+      --color-text-tertiary: #64748B;
+      --color-bg-primary: #16181D;
+      --color-bg-secondary: #1A1D23;
+      --color-bg-tertiary: #262A33;
+      --color-border: #2D3139;
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-size: var(--text-sm);
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-bg-secondary);
+      cursor: move;
+      user-select: none;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .title-text {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .title-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--color-text-secondary);
+    }
+
+    .close-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      color: var(--color-text-tertiary);
+      transition: all var(--transition-fast);
+      -webkit-app-region: no-drag;
+    }
+
+    .close-btn:hover {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
+    }
+
+    .close-btn svg { width: 14px; height: 14px; }
+
+    .content {
+      flex: 1;
+      padding: var(--space-2) var(--space-3);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      overflow-y: auto;
+    }
+
+    .account-title {
+      font-size: var(--text-base);
+      font-weight: 600;
+      color: var(--color-text-primary);
+      line-height: 1.25;
+      word-break: break-all;
+    }
+
+    .url-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+    }
+
+    .url-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .field-card {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-1) var(--space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .field-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .field-label {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      margin-bottom: 2px;
+    }
+
+    .field-value {
+      font-size: var(--text-sm);
+      color: var(--color-text-primary);
+      font-weight: 500;
+      word-break: break-all;
+      font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    }
+
+    .copy-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-primary);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
+    }
+
+    .copy-btn.success {
+      background: var(--color-success);
+      border-color: var(--color-success);
+      color: #ffffff;
+    }
+
+    .copy-btn svg { width: 16px; height: 16px; }
+
+    .hint {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      text-align: center;
+      margin-top: var(--space-1);
+    }
+
+    .empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--text-sm);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title-bar" id="titleBar">
+      <span class="title-text">
+        <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        便捷登录
+      </span>
+      <button class="close-btn" id="closeBtn" title="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="content" id="content">
+      <div class="empty">加载中...</div>
+    </div>
+  </div>
+  <script>
+    const closeBtn = document.getElementById('closeBtn');
+    const titleBar = document.getElementById('titleBar');
+    const content = document.getElementById('content');
+
+    let isDragging = false;
+
+    const copyIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>';
+    const checkIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+    closeBtn.addEventListener('click', () => {
+      window.quickLogin.close();
+    });
+
+    titleBar.addEventListener('mousedown', (e) => {
+      if (e.target === closeBtn || closeBtn.contains(e.target)) return;
+      isDragging = true;
+      window.quickLogin.dragStart();
+    });
+
+    document.addEventListener('mousemove', () => {
+      if (isDragging) {
+        window.quickLogin.dragMove();
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    function escapeAttr(str) {
+      return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function showSuccess(btn) {
+      btn.classList.add('success');
+      btn.innerHTML = checkIcon;
+      setTimeout(() => {
+        btn.classList.remove('success');
+        btn.innerHTML = copyIcon;
+      }, 2000);
+    }
+
+    function copyValue(btn, value) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(() => {
+          showSuccess(btn);
+        }).catch(() => {
+          fallbackCopy(value);
+          showSuccess(btn);
+        });
+      } else {
+        fallbackCopy(value);
+        showSuccess(btn);
+      }
+    }
+
+    function fallbackCopy(value) {
+      const textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(textarea);
+    }
+
+    function renderData(data) {
+      if (data.isDark) {
+        document.body.classList.add('dark');
+      }
+
+      let html = '';
+
+      if (data.title) {
+        html += '<div class="account-title">' + escapeHtml(data.title) + '</div>';
+      }
+
+      if (data.url) {
+        html += '<div class="url-row"><span class="url-text" title="' + escapeAttr(data.url) + '">' + escapeHtml(data.url) + '</span></div>';
+      }
+
+      if (data.fields && data.fields.length > 0) {
+        data.fields.forEach(function(field) {
+          if (!field.value) return;
+          html += '<div class="field-card">';
+          html += '<div class="field-info">';
+          html += '<div class="field-label">' + escapeHtml(field.label) + '</div>';
+          html += '<div class="field-value">' + escapeHtml(field.value) + '</div>';
+          html += '</div>';
+          html += '<button class="copy-btn" data-value="' + escapeAttr(field.value) + '" title="复制">' + copyIcon + '</button>';
+          html += '</div>';
+        });
+      }
+
+      html += '<div class="hint">点击复制按钮快速复制到剪贴板</div>';
+
+      content.innerHTML = html;
+
+      document.querySelectorAll('.copy-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const value = btn.getAttribute('data-value');
+          copyValue(btn, value);
+        });
+      });
+    }
+
+    window.quickLogin.onData(renderData);
+  </script>
+</body>
+</html>

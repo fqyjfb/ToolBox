@@ -226,6 +226,15 @@ const NetworkTab: React.FC = () => {
         <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <Network size={16} className="text-blue-600" />
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">网络配置</h2>
+          <div className="ml-auto">
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <RefreshCw size={14} />
+              全部恢复默认
+            </button>
+          </div>
         </div>
 
         <SettingSection title="应用更新">
@@ -336,16 +345,6 @@ const NetworkTab: React.FC = () => {
           </button>
         </div>
       </SettingCard>
-
-      <div className="flex items-center justify-end">
-        <button
-          onClick={() => setShowResetConfirm(true)}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
-        >
-          <RefreshCw size={14} />
-          全部恢复默认
-        </button>
-      </div>
 
       <ConfirmDialog
         isOpen={showResetConfirm}

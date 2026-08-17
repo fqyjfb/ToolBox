@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Plus, Edit, Trash2, Copy, Share2, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Copy, Share2, Eye, LogIn } from 'lucide-react';
 import { accountService } from '../../../../services/AccountService';
 import { Shop, ShopRequest, Email, Phone, Company } from '../../../../types/account';
 import { useToastStore } from '../../../../store/toastStore';
+import { useThemeStore } from '../../../../store/themeStore';
 import { useNavSearch } from '../../../../contexts/NavSearchContext';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import Modal from '../../../../components/ui/Modal';
@@ -34,6 +35,7 @@ const platformIconMap: Record<string, string> = {
 
 const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => {
   const addToast = useToastStore((state) => state.addToast);
+  const isDark = useThemeStore((state) => state.isDark);
   const { searchQuery, isSearchActive } = useNavSearch();
 
   const [shops, setShops] = useState<Shop[]>([]);
@@ -260,6 +262,17 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
     setContextMenu(prev => ({ ...prev, isOpen: false }));
   }, []);
 
+  const handleQuickLogin = useCallback((shop: Shop) => {
+    const fields: QuickLoginField[] = [
+      { label: '账号', value: shop.account },
+      { label: '密码', value: shop.password },
+      { label: '支付密码', value: shop.payment_password },
+      { label: '邮箱', value: shop.email },
+      { label: '电话', value: shop.phone }
+    ].filter(f => f.value);
+    window.electron?.openQuickLogin({ title: shop.shop_name, url: '', isDark, fields });
+  }, [isDark]);
+
   const handleRowClick = (shop: Shop) => {
     setPreviewItem(shop);
     setShowPreviewModal(true);
@@ -271,6 +284,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       if (!shop) return [];
 
       return [
+        { id: 'quick-login', label: '便捷登录', icon: <LogIn className="w-4 h-4" />, onClick: () => { handleQuickLogin(shop); handleCloseContextMenu(); } },
         { id: 'view', label: '查看详情', icon: <Eye className="w-4 h-4" />, onClick: () => { handleRowClick(shop); handleCloseContextMenu(); } },
         { id: 'copy-account', label: '复制账号', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyText(shop.account || '', '账号已复制'); handleCloseContextMenu(); } },
         { id: 'copy-pwd', label: '复制密码', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyText(shop.password || '', '密码已复制'); handleCloseContextMenu(); } },
@@ -290,7 +304,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, shops, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleDeleteItem, handleShareShop]);
+  }, [contextMenu.type, contextMenu.targetId, shops, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleQuickLogin, handleDeleteItem, handleShareShop]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden" onClick={handleCloseContextMenu}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Plus, Edit, Trash2, Copy, Share2, Tag, ChevronDown, RefreshCw, ExternalLink, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Copy, Share2, Tag, ChevronDown, RefreshCw, ExternalLink, Eye, LogIn } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -9,6 +9,7 @@ import { accountService } from '../../../../services/AccountService';
 import { WebsiteAccount, WebsiteAccountCategory, WebsiteAccountRequest } from '../../../../types/websiteAccount';
 import { Email, Phone } from '../../../../types/account';
 import { useToastStore } from '../../../../store/toastStore';
+import { useThemeStore } from '../../../../store/themeStore';
 import { useNavSearch } from '../../../../contexts/NavSearchContext';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import Modal from '../../../../components/ui/Modal';
@@ -89,6 +90,7 @@ const SortableCategoryItem: React.FC<{
 
 const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId }, ref) => {
   const addToast = useToastStore((state) => state.addToast);
+  const isDark = useThemeStore((state) => state.isDark);
   const { searchQuery, isSearchActive } = useNavSearch();
 
   const [categories, setCategories] = useState<WebsiteAccountCategory[]>([]);
@@ -463,6 +465,19 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     }
   }, [addToast]);
 
+  const handleQuickLogin = useCallback((account: WebsiteAccount) => {
+    if (account.url) {
+      openUrl(account.url);
+    }
+    const fields: QuickLoginField[] = [
+      { label: '用户名', value: account.username },
+      { label: '密码', value: account.password },
+      { label: '邮箱', value: account.email },
+      { label: '电话', value: account.phone }
+    ].filter(f => f.value);
+    window.electron?.openQuickLogin({ title: account.name, url: account.url, isDark, fields });
+  }, [isDark]);
+
   const handleRowClick = useCallback((account: WebsiteAccount) => {
     setPreviewItem(account);
     setShowPreviewModal(true);
@@ -512,9 +527,10 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       if (!account) return [];
 
       return [
+         { id: 'quick-login', label: '便捷登录', icon: <LogIn className="w-4 h-4" />, onClick: () => { handleQuickLogin(account); handleCloseContextMenu(); } },
         { id: 'view', label: '查看详情', icon: <Eye className="w-4 h-4" />, onClick: () => { handleRowClick(account); handleCloseContextMenu(); } },
         { id: 'copy-username', label: '复制账号', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyText(account.username || '', '用户名已复制'); handleCloseContextMenu(); } },
-        { id: 'copy-pwd', label: '复制密码', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyPassword(account.password); handleCloseContextMenu(); } },
+        { id: 'copy-pwd', label: '复制密码', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyPassword(account.password); handleCloseContextMenu(); } },    
         { id: 'divider1', label: '', divider: true },
         { id: 'edit', label: '编辑', icon: <Edit className="w-4 h-4" />, onClick: async () => { await openItemModal(account); handleCloseContextMenu(); } },
         { id: 'divider2', label: '', divider: true },
@@ -542,7 +558,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, accounts, categories, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyPassword, handleCopyText, handleDeleteCategory, handleDeleteItem, openItemModal, openCategoryModal, handleRowClick]);
+  }, [contextMenu.type, contextMenu.targetId, accounts, categories, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyPassword, handleCopyText, handleQuickLogin, handleDeleteCategory, handleDeleteItem, openItemModal, openCategoryModal, handleRowClick]);
 
   const renderAccountItem = (account: WebsiteAccount) => (
     <div key={account.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleRowClick(account)} onContextMenu={(e) => handleContextMenu(e, 'item', account.id)}>

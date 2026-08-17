@@ -12,6 +12,7 @@ const { initLogger } = require('./logs/logger.cjs');
 const { loadSettings } = require('./lib/config.cjs');
 const { sqliteService } = require('./services/sqliteService.cjs');
 const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow.cjs');
+const { registerQuickLoginIpcHandlers } = require('./window/quickLoginWindow.cjs');
 
 const DELAY_CREATE_TRAY = 500;
 const DELAY_CREATE_FLOAT_WINDOW = 1000;
@@ -91,6 +92,7 @@ app.whenReady().then(async () => {
   registerFileManagerIpc();
   registerFloatIpcHandlers();
   registerLogIpcHandlers();
+  registerQuickLoginIpcHandlers();
   registerIpcHandlers();
 
   const isLocked = checkLockOnStartup();

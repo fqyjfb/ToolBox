@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Plus, Edit, Trash2, Copy, Share2, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Copy, Share2, Eye, LogIn } from 'lucide-react';
 import { useNavSearch } from '../../../../contexts/NavSearchContext';
 import { accountService } from '../../../../services/AccountService';
 import { GeneralAccount, GeneralAccountRequest, Email, Phone } from '../../../../types/account';
 import { useToastStore } from '../../../../store/toastStore';
+import { useThemeStore } from '../../../../store/themeStore';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import Modal from '../../../../components/ui/Modal';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
@@ -26,6 +27,7 @@ interface GeneralPanelRef {
 
 const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId }, ref) => {
   const addToast = useToastStore((state) => state.addToast);
+  const isDark = useThemeStore((state) => state.isDark);
   const { searchQuery, isSearchActive } = useNavSearch();
 
   const [generalAccounts, setGeneralAccounts] = useState<GeneralAccount[]>([]);
@@ -256,6 +258,19 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
     setContextMenu(prev => ({ ...prev, isOpen: false }));
   }, []);
 
+  const handleQuickLogin = useCallback((general: GeneralAccount) => {
+    if (general.website) {
+      openUrl(general.website);
+    }
+    const fields: QuickLoginField[] = [
+      { label: '账号', value: general.account },
+      { label: '密码', value: general.password },
+      { label: '邮箱', value: general.email },
+      { label: '电话', value: general.phone }
+    ].filter(f => f.value);
+    window.electron?.openQuickLogin({ title: general.platform_name, url: general.website, isDark, fields });
+  }, [isDark]);
+
   const handleRowClick = (general: GeneralAccount) => {
     setPreviewItem(general);
     setShowPreviewModal(true);
@@ -267,6 +282,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
       if (!general) return [];
 
       return [
+                { id: 'quick-login', label: '便捷登录', icon: <LogIn className="w-4 h-4" />, onClick: () => { handleQuickLogin(general); handleCloseContextMenu(); } },
         { id: 'view', label: '查看详情', icon: <Eye className="w-4 h-4" />, onClick: () => { handleRowClick(general); handleCloseContextMenu(); } },
         { id: 'copy-account', label: '复制账号', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyText(general.account || '', '账号已复制'); handleCloseContextMenu(); } },
         { id: 'copy-pwd', label: '复制密码', icon: <Copy className="w-4 h-4" />, onClick: () => { handleCopyText(general.password || '', '密码已复制'); handleCloseContextMenu(); } },
@@ -286,7 +302,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, generalAccounts, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleDeleteItem, handleShareGeneral]);
+  }, [contextMenu.type, contextMenu.targetId, generalAccounts, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyText, handleQuickLogin, handleDeleteItem, handleShareGeneral]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden" onClick={handleCloseContextMenu}>
