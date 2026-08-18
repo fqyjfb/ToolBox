@@ -9,7 +9,7 @@ const WebLayout: React.FC<WebLayoutProps> = ({ children }) => {
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <WebNavbar />
-      <main className="flex-1 overflow-y-auto max-w-7xl w-full mx-auto" style={{ padding: 'var(--space-4)', paddingTop: 'var(--space-3)' }}>
+      <main className="flex-1 overflow-y-auto scrollbar-hide max-w-7xl w-full mx-auto" style={{ padding: 'var(--space-4)', paddingTop: 'var(--space-3)' }}>
         {children}
       </main>
       <footer className="flex-shrink-0" style={{ marginTop: 'var(--space-5)', padding: 'var(--space-4)' }}>
