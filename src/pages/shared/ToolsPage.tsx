@@ -77,9 +77,9 @@ const ToolsPage = () => {
   }, [isDesktop]);
 
   const newTools = useMemo(() => {
-    const toolIds = isDesktop ? [...BASE_TOOLS_IDS, 'notes'] : BASE_TOOLS_IDS;
+    const excludedIds = isDesktop ? [...BASE_TOOLS_IDS, 'notes'] : BASE_TOOLS_IDS;
     return ALL_TOOLS
-      .filter(tool => !toolIds.includes(tool.id) && (isElectron() || tool.id !== 'ocr') && (isDesktop || tool.id !== 'notes'))
+      .filter(tool => !excludedIds.includes(tool.id) && !(tool.id === 'notes' && !isDesktop))
       .map(tool => ({
         ...tool,
         icon: iconMap[tool.iconName] || Clipboard,
@@ -125,19 +125,8 @@ const ToolsPage = () => {
   const getContextMenuItems = (): ContextMenuItem[] => {
     const homeTools = loadHomeTools();
     const isPinned = selectedTool ? pinnedToolIds.includes(selectedTool.id) : false;
-    
-    return [
-      {
-        id: 'replace-home-tool',
-        label: '替换首页卡片',
-        subMenu: homeTools.map((tool, index) => ({
-          id: `replace-${index}`,
-          label: `${index + 1}. ${tool.name}`,
-          onClick: () => handleReplaceHomeTool(index),
-        })),
-      },
-      { id: 'divider-1', divider: true },
-      { id: 'toggle-sidebar', label: isPinned ? '移出侧边栏' : '加入侧边栏', onClick: handleToggleSidebarTool },
+
+    const items: ContextMenuItem[] = [
       { id: 'divider-2', divider: true },
       {
         id: 'open',
@@ -151,6 +140,22 @@ const ToolsPage = () => {
         },
       },
     ];
+
+    if (isDesktop) {
+      items.splice(0, 0, {
+        id: 'replace-home-tool',
+        label: '替换首页卡片',
+        subMenu: homeTools.map((tool, index) => ({
+          id: `replace-${index}`,
+          label: `${index + 1}. ${tool.name}`,
+          onClick: () => handleReplaceHomeTool(index),
+        })),
+      });
+      items.push({ id: 'divider-1', divider: true });
+      items.push({ id: 'toggle-sidebar', label: isPinned ? '移出侧边栏' : '加入侧边栏', onClick: handleToggleSidebarTool });
+    }
+
+    return items;
   };
 
   const renderToolCard = (tool: typeof myTools[0]) => {
@@ -180,21 +185,19 @@ const ToolsPage = () => {
 
   return (
     <div className="h-full flex flex-col p-4 overflow-hidden">
-        <div className="p-6">
+        <div className="pt-0 mb-6">
           <h2 className="font-semibold mb-4 text-lg text-gray-800 dark:text-gray-200">我的工具</h2>
           <div className="tools-grid-wrapper">
             {myTools.map(renderToolCard)}
           </div>
         </div>
 
-        {isDesktop && (
-          <div className="p-6 pt-0">
-            <h2 className="font-semibold mb-4 text-lg text-gray-800 dark:text-gray-200">实用工具</h2>
-            <div className="tools-grid-wrapper">
-              {newTools.map(renderToolCard)}
-            </div>
+        <div className="pt-0">
+          <h2 className="font-semibold mb-4 text-lg text-gray-800 dark:text-gray-200">实用工具</h2>
+          <div className="tools-grid-wrapper">
+            {newTools.map(renderToolCard)}
           </div>
-        )}
+        </div>
 
       {isDesktop && (
         <ContextMenu

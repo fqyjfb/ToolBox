@@ -17,6 +17,7 @@ import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Pagination from '../../../components/ui/Pagination';
+import { modalControlClass, modalTextareaClass } from '../account/shared';
 
 const SortableCategoryButton: React.FC<{
   category: QuickReplyCategory;
@@ -634,13 +635,13 @@ const QuickReplyPage: React.FC = () => {
           onConfirm={handleCreateQuickReply}
           confirmDisabled={!newQuickReplyContent.trim()}
         >
-          <div className="relative">
+          <div className="space-y-2 relative">
             <textarea
               value={newQuickReplyContent}
               onChange={(e) => setNewQuickReplyContent(e.target.value)}
               placeholder="快捷回复内容"
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
+              className={`${modalTextareaClass} pr-12`}
             />
             <button
               onClick={handlePasteFromClipboard}
@@ -664,7 +665,7 @@ const QuickReplyPage: React.FC = () => {
               onChange={(e) => setEditingQuickReply({ ...editingQuickReply, content: e.target.value })}
               placeholder="快捷回复内容"
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
+              className={modalTextareaClass}
             />
           )}
         </Modal>
@@ -677,13 +678,15 @@ const QuickReplyPage: React.FC = () => {
           onConfirm={handleCreateCategory}
           confirmDisabled={!newCategoryName.trim()}
         >
-          <input
-            type="text"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            placeholder="分类名称"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-          />
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="分类名称"
+              className={modalControlClass}
+            />
+          </div>
         </Modal>
 
         <Modal
@@ -694,13 +697,15 @@ const QuickReplyPage: React.FC = () => {
           onConfirm={handleUpdateCategory}
         >
           {editingCategory && (
-            <input
-              type="text"
-              value={editingCategory.name}
-              onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
-              placeholder="分类名称"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-            />
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={editingCategory.name}
+                onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                placeholder="分类名称"
+                className={modalControlClass}
+              />
+            </div>
           )}
         </Modal>
 

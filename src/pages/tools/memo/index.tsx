@@ -24,6 +24,8 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Select from '../../../components/ui/Select';
+import { modalControlClass } from '../account/shared';
 
 const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = ({ url, onCopy }) => {
   return (
@@ -785,30 +787,28 @@ const MemoPage: React.FC = () => {
           confirmDisabled={!newMemoTitle.trim()}
           clickOutsideToClose={false}
         >
-          <div className="space-y-4">
+          <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <select
+                <Select
                   value={newMemoPriority}
-                  onChange={(e) => setNewMemoPriority(e.target.value as 'high' | 'medium' | 'low')}
+                  onChange={(v) => setNewMemoPriority(v as 'high' | 'medium' | 'low')}
+                  options={[
+                    { value: 'high', label: '高优先级' },
+                    { value: 'medium', label: '中优先级' },
+                    { value: 'low', label: '低优先级' }
+                  ]}
                   className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border-none ${getPriorityStyle(newMemoPriority)}`}
-                >
-                  <option value="high">高优先级</option>
-                  <option value="medium">中优先级</option>
-                  <option value="low">低优先级</option>
-                </select>
-                <select
+                />
+                <Select
                   value={newMemoCategoryId || ''}
-                  onChange={(e) => setNewMemoCategoryId(e.target.value || null)}
+                  onChange={(v) => setNewMemoCategoryId(v || null)}
+                  options={[
+                    { value: '', label: '全部' },
+                    ...categories.map((category) => ({ value: category.id, label: category.name }))
+                  ]}
                   className="text-xs font-medium px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                >
-                  <option value="">全部</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
             <input
@@ -816,9 +816,9 @@ const MemoPage: React.FC = () => {
               value={newMemoTitle}
               onChange={(e) => setNewMemoTitle(e.target.value)}
               placeholder="标题"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
+              className={modalControlClass}
             />
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[120px] max-h-64 overflow-auto relative group">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group">
               <textarea
                 value={newMemoContent}
                 onChange={(e) => setNewMemoContent(e.target.value)}
@@ -839,30 +839,28 @@ const MemoPage: React.FC = () => {
           clickOutsideToClose={false}
         >
           {editingMemo && (
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <select
+                  <Select
                     value={editingMemoPriority}
-                    onChange={(e) => setEditingMemoPriority(e.target.value as 'high' | 'medium' | 'low')}
+                    onChange={(v) => setEditingMemoPriority(v as 'high' | 'medium' | 'low')}
+                    options={[
+                      { value: 'high', label: '高优先级' },
+                      { value: 'medium', label: '中优先级' },
+                      { value: 'low', label: '低优先级' }
+                    ]}
                     className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border-none ${getPriorityStyle(editingMemoPriority)}`}
-                  >
-                    <option value="high">高优先级</option>
-                    <option value="medium">中优先级</option>
-                    <option value="low">低优先级</option>
-                  </select>
-                  <select
+                  />
+                  <Select
                     value={editingMemoCategoryId || ''}
-                    onChange={(e) => setEditingMemoCategoryId(e.target.value || null)}
+                    onChange={(v) => setEditingMemoCategoryId(v || null)}
+                    options={[
+                      { value: '', label: '全部' },
+                      ...categories.map((category) => ({ value: category.id, label: category.name }))
+                    ]}
                     className="text-xs font-medium px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                  >
-                    <option value="">全部</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
               <input
@@ -870,9 +868,9 @@ const MemoPage: React.FC = () => {
                 value={editingMemo.title}
                 onChange={(e) => setEditingMemo({ ...editingMemo, title: e.target.value })}
                 placeholder="标题"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
+                className={modalControlClass}
               />
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[120px] max-h-64 overflow-auto relative group">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group">
                 <textarea
                   value={editingMemo.content}
                   onChange={(e) => setEditingMemo({ ...editingMemo, content: e.target.value })}
@@ -894,13 +892,13 @@ const MemoPage: React.FC = () => {
           confirmDisabled={!newCategoryName.trim()}
           clickOutsideToClose={false}
         >
-          <div className="space-y-4">
+          <div className="space-y-2">
             <input
               type="text"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="分类名称"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
+              className={modalControlClass}
             />
             <div className="flex items-center gap-3">
               <label className="text-sm text-gray-600 dark:text-gray-400">颜色</label>
@@ -924,13 +922,13 @@ const MemoPage: React.FC = () => {
           clickOutsideToClose={false}
         >
           {editingCategory && (
-            <div className="space-y-4">
+            <div className="space-y-2">
               <input
                 type="text"
                 value={editingCategory.name}
                 onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
                 placeholder="分类名称"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
+                className={modalControlClass}
               />
               <div className="flex items-center gap-3">
                 <label className="text-sm text-gray-600 dark:text-gray-400">颜色</label>

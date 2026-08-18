@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { RefreshCw, Copy, ArrowRight, Check } from 'lucide-react';
 import { apiService } from '../../../services/api';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import Select, { SelectOption } from '../../../components/ui/Select';
 
 interface Language {
   code: string;
@@ -144,6 +145,26 @@ const TranslatePage: React.FC = () => {
     return groups;
   }, []);
 
+  const sourceLangOptions = useMemo<SelectOption[]>(() => {
+    const options: SelectOption[] = [];
+    Object.entries(groupedLanguages).forEach(([, langs]) => {
+      langs.forEach((lang) => {
+        options.push({ value: lang.code, label: lang.label });
+      });
+    });
+    return options;
+  }, [groupedLanguages]);
+
+  const targetLangOptions = useMemo<SelectOption[]>(() => {
+    const options: SelectOption[] = [];
+    Object.entries(groupedLanguages).forEach(([, langs]) => {
+      langs.filter((lang) => lang.code !== 'auto').forEach((lang) => {
+        options.push({ value: lang.code, label: lang.label });
+      });
+    });
+    return options;
+  }, [groupedLanguages]);
+
   const handleTranslate = async () => {
     if (!inputText.trim()) return;
 
@@ -204,21 +225,12 @@ const TranslatePage: React.FC = () => {
   return (
     <div className="p-4 h-full flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <select
+        <Select
           value={sourceLang}
-          onChange={(e) => setSourceLang(e.target.value)}
+          onChange={setSourceLang}
+          options={sourceLangOptions}
           className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
-        >
-          {Object.entries(groupedLanguages).map(([alphabet, langs]) => (
-            <optgroup key={alphabet} label={alphabet === 'other' ? '常用' : alphabet}>
-              {langs.map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.label}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+        />
 
         <button
           onClick={handleSwapLanguages}
@@ -233,21 +245,12 @@ const TranslatePage: React.FC = () => {
           <ArrowRight size={18} className="rotate-180" />
         </button>
 
-        <select
+        <Select
           value={targetLang}
-          onChange={(e) => setTargetLang(e.target.value)}
+          onChange={setTargetLang}
+          options={targetLangOptions}
           className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
-        >
-          {Object.entries(groupedLanguages).map(([alphabet, langs]) => (
-            <optgroup key={alphabet} label={alphabet === 'other' ? '常用' : alphabet}>
-              {langs.filter((lang) => lang.code !== 'auto').map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.label}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+        />
 
         <button
           onClick={handleTranslate}

@@ -9,9 +9,11 @@ import Modal from '../../../../components/ui/Modal';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import Pagination from '../../../../components/ui/Pagination';
 import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
+import Select from '../../../../components/ui/Select';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface CredentialPanelProps {
   userId: string;
@@ -421,34 +423,45 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
       <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑证件信息' : '添加证件信息'} confirmText="保存" onConfirm={saveItem}>
-        <div className="space-y-3">
-          <input type="text" value={credentialForm.certificate_name} onChange={(e) => setCredentialForm(prev => ({ ...prev, certificate_name: e.target.value }))} placeholder="证件名称" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <input type="text" value={credentialForm.id_card_number} onChange={(e) => handleIdCardChange(e.target.value)} placeholder="身份证号码" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <div className="grid grid-cols-2 gap-3">
-            <select value={credentialForm.gender} onChange={(e) => setCredentialForm(prev => ({ ...prev, gender: e.target.value as '' | '男' | '女' }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-              <option value="">性别</option>
-              <option value="男">男</option>
-              <option value="女">女</option>
-            </select>
-            <input type="date" value={credentialForm.birth_date} onChange={(e) => setCredentialForm(prev => ({ ...prev, birth_date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+        <div className="space-y-2">
+          <input type="text" value={credentialForm.certificate_name} onChange={(e) => setCredentialForm(prev => ({ ...prev, certificate_name: e.target.value }))} placeholder="证件名称" className={modalControlClass} />
+          <input type="text" value={credentialForm.id_card_number} onChange={(e) => handleIdCardChange(e.target.value)} placeholder="身份证号码" className={modalControlClass} />
+          <div className="grid grid-cols-2 gap-2">
+            <Select
+              value={credentialForm.gender}
+              onChange={(v) => setCredentialForm(prev => ({ ...prev, gender: v as '' | '男' | '女' }))}
+              options={[
+                { value: '', label: '性别' },
+                { value: '男', label: '男' },
+                { value: '女', label: '女' }
+              ]}
+              className={modalControlClass}
+            />
+            <input type="date" value={credentialForm.birth_date} onChange={(e) => setCredentialForm(prev => ({ ...prev, birth_date: e.target.value }))} className={modalControlClass} />
           </div>
-          <input type="text" value={credentialForm.id_card_address} onChange={(e) => setCredentialForm(prev => ({ ...prev, id_card_address: e.target.value }))} placeholder="身份证地址" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <div className="grid grid-cols-2 gap-3">
-            <select value={credentialForm.certificate_status} onChange={(e) => setCredentialForm(prev => ({ ...prev, certificate_status: e.target.value as Credential['certificate_status'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-              <option value="正常">正常</option>
-              <option value="异常">异常</option>
-              <option value="过期">过期</option>
-            </select>
-            <input type="text" value={credentialForm.bank_name} onChange={(e) => setCredentialForm(prev => ({ ...prev, bank_name: e.target.value }))} placeholder="开户银行" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <input type="text" value={credentialForm.id_card_address} onChange={(e) => setCredentialForm(prev => ({ ...prev, id_card_address: e.target.value }))} placeholder="身份证地址" className={modalControlClass} />
+          <div className="grid grid-cols-2 gap-2">
+            <Select
+              value={credentialForm.certificate_status}
+              onChange={(v) => setCredentialForm(prev => ({ ...prev, certificate_status: v as Credential['certificate_status'] }))}
+              options={[
+                { value: '正常', label: '正常' },
+                { value: '异常', label: '异常' },
+                { value: '过期', label: '过期' }
+              ]}
+              className={modalControlClass}
+            />
+            <input type="text" value={credentialForm.bank_name} onChange={(e) => setCredentialForm(prev => ({ ...prev, bank_name: e.target.value }))} placeholder="开户银行" className={modalControlClass} />
           </div>
-          <input type="text" value={credentialForm.bank_account} onChange={(e) => setCredentialForm(prev => ({ ...prev, bank_account: e.target.value }))} placeholder="银行账号" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <input type="text" value={credentialForm.bank_account} onChange={(e) => setCredentialForm(prev => ({ ...prev, bank_account: e.target.value }))} placeholder="银行账号" className={modalControlClass} />
           <SelectWithCustom
             value={credentialForm.phone}
             onChange={(value) => setCredentialForm(prev => ({ ...prev, phone: value }))}
             options={phones.map(p => ({ id: p.id, label: p.phone_number }))}
             placeholder="手机号"
+            className={modalControlClass}
           />
-          <textarea value={credentialForm.certificate_remark} onChange={(e) => setCredentialForm(prev => ({ ...prev, certificate_remark: e.target.value }))} placeholder="备注" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <textarea value={credentialForm.certificate_remark} onChange={(e) => setCredentialForm(prev => ({ ...prev, certificate_remark: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
         </div>
       </Modal>
 

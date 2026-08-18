@@ -9,8 +9,10 @@ import Modal from '../../../../components/ui/Modal';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import Pagination from '../../../../components/ui/Pagination';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
+import Select from '../../../../components/ui/Select';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface PhonePanelProps {
   userId: string;
@@ -338,18 +340,23 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
       <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑手机号' : '添加手机号'} confirmText="保存" onConfirm={saveItem}>
-        <div className="space-y-3">
-          <input type="text" value={phoneForm.phone_number} onChange={(e) => setPhoneForm(prev => ({ ...prev, phone_number: e.target.value }))} placeholder="手机号码" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <input type="text" value={phoneForm.owner} onChange={(e) => setPhoneForm(prev => ({ ...prev, owner: e.target.value }))} placeholder="机主姓名" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={phoneForm.phone_operator} onChange={(e) => setPhoneForm(prev => ({ ...prev, phone_operator: e.target.value }))} placeholder="运营商" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-            <input type="text" value={phoneForm.phone_region} onChange={(e) => setPhoneForm(prev => ({ ...prev, phone_region: e.target.value }))} placeholder="地区" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+        <div className="space-y-2">
+          <input type="text" value={phoneForm.phone_number} onChange={(e) => setPhoneForm(prev => ({ ...prev, phone_number: e.target.value }))} placeholder="手机号码" className={modalControlClass} />
+          <input type="text" value={phoneForm.owner} onChange={(e) => setPhoneForm(prev => ({ ...prev, owner: e.target.value }))} placeholder="机主姓名" className={modalControlClass} />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={phoneForm.phone_operator} onChange={(e) => setPhoneForm(prev => ({ ...prev, phone_operator: e.target.value }))} placeholder="运营商" className={modalControlClass} />
+            <input type="text" value={phoneForm.phone_region} onChange={(e) => setPhoneForm(prev => ({ ...prev, phone_region: e.target.value }))} placeholder="地区" className={modalControlClass} />
           </div>
-          <select value={phoneForm.status} onChange={(e) => setPhoneForm(prev => ({ ...prev, status: e.target.value as Phone['status'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-            <option value="正常">正常</option>
-            <option value="停用">停用</option>
-          </select>
-          <textarea value={phoneForm.remarks} onChange={(e) => setPhoneForm(prev => ({ ...prev, remarks: e.target.value }))} placeholder="备注" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <Select
+            value={phoneForm.status}
+            onChange={(v) => setPhoneForm(prev => ({ ...prev, status: v as Phone['status'] }))}
+            options={[
+              { value: '正常', label: '正常' },
+              { value: '停用', label: '停用' }
+            ]}
+            className={modalControlClass}
+          />
+          <textarea value={phoneForm.remarks} onChange={(e) => setPhoneForm(prev => ({ ...prev, remarks: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
         </div>
       </Modal>
 

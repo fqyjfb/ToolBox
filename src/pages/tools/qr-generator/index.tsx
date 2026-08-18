@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { QrCode, Copy, Download, RefreshCw } from 'lucide-react';
 import { useToolPage } from '../../../hooks/useToolPage';
+import Select from '../../../components/ui/Select';
 import QRCode from 'qrcode';
 
 const QrGeneratorPage: React.FC = () => {
@@ -115,30 +116,27 @@ const QrGeneratorPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">尺寸</label>
-                <select
-                  value={size}
-                  onChange={(e) => setSize(Number(e.target.value))}
+                <Select
+                  value={String(size)}
+                  onChange={(v) => setSize(Number(v))}
+                  options={[{ value: '128', label: '128 x 128' }, { value: '256', label: '256 x 256' }, { value: '384', label: '384 x 384' }, { value: '512', label: '512 x 512' }]}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 outline-none focus:border-blue-500"
-                >
-                  <option value="128">128 x 128</option>
-                  <option value="256">256 x 256</option>
-                  <option value="384">384 x 384</option>
-                  <option value="512">512 x 512</option>
-                </select>
+                />
               </div>
               
               <div>
                 <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">容错级别</label>
-                <select
+                <Select
                   value={level}
-                  onChange={(e) => setLevel(e.target.value as 'L' | 'M' | 'Q' | 'H')}
+                  onChange={(v) => setLevel(v as 'L' | 'M' | 'Q' | 'H')}
+                  options={[
+                    { value: 'L', label: '低 (7%)' },
+                    { value: 'M', label: '中 (15%)' },
+                    { value: 'Q', label: '较高 (25%)' },
+                    { value: 'H', label: '高 (30%)' }
+                  ]}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 outline-none focus:border-blue-500"
-                >
-                  <option value="L">低 (7%)</option>
-                  <option value="M">中 (15%)</option>
-                  <option value="Q">较高 (25%)</option>
-                  <option value="H">高 (30%)</option>
-                </select>
+                />
               </div>
             </div>
             

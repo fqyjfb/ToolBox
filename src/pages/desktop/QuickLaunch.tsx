@@ -10,6 +10,7 @@ import { useToastStore } from '../../store/toastStore';
 import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
 import Modal from '../../components/ui/Modal';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
+import Select from '../../components/ui/Select';
 import { logDebug, logInfo, logWarn } from '../../services/loggerService';
 import './QuickLaunch.css';
 
@@ -773,15 +774,12 @@ const QuickLaunch: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               分类
             </label>
-            <select
+            <Select
               value={activeCategoryId === 'all' ? (categories[0]?.id || '') : activeCategoryId}
               onChange={() => {}}
+              options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
+            />
           </div>
         </div>
       </Modal>

@@ -12,6 +12,7 @@ import { ALL_TOOLS } from '../../constants/tools';
 import { renderFloatIcon, isPredefinedIcon, formatIconSrc } from '../../utils/floatIconRenderer';
 import { usePluginStore } from '../../store/pluginStore';
 import CachedIcon from '../ui/CachedIcon';
+import Select from '../ui/Select';
 import { iconMap } from '../../utils/iconMap';
 
 interface FloatConfigEditorProps {
@@ -229,39 +230,35 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
         {localConfig.type === 'tool' && (
           <div className="col-span-2">
             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">选择工具</label>
-            <select
+            <Select
               value={localConfig.action}
-              onChange={(e) => handleToolSelect(e.target.value)}
+              onChange={handleToolSelect}
+              options={[
+                { value: '', label: '请选择工具' },
+                ...ALL_TOOLS.map((tool) => ({ value: tool.id, label: tool.name }))
+              ]}
               className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-            >
-              <option value="">请选择工具</option>
-              {ALL_TOOLS.map((tool) => (
-                <option key={tool.id} value={tool.id}>{tool.name}</option>
-              ))}
-            </select>
+            />
           </div>
         )}
 
         {localConfig.type === 'app' && (
           <div className="col-span-2">
             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">选择应用</label>
-            <select
+            <Select
               value={localConfig.path || ''}
-              onChange={(e) => {
-                const selectedApp = quickLaunchApps.find(a => a.path === e.target.value);
+              onChange={(v) => {
+                const selectedApp = quickLaunchApps.find(a => a.path === v);
                 if (selectedApp) {
                   handlePathChange(selectedApp.path, selectedApp.name, selectedApp.icon);
                 }
               }}
+              options={[
+                { value: '', label: '请选择应用' },
+                ...quickLaunchApps.map((app) => ({ value: app.path, label: app.name }))
+              ]}
               className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-            >
-              <option value="">请选择应用</option>
-              {quickLaunchApps.map((app) => (
-                <option key={app.id} value={app.path}>
-                  {app.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         )}
 
@@ -355,15 +352,12 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
             </div>
 
             {!isAppType && !hasIconImg && localConfig.type !== 'plugin' ? (
-              <select
+              <Select
                 value={localConfig.icon}
-                onChange={(e) => handleIconChange(e.target.value)}
+                onChange={handleIconChange}
+                options={AVAILABLE_ICONS.map(({ name, label }) => ({ value: name, label }))}
                 className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-              >
-                {AVAILABLE_ICONS.map(({ name, label }) => (
-                  <option key={name} value={name}>{label}</option>
-                ))}
-              </select>
+              />
             ) : (
               <span className="flex-1 text-xs text-gray-500 dark:text-gray-400">
                 {localConfig.type === 'plugin' ? '使用插件图标' : '使用应用图标'}

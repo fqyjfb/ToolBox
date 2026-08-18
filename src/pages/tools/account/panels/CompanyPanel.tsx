@@ -11,6 +11,7 @@ import Pagination from '../../../../components/ui/Pagination';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface CompanyPanelProps {
   userId: string;
@@ -355,16 +356,16 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
       <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑企业信息' : '添加企业信息'} confirmText="保存" onConfirm={saveItem}>
-        <div className="space-y-3">
-          <input type="text" value={companyForm.name} onChange={(e) => setCompanyForm(prev => ({ ...prev, name: e.target.value }))} placeholder="企业名称" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <input type="text" value={companyForm.unified_social_credit_code} onChange={(e) => setCompanyForm(prev => ({ ...prev, unified_social_credit_code: e.target.value }))} placeholder="统一社会信用代码" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <input type="text" value={companyForm.legal_person} onChange={(e) => setCompanyForm(prev => ({ ...prev, legal_person: e.target.value }))} placeholder="法人" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <div className="grid grid-cols-2 gap-3">
-            <input type="date" value={companyForm.establishment_date} onChange={(e) => setCompanyForm(prev => ({ ...prev, establishment_date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-            <input type="text" value={companyForm.registered_capital} onChange={(e) => setCompanyForm(prev => ({ ...prev, registered_capital: e.target.value }))} placeholder="注册资本" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+        <div className="space-y-2">
+          <input type="text" value={companyForm.name} onChange={(e) => setCompanyForm(prev => ({ ...prev, name: e.target.value }))} placeholder="企业名称" className={modalControlClass} />
+          <input type="text" value={companyForm.unified_social_credit_code} onChange={(e) => setCompanyForm(prev => ({ ...prev, unified_social_credit_code: e.target.value }))} placeholder="统一社会信用代码" className={modalControlClass} />
+          <input type="text" value={companyForm.legal_person} onChange={(e) => setCompanyForm(prev => ({ ...prev, legal_person: e.target.value }))} placeholder="法人" className={modalControlClass} />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="date" value={companyForm.establishment_date} onChange={(e) => setCompanyForm(prev => ({ ...prev, establishment_date: e.target.value }))} className={modalControlClass} />
+            <input type="text" value={companyForm.registered_capital} onChange={(e) => setCompanyForm(prev => ({ ...prev, registered_capital: e.target.value }))} placeholder="注册资本" className={modalControlClass} />
           </div>
-          <textarea value={companyForm.address} onChange={(e) => setCompanyForm(prev => ({ ...prev, address: e.target.value }))} placeholder="地址" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <textarea value={companyForm.business_scope} onChange={(e) => setCompanyForm(prev => ({ ...prev, business_scope: e.target.value }))} placeholder="经营范围" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <textarea value={companyForm.address} onChange={(e) => setCompanyForm(prev => ({ ...prev, address: e.target.value }))} placeholder="地址" rows={2} className={modalTextareaClass} />
+          <textarea value={companyForm.business_scope} onChange={(e) => setCompanyForm(prev => ({ ...prev, business_scope: e.target.value }))} placeholder="经营范围" rows={2} className={modalTextareaClass} />
         </div>
       </Modal>
 

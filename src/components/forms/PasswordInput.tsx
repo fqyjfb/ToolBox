@@ -7,6 +7,7 @@ interface PasswordInputProps {
   placeholder?: string;
   disabled?: boolean;
   extraButton?: React.ReactNode;
+  className?: string;
 }
 
 const PasswordInput: React.FC<PasswordInputProps> = ({
@@ -15,6 +16,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
   placeholder = '密码',
   disabled = false,
   extraButton,
+  className = '',
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -26,7 +28,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${extraButton ? 'pr-24' : 'pr-10'}`}
+        className={`${className} disabled:opacity-50 disabled:cursor-not-allowed ${extraButton ? 'pr-24' : 'pr-10'}`.trim()}
       />
       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
         {extraButton}

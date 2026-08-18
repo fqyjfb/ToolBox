@@ -10,9 +10,11 @@ import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import Pagination from '../../../../components/ui/Pagination';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
+import Select from '../../../../components/ui/Select';
 import PasswordInput from '../../../../components/forms/PasswordInput';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface SocialPanelProps {
   userId: string;
@@ -445,54 +447,66 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
       <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑社媒账号' : '添加社媒账号'} confirmText="保存" onConfirm={saveItem}>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <select value={socialForm.platform} onChange={(e) => setSocialForm(prev => ({ ...prev, platform: e.target.value as SocialAccount['platform'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-              <option value="">平台*</option>
-              {platformOptions.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-            <input type="text" value={socialForm.account} onChange={(e) => setSocialForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号*" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <Select
+              value={socialForm.platform}
+              onChange={(v) => setSocialForm(prev => ({ ...prev, platform: v as SocialAccount['platform'] }))}
+              options={[
+                { value: '', label: '平台*' },
+                ...platformOptions.map((option) => ({ value: option.value, label: option.label }))
+              ]}
+              className={modalControlClass}
+            />
+            <input type="text" value={socialForm.account} onChange={(e) => setSocialForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号*" className={modalControlClass} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={socialForm.user_name} onChange={(e) => setSocialForm(prev => ({ ...prev, user_name: e.target.value }))} placeholder="用户名" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={socialForm.user_name} onChange={(e) => setSocialForm(prev => ({ ...prev, user_name: e.target.value }))} placeholder="用户名" className={modalControlClass} />
             <PasswordInput
               value={socialForm.password}
               onChange={(value) => setSocialForm(prev => ({ ...prev, password: value }))}
               placeholder="密码"
+              className={modalControlClass}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <SelectWithCustom
               value={socialForm.email}
               onChange={(value) => setSocialForm(prev => ({ ...prev, email: value }))}
               options={emails.map(e => ({ id: e.id, label: e.email }))}
               placeholder="邮箱"
+              className={modalControlClass}
             />
             <SelectWithCustom
               value={socialForm.phone}
               onChange={(value) => setSocialForm(prev => ({ ...prev, phone: value }))}
               options={phones.map(p => ({ id: p.id, label: p.phone_number }))}
               placeholder="手机号"
+              className={modalControlClass}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <SelectWithCustom
               value={socialForm.bind_company}
               onChange={(value) => setSocialForm(prev => ({ ...prev, bind_company: value }))}
               options={companies.map(c => ({ id: c.id, label: c.name }))}
               placeholder="绑定公司"
+              className={modalControlClass}
             />
-            <input type="date" value={socialForm.register_time} onChange={(e) => setSocialForm(prev => ({ ...prev, register_time: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+            <input type="date" value={socialForm.register_time} onChange={(e) => setSocialForm(prev => ({ ...prev, register_time: e.target.value }))} className={modalControlClass} />
           </div>
-          <select value={socialForm.account_status} onChange={(e) => setSocialForm(prev => ({ ...prev, account_status: e.target.value as SocialAccount['account_status'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-            <option value="正常">正常</option>
-            <option value="异常">异常</option>
-            <option value="封禁">封禁</option>
-            <option value="待验证">待验证</option>
-          </select>
-          <textarea value={socialForm.remark} onChange={(e) => setSocialForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <Select
+            value={socialForm.account_status}
+            onChange={(v) => setSocialForm(prev => ({ ...prev, account_status: v as SocialAccount['account_status'] }))}
+            options={[
+              { value: '正常', label: '正常' },
+              { value: '异常', label: '异常' },
+              { value: '封禁', label: '封禁' },
+              { value: '待验证', label: '待验证' }
+            ]}
+            className={modalControlClass}
+          />
+          <textarea value={socialForm.remark} onChange={(e) => setSocialForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
         </div>
       </Modal>
 

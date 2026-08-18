@@ -13,6 +13,7 @@ import ContextMenu from '../../components/ui/ContextMenu'
 import ToggleSwitch from '../../components/settings/ToggleSwitch'
 import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager'
 import CachedIcon from '../../components/ui/CachedIcon'
+import Select from '../../components/ui/Select'
 
 const AdminWebsitesPage: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -734,31 +735,19 @@ const AdminWebsitesPage: React.FC = () => {
               分类
             </label>
             <div className="flex gap-3">
-              <select
+              <Select
                 value={selectedMainCategory}
-                onChange={(e) => handleMainCategoryChange(e.target.value)}
+                onChange={handleMainCategoryChange}
+                options={getMainCategories().map((category) => ({ value: category.id, label: category.name }))}
                 className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
-                required
-              >
-                {getMainCategories().map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              <select
+              />
+              <Select
                 value={selectedSubCategory}
-                onChange={(e) => handleSubCategoryChange(e.target.value)}
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
-                required
+                onChange={handleSubCategoryChange}
+                options={getSubCategories(selectedMainCategory).map((subCategory) => ({ value: subCategory.id, label: subCategory.name }))}
                 disabled={!selectedMainCategory}
-              >
-                {getSubCategories(selectedMainCategory).map((subCategory) => (
-                  <option key={subCategory.id} value={subCategory.id}>
-                    {subCategory.name}
-                  </option>
-                ))}
-              </select>
+                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+              />
             </div>
           </div>
           <div>
@@ -881,31 +870,19 @@ const AdminWebsitesPage: React.FC = () => {
               分类
             </label>
             <div className="flex gap-3">
-              <select
+              <Select
                 value={selectedMainCategory}
-                onChange={(e) => handleMainCategoryChange(e.target.value)}
+                onChange={handleMainCategoryChange}
+                options={getMainCategories().map((category) => ({ value: category.id, label: category.name }))}
                 className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
-                required
-              >
-                {getMainCategories().map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              <select
+              />
+              <Select
                 value={selectedSubCategory}
-                onChange={(e) => handleSubCategoryChange(e.target.value)}
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
-                required
+                onChange={handleSubCategoryChange}
+                options={getSubCategories(selectedMainCategory).map((subCategory) => ({ value: subCategory.id, label: subCategory.name }))}
                 disabled={!selectedMainCategory}
-              >
-                {getSubCategories(selectedMainCategory).map((subCategory) => (
-                  <option key={subCategory.id} value={subCategory.id}>
-                    {subCategory.name}
-                  </option>
-                ))}
-              </select>
+                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+              />
             </div>
           </div>
           <div>

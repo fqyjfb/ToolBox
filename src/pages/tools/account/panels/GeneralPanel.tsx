@@ -10,11 +10,13 @@ import Modal from '../../../../components/ui/Modal';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import Pagination from '../../../../components/ui/Pagination';
 import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
+import Select from '../../../../components/ui/Select';
 import PasswordInput from '../../../../components/forms/PasswordInput';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
 import { openUrl } from '../../../../services/browserService';
+import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface GeneralPanelProps {
   userId: string;
@@ -423,45 +425,53 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
       <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑通用账号' : '添加通用账号'} confirmText="保存" onConfirm={saveItem}>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={generalForm.platform_name} onChange={(e) => setGeneralForm(prev => ({ ...prev, platform_name: e.target.value }))} placeholder="平台名称" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-            <input type="text" value={generalForm.website} onChange={(e) => setGeneralForm(prev => ({ ...prev, website: e.target.value }))} placeholder="网站地址" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={generalForm.platform_name} onChange={(e) => setGeneralForm(prev => ({ ...prev, platform_name: e.target.value }))} placeholder="平台名称" className={modalControlClass} />
+            <input type="text" value={generalForm.website} onChange={(e) => setGeneralForm(prev => ({ ...prev, website: e.target.value }))} placeholder="网站地址" className={modalControlClass} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={generalForm.account} onChange={(e) => setGeneralForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={generalForm.account} onChange={(e) => setGeneralForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号" className={modalControlClass} />
             <PasswordInput
               value={generalForm.password}
               onChange={(value) => setGeneralForm(prev => ({ ...prev, password: value }))}
               placeholder="密码"
+              className={modalControlClass}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <SelectWithCustom
               value={generalForm.email}
               onChange={(value) => setGeneralForm(prev => ({ ...prev, email: value }))}
               options={emails.map(e => ({ id: e.id, label: e.email }))}
               placeholder="邮箱"
+              className={modalControlClass}
             />
             <SelectWithCustom
               value={generalForm.phone}
               onChange={(value) => setGeneralForm(prev => ({ ...prev, phone: value }))}
               options={phones.map(p => ({ id: p.id, label: p.phone_number }))}
               placeholder="手机号"
+              className={modalControlClass}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="date" value={generalForm.registration_date} onChange={(e) => setGeneralForm(prev => ({ ...prev, registration_date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-            <select value={generalForm.status} onChange={(e) => setGeneralForm(prev => ({ ...prev, status: e.target.value as GeneralAccount['status'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-              <option value="active">活跃</option>
-              <option value="abnormal">异常</option>
-              <option value="banned">封禁</option>
-              <option value="expired">过期</option>
-            </select>
+          <div className="grid grid-cols-2 gap-2">
+            <input type="date" value={generalForm.registration_date} onChange={(e) => setGeneralForm(prev => ({ ...prev, registration_date: e.target.value }))} className={modalControlClass} />
+            <Select
+              value={generalForm.status}
+              onChange={(v) => setGeneralForm(prev => ({ ...prev, status: v as GeneralAccount['status'] }))}
+              options={[
+                { value: 'active', label: '活跃' },
+                { value: 'abnormal', label: '异常' },
+                { value: 'banned', label: '封禁' },
+                { value: 'expired', label: '过期' }
+              ]}
+              className={modalControlClass}
+            />
           </div>
-          <input type="text" value={generalForm.security_question} onChange={(e) => setGeneralForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <input type="text" value={generalForm.security_answer} onChange={(e) => setGeneralForm(prev => ({ ...prev, security_answer: e.target.value }))} placeholder="安全答案" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <textarea value={generalForm.notes} onChange={(e) => setGeneralForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <input type="text" value={generalForm.security_question} onChange={(e) => setGeneralForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题" className={modalControlClass} />
+          <input type="text" value={generalForm.security_answer} onChange={(e) => setGeneralForm(prev => ({ ...prev, security_answer: e.target.value }))} placeholder="安全答案" className={modalControlClass} />
+          <textarea value={generalForm.notes} onChange={(e) => setGeneralForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
         </div>
       </Modal>
 

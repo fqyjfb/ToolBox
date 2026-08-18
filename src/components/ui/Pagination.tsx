@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import Select from './Select';
 
 export interface PaginationProps {
   currentPage: number;
@@ -122,17 +123,13 @@ const Pagination: React.FC<PaginationProps> = ({
         <ChevronsRight size={16} />
       </button>
       
-      <select
-        value={pageSize}
-        onChange={(e) => onPageSizeChange(Number(e.target.value))}
+      <Select
+        value={String(pageSize)}
+        onChange={(v) => onPageSizeChange(Number(v))}
+        options={pageSizeOptions.map((size) => ({ value: String(size), label: String(size) }))}
         className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-      >
-        {pageSizeOptions.map((size) => (
-          <option key={size} value={size}>
-            {size}
-          </option>
-        ))}
-      </select>
+        size="sm"
+      />
     </div>
   );
 };

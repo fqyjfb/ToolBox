@@ -13,6 +13,7 @@ import PasswordInput from '../../../../components/forms/PasswordInput';
 import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface EmailPanelProps {
   userId: string;
@@ -394,21 +395,23 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
       <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑邮箱' : '添加邮箱'} confirmText="保存" onConfirm={saveItem}>
-        <div className="space-y-3">
-          <input type="email" value={emailForm.email} onChange={(e) => setEmailForm(prev => ({ ...prev, email: e.target.value }))} placeholder="邮箱地址*" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+        <div className="space-y-2">
+          <input type="email" value={emailForm.email} onChange={(e) => setEmailForm(prev => ({ ...prev, email: e.target.value }))} placeholder="邮箱地址*" className={modalControlClass} />
           <PasswordInput
               value={emailForm.password}
               onChange={(value) => setEmailForm(prev => ({ ...prev, password: value }))}
               placeholder="密码"
+              className={modalControlClass}
             />
           <SelectWithCustom
               value={emailForm.phone}
               onChange={(value) => setEmailForm(prev => ({ ...prev, phone: value }))}
               options={phones.map(p => ({ id: p.id, label: p.phone_number }))}
               placeholder="手机号"
+              className={modalControlClass}
             />
-          <textarea value={emailForm.verification_info} onChange={(e) => setEmailForm(prev => ({ ...prev, verification_info: e.target.value }))} placeholder="验证信息（如安全问题等）" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <textarea value={emailForm.remark} onChange={(e) => setEmailForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <textarea value={emailForm.verification_info} onChange={(e) => setEmailForm(prev => ({ ...prev, verification_info: e.target.value }))} placeholder="验证信息（如安全问题等）" rows={2} className={modalTextareaClass} />
+          <textarea value={emailForm.remark} onChange={(e) => setEmailForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
         </div>
       </Modal>
 

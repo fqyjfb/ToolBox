@@ -18,6 +18,8 @@ import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Pagination from '../../../components/ui/Pagination';
+import Select from '../../../components/ui/Select';
+import { modalControlClass, modalTextareaClass } from '../account/shared';
 
 const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = ({ url, onCopy }) => {
   return (
@@ -666,26 +668,23 @@ const CloudClipboardPage: React.FC = () => {
           onConfirm={handleCreateItem}
           confirmDisabled={!newItemContent.trim()}
         >
-          <div className="space-y-4">
-            <select
+          <div className="space-y-2">
+            <Select
               value={newItemCategoryId || ''}
-              onChange={(e) => setNewItemCategoryId(e.target.value || null)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">全部</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setNewItemCategoryId(v || null)}
+              options={[
+                { value: '', label: '全部' },
+                ...categories.map((category) => ({ value: category.id, label: category.name }))
+              ]}
+              className={modalControlClass}
+            />
             <div className="relative">
               <textarea
                 value={newItemContent}
                 onChange={(e) => setNewItemContent(e.target.value)}
                 placeholder="内容"
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
+                className={`${modalTextareaClass} pr-12`}
               />
               <button
                 onClick={handlePasteFromClipboard}
@@ -705,25 +704,22 @@ const CloudClipboardPage: React.FC = () => {
           onConfirm={handleUpdateItem}
         >
           {editingItem && (
-            <div className="space-y-4">
-              <select
+            <div className="space-y-2">
+              <Select
                 value={editingItemCategoryId || ''}
-                onChange={(e) => setEditingItemCategoryId(e.target.value || null)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">全部</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setEditingItemCategoryId(v || null)}
+                options={[
+                  { value: '', label: '全部' },
+                  ...categories.map((category) => ({ value: category.id, label: category.name }))
+                ]}
+                className={modalControlClass}
+              />
               <textarea
                 value={editingItem.content}
                 onChange={(e) => setEditingItem({ ...editingItem, content: e.target.value })}
                 placeholder="内容"
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
+                className={modalTextareaClass}
               />
             </div>
           )}
@@ -737,13 +733,15 @@ const CloudClipboardPage: React.FC = () => {
           onConfirm={handleCreateCategory}
           confirmDisabled={!newCategoryName.trim()}
         >
-          <input
-            type="text"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            placeholder="分类名称"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-          />
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="分类名称"
+              className={modalControlClass}
+            />
+          </div>
         </Modal>
 
         <Modal
@@ -754,13 +752,15 @@ const CloudClipboardPage: React.FC = () => {
           onConfirm={handleUpdateCategory}
         >
           {editingCategory && (
-            <input
-              type="text"
-              value={editingCategory.name}
-              onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
-              placeholder="分类名称"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
-            />
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={editingCategory.name}
+                onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                placeholder="分类名称"
+                className={modalControlClass}
+              />
+            </div>
           )}
         </Modal>
 

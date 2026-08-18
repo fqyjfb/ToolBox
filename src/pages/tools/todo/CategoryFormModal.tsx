@@ -2,6 +2,7 @@ import React from 'react'
 import Modal from '../../../components/ui/Modal'
 import { Edit, Trash2 } from 'lucide-react'
 import { TodoCategory } from '../../../services/TodoService'
+import { modalControlClass } from '../account/shared'
 
 const COLOR_OPTIONS = [
   '#3B82F6',
@@ -52,7 +53,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
       onConfirm={onConfirm}
       confirmDisabled={!newCategoryName.trim()}
     >
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">分类名称 *</label>
           <input
@@ -60,7 +61,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             value={newCategoryName}
             onChange={(e) => onNewCategoryNameChange(e.target.value)}
             placeholder="输入分类名称"
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
+            className={modalControlClass}
           />
         </div>
         <div>

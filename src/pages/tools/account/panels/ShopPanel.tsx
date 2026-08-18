@@ -11,9 +11,11 @@ import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import Pagination from '../../../../components/ui/Pagination';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
+import Select from '../../../../components/ui/Select';
 import PasswordInput from '../../../../components/forms/PasswordInput';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface ShopPanelProps {
   userId: string;
@@ -459,69 +461,84 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
       <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingItem(null); }} title={editingItem ? '编辑店铺' : '添加店铺'} confirmText="保存" onConfirm={saveItem}>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={shopForm.shop_name} onChange={(e) => setShopForm(prev => ({ ...prev, shop_name: e.target.value }))} placeholder="店铺名称*" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-            <select value={shopForm.platform} onChange={(e) => setShopForm(prev => ({ ...prev, platform: e.target.value as Shop['platform'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-              <option value="">平台*</option>
-              <option value="淘宝">淘宝</option>
-              <option value="天猫">天猫</option>
-              <option value="拼多多">拼多多</option>
-              <option value="抖音">抖音</option>
-              <option value="京东">京东</option>
-              <option value="其他">其他</option>
-            </select>
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={shopForm.shop_name} onChange={(e) => setShopForm(prev => ({ ...prev, shop_name: e.target.value }))} placeholder="店铺名称*" className={modalControlClass} />
+            <Select
+              value={shopForm.platform}
+              onChange={(v) => setShopForm(prev => ({ ...prev, platform: v as Shop['platform'] }))}
+              options={[
+                { value: '', label: '平台*' },
+                { value: '淘宝', label: '淘宝' },
+                { value: '天猫', label: '天猫' },
+                { value: '拼多多', label: '拼多多' },
+                { value: '抖音', label: '抖音' },
+                { value: '京东', label: '京东' },
+                { value: '其他', label: '其他' }
+              ]}
+              className={modalControlClass}
+            />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={shopForm.account} onChange={(e) => setShopForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号*" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={shopForm.account} onChange={(e) => setShopForm(prev => ({ ...prev, account: e.target.value }))} placeholder="账号*" className={modalControlClass} />
             <PasswordInput
               value={shopForm.password}
               onChange={(value) => setShopForm(prev => ({ ...prev, password: value }))}
               placeholder="密码"
+              className={modalControlClass}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <SelectWithCustom
               value={shopForm.phone}
               onChange={(value) => setShopForm(prev => ({ ...prev, phone: value }))}
               options={phones.map(p => ({ id: p.id, label: p.phone_number }))}
               placeholder="手机号"
+              className={modalControlClass}
             />
             <SelectWithCustom
               value={shopForm.email}
               onChange={(value) => setShopForm(prev => ({ ...prev, email: value }))}
               options={emails.map(e => ({ id: e.id, label: e.email }))}
               placeholder="邮箱"
+              className={modalControlClass}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <select value={shopForm.shop_type} onChange={(e) => setShopForm(prev => ({ ...prev, shop_type: e.target.value as Shop['shop_type'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-              <option value="">类型</option>
-              <option value="企业">企业</option>
-              <option value="个人">个人</option>
-            </select>
+          <div className="grid grid-cols-2 gap-2">
+            <Select
+              value={shopForm.shop_type}
+              onChange={(v) => setShopForm(prev => ({ ...prev, shop_type: v as Shop['shop_type'] }))}
+              options={[
+                { value: '', label: '类型' },
+                { value: '企业', label: '企业' },
+                { value: '个人', label: '个人' }
+              ]}
+              className={modalControlClass}
+            />
             <SelectWithCustom
               value={shopForm.corporation}
               onChange={(value) => setShopForm(prev => ({ ...prev, corporation: value }))}
               options={companies.map(c => ({ id: c.id, label: c.name }))}
               placeholder="公司名称"
+              className={modalControlClass}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={shopForm.alipay_account} onChange={(e) => setShopForm(prev => ({ ...prev, alipay_account: e.target.value }))} placeholder="支付宝账号" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={shopForm.alipay_account} onChange={(e) => setShopForm(prev => ({ ...prev, alipay_account: e.target.value }))} placeholder="支付宝账号" className={modalControlClass} />
             <PasswordInput
               value={shopForm.alipay_password}
               onChange={(value) => setShopForm(prev => ({ ...prev, alipay_password: value }))}
               placeholder="支付宝密码"
+              className={modalControlClass}
             />
           </div>
-          <input type="text" value={shopForm.contact_person} onChange={(e) => setShopForm(prev => ({ ...prev, contact_person: e.target.value }))} placeholder="联系人" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <textarea value={shopForm.address} onChange={(e) => setShopForm(prev => ({ ...prev, address: e.target.value }))} placeholder="地址" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={shopForm.base_deposit} onChange={(e) => setShopForm(prev => ({ ...prev, base_deposit: e.target.value }))} placeholder="基础保证金" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-            <input type="text" value={shopForm.risk_deposit} onChange={(e) => setShopForm(prev => ({ ...prev, risk_deposit: e.target.value }))} placeholder="风险保证金" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <input type="text" value={shopForm.contact_person} onChange={(e) => setShopForm(prev => ({ ...prev, contact_person: e.target.value }))} placeholder="联系人" className={modalControlClass} />
+          <textarea value={shopForm.address} onChange={(e) => setShopForm(prev => ({ ...prev, address: e.target.value }))} placeholder="地址" rows={2} className={modalTextareaClass} />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={shopForm.base_deposit} onChange={(e) => setShopForm(prev => ({ ...prev, base_deposit: e.target.value }))} placeholder="基础保证金" className={modalControlClass} />
+            <input type="text" value={shopForm.risk_deposit} onChange={(e) => setShopForm(prev => ({ ...prev, risk_deposit: e.target.value }))} placeholder="风险保证金" className={modalControlClass} />
           </div>
-          <textarea value={shopForm.remark} onChange={(e) => setShopForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <textarea value={shopForm.remark} onChange={(e) => setShopForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
         </div>
       </Modal>
 

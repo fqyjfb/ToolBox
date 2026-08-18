@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/shallow';
 import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
 import Modal from '../ui/Modal';
+import Select from '../ui/Select';
 import SettingCard from './SettingCard';
 import SettingSection from './SettingSection';
 import SettingRow from './SettingRow';
@@ -332,15 +333,12 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         }>
           <div className="flex items-center gap-2">
             {autoLockEnabled && (
-              <select
-                value={autoLockTimeout}
-                onChange={(e) => onAutoLockTimeoutChange(Number(e.target.value))}
+              <Select
+                value={String(autoLockTimeout)}
+                onChange={(v) => onAutoLockTimeoutChange(Number(v))}
+                options={AUTO_LOCK_OPTIONS.map(option => ({ value: String(option.value), label: option.label }))}
                 className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                {AUTO_LOCK_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
+              />
             )}
             <ToggleSwitch
               enabled={autoLockEnabled}

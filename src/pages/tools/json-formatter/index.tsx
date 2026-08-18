@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Code2, Copy, Download, Trash2, FileText } from 'lucide-react';
 import { useToolPage } from '../../../hooks/useToolPage';
+import Select from '../../../components/ui/Select';
 import { formatBytes } from '../../../utils/format';
 
 type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
@@ -199,15 +200,12 @@ const JsonFormatterPage: React.FC = () => {
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-gray-600 dark:text-gray-400">缩进:</span>
-            <select
+            <Select
               value={indentStyle}
-              onChange={(e) => setIndentStyle(e.target.value as '2' | '4' | 'tab')}
+              onChange={(v) => setIndentStyle(v as '2' | '4' | 'tab')}
+              options={[{ value: '2', label: '2 空格' }, { value: '4', label: '4 空格' }, { value: 'tab', label: 'Tab' }]}
               className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-            >
-              <option value="2">2 空格</option>
-              <option value="4">4 空格</option>
-              <option value="tab">Tab</option>
-            </select>
+            />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input

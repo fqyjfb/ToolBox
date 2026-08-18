@@ -18,10 +18,12 @@ import Pagination from '../../../../components/ui/Pagination';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
+import Select from '../../../../components/ui/Select';
 import PasswordInput from '../../../../components/forms/PasswordInput';
 import { logError } from '../../../../services/loggerService';
 import { openUrl } from '../../../../services/browserService';
 import { localStorageService, STORAGE_KEYS } from '../../../../services/localStorageService';
+import { modalControlClass, modalTextareaClass } from '../shared';
 
 const findCategoryById = (catList: WebsiteAccountCategory[], targetId: string): WebsiteAccountCategory | undefined => {
   for (const cat of catList) {
@@ -719,59 +721,60 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       <Pagination className="mt-2" currentPage={currentPage} total={total} pageSize={pageSize} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
 
       <Modal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} title={editingCategory ? '编辑分类' : '添加分类'} confirmText="保存" onConfirm={saveCategory}>
-        <div className="space-y-3">
-          <input type="text" value={categoryForm.name} onChange={(e) => setCategoryForm(prev => ({ ...prev, name: e.target.value }))} placeholder="分类名称" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+        <div className="space-y-2">
+          <input type="text" value={categoryForm.name} onChange={(e) => setCategoryForm(prev => ({ ...prev, name: e.target.value }))} placeholder="分类名称" className={modalControlClass} />
         </div>
       </Modal>
 
       <Modal isOpen={showItemModal} onClose={() => { setShowItemModal(false); setEditingItem(null); }} title={editingItem ? '编辑网站账号' : '添加网站账号'} confirmText="保存" onConfirm={saveItem}>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <select 
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <Select 
               value={selectedParentCategory || ''} 
-              onChange={(e) => {
-                const parentId = e.target.value || null;
+              onChange={(v) => {
+                const parentId = v || null;
                 setSelectedParentCategory(parentId);
                 const parentCategory = categories.find(c => c.id === parentId);
                 const children = parentCategory?.children || [];
                 if (children.length > 0) {
                   setAccountForm(prev => ({ ...prev, category_id: children[0].id }));
-                  } else {
-                    setAccountForm(prev => ({ ...prev, category_id: parentId }));
-                  }
-              }} 
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">选择主分类</option>
-              {categories.filter(c => !c.parent_id).map(category => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              ))}
-            </select>
-            <select 
-              value={accountForm.category_id || ''} 
-              onChange={(e) => setAccountForm(prev => ({ ...prev, category_id: e.target.value || null }))} 
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">选择子分类</option>
-              {selectedParentCategory && (() => {
-                const parentCategory = categories.find(c => c.id === selectedParentCategory);
-                if (parentCategory && parentCategory.children && parentCategory.children.length > 0) {
-                  return parentCategory.children.map(child => (
-                    <option key={child.id} value={child.id}>{child.name}</option>
-                  ));
                 } else {
-                  return null;
+                  setAccountForm(prev => ({ ...prev, category_id: parentId }));
                 }
-              })()}
-            </select>
+              }}
+              options={[
+                { value: '', label: '选择主分类' },
+                ...categories.filter(c => !c.parent_id).map(category => ({ value: category.id, label: category.name }))
+              ]}
+              className={modalControlClass}
+            />
+            <Select 
+              value={accountForm.category_id || ''} 
+              onChange={(v) => setAccountForm(prev => ({ ...prev, category_id: v || null }))}
+              options={[
+                { value: '', label: '选择子分类' },
+                ...(selectedParentCategory ? (() => {
+                  const parentCategory = categories.find(c => c.id === selectedParentCategory);
+                  if (parentCategory && parentCategory.children && parentCategory.children.length > 0) {
+                    return parentCategory.children.map(child => ({ value: child.id, label: child.name }));
+                  }
+                  return [];
+                })() : [])
+              ]}
+              className={modalControlClass}
+            />
           </div>
-          <input type="text" value={accountForm.name} onChange={(e) => setAccountForm(prev => ({ ...prev, name: e.target.value }))} placeholder="网站名称" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <div className="grid grid-cols-2 gap-4">
-            <input type="text" value={accountForm.url} onChange={(e) => setAccountForm(prev => ({ ...prev, url: e.target.value }))} placeholder="网站地址" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={accountForm.name} onChange={(e) => setAccountForm(prev => ({ ...prev, name: e.target.value }))} placeholder="网站名称" className={modalControlClass} />
+            <input type="text" value={accountForm.url} onChange={(e) => setAccountForm(prev => ({ ...prev, url: e.target.value }))} placeholder="网站地址" className={modalControlClass} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" value={accountForm.username} onChange={(e) => setAccountForm(prev => ({ ...prev, username: e.target.value }))} placeholder="用户名" className={modalControlClass} />
             <PasswordInput
               value={accountForm.password}
               onChange={(value) => setAccountForm(prev => ({ ...prev, password: value }))}
               placeholder="密码"
+              className={modalControlClass}
               extraButton={
                 <button
                   onClick={generatePassword}
@@ -783,31 +786,37 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
               }
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <input type="text" value={accountForm.username} onChange={(e) => setAccountForm(prev => ({ ...prev, username: e.target.value }))} placeholder="用户名" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <div className="grid grid-cols-2 gap-2">
             <SelectWithCustom
               value={accountForm.email}
               onChange={(value) => setAccountForm(prev => ({ ...prev, email: value }))}
               options={emails.map(e => ({ id: e.id, label: e.email }))}
               placeholder="邮箱"
+              className={modalControlClass}
             />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <SelectWithCustom
               value={accountForm.phone}
               onChange={(value) => setAccountForm(prev => ({ ...prev, phone: value }))}
               options={phones.map(p => ({ id: p.id, label: p.phone_number }))}
               placeholder="手机号"
+              className={modalControlClass}
             />
-            <input type="date" value={accountForm.date} onChange={(e) => setAccountForm(prev => ({ ...prev, date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
           </div>
-          <select value={accountForm.status} onChange={(e) => setAccountForm(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'expired' }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-            <option value="active">活跃</option>
-            <option value="inactive">非活跃</option>
-            <option value="expired">已过期</option>
-          </select>
-          <textarea value={accountForm.security_question} onChange={(e) => setAccountForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题及答案" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
-          <textarea value={accountForm.notes} onChange={(e) => setAccountForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" rows={2} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="date" value={accountForm.date} onChange={(e) => setAccountForm(prev => ({ ...prev, date: e.target.value }))} className={modalControlClass} />
+            <Select
+              value={accountForm.status}
+              onChange={(v) => setAccountForm(prev => ({ ...prev, status: v as 'active' | 'inactive' | 'expired' }))}
+              options={[
+                { value: 'active', label: '活跃' },
+                { value: 'inactive', label: '非活跃' },
+                { value: 'expired', label: '已过期' }
+              ]}
+              className={modalControlClass}
+            />
+          </div>
+          <textarea value={accountForm.security_question} onChange={(e) => setAccountForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题及答案" rows={2} className={modalTextareaClass} />
+          <textarea value={accountForm.notes} onChange={(e) => setAccountForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
         </div>
       </Modal>
 

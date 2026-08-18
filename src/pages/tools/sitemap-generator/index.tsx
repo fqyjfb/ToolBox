@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Map, Copy, Download, FileText } from 'lucide-react';
 import { useToolPage } from '../../../hooks/useToolPage';
+import Select from '../../../components/ui/Select';
 
 interface UrlEntry {
   url: string;
@@ -161,25 +162,19 @@ const SitemapGeneratorPage: React.FC = () => {
                     className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm"
                   />
                   
-                  <select
+                  <Select
                     value={entry.priority}
-                    onChange={(e) => updateEntry(index, 'priority', e.target.value)}
+                    onChange={(v) => updateEntry(index, 'priority', v)}
+                    options={priorityOptions.map(opt => ({ value: opt, label: opt }))}
                     className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm"
-                  >
-                    {priorityOptions.map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
+                  />
                   
-                  <select
+                  <Select
                     value={entry.changefreq}
-                    onChange={(e) => updateEntry(index, 'changefreq', e.target.value)}
+                    onChange={(v) => updateEntry(index, 'changefreq', v)}
+                    options={changefreqOptions}
                     className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm"
-                  >
-                    {changefreqOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  />
                   
                   <input
                     type="date"

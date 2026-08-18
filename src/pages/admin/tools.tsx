@@ -10,6 +10,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import ContextMenu from '../../components/ui/ContextMenu'
 import ToggleSwitch from '../../components/settings/ToggleSwitch'
 import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager';
+import Select from '../../components/ui/Select'
 import { openUrl } from '../../services/browserService'
 
 const isForeignDomain = (url: string): boolean => {
@@ -608,26 +609,24 @@ const ToolsPage: React.FC = () => {
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">分类</label>
               <div className="flex flex-col sm:flex-row gap-2">
-                <select
+                <Select
                   value={selectedMainCategory}
-                  onChange={(e) => handleMainCategoryChange(e.target.value)}
+                  onChange={handleMainCategoryChange}
+                  options={[
+                    { value: '', label: '选择主分类' },
+                    ...getMainCategories().map(category => ({ value: category.id, label: category.name }))
+                  ]}
                   className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
-                >
-                  <option value="">选择主分类</option>
-                  {getMainCategories().map(category => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  ))}
-                </select>
-                <select
+                />
+                <Select
                   value={selectedSubCategory}
-                  onChange={(e) => handleSubCategoryChange(e.target.value)}
+                  onChange={handleSubCategoryChange}
+                  options={[
+                    { value: '', label: '选择子分类' },
+                    ...getSubCategories(selectedMainCategory).map(category => ({ value: category.id, label: category.name }))
+                  ]}
                   className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
-                >
-                  <option value="">选择子分类</option>
-                  {getSubCategories(selectedMainCategory).map(category => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
 
@@ -675,16 +674,16 @@ const ToolsPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">网盘类型</label>
-              <select
-                name="网盘类型"
+              <Select
                 value={formData.网盘类型}
-                onChange={handleChange}
+                onChange={(v) => setFormData(prev => ({ ...prev, '网盘类型': v as '夸克' | '百度' | '其他' }))}
+                options={[
+                  { value: '夸克', label: '夸克网盘' },
+                  { value: '百度', label: '百度网盘' },
+                  { value: '其他', label: '其他' }
+                ]}
                 className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
-              >
-                <option value="夸克">夸克网盘</option>
-                <option value="百度">百度网盘</option>
-                <option value="其他">其他</option>
-              </select>
+              />
             </div>
 
             <div>

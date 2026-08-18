@@ -8,6 +8,7 @@ import { useToastStore } from '../../store/toastStore'
 import ContextMenu from '../../components/ui/ContextMenu'
 import { useContextMenu } from '../../hooks/useContextMenu'
 import Modal from '../../components/ui/Modal'
+import Select from '../../components/ui/Select'
 
 interface UserItem {
   id: string
@@ -216,33 +217,33 @@ const UserListPage: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-4 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div className="flex items-center gap-3">
-            <select
+            <Select
               value={memberLevelFilter}
-              onChange={(e) => {
-                const newValue = e.target.value
-                setMemberLevelFilter(newValue)
+              onChange={(v) => {
+                setMemberLevelFilter(v)
                 setCurrentPage(1)
               }}
+              options={[
+                { value: '', label: '全部等级' },
+                { value: '普通', label: '普通' },
+                { value: 'VIP', label: 'VIP' },
+                { value: 'SVIP', label: 'SVIP' }
+              ]}
               className="px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
-            >
-              <option value="">全部等级</option>
-              <option value="普通">普通</option>
-              <option value="VIP">VIP</option>
-              <option value="SVIP">SVIP</option>
-            </select>
-            <select
+            />
+            <Select
               value={statusFilter}
-              onChange={(e) => {
-                const newValue = e.target.value
-                setStatusFilter(newValue)
+              onChange={(v) => {
+                setStatusFilter(v)
                 setCurrentPage(1)
               }}
+              options={[
+                { value: '', label: '全部状态' },
+                { value: 'active', label: '正常' },
+                { value: 'banned', label: '已封禁' }
+              ]}
               className="px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
-            >
-              <option value="">全部状态</option>
-              <option value="active">正常</option>
-              <option value="banned">已封禁</option>
-            </select>
+            />
           </div>
           <div className="relative max-w-[200px] w-full">
             <input
@@ -493,16 +494,16 @@ const UserListPage: React.FC = () => {
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                   会员等级
                 </label>
-                <select
-                  name="memberLevel"
+                <Select
                   value={formData.memberLevel}
-                  onChange={handleInputChange}
+                  onChange={(v) => setFormData(prev => ({ ...prev, memberLevel: v }))}
+                  options={[
+                    { value: '普通', label: '普通' },
+                    { value: 'VIP', label: 'VIP' },
+                    { value: 'SVIP', label: 'SVIP' }
+                  ]}
                   className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
-                >
-                  <option value="普通">普通</option>
-                  <option value="VIP">VIP</option>
-                  <option value="SVIP">SVIP</option>
-                </select>
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">

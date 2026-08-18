@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Tag, Copy, Download } from 'lucide-react';
 import { useToolPage } from '../../../hooks/useToolPage';
+import Select from '../../../components/ui/Select';
 
 const MetaTagsGeneratorPage: React.FC = () => {
   const { handleCopy, addToast } = useToolPage();
@@ -202,16 +203,17 @@ const MetaTagsGeneratorPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">OG 类型</label>
-                  <select
+                  <Select
                     value={ogType}
-                    onChange={(e) => setOgType(e.target.value)}
+                    onChange={setOgType}
+                    options={[
+                      { value: 'website', label: 'website' },
+                      { value: 'article', label: 'article' },
+                      { value: 'blog', label: 'blog' },
+                      { value: 'product', label: 'product' }
+                    ]}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
-                  >
-                    <option value="website">website</option>
-                    <option value="article">article</option>
-                    <option value="blog">blog</option>
-                    <option value="product">product</option>
-                  </select>
+                  />
                 </div>
               </div>
             </div>

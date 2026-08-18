@@ -3,6 +3,7 @@ import { Clock, RefreshCw, ArrowRightLeft, Search } from 'lucide-react';
 import { apiService } from '../../../services/api';
 import { logError } from '../../../services/loggerService';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import Select from '../../../components/ui/Select';
 
 interface RateItem {
   currency: string;
@@ -233,17 +234,12 @@ const ExchangePage: React.FC = () => {
             <div className="flex flex-wrap items-end gap-1.5">
               <div className="flex flex-col gap-0.5 min-w-[100px] flex-1">
                 <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">从</label>
-                <select
+                <Select
                   value={fromCurrency}
-                  onChange={(e) => setFromCurrency(e.target.value)}
+                  onChange={setFromCurrency}
+                  options={currencyOptions}
                   className="px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 text-xs"
-                >
-                  {currencyOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               
               <div className="flex flex-col gap-0.5 min-w-[100px] flex-1">
@@ -269,17 +265,12 @@ const ExchangePage: React.FC = () => {
 
               <div className="flex flex-col gap-0.5 min-w-[100px] flex-1">
                 <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">到</label>
-                <select
+                <Select
                   value={toCurrency}
-                  onChange={(e) => setToCurrency(e.target.value)}
+                  onChange={setToCurrency}
+                  options={currencyOptions}
                   className="px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 text-xs"
-                >
-                  {currencyOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               
               <div className="flex flex-col gap-0.5 min-w-[100px] flex-1">
