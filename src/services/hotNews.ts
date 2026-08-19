@@ -29,6 +29,12 @@ const PLATFORM_NAMES: Record<HotNewsPlatform, string> = {
   zhihu: '知乎'
 };
 
+// 将 HTTP 图片 URL 升级为 HTTPS，避免 HTTPS 页面 Mixed Content 错误
+const toHttps = (url?: string | null): string | undefined => {
+  if (!url) return undefined;
+  return url.replace(/^http:\/\//i, 'https://');
+};
+
 const fetchData = async <T>(url: string, options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<T | null> => {
   const cacheKey = `hot_news_${url.replace(/\//g, '_')}`;
   
@@ -109,7 +115,7 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
           title: itemData.title,
           link: itemData.link,
           hotValue: itemData.hot_value,
-          cover: itemData.cover,
+          cover: toHttps(itemData.cover),
           activeTimeAt: itemData.active_time_at,
           eventTimeAt: itemData.event_time_at
         };
@@ -124,7 +130,7 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
           hotValue: itemData.score,
           rank: itemData.rank,
           wordType: itemData.word_type,
-          workTypeIcon: itemData.work_type_icon
+          workTypeIcon: toHttps(itemData.work_type_icon)
         };
       }
       
@@ -135,7 +141,7 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
           title: itemData.title,
           link: itemData.link,
           hotValue: Math.max(itemData.comment_count, itemData.like_count, itemData.share_count),
-          cover: itemData.cover,
+          cover: toHttps(itemData.cover),
           source: itemData.source,
           publishedAt: itemData.published_at,
           desc: itemData.summary,
@@ -145,7 +151,7 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
           likeCount: itemData.like_count,
           shareCount: itemData.share_count,
           tags: itemData.tags,
-          images: itemData.images
+          images: itemData.images?.map(img => ({ ...img, url: toHttps(img.url) || '' }))
         };
       }
       
@@ -166,12 +172,12 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
           title: itemData.title,
           link: itemData.url,
           hotValue: itemData.score_desc,
-          cover: itemData.cover,
+          cover: toHttps(itemData.cover),
           rank: itemData.rank,
           desc: itemData.desc,
           scoreDesc: itemData.score_desc,
           typeDesc: itemData.type_desc || undefined,
-          typeIcon: itemData.type_icon || undefined
+          typeIcon: toHttps(itemData.type_icon) || undefined
         };
       }
       
@@ -182,7 +188,7 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
           title: itemData.title,
           link: itemData.link,
           hotValue: itemData.hot_value,
-          cover: itemData.cover
+          cover: toHttps(itemData.cover)
         };
       }
       
@@ -193,7 +199,7 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
           title: itemData.title,
           link: itemData.link,
           hotValue: itemData.hot_value_desc,
-          cover: itemData.cover,
+          cover: toHttps(itemData.cover),
           createdAt: itemData.created_at,
           publishedAt: itemData.created_at,
           detail: itemData.detail,

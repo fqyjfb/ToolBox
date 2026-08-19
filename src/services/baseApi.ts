@@ -43,11 +43,27 @@ if (window.electron) {
   });
 }
 
+// 请求超时（ms）：避免主源挂起导致备源切换延迟
+const REQUEST_TIMEOUT = 10000;
+
+// 合并外部 signal 与超时 signal：任一触发即中止请求
+const withTimeout = (external?: AbortSignal): AbortSignal => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  if (external) {
+    if (external.aborted) controller.abort();
+    else external.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  // 超时后清理 timer 引用，避免内存泄漏
+  controller.signal.addEventListener('abort', () => clearTimeout(timer), { once: true });
+  return controller.signal;
+};
+
 const fetchWithUrl = async <T>(baseUrl: string, endpoint: string, options?: { signal?: AbortSignal }): Promise<T | null> => {
   try {
     const response = await fetch(`${baseUrl}${endpoint}`, {
       method: 'GET',
-      signal: options?.signal,
+      signal: withTimeout(options?.signal),
       headers: { 'Content-Type': 'application/json' }
     });
     if (!response.ok) return null;
