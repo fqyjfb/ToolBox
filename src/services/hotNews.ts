@@ -10,7 +10,6 @@ import type {
   BaiduHotItem,
   ToutiaoHotItem,
   ZhihuHotItem,
-  DongchediHotItem,
   UnifiedHotItem,
   HotNewsPlatform,
   SixtySecondsResponse,
@@ -27,8 +26,7 @@ const PLATFORM_NAMES: Record<HotNewsPlatform, string> = {
   weibo: '微博',
   baidu: '百度',
   toutiao: '头条',
-  zhihu: '知乎',
-  dongchedi: '懂车帝'
+  zhihu: '知乎'
 };
 
 const fetchData = async <T>(url: string, options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<T | null> => {
@@ -87,11 +85,6 @@ const getToutiaoHotNews = async (options?: { signal?: AbortSignal; forceRefresh?
 
 const getZhihuHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<ZhihuHotItem[] | null> => {
   const data = await fetchData<HotNewsResponse<ZhihuHotItem>>('/zhihu', options);
-  return data?.data || null;
-};
-
-const getDongchediHotNews = async (options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<DongchediHotItem[] | null> => {
-  const data = await fetchData<HotNewsResponse<DongchediHotItem>>('/dongchedi', options);
   return data?.data || null;
 };
 
@@ -209,19 +202,7 @@ const formatHotNews = (data: unknown[], platform: HotNewsPlatform): UnifiedHotIt
           followerCount: itemData.follower_cnt
         };
       }
-      
-      case 'dongchedi': {
-        const itemData = item as unknown as DongchediHotItem;
-        return {
-          ...baseItem,
-          title: itemData.title,
-          link: itemData.url,
-          hotValue: itemData.score_desc,
-          rank: itemData.rank,
-          scoreDesc: itemData.score_desc
-        };
-      }
-      
+
       default:
         return baseItem;
     }
@@ -254,9 +235,6 @@ export const hotNewsApi = {
       case 'zhihu':
         data = await getZhihuHotNews(options);
         break;
-      case 'dongchedi':
-        data = await getDongchediHotNews(options);
-        break;
     }
     
     if (data) {
@@ -267,7 +245,7 @@ export const hotNewsApi = {
   },
   
   async getAllHotNews(options?: { signal?: AbortSignal; forceRefresh?: boolean }): Promise<Record<HotNewsPlatform, UnifiedHotItem[]>> {
-    const platforms: HotNewsPlatform[] = ['douyin', 'rednote', 'quark', 'weibo', 'baidu', 'toutiao', 'zhihu', 'dongchedi'];
+    const platforms: HotNewsPlatform[] = ['douyin', 'rednote', 'quark', 'weibo', 'baidu', 'toutiao', 'zhihu'];
     
     const results: Record<HotNewsPlatform, UnifiedHotItem[]> = {} as Record<HotNewsPlatform, UnifiedHotItem[]>;
     

@@ -26,8 +26,7 @@ const HotNewsPage: React.FC = () => {
     { label: '头条', value: 'toutiao' as HotNewsPlatform, icon: './hot/头条.png' },
     { label: '知乎', value: 'zhihu' as HotNewsPlatform, icon: './hot/知乎.png' },
     { label: '小红书', value: 'rednote' as HotNewsPlatform, icon: './hot/小红书.png' },
-    { label: '微博', value: 'weibo' as HotNewsPlatform, icon: './hot/微博.png' },
-    { label: '懂车帝', value: 'dongchedi' as HotNewsPlatform, icon: './hot/懂车帝.png' }
+    { label: '微博', value: 'weibo' as HotNewsPlatform, icon: './hot/微博.png' }
   ];
 
   const currentHotNews = hotNewsData[activeTab] || [];
@@ -115,7 +114,7 @@ const HotNewsPage: React.FC = () => {
             </div>
             <h3 className="hot-title">
               {item.title}
-              {(item.platform === 'douyin' || item.platform === 'rednote' || item.platform === 'dongchedi') && item.hotValue && (
+              {(item.platform === 'douyin' || item.platform === 'rednote') && item.hotValue && (
                 <span className="hot-title-value">{formatHotValue(item.hotValue)}</span>
               )}
             </h3>
@@ -127,9 +126,9 @@ const HotNewsPage: React.FC = () => {
             </div>
           )}
           
-          {(item.commentCount || item.likeCount || item.shareCount || item.answerCount || item.followerCount || (item.hotValue && !['douyin', 'rednote', 'dongchedi'].includes(item.platform))) && (
+          {(item.commentCount || item.likeCount || item.shareCount || item.answerCount || item.followerCount || (item.hotValue && !['douyin', 'rednote'].includes(item.platform))) && (
             <div className="hot-card-stats">
-              {item.hotValue && !['douyin', 'rednote', 'dongchedi'].includes(item.platform) && (
+              {item.hotValue && !['douyin', 'rednote'].includes(item.platform) && (
                 <span className="hot-value">热度: {formatHotValue(item.hotValue)}</span>
               )}
               {item.commentCount && <span>评论: {item.commentCount}</span>}
@@ -153,7 +152,7 @@ const HotNewsPage: React.FC = () => {
               )}
               {item.source && <span className="hot-source">{item.source}</span>}
               {item.category && <span className="hot-category">{item.category}</span>}
-              {item.scoreDesc && !['baidu', 'dongchedi'].includes(item.platform) && (
+              {item.scoreDesc && item.platform !== 'baidu' && (
                 <span className="hot-score-desc">{item.scoreDesc}</span>
               )}
               {item.releaseInfo && <span className="hot-release-info">{item.releaseInfo}</span>}
@@ -201,11 +200,7 @@ const HotNewsPage: React.FC = () => {
           title="刷新"
           disabled={isCurrentPlatformLoading}
         >
-          {!isCurrentPlatformLoading ? (
-            <RefreshCw className="w-5 h-5" />
-          ) : (
-            <LoadingSpinner size="xs" />
-          )}
+          <RefreshCw className={`w-5 h-5 ${isCurrentPlatformLoading ? 'animate-spin' : ''}`} />
         </button>
       </div>
       

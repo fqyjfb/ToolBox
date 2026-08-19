@@ -105,15 +105,6 @@ export interface ZhihuHotItem {
   title: string;
 }
 
-// 懂车帝热搜数据类型
-export interface DongchediHotItem {
-  rank: number;
-  title: string;
-  url: string;
-  score: number;
-  score_desc: string;
-}
-
 // 猫眼电影实时票房数据类型
 export interface MaoyanMovieItem {
   avg_seat_view: string;
@@ -295,7 +286,7 @@ export interface AiNewsResponse {
 }
 
 // 热点平台类型
-export type HotNewsPlatform = 'douyin' | 'rednote' | 'quark' | 'weibo' | 'baidu' | 'toutiao' | 'zhihu' | 'dongchedi'
+export type HotNewsPlatform = 'douyin' | 'rednote' | 'quark' | 'weibo' | 'baidu' | 'toutiao' | 'zhihu'
 
 // 摸鱼日报数据类型
 export interface MoyuResponse {

@@ -4,3 +4,16 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# HotNews API 代理：规避浏览器 CORS 限制（同源转发到真实 API）
+[[redirects]]
+  from = "/api/news/*"
+  to = "https://60s.viki.moe/v2/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/news-fallback/*"
+  to = "https://60s.mizhoubaobei.top/v2/:splat"
+  status = 200
+  force = true

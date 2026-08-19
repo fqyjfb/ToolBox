@@ -227,13 +227,14 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
             <LoadingSpinner size="sm" />
           </div>
         ) : error ? (
-          <div className="info-error">
-            <p>{error}</p>
-            <button 
-              className="retry-btn mt-2 px-3 py-1 bg-primary text-button-text rounded hover:bg-primary-hover" 
+          <div className="info-error flex items-center gap-2 py-2">
+            <p className="text-xs text-gray-500">{error}</p>
+            <button
+              className="text-gray-400 hover:text-blue-500 transition-colors p-1"
               onClick={onRetry}
+              title="重新加载"
             >
-              重新加载
+              <RefreshCw className="w-3.5 h-3.5" />
             </button>
           </div>
         ) : data ? (

@@ -23,6 +23,12 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/api\/news/, ''),
           secure: true,
         },
+        '/api/news-fallback': {
+          target: 'https://60s.mizhoubaobei.top/v2',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/news-fallback/, ''),
+          secure: true,
+        },
       },
     },
     preview: {

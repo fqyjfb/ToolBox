@@ -4,7 +4,7 @@ import {
   Phone, RefreshCw, MessageSquare, Clipboard, CheckSquare, Key,
   FileCode, Globe, Smile, Clock, ArrowUpDown, Hash, Copy,
   Table, Link, Map, QrCode, Code, AtSign, Tag, AlignLeft,
-  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, StickyNote
+  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, StickyNote, Home
 } from 'lucide-react';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import { HomeToolItem, loadHomeTools, replaceHomeTool } from '../../utils/homeTools';
@@ -47,6 +47,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Scan,
   Folder,
   StickyNote,
+  Home,
 };
 
 const BASE_TOOLS_IDS = ['todo', 'memo', 'quick-reply', 'cloud-clipboard', 'account', 'weather', 'navigation', 'news'];
@@ -66,9 +67,18 @@ const ToolsPage = () => {
   const [selectedTool, setSelectedTool] = useState<HomeToolItem | null>(null);
 
   const myTools = useMemo(() => {
-    const toolIds = isDesktop ? [...BASE_TOOLS_IDS, 'notes'] : BASE_TOOLS_IDS;
     return ALL_TOOLS
-      .filter(tool => toolIds.includes(tool.id))
+      .filter(tool => BASE_TOOLS_IDS.includes(tool.id))
+      .map(tool => ({
+        ...tool,
+        icon: iconMap[tool.iconName] || Clipboard,
+        textColor: 'var(--color-bg-primary)' as const,
+      }));
+  }, []);
+
+  const newTools = useMemo(() => {
+    return ALL_TOOLS
+      .filter(tool => !BASE_TOOLS_IDS.includes(tool.id) && !(tool.id === 'notes' && !isDesktop))
       .map(tool => ({
         ...tool,
         icon: iconMap[tool.iconName] || Clipboard,
@@ -76,16 +86,8 @@ const ToolsPage = () => {
       }));
   }, [isDesktop]);
 
-  const newTools = useMemo(() => {
-    const excludedIds = isDesktop ? [...BASE_TOOLS_IDS, 'notes'] : BASE_TOOLS_IDS;
-    return ALL_TOOLS
-      .filter(tool => !excludedIds.includes(tool.id) && !(tool.id === 'notes' && !isDesktop))
-      .map(tool => ({
-        ...tool,
-        icon: iconMap[tool.iconName] || Clipboard,
-        textColor: 'var(--color-bg-primary)' as const,
-      }));
-  }, [isDesktop]);
+  const [homeToolsVersion, setHomeToolsVersion] = useState(0);
+  const homeToolIds = useMemo(() => new Set(loadHomeTools().map(t => t.id)), [homeToolsVersion]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, tool: typeof myTools[0]) => {
     e.preventDefault();
@@ -105,6 +107,7 @@ const ToolsPage = () => {
   const handleReplaceHomeTool = useCallback((index: number) => {
     if (selectedTool) {
       replaceHomeTool(index, selectedTool);
+      setHomeToolsVersion(v => v + 1);
       setContextMenuOpen(false);
       setSelectedTool(null);
     }
@@ -144,7 +147,7 @@ const ToolsPage = () => {
     if (isDesktop) {
       items.splice(0, 0, {
         id: 'replace-home-tool',
-        label: '替换首页卡片',
+        label: '加入首页',
         subMenu: homeTools.map((tool, index) => ({
           id: `replace-${index}`,
           label: `${index + 1}. ${tool.name}`,
@@ -161,7 +164,8 @@ const ToolsPage = () => {
   const renderToolCard = (tool: typeof myTools[0]) => {
     const Icon = tool.icon;
     const isPinned = pinnedToolIds.includes(tool.id);
-    
+    const isOnHome = homeToolIds.has(tool.id);
+
     return (
       <div
         key={tool.id}
@@ -170,11 +174,9 @@ const ToolsPage = () => {
         onClick={() => navigate(tool.path)}
         onContextMenu={(e) => handleContextMenu(e, tool)}
       >
-        {isPinned && (
-          <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
-            <svg className="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-            </svg>
+        {isOnHome && (
+          <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/90 flex items-center justify-center shadow-sm" title="首页显示">
+            <Home className="w-3 h-3 text-blue-500" />
           </div>
         )}
         <Icon className="tools-grid-item-icon" />
