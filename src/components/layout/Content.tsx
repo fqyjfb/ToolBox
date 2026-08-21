@@ -35,7 +35,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
 
   return (
     <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white ${className}`} style={{ overflowX: 'hidden' }}>
-      <div className="px-4 py-2.5 flex items-center justify-between" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+      <div className="pl-4 pr-0 py-0 flex items-center justify-between" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <button className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-300/50 dark:hover:bg-gray-600/50 transition-colors" onClick={toggleSidebar} title={isCollapsed ? '展开侧边栏' : '收起侧边栏'}>
             {isCollapsed ? (
@@ -47,12 +47,12 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
           <Breadcrumb />
         </div>
         <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center">
             {showSearch && (
               <div className="relative">
                 <input
                   placeholder="搜索..."
-                  className="border-2 border-transparent focus:border-gray-300 px-4 py-1.5 rounded-xl w-56 transition-[width] duration-300 focus:w-64 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
+                  className="border border-transparent focus:border-gray-300 px-4 py-1.5 rounded-xl w-56 transition-[width] duration-300 focus:w-64 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
                   name="search"
                   type="search"
                   value={searchQuery}
@@ -71,43 +71,45 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
               </div>
             )}
 
-            <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300" onClick={toggleTheme} title={isDark ? '浅色模式' : '深色模式'}>
-              {isDark ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
+            <div className="flex items-center overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-900">
+              <button className="w-9 h-9 flex items-center justify-center text-gray-600 transition-colors duration-200 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={toggleTheme} title={isDark ? '浅色模式' : '深色模式'}>
+                {isDark ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </button>
 
-            <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 relative" onClick={() => navigate('/tools/todo')} title="待办事项">
-              <Bell className="w-4 h-4" />
-              {pendingCount > 0 && (
-                <span className="absolute top-0 right-0 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                  {pendingCount > 9 ? '9+' : pendingCount}
-                </span>
-              )}
-            </button>
-            <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300" onClick={() => navigate('/settings')} title="设置">
-              <Settings className="w-4 h-4" />
-            </button>
+              <button className="w-9 h-9 flex items-center justify-center text-gray-600 transition-colors duration-200 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 relative" onClick={() => navigate('/tools/todo')} title="待办事项">
+                <Bell className="w-4 h-4" />
+                {pendingCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                    {pendingCount > 9 ? '9+' : pendingCount}
+                  </span>
+                )}
+              </button>
+              <button className="w-9 h-9 flex items-center justify-center text-gray-600 transition-colors duration-200 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => navigate('/settings')} title="设置">
+                <Settings className="w-4 h-4" />
+              </button>
 
-            {isDesktop && (
-              <>
-                <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5" onClick={() => window.electron?.minimize()}>
-                  <Minus className="w-4 h-4" />
-                </button>
-                <button className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 hover:-translate-y-0.5" onClick={() => window.electron?.maximize()}>
-                  <Maximize2 className="w-4 h-4" />
-                </button>
-                <button className="p-1.5 rounded-lg hover:bg-red-200 dark:hover:bg-red-900 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 hover:-translate-y-0.5" onClick={() => window.electron?.close()}>
-                  <X className="w-4 h-4" />
-                </button>
-              </>
-            )}
+              {isDesktop && (
+                <>
+                  <button className="w-9 h-9 flex items-center justify-center text-gray-600 transition-colors duration-200 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => window.electron?.minimize()}>
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <button className="w-9 h-9 flex items-center justify-center text-gray-600 transition-colors duration-200 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => window.electron?.maximize()}>
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                  <button className="w-9 h-9 flex items-center justify-center text-gray-600 transition-colors duration-200 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400" onClick={() => window.electron?.close()}>
+                    <X className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

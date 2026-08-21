@@ -41,7 +41,7 @@ const Home: React.FC = () => {
     setSixtySecondsError('');
 
     try {
-      const data = await hotNewsApi.getSixtySecondsData();
+      const data = await hotNewsApi.getSixtySecondsData({ forceRefresh: true });
       if (data) {
         setSixtySecondsData(data.data.news);
       } else {
