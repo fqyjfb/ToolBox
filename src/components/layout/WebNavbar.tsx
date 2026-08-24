@@ -10,6 +10,7 @@ const navItems = [
   { path: '/', label: '首页' },
   { path: '/news', label: '热点资讯' },
   { path: '/nav', label: '网址导航' },
+  { path: '/tools/tool-downloads', label: '工具下载' },
   { path: '/tools', label: '工具库' },
 ];
 

@@ -19,6 +19,7 @@ const routeLabelMap: Record<string, string> = {
   '/news': '热点新闻',
   '/nav': '网址导航',
   '/tools': '工具中心',
+  '/tools/tool-downloads': '工具下载',
   '/tools/exchange': '汇率换算',
   '/tools/cloud-clipboard': '云剪贴板',
   '/tools/quick-reply': '快捷回复',

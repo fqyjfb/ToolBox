@@ -18,6 +18,7 @@ const LoginPage = React.lazy(() => import('../pages/shared/LoginPage'));
 const Settings = React.lazy(() => import('../pages/shared/Settings'));
 const About = React.lazy(() => import('../pages/shared/About'));
 const ToolsPage = React.lazy(() => import('../pages/shared/ToolsPage'));
+const ToolDownloadPage = React.lazy(() => import('../pages/shared/ToolDownloadPage'));
 const LogsPage = React.lazy(() => import('../pages/logs/index'));
 
 const CountryCodePage = React.lazy(() => import('../pages/tools/country-code'));
@@ -72,6 +73,7 @@ const sharedRoutes: RouteConfig[] = [
 
 const authRequiredRoutes: RouteConfig[] = [
   { path: '/tools', element: <ToolsPage />, requiresAuth: true },
+  { path: '/tools/tool-downloads', element: <ToolDownloadPage />, requiresAuth: true },
   { path: '/tools/exchange', element: <ExchangePage />, requiresAuth: true },
   { path: '/tools/translate', element: <TranslatePage />, requiresAuth: true },
   { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },

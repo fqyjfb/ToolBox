@@ -501,7 +501,8 @@ function moveItem(itemPath, targetFolderPath) {
 
 function runPsScript(scriptContent) {
   const tmpScript = path.join(os.tmpdir(), `tb_clip_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.ps1`);
-  fs.writeFileSync(tmpScript, scriptContent, 'utf-8');
+  // UTF-8 BOM 必不可少：powershell.exe 将无 BOM 的 .ps1 按 ANSI 解析，中文路径会变成乱码
+  fs.writeFileSync(tmpScript, '\ufeff' + scriptContent, 'utf-8');
   try {
     return execFileSync('powershell.exe', [
       '-NoProfile', '-NonInteractive', '-Sta', '-ExecutionPolicy', 'Bypass', '-File', tmpScript
@@ -520,9 +521,15 @@ function writeFilesToSystemClipboard(filePaths) {
   const script = `Add-Type -AssemblyName System.Windows.Forms
 $paths = [string[]] (ConvertFrom-Json '${filesJson.replace(/'/g, "''")}')
 $sc = New-Object System.Collections.Specialized.StringCollection
-foreach ($p in $paths) { if (Test-Path $p) { [void]$sc.Add($p) } }
-if ($sc.Count -gt 0) { [System.Windows.Forms.Clipboard]::SetFileDropList($sc) }`;
-  runPsScript(script);
+foreach ($p in $paths) { if (Test-Path -LiteralPath $p) { [void]$sc.Add($p) } }
+if ($sc.Count -gt 0) {
+  [System.Windows.Forms.Clipboard]::SetFileDropList($sc)
+  Write-Output 'CLIPBOARD_OK'
+} else {
+  Write-Output 'CLIPBOARD_EMPTY'
+}`;
+  const output = runPsScript(script);
+  return typeof output === 'string' && output.trim().includes('CLIPBOARD_OK');
 }
 
 function copyItem(sourcePath) {
@@ -530,7 +537,9 @@ function copyItem(sourcePath) {
     if (!fs.existsSync(sourcePath)) {
       return { success: false, error: '文件或文件夹不存在' };
     }
-    writeFilesToSystemClipboard([sourcePath]);
+    if (!writeFilesToSystemClipboard([sourcePath])) {
+      return { success: false, error: '写入系统剪贴板失败' };
+    }
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : '复制失败' };

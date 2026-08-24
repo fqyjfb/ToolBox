@@ -512,10 +512,19 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     const isCtrlOrMeta = e.ctrlKey || e.metaKey;
 
     if (isCtrlOrMeta && e.key === 'c') {
+      // 页面存在文本选区（如预览区域框选内容）时，保留浏览器默认复制行为
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed && selection.toString().trim().length > 0) {
+        return;
+      }
       if (listSelection) {
         e.preventDefault();
+        const itemName = listSelection.split(/[/\\]/).pop() || listSelection;
         const success = await onCopyItem(listSelection);
-        addToast({ type: success ? 'success' : 'error', message: success ? '已复制到剪贴板' : '复制失败' });
+        addToast({
+          type: success ? 'success' : 'error',
+          message: success ? `已复制「${itemName}」到剪贴板` : `复制「${itemName}」失败`
+        });
       }
     }
   }, [listSelection, onCopyItem, addToast]);

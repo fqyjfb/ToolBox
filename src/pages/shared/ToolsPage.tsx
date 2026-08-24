@@ -4,7 +4,7 @@ import {
   Phone, RefreshCw, MessageSquare, Clipboard, CheckSquare, Key,
   FileCode, Globe, Smile, Clock, ArrowUpDown, Hash, Copy,
   Table, Link, Map, QrCode, Code, AtSign, Tag, AlignLeft,
-  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, StickyNote, Home
+  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, StickyNote, Home, Download
 } from 'lucide-react';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import { HomeToolItem, loadHomeTools, replaceHomeTool } from '../../utils/homeTools';
@@ -48,6 +48,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Folder,
   StickyNote,
   Home,
+  Download,
 };
 
 const BASE_TOOLS_IDS = ['todo', 'memo', 'quick-reply', 'cloud-clipboard', 'account', 'weather', 'navigation', 'news'];
@@ -185,6 +186,31 @@ const ToolsPage = () => {
     );
   };
 
+  const renderDownloadCard = (card: typeof downloadCard) => {
+    const Icon = card.icon;
+
+    return (
+      <div
+        key={card.id}
+        className="tools-grid-item"
+        style={{ backgroundColor: card.color }}
+        onClick={() => navigate(card.path)}
+      >
+        <Icon className="tools-grid-item-icon" />
+        <span className="tools-grid-item-name" style={{ color: card.textColor }}>{card.name}</span>
+      </div>
+    );
+  };
+
+  const downloadCard = {
+    id: 'tool-downloads',
+    name: '工具下载',
+    path: '/tools/tool-downloads',
+    color: '#059669',
+    icon: Download,
+    textColor: 'var(--color-bg-primary)' as const,
+  };
+
   return (
     <div className="h-full flex flex-col p-4 overflow-hidden">
         <div className="pt-0 mb-6">
@@ -198,6 +224,7 @@ const ToolsPage = () => {
           <h2 className="font-semibold mb-4 text-lg text-gray-800 dark:text-gray-200">实用工具</h2>
           <div className="tools-grid-wrapper">
             {newTools.map(renderToolCard)}
+            {renderDownloadCard(downloadCard)}
           </div>
         </div>
 
