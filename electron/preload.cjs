@@ -224,6 +224,12 @@ contextBridge.exposeInMainWorld('electron', {
     getStatus: () => ipcRenderer.invoke('lock:getStatus'),
     setPassword: (password) => ipcRenderer.invoke('lock:setPassword', password),
   },
+  offlineTools: {
+    getDir: () => ipcRenderer.invoke('offline-tools:get-dir'),
+    setDir: (dirPath) => ipcRenderer.invoke('offline-tools:set-dir', dirPath),
+    list: (dirPath) => ipcRenderer.invoke('offline-tools:list', dirPath),
+    open: (filePath) => ipcRenderer.invoke('offline-tools:open', filePath),
+  },
   onDownloadProgress: (callback) => {
     downloadProgressCallback = callback;
   },

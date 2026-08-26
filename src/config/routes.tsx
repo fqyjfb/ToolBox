@@ -56,6 +56,7 @@ const WeatherPage = React.lazy(() => import('../pages/tools/weather'));
 
 const PluginStorePage = React.lazy(() => import('../pages/tools/plugin-store'));
 const PluginPage = React.lazy(() => import('../pages/tools/PluginPage'));
+const OfflineToolsPage = React.lazy(() => import('../pages/tools/offline-tools'));
 
 const AdminDashboardPage = React.lazy(() => import('../pages/admin'));
 const AdminWebsitesPage = React.lazy(() => import('../pages/admin/websites'));
@@ -106,6 +107,7 @@ const authRequiredRoutes: RouteConfig[] = [
   { path: '/tools/hex-encode', element: <HexEncodePage />, requiresAuth: true },
   { path: '/tools/hex-decode', element: <HexDecodePage />, requiresAuth: true },
   { path: '/tools/plugin-store', element: <PluginStorePage />, requiresAuth: true },
+  { path: '/tools/offline-tools', element: <OfflineToolsPage />, requiresAuth: true },
   { path: '/tools/:pluginId', element: <PluginPage />, requiresAuth: true },
 ];
 

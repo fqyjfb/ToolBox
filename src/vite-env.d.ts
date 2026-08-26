@@ -68,6 +68,14 @@ interface InstalledPlugin extends PluginInfo {
   isPinned: boolean;
 }
 
+interface OfflineToolFile {
+  name: string;
+  fileName: string;
+  path: string;
+  size: number;
+  mtimeMs: number;
+}
+
 interface SystemInfo {
   os_name: string;
   os_version: string;
@@ -416,6 +424,12 @@ declare interface Window {
         set: (pluginId: string, userId: string, key: string, value: unknown) => Promise<void>;
         delete: (pluginId: string, userId: string, key?: string) => Promise<void>;
       };
+    };
+    offlineTools: {
+      getDir: () => Promise<string | null>;
+      setDir: (dirPath: string) => Promise<{ success: boolean; error?: string }>;
+      list: (dirPath: string) => Promise<{ success: boolean; files: OfflineToolFile[]; error?: string }>;
+      open: (filePath: string) => Promise<{ success: boolean; error?: string }>;
     };
   };
 }
