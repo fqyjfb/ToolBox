@@ -61,7 +61,7 @@ const QrGeneratorPage: React.FC = () => {
   }, [qrDataUrl, addToast]);
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <QrCode className="w-6 h-6 text-gray-600 dark:text-gray-400" />

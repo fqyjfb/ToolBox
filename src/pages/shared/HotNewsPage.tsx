@@ -171,7 +171,7 @@ const HotNewsPage: React.FC = () => {
   };
 
   return (
-    <div className="hot-news-content p-4">
+    <div className="hot-news-content">
       <svg width="0" height="0" style={{ position: 'absolute' }}>
         <defs>
           <clipPath id="squircleClip" clipPathUnits="objectBoundingBox">

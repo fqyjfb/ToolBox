@@ -94,7 +94,7 @@ const DatabasePage: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col p-4 overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">数据管理</h1>
       </div>

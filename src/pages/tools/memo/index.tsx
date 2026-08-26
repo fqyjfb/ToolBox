@@ -641,7 +641,7 @@ const MemoPage: React.FC = () => {
 
   return (
     <div 
-      className="h-full flex p-4 overflow-hidden"
+      className="h-full flex overflow-hidden"
       onContextMenu={(e) => handleContextMenu(e, 'empty')}
     >
         <div className="w-32 max-w-[120px] flex-shrink-0 mr-4 flex flex-col">

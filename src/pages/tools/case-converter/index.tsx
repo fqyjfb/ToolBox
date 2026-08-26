@@ -77,7 +77,7 @@ const CaseConverterPage: React.FC = () => {
   ];
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 mb-4">
         <ArrowUpDown className="w-6 h-6 text-gray-600 dark:text-gray-400" />
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">大小写转换工具</h2>

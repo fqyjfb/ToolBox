@@ -537,7 +537,7 @@ const CloudClipboardPage: React.FC = () => {
 
   return (
     <div 
-      className="h-full flex flex-col p-4 overflow-hidden"
+      className="h-full flex flex-col overflow-hidden"
       onContextMenu={(e) => handleContextMenu(e, 'empty')}
     >
         <div className="mb-4 flex-shrink-0">

@@ -111,7 +111,7 @@ const IPInfoPage: React.FC = () => {
   ].filter(item => item.value && item.value !== '未知') : [];
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 mb-4">
         <Globe className="w-6 h-6 text-gray-600 dark:text-gray-400" />
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">IP 地址信息查询</h2>

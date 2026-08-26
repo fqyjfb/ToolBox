@@ -401,8 +401,8 @@ const ToolsPage: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col p-4 overflow-hidden">
-      <div className="p-4 flex items-center justify-between">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="p-4 flex items-center justify-between flex-shrink-0">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">工具管理</h1>
         {activeTab === 'tools' && (
           <button
@@ -414,9 +414,8 @@ const ToolsPage: React.FC = () => {
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex gap-2">
+      <div className="px-4 py-3 flex-shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('tools')}
               className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
@@ -471,40 +470,41 @@ const ToolsPage: React.FC = () => {
           )}
         </div>
 
+      {activeTab === 'tools' && !loading && (
+        <div className="px-4 pb-3 flex-shrink-0 flex flex-wrap gap-2">
+          <button
+            onClick={() => handleCategoryFilterChange('')}
+            className={`px-2 py-1 text-xs rounded-full transition-colors ${
+              !filterCategory
+                ? 'bg-primary text-button-text'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            全部
+          </button>
+          {categoryTree.map(mainCategory => (
+            <button
+              key={mainCategory.id}
+              onClick={() => handleCategoryFilterChange(mainCategory.id)}
+              className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                filterCategory === mainCategory.id
+                  ? 'bg-primary text-button-text'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              {mainCategory.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto scrollbar-hide px-4 min-h-0">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <LoadingSpinner />
           </div>
         ) : activeTab === 'tools' ? (
-          <>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <button
-                onClick={() => handleCategoryFilterChange('')}
-                className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                  !filterCategory
-                    ? 'bg-primary text-button-text'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                全部
-              </button>
-              {categoryTree.map(mainCategory => (
-                <div key={mainCategory.id} className="relative">
-                  <button
-                    onClick={() => handleCategoryFilterChange(mainCategory.id)}
-                    className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                      filterCategory === mainCategory.id
-                        ? 'bg-primary text-button-text'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {mainCategory.name}
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                   <tr>
@@ -571,17 +571,6 @@ const ToolsPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-
-            <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-              <Pagination
-                currentPage={currentPage}
-                total={totalItems}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={handlePageSizeChange}
-              />
-            </div>
-          </>
         ) : (
           <CategoryManager
             categories={categoryTree as CategoryItem[]}
@@ -593,6 +582,18 @@ const ToolsPage: React.FC = () => {
           />
         )}
       </div>
+
+      {activeTab === 'tools' && (
+        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+          <Pagination
+            currentPage={currentPage}
+            total={totalItems}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        </div>
+      )}
 
       {(isAddModalOpen || isEditModalOpen) && (
         <Modal

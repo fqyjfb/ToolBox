@@ -52,7 +52,7 @@ const CountryCodePage: React.FC = () => {
   };
 
   return (
-    <div className="p-4 h-full flex flex-col">
+    <div className="h-full flex flex-col">
       <div className="mb-3">
         <div className="flex flex-wrap gap-1.5">
           {regions.map((region) => (

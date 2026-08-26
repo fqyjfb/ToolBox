@@ -403,7 +403,7 @@ console.log(theme);
   }, [markdown, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="h-full flex flex-col p-4 markdown-wechat-container">
+    <div className="h-full flex flex-col markdown-wechat-container">
       <style>{`
         .markdown-wechat-container ::-webkit-scrollbar {
           width: 6px;

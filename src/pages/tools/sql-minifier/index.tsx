@@ -102,7 +102,7 @@ ORDER BY
   const percentageSaved = originalSize > 0 ? ((originalSize - minifiedSize) / originalSize * 100).toFixed(1) : '0';
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Code2 className="w-6 h-6 text-gray-600 dark:text-gray-400" />

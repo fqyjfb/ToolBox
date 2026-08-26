@@ -593,7 +593,7 @@ const NavPage: React.FC = () => {
   )
 
   return (
-    <div className="homenav-page flex flex-col h-full p-4 overflow-hidden">
+    <div className="homenav-page flex flex-col h-full overflow-hidden">
       {/* 收藏夹效果导航 */}
 
         <div className="nav-container">

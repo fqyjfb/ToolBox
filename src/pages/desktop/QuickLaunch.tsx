@@ -689,7 +689,7 @@ const QuickLaunch: React.FC = () => {
       </div>
 
       <div 
-        className={`flex-1 p-6 overflow-auto transition-colors duration-200 ${
+        className={`flex-1 overflow-auto transition-colors duration-200 ${
           isDragOver ? 'bg-green-50 dark:bg-green-900/20' : ''
         }`}
         onDragOver={handleDragOver}

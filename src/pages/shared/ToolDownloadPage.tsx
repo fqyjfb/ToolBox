@@ -53,7 +53,7 @@ const ToolDownloadPage: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">工具下载</h1>
         <div className="relative w-[200px]">

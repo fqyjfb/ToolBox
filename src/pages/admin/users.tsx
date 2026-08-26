@@ -203,8 +203,8 @@ const UserListPage: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col p-4 overflow-hidden">
-      <div className="p-4 flex items-center justify-between">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="p-4 flex items-center justify-between flex-shrink-0">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">用户管理</h1>
         <button
           onClick={handleResetFilters}
@@ -214,9 +214,8 @@ const UserListPage: React.FC = () => {
           重置筛选
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="mb-4 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-          <div className="flex items-center gap-3">
+      <div className="px-4 py-3 flex-shrink-0 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div className="flex items-center gap-3">
             <Select
               value={memberLevelFilter}
               onChange={(v) => {
@@ -274,6 +273,7 @@ const UserListPage: React.FC = () => {
           </div>
         </div>
 
+      <div className="flex-1 overflow-y-auto scrollbar-hide px-4 min-h-0">
         <div className="overflow-x-auto">
           {isLoading ? (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -397,16 +397,16 @@ const UserListPage: React.FC = () => {
             </table>
           )}
         </div>
+      </div>
 
-        <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-          <Pagination
-            currentPage={currentPage}
-            total={total}
-            pageSize={pageSize}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        </div>
+      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+        <Pagination
+          currentPage={currentPage}
+          total={total}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </div>
 
       {contextMenu && (

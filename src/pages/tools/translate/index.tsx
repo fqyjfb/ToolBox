@@ -223,7 +223,7 @@ const TranslatePage: React.FC = () => {
   };
 
   return (
-    <div className="p-4 h-full flex flex-col gap-4">
+    <div className="h-full flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Select
           value={sourceLang}

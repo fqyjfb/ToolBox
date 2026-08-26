@@ -53,7 +53,7 @@ const HexDecodePage: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Binary className="w-6 h-6 text-gray-600 dark:text-gray-400" />

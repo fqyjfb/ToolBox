@@ -465,8 +465,8 @@ const AdminWebsitesPage: React.FC = () => {
   const isLoading = categoriesLoading || bookmarksLoading
 
   return (
-    <div className="h-full flex flex-col p-4 overflow-hidden">
-      <div className="p-4 flex items-center justify-between">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="p-4 flex items-center justify-between flex-shrink-0">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">网址管理</h1>
         {activeTab === 'bookmarks' && (
           <button
@@ -478,177 +478,167 @@ const AdminWebsitesPage: React.FC = () => {
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex gap-2">
+      <div className="px-4 py-3 flex-shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('bookmarks')}
+            className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
+              activeTab === 'bookmarks'
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            网址列表
+          </button>
+          <button
+            onClick={() => setActiveTab('categories')}
+            className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
+              activeTab === 'categories'
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            分类管理
+          </button>
+        </div>
+        {activeTab === 'bookmarks' && (
+          <div className="relative max-w-[200px] w-full">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onKeyDown={handleKeyDown}
+              placeholder="搜索网址..."
+              className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  setPage(1)
+                }}
+                className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                title="清空搜索"
+              >
+                <X size={12} />
+              </button>
+            )}
             <button
-              onClick={() => setActiveTab('bookmarks')}
-              className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
-                activeTab === 'bookmarks'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
+              type="button"
+              onClick={handleSearchSubmit}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              title="搜索"
             >
-              网址列表
-            </button>
-            <button
-              onClick={() => setActiveTab('categories')}
-              className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
-                activeTab === 'categories'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
-            >
-              分类管理
+              <Search size={14} />
             </button>
           </div>
-          {activeTab === 'bookmarks' && (
-            <div className="relative max-w-[200px] w-full">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                onKeyDown={handleKeyDown}
-                placeholder="搜索网址..."
-                className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('')
-                    setPage(1)
-                  }}
-                  className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  title="清空搜索"
-                >
-                  <X size={12} />
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleSearchSubmit}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                title="搜索"
-              >
-                <Search size={14} />
-              </button>
-            </div>
-          )}
+        )}
+      </div>
+
+      {activeTab === 'bookmarks' && (
+        <div className="px-4 pb-3 flex-shrink-0 flex flex-wrap gap-2">
+          <button
+            onClick={() => handleCategorySelect(null)}
+            className={`px-2 py-1 text-xs rounded-full transition-colors ${
+              !selectedCategoryId
+                ? 'bg-primary text-button-text'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            全部
+          </button>
+          {categories.map(mainCategory => (
+            <button
+              key={mainCategory.id}
+              onClick={() => handleCategorySelect(mainCategory.id)}
+              className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                selectedCategoryId === mainCategory.id
+                  ? 'bg-primary text-button-text'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              {mainCategory.name}
+            </button>
+          ))}
         </div>
+      )}
 
+      <div className="flex-1 overflow-y-auto scrollbar-hide px-4 min-h-0">
         {activeTab === 'bookmarks' ? (
-          <>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <button
-                onClick={() => handleCategorySelect(null)}
-                className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                  !selectedCategoryId
-                    ? 'bg-primary text-button-text'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                全部
-              </button>
-              {categories.map(mainCategory => (
-                <button
-                  key={mainCategory.id}
-                  onClick={() => handleCategorySelect(mainCategory.id)}
-                  className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                    selectedCategoryId === mainCategory.id
-                      ? 'bg-primary text-button-text'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {mainCategory.name}
-                </button>
-              ))}
-            </div>
-
-            <div className="overflow-x-auto">
-              {isLoading ? (
-                <div className="flex items-center justify-center min-h-[60vh]">
-                  <LoadingSpinner size="lg" />
-                </div>
-              ) : (
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
-                  <tr>
-                    <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      标题
-                    </th>
-                    <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      网址
-                    </th>
-                    <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      分类
-                    </th>
-                    <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      公开
-                    </th>
+          <div className="overflow-x-auto">
+            {isLoading ? (
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+                <tr>
+                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    标题
+                  </th>
+                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    网址
+                  </th>
+                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    分类
+                  </th>
+                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    公开
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredBookmarks.map((bookmark) => (
+                  <tr 
+                    key={bookmark.id} 
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                    onContextMenu={(e) => handleBookmarkContextMenu(e, bookmark)}
+                  >
+                    <td className="px-4 py-3 sm:px-6">
+                      <div className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1" onClick={() => openBookmarkUrl(bookmark.url)}>
+                        {bookmark.title}
+                        <ExternalLink size={14} />
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                        {bookmark.description}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 sm:px-6">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openBookmarkUrl(bookmark.url) }}
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline flex items-center gap-1 truncate max-w-truncate-xl"
+                        title="点击打开网站"
+                      >
+                        <span className="truncate">{bookmark.url}</span>
+                        <ExternalLink size={12} className="flex-shrink-0" />
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {getCategoryName(bookmark.category_id)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
+                      <ToggleSwitch
+                        checked={bookmark.is_public}
+                        onChange={() => handleBookmarkTogglePublic(bookmark.id, bookmark.is_public)}
+                      />
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredBookmarks.map((bookmark) => (
-                    <tr 
-                      key={bookmark.id} 
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
-                      onContextMenu={(e) => handleBookmarkContextMenu(e, bookmark)}
-                    >
-                      <td className="px-4 py-3 sm:px-6">
-                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1" onClick={() => openBookmarkUrl(bookmark.url)}>
-                          {bookmark.title}
-                          <ExternalLink size={14} />
-                        </div>
-                        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-                          {bookmark.description}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 sm:px-6">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); openBookmarkUrl(bookmark.url) }}
-                          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline flex items-center gap-1 truncate max-w-truncate-xl"
-                          title="点击打开网站"
-                        >
-                          <span className="truncate">{bookmark.url}</span>
-                          <ExternalLink size={12} className="flex-shrink-0" />
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {getCategoryName(bookmark.category_id)}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                        <ToggleSwitch
-                          checked={bookmark.is_public}
-                          onChange={() => handleBookmarkTogglePublic(bookmark.id, bookmark.is_public)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                  {!isLoading && filteredBookmarks.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="py-8 text-center">
-                        <List className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                        <span className="text-gray-600 dark:text-gray-400">暂无数据</span>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-                </table>
-              )}
-            </div>
-
-            <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-              <Pagination
-                currentPage={page}
-                total={total}
-                pageSize={pageSize}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
-              />
-            </div>
-          </>
+                ))}
+                {!isLoading && filteredBookmarks.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center">
+                      <List className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                      <span className="text-gray-600 dark:text-gray-400">暂无数据</span>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+              </table>
+            )}
+          </div>
         ) : (
           <CategoryManager
             categories={categories as CategoryItem[]}
@@ -666,6 +656,18 @@ const AdminWebsitesPage: React.FC = () => {
           />
         )}
       </div>
+
+      {activeTab === 'bookmarks' && (
+        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+          <Pagination
+            currentPage={page}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        </div>
+      )}
 
       <Modal
         isOpen={isAddBookmarkModalOpen}

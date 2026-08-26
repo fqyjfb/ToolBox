@@ -228,7 +228,7 @@ const WeatherPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] p-4">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -236,7 +236,7 @@ const WeatherPage: React.FC = () => {
 
   if (error || !weatherData) {
     return (
-      <div className="p-4">
+      <div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
             <Cloud className="w-12 h-12 mb-3 opacity-50" />
@@ -255,7 +255,7 @@ const WeatherPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 overflow-y-auto max-h-[calc(100vh-80px)] scrollbar-hide">
+    <div className="overflow-y-auto max-h-[calc(100vh-80px)] scrollbar-hide">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-4 text-white">
           <div className="flex items-center justify-between mb-3">

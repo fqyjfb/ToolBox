@@ -105,7 +105,7 @@ const Home: React.FC = () => {
   }, [refreshHomeTools]);
 
   return (
-    <div className="p-6 h-full flex flex-col">
+    <div className="h-full flex flex-col">
       <div className="flex flex-col items-center gap-2 mb-2 flex-shrink-0">
         <SearchBar searchTypes={searchTypes} />
         <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />

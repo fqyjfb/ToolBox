@@ -28,6 +28,8 @@ const Select: React.FC<SelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOffset, setDropdownOffset] = useState(2);
+  const [dropdownLeft, setDropdownLeft] = useState(0);
+  const [dropdownMaxWidth, setDropdownMaxWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -50,6 +52,17 @@ const Select: React.FC<SelectProps> = ({
     const rect = triggerRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
     setDropdownOffset(spaceBelow < 160 ? -164 : 2);
+    const left = rect.left;
+    const width = rect.width;
+    const margin = 8;
+    const viewportWidth = window.innerWidth;
+    if (left + width > viewportWidth - margin) {
+      setDropdownLeft(left + width - viewportWidth + margin);
+      setDropdownMaxWidth(viewportWidth - left - margin);
+    } else {
+      setDropdownLeft(0);
+      setDropdownMaxWidth(0);
+    }
   }, [isOpen]);
 
   const selectedOption = options.find(opt => opt.value === value);
@@ -59,9 +72,10 @@ const Select: React.FC<SelectProps> = ({
       ref={dropdownRef}
       className="fixed bg-white dark:bg-gray-800 rounded-md shadow-lg z-[1000]"
       style={{
-        left: triggerRef.current ? triggerRef.current.getBoundingClientRect().left : 0,
+        left: triggerRef.current ? triggerRef.current.getBoundingClientRect().left + dropdownLeft : 0,
         top: triggerRef.current ? triggerRef.current.getBoundingClientRect().bottom + dropdownOffset : 0,
-        minWidth: triggerRef.current ? triggerRef.current.offsetWidth : 0,
+        width: triggerRef.current ? triggerRef.current.offsetWidth : 0,
+        maxWidth: dropdownMaxWidth > 0 ? dropdownMaxWidth : undefined,
       }}
     >
       <div className="max-h-60 overflow-y-auto py-1">

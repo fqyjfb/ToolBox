@@ -61,7 +61,7 @@ const Pagination: React.FC<PaginationProps> = ({
   if (total === 0) return null;
 
   return (
-    <div className={`flex items-center justify-center gap-2 py-2 ${className}`}>
+    <div className={`flex items-center justify-center gap-2 mt-2 ${className}`}>
       <span className="text-gray-600 dark:text-gray-400 text-sm">
         {`共${total}条`}
       </span>

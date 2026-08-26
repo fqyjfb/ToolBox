@@ -115,7 +115,7 @@ const TimestampConverterPage: React.FC = () => {
   }, [convertToTimestamp]);
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 mb-4">
         <Clock className="w-6 h-6 text-gray-600 dark:text-gray-400" />
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Unix 时间戳转换</h2>

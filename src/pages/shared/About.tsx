@@ -179,7 +179,7 @@ const About: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
             <img loading="lazy" src="./favicon.svg" alt="ToolBox Logo" className="w-12 h-12 mr-4" />
