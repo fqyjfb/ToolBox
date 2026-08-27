@@ -42,6 +42,11 @@ html, body {
   transform: scale(1.12);
 }
 
+/* 展开后禁用球体整体缩放，让各图标独立响应悬停 */
+.float-ball.expanded:hover {
+  transform: none;
+}
+
 /* 拖拽中 */
 .float-ball.dragging {
   cursor: grabbing;
@@ -83,7 +88,12 @@ html, body {
   background: #fff;
   padding: 10px;
   border-radius: 50px;
-  transition: opacity 0.3s ease, visibility 0.3s ease, top 0.3s ease, background 0.3s ease, transform 0.3s ease;
+  /* 折叠态：缩回中心 */
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.3s ease,
+              visibility 0.3s ease,
+              box-shadow 0.2s ease;
   z-index: 10;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   cursor: pointer;
@@ -95,17 +105,20 @@ html, body {
   display: block;
 }
 
+/* 展开态：从中心飞散到径向位置 */
 .float-ball.expanded .tooltip-item {
   opacity: 1;
   visibility: visible;
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: translate(calc(-50% + var(--dx, 0)), calc(-50% + var(--dy, 0))) scale(1);
 }
 
-.tooltip-item:hover {
-  transform: translate(-50%, -50%) scale(1.1);
-  z-index: 20;
+/* 展开+悬停：放大并增强阴影，优先级高于基础展开态 */
+.float-ball.expanded .tooltip-item:hover {
+  transform: translate(calc(-50% + var(--dx, 0)), calc(-50% + var(--dy, 0))) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .tooltip-item .tooltip-label {

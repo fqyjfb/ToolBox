@@ -97,10 +97,17 @@ function positionTooltipItems() {
     const radius = 60;
     const x = Math.cos((angle * Math.PI) / 180) * radius;
     const y = Math.sin((angle * Math.PI) / 180) * radius;
-    item.style.transform = 'translate(-50%, -50%) translate(' + x + 'px, ' + y + 'px)';
-    item.style.opacity = '1';
-    item.style.visibility = 'visible';
+    // 存储偏移到 data 属性，下一帧通过 CSS 变量生效以触发动画
+    item.dataset.dx = x + 'px';
+    item.dataset.dy = y + 'px';
   });
+  // 延迟一帧让浏览器渲染折叠态后再应用展开态，确保动画播放
+  setTimeout(function() {
+    items.forEach(function(item) {
+      item.style.setProperty('--dx', item.dataset.dx);
+      item.style.setProperty('--dy', item.dataset.dy);
+    });
+  }, 0);
 }
 
 function attachItemEvents() {
