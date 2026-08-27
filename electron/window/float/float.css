@@ -119,6 +119,7 @@ html, body {
 .float-ball.expanded .tooltip-item:hover {
   transform: translate(calc(-50% + var(--dx, 0)), calc(-50% + var(--dy, 0))) scale(1.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 20;
 }
 
 .tooltip-item .tooltip-label {
