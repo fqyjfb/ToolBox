@@ -2,13 +2,15 @@
 
 ## v2.8.6
 
-- 修复 Web 端（Netlify 部署）新闻/天气接口全部 403 的问题：默认主源由 `https://60s.viki.moe/v2` 切换为 `https://60s.fqy-jfb.workers.dev/v2`，与桌面端调用一致
-
-- 统一所有端口默认备用源为 `https://60s.viki.moe/v2`
+- 修复 Web 端（Netlify 部署）新闻/天气接口全部 403 的问题
 
 - 修复 Web 端 HTTPS 页面 Mixed Content 拦截：ip-api 免费版仅支持 HTTP，新增 `/api/ip` 同源代理转发，IP 定位功能在 HTTPS 页面恢复正常
 
-- 桌面端 IP 定位保持直连（file:// 源无 Mixed Content 限制），Web 端经同源代理转发，常量按 isElectron 切换避免代码冗余
+- 修复手机端底部导航"我的"点击跳转首页的问题
+
+- 修复手机端底部导航栏遮挡所有页面底部内容的问题
+
+- 修复手机端工具中心页面无法滚动、底部工具卡片不可点的问题
 
 ## v2.8.5
 

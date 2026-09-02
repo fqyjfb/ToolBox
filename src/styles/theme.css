@@ -85,6 +85,9 @@
   --space-32: 128px;
   --space-35: 140px;
   --space-5-5: 24px;
+
+  /* 手机端底部导航栏高度 */
+  --mobile-bottom-nav-height: 56px;
   
   --transition-fast: 0.15s ease;
   --transition-normal: 0.2s ease;

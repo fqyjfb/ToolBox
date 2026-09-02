@@ -219,13 +219,13 @@ const MobileNavbar: React.FC = () => {
         </div>
       </header>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50" style={{ backgroundColor: 'var(--color-card)', borderTop: '1px solid var(--color-border)' }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-50" style={{ height: 'var(--mobile-bottom-nav-height)', backgroundColor: 'var(--color-card)', borderTop: '1px solid var(--color-border)' }}>
         <div className="flex items-center justify-around" style={{ paddingTop: 'var(--space-2)' }}>
           {bottomNavItems.map((item, index) => (
             <button
               key={item.path}
-              onClick={index === 4 ? handleUserButtonClick : () => navigate(item.path)}
-              onContextMenu={index === 4 ? handleUserButtonRightClick : undefined}
+              onClick={index === bottomNavItems.length - 1 ? handleUserButtonClick : () => navigate(item.path)}
+              onContextMenu={index === bottomNavItems.length - 1 ? handleUserButtonRightClick : undefined}
               className={`flex flex-col items-center transition-colors relative bottom-nav-active`}
               style={{
                 gap: '2px',
@@ -235,7 +235,7 @@ const MobileNavbar: React.FC = () => {
             >
               <item.icon className="w-5 h-5" />
               <span className="font-medium" style={{ fontSize: 'var(--text-xs)' }}>{item.label}</span>
-              {index === 4 && (
+              {index === bottomNavItems.length - 1 && (
                 <span
                   className="absolute cursor-pointer transition-transform hover:scale-110"
                   style={{

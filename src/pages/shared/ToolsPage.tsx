@@ -212,7 +212,7 @@ const ToolsPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="min-h-full flex flex-col">
         <div className="pt-0 mb-6">
           <h2 className="font-semibold mb-4 text-lg text-gray-800 dark:text-gray-200">我的工具</h2>
           <div className="tools-grid-wrapper">
