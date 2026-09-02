@@ -12,6 +12,7 @@ import { WindowSize } from '../../types/settings';
 import { useToastStore } from '../../store/toastStore';
 import { useThemeStore } from '../../store/themeStore';
 import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
+import { IP_API_URL } from '../../utils/weatherLocation';
 
 interface GeneralTabProps {
   autostartEnabled: boolean;
@@ -144,7 +145,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   const handleLocationClick = async () => {
     setLocationLoading(true);
     try {
-      const response = await fetch('http://demo.ip-api.com/json/?lang=zh-CN');
+      const response = await fetch(IP_API_URL);
       const data = await response.json();
       if (data.status === 'success') {
         setWeatherCity(data.city);

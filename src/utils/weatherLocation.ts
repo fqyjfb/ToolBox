@@ -1,6 +1,11 @@
 import { localStorageService, STORAGE_KEYS } from '../services/localStorageService';
+import { isElectron } from './environment';
 
-const IP_API_URL = 'http://demo.ip-api.com/json/?lang=zh-CN';
+// ip-api 免费版仅支持 HTTP：桌面端 file:// 源无 Mixed Content 限制，直接请求；
+// web 端为 HTTPS 页面，需经同源代理 /api/ip 转发以避免 Mixed Content 拦截
+export const IP_API_URL = isElectron()
+  ? 'http://demo.ip-api.com/json/?lang=zh-CN'
+  : '/api/ip/json/?lang=zh-CN';
 
 export interface IpLocationResponse {
   status: string;

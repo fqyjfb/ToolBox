@@ -18,8 +18,8 @@ const DEFAULT_CONFIG: NetworkConfig = {
     requestTimeout: 10000,
   },
   hotNews: {
-    primaryUrl: 'https://60s.viki.moe/v2',
-    fallbackUrl: 'https://60s.mizhoubaobei.top/v2',
+    primaryUrl: 'https://60s.fqy-jfb.workers.dev/v2',
+    fallbackUrl: 'https://60s.viki.moe/v2',
     requestTimeout: 15000,
   },
   pluginStore: {

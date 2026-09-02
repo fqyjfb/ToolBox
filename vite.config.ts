@@ -18,16 +18,22 @@ export default defineConfig(({ mode }) => {
       host: true,
       proxy: {
         '/api/news': {
-          target: 'https://60s.viki.moe/v2',
+          target: 'https://60s.fqy-jfb.workers.dev/v2',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/news/, ''),
           secure: true,
         },
         '/api/news-fallback': {
-          target: 'https://60s.mizhoubaobei.top/v2',
+          target: 'https://60s.viki.moe/v2',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/news-fallback/, ''),
           secure: true,
+        },
+        '/api/ip': {
+          target: 'http://demo.ip-api.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/ip/, ''),
+          secure: false,
         },
       },
     },

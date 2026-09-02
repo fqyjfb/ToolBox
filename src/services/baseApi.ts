@@ -2,8 +2,8 @@ import type { NetworkConfig } from '../types/network';
 import { isElectron } from '../utils/environment';
 
 // 60s 新闻 API 默认值（同时也是 web/手机端硬编码使用的地址）
-const DEFAULT_PRIMARY_URL = 'https://60s.viki.moe/v2';
-const DEFAULT_FALLBACK_URL = 'https://60s.mizhoubaobei.top/v2';
+const DEFAULT_PRIMARY_URL = 'https://60s.fqy-jfb.workers.dev/v2';
+const DEFAULT_FALLBACK_URL = 'https://60s.viki.moe/v2';
 
 // Web 环境（含 web 端、手机端）通过同源代理规避 CORS；Electron 直接请求外部 API
 // 使用运行时检测（window.electron / userAgent），不依赖构建变量
