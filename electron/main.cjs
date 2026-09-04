@@ -14,6 +14,7 @@ const { sqliteService } = require('./services/sqliteService.cjs');
 const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow.cjs');
 const { registerQuickLoginIpcHandlers } = require('./window/quickLoginWindow.cjs');
 const { registerOfflineToolsIpc } = require('./ipc/offlineToolsIpc.cjs');
+const { registerEmailIpc } = require('./ipc/emailIpc.cjs');
 
 const DELAY_CREATE_TRAY = 500;
 const DELAY_CREATE_FLOAT_WINDOW = 1000;
@@ -95,6 +96,7 @@ app.whenReady().then(async () => {
   registerLogIpcHandlers();
   registerQuickLoginIpcHandlers();
   registerOfflineToolsIpc();
+  registerEmailIpc();
   registerIpcHandlers();
 
   const isLocked = checkLockOnStartup();

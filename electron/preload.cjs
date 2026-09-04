@@ -72,6 +72,30 @@ const s3Api = {
   deleteBucket: (config, bucketName) => ipcRenderer.invoke('s3:deleteBucket', { config, bucketName }),
 };
 
+let emailNewMailCallback = null;
+ipcRenderer.on('email:new-mail', (event, payload) => {
+  if (emailNewMailCallback) emailNewMailCallback(payload);
+});
+
+const emailApi = {
+  testConnection: (payload) => ipcRenderer.invoke('email:testConnection', payload),
+  listFolders: (payload) => ipcRenderer.invoke('email:listFolders', payload),
+  listMessages: (payload) => ipcRenderer.invoke('email:listMessages', payload),
+  getMessage: (payload) => ipcRenderer.invoke('email:getMessage', payload),
+  getAttachment: (payload) => ipcRenderer.invoke('email:getAttachment', payload),
+  sendMessage: (payload) => ipcRenderer.invoke('email:sendMessage', payload),
+  setFlags: (payload) => ipcRenderer.invoke('email:setFlags', payload),
+  deleteMessages: (payload) => ipcRenderer.invoke('email:deleteMessages', payload),
+  moveMessages: (payload) => ipcRenderer.invoke('email:moveMessages', payload),
+  getUnreadCounts: (payload) => ipcRenderer.invoke('email:getUnreadCounts', payload),
+  searchMessages: (payload) => ipcRenderer.invoke('email:searchMessages', payload),
+  watchStart: (payload) => ipcRenderer.invoke('email:watchStart', payload),
+  watchStop: (payload) => ipcRenderer.invoke('email:watchStop', payload),
+  oauthStart: (payload) => ipcRenderer.invoke('email:oauthStart', payload),
+  oauthCancel: () => ipcRenderer.invoke('email:oauthCancel'),
+  onNewMail: (callback) => { emailNewMailCallback = callback; },
+};
+
 contextBridge.exposeInMainWorld('electron', {
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
@@ -179,6 +203,7 @@ contextBridge.exposeInMainWorld('electron', {
     },
   },
   s3: s3Api,
+  email: emailApi,
   screenshot: {
     startCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
     cancel: () => ipcRenderer.send('cancel-screenshot'),

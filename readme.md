@@ -1,6 +1,6 @@
 # ToolBox
 
-[![Version](https://img.shields.io/badge/version-2.6.5-blue.svg)](./docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.8.7-blue.svg)](./docs/CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
 一个基于 Electron + React + TypeScript 构建的现代化桌面工具应用，集成多种实用工具和服务，支持插件扩展。

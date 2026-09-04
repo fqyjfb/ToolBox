@@ -8,6 +8,7 @@ import { useSidebarStore } from '../../store/sidebarStore';
 import { useTodoNotification } from '../../contexts/TodoNotificationContext';
 import { isElectron } from '../../utils/environment';
 import Breadcrumb from '../ui/Breadcrumb';
+import PageTransition from './PageTransition';
 import './Content.css';
 
 interface ContentProps {
@@ -114,8 +115,12 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-2">
-        {children}
+      <div className="flex-1 overflow-hidden p-2">
+        <div className="w-full h-full overflow-auto scrollbar-hide">
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </div>
       </div>
     </div>
   );

@@ -145,6 +145,7 @@
   --duration-toast: 5s;
   --duration-transition: 0.25s;
   --duration-bounce-delay: 0.15s;
+  --duration-page-transition: 320ms;
 
   /* 按钮渐变已移除，改用实心填充 */
   --color-button-primary: #18181B;
@@ -277,6 +278,7 @@
   --duration-toast: 5s;
   --duration-transition: 0.25s;
   --duration-bounce-delay: 0.15s;
+  --duration-page-transition: 320ms;
 
   /* 按钮渐变已移除，改用实心填充 */
   --color-button-primary: #EAF1F8;
