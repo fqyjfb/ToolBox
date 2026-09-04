@@ -15,11 +15,53 @@
 const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { shell } = require('electron');
 
 const DEFAULT_PORT = 53682; // 固定回跳端口；Google/Azure 原生应用均支持任意端口回跳
 const AUTH_TIMEOUT = 5 * 60 * 1000; // 授权页最长等待 5 分钟
 const TOKEN_REFRESH_SKEW = 60 * 1000; // 令牌提前 60s 判定过期，留出网络余量
+
+// —— 环境变量加载：开发读取 .env；打包产物从 env-secrets.cjs 读取（CI 构建时生成）——
+(function loadEnvSecrets() {
+  // 1) 优先加载构建脚本生成的 env-secrets.cjs（生产打包产物内的密钥，不会进 git）
+  try {
+    const builtIn = require(path.join(__dirname, '..', 'lib', 'env-secrets.cjs'));
+    if (builtIn && typeof builtIn === 'object') {
+      for (const [k, v] of Object.entries(builtIn)) {
+        if (v != null && v !== '' && process.env[k] == null) {
+          process.env[k] = String(v);
+        }
+      }
+    }
+  } catch {
+    /* env-secrets.cjs 不存在（开发模式），继续走 .env 加载 */
+  }
+
+  // 2) 开发模式：从项目根目录 .env 读取密钥（轻量解析，不引入 dotenv 依赖）
+  try {
+    const projectRoot = path.resolve(__dirname, '..', '..');
+    const envFile = path.join(projectRoot, '.env');
+    if (fs.existsSync(envFile)) {
+      const raw = fs.readFileSync(envFile, 'utf8');
+      for (const line of raw.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const idx = trimmed.indexOf('=');
+        if (idx === -1) continue;
+        let key = trimmed.slice(0, idx).trim();
+        let value = trimmed.slice(idx + 1).trim();
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        if (process.env[key] == null) process.env[key] = value;
+      }
+    }
+  } catch {
+    /* 忽略 .env 解析错误 */
+  }
+})();
 
 // 服务商 OAuth2 端点
 const PROVIDERS = {
@@ -35,16 +77,18 @@ const PROVIDERS = {
   },
 };
 
-// 内置 OAuth 客户端（开发者一次性在 Google Cloud Console / Azure 注册「桌面应用」后填入）。
-// 公共客户端走 PKCE，clientSecret 可留空；填好后前端「浏览器授权登录」即无需用户再输入 clientId。
+// 内置 OAuth 客户端：密钥全部从环境变量读取，禁止硬编码到仓库
+// 环境变量名：
+//   GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET
+//   OUTLOOK_OAUTH_CLIENT_ID / OUTLOOK_OAUTH_CLIENT_SECRET
 const DEFAULT_CLIENTS = {
   gmail: {
-    clientId: '539197582134-utfjmchp389qp3j8fibnjj21rfsfi1nh.apps.googleusercontent.com',
-    clientSecret: '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',
+    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
   },
   outlook: {
-    clientId: '', // TODO: 填入 Azure AD 注册的「移动和桌面应用程序」客户端 ID（启用 http://localhost 回跳）
-    clientSecret: '',
+    clientId: process.env.OUTLOOK_OAUTH_CLIENT_ID || '',
+    clientSecret: process.env.OUTLOOK_OAUTH_CLIENT_SECRET || '',
   },
 };
 

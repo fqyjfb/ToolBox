@@ -1,7 +1,7 @@
 {
   "name": "toolbox",
   "private": true,
-  "version": "2.8.7",
+  "version": "2.8.8",
   "description": "ToolBox多功能工具包应用程序",
   "author": "ToolBox Team",
   "type": "commonjs",
@@ -16,7 +16,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "node scripts/generate-icon-data.cjs && electron .",
-    "electron:build": "node scripts/generate-icon-data.cjs && electron-builder --publish never",
+    "electron:build": "node scripts/generate-icon-data.cjs && node scripts/write-env-secrets.cjs && electron-builder --publish never",
     "copy:vditor": "node scripts/copy-vditor-assets.cjs",
     "postinstall": "electron-builder install-app-deps && npm run copy:vditor",
     "generate-icons": "node scripts/generate-icon-data.cjs"

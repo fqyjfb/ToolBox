@@ -1,5 +1,15 @@
 # 更新日志
 
+## v2.8.8
+
+- 邮箱聚合插件安全加固：将 Google OAuth Client ID / Client Secret 从源码硬编码迁移至环境变量（.env），彻底移除仓库中的明文密钥
+
+- 新增构建密钥注入链路：CI 构建 `electron:build` 前自动执行 `scripts/write-env-secrets.cjs`，将 GitHub Environments Secrets 写入 `electron/lib/env-secrets.cjs` 并打入 asar，打包应用无需运行时额外配置
+
+- GitHub Actions 工作流支持 Environments 级密钥管理：`environment: production`（可通过 `vars.BUILD_ENVIRONMENT` 切换），在 Environment Secrets 中配置 `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` 即可打包为自带密钥的安装包
+
+- 新增 `.env.example` 模板与 `.gitignore` 规则：`electron/lib/env-secrets.cjs` 永不进仓库，本地开发在 `.env` 填写密钥即可使用
+
 ## v2.8.7
 
 - 新增邮箱聚合插件主进程支持：IMAP/SMTP 邮件收发、文件夹与邮件列表管理、全文检索、已读/删除/移动标记（基于 imapflow + mailparser + nodemailer）
@@ -974,3 +984,4 @@
 
 - 新增 OCR 文字识别、浮动窗口、记事本等功能
 
+<br />

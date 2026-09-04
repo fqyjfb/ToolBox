@@ -13,6 +13,8 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    # 支持在 GitHub Environments 中集中管理密钥；未配置环境时回退到仓库级 Secrets 也能使用
+    environment: ${{ vars.BUILD_ENVIRONMENT || 'production' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,6 +37,14 @@ jobs:
         run: pnpm electron:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 邮箱聚合插件 OAuth 密钥：在 GitHub Repository Secrets 或 Environment Secrets 中配置
+          # Settings → Secrets and variables → Environments → 选环境 → Secrets：
+          #   GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET
+          #   OUTLOOK_OAUTH_CLIENT_ID / OUTLOOK_OAUTH_CLIENT_SECRET
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          OUTLOOK_OAUTH_CLIENT_ID: ${{ secrets.OUTLOOK_OAUTH_CLIENT_ID }}
+          OUTLOOK_OAUTH_CLIENT_SECRET: ${{ secrets.OUTLOOK_OAUTH_CLIENT_SECRET }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

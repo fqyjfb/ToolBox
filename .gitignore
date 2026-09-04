@@ -27,6 +27,9 @@ dist-ssr
 .env
 .env.local
 
+# 邮箱 OAuth 密钥：由 CI 在构建时从 Secrets 注入，禁止提交到仓库
+electron/lib/env-secrets.cjs
+
 # Documentation
 doc/
 
