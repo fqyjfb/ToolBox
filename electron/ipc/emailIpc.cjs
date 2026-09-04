@@ -75,6 +75,12 @@ function registerEmailIpc() {
 
   register('email:testConnection', svc.testConnection);
   register('email:listFolders', svc.listFolders);
+  register('email:createFolder', svc.createFolder);
+  register('email:renameFolder', svc.renameFolder);
+  register('email:deleteFolder', svc.deleteFolder);
+  register('email:setFolderSubscribed', svc.setFolderSubscribed);
+  register('email:emptyFolder', svc.emptyFolder);
+  register('email:markFolderSeen', svc.markFolderSeen);
   register('email:listMessages', svc.listMessages);
   register('email:getMessage', svc.getMessage);
   register('email:sendMessage', svc.sendMessage);

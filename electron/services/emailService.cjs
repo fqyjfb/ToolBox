@@ -140,15 +140,87 @@ async function testConnection({ imap, credential }) {
   return { ok: true };
 }
 
+// list() 原始项 → 前端 Folder 结构（delimiter 供前端还原层级树）
+function toFolderMeta(m) {
+  return {
+    path: m.path,
+    delimiter: m.delimiter || '/',
+    specialUse: m.specialUse || null,
+    subscribed: m.subscribed,
+  };
+}
+
+// 服务端层级分隔符（NAMESPACE 随建连获取，缺失回退 RFC 常用 '/'）
+function folderDelimiter(client) {
+  return (client.namespace && client.namespace.delimiter) || '/';
+}
+
 // 列出文件夹（含特殊用途 \Sent \Trash \Drafts 等）
 async function listFolders({ imap, credential }) {
+  return withClient(imap, credential, async (client) => (await client.list()).map(toFolderMeta));
+}
+
+// 新建文件夹：parent 为空建在根层级。imapflow 的 CREATE 成功后自动 SUBSCRIBE，回传最新列表
+async function createFolder({ imap, credential, parent, name }) {
   return withClient(imap, credential, async (client) => {
-    const list = await client.list();
-    return list.map((m) => ({
-      path: m.path,
-      specialUse: m.specialUse || null,
-      subscribed: m.subscribed,
-    }));
+    const path = parent ? `${parent}${folderDelimiter(client)}${name}` : name;
+    const res = await client.mailboxCreate(path);
+    if (res && res.created === false) throw new Error('文件夹已存在');
+    return (await client.list()).map(toFolderMeta);
+  });
+}
+
+// 重命名：仅替换末级名称、保留所属层级，回传最新列表与新完整路径
+async function renameFolder({ imap, credential, path, name }) {
+  return withClient(imap, credential, async (client) => {
+    const delim = folderDelimiter(client);
+    const cut = path.lastIndexOf(delim);
+    const newPath = cut >= 0 ? path.slice(0, cut + delim.length) + name : name;
+    const res = await client.mailboxRename(path, newPath);
+    return { folders: (await client.list()).map(toFolderMeta), path: (res && res.newPath) || newPath };
+  });
+}
+
+// 删除文件夹，回传最新列表
+async function deleteFolder({ imap, credential, path }) {
+  return withClient(imap, credential, async (client) => {
+    await client.mailboxDelete(path);
+    return (await client.list()).map(toFolderMeta);
+  });
+}
+
+// 订阅 / 取消订阅（决定文件夹是否出现在 LSUB 列表），回传最新列表
+async function setFolderSubscribed({ imap, credential, path, subscribed }) {
+  return withClient(imap, credential, async (client) => {
+    if (subscribed) await client.mailboxSubscribe(path);
+    else await client.mailboxUnsubscribe(path);
+    return (await client.list()).map(toFolderMeta);
+  });
+}
+
+// 清空文件夹：全部标记 \Deleted 后 EXPUNGE（空文件夹直接返回）
+async function emptyFolder({ imap, credential, path }) {
+  return withClient(imap, credential, async (client) => {
+    const lock = await client.getMailboxLock(path);
+    try {
+      if (client.mailbox.exists) await client.messageDelete({ all: true }, { uid: true });
+      return { ok: true };
+    } finally {
+      lock.release();
+    }
+  });
+}
+
+// 文件夹内全部标记已读（空文件夹直接返回）
+async function markFolderSeen({ imap, credential, path }) {
+  return withClient(imap, credential, async (client) => {
+    const lock = await client.getMailboxLock(path);
+    try {
+      if (client.mailbox.exists) await client.messageFlagsAdd({ all: true }, ['\\Seen'], { uid: true });
+      return { ok: true };
+    } finally {
+      lock.release();
+    }
   });
 }
 
@@ -389,6 +461,12 @@ function streamToBuffer(stream) {
 module.exports = {
   testConnection,
   listFolders,
+  createFolder,
+  renameFolder,
+  deleteFolder,
+  setFolderSubscribed,
+  emptyFolder,
+  markFolderSeen,
   listMessages,
   getMessage,
   downloadAttachment,
