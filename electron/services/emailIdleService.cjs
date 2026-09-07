@@ -88,7 +88,9 @@ function startWatch(id, imap, credential, onEvent) {
     reconnectDelay: 1000,
   };
   watches.set(id, state);
-  runLoop(id, state);
+  runLoop(id, state).catch((err) => {
+    console.error('[EmailIdle] runLoop fatal:', err);
+  });
 }
 
 function stopWatch(id) {

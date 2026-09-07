@@ -1,3 +1,11 @@
+// 主进程全局异常兜底：记录日志后不退出，防止任意一处未捕获错误炸掉 Electron 主进程
+process.on('uncaughtException', (err) => {
+  console.error('[Main] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Main] Unhandled Rejection:', reason);
+});
+
 const { app, protocol, net } = require('electron');
 const { pathToFileURL } = require('node:url');
 const { stopPythonService } = require('./services/pythonProcessService.cjs');
@@ -126,6 +134,15 @@ app.on('before-quit', () => {
     sqliteService.close();
   } catch (e) {
     console.error('[Main] SQLite 关闭失败:', e.message);
+  }
+  // 关闭 IMAP IDLE 长连接与连接池，避免退出时服务端连接泄漏
+  try {
+    const emailIdle = require('./services/emailIdleService.cjs');
+    const emailSvc = require('./services/emailService.cjs');
+    if (typeof emailIdle.stopAll === 'function') emailIdle.stopAll();
+    if (typeof emailSvc.disposePool === 'function') emailSvc.disposePool();
+  } catch (e) {
+    console.error('[Main] Email services shutdown failed:', e.message);
   }
 });
 

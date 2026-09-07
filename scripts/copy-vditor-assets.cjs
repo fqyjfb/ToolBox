@@ -12,8 +12,17 @@ const copyDir = (src, dest) => {
       const srcPath = path.join(src, file);
       const destPath = path.join(dest, file);
       if (fs.statSync(srcPath).isDirectory()) {
+        // 跳过 TypeScript 类型声明目录
+        if (file === 'ts') return;
         copyDir(srcPath, destPath);
       } else {
+        // 跳过 .d.ts 类型声明文件
+        if (file.endsWith('.d.ts')) return;
+        // 字体仅保留 .woff2（有 .woff2 同名时跳过 .ttf/.woff）
+        if (/\.(ttf|woff)$/i.test(file)) {
+          const woff2Name = file.replace(/\.(ttf|woff)$/i, '.woff2');
+          if (fs.existsSync(path.join(src, woff2Name))) return;
+        }
         fs.copyFileSync(srcPath, destPath);
       }
     });

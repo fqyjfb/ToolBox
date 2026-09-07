@@ -306,9 +306,10 @@ async function stopPythonService() {
     }
     addLog('info', '正在停止 Python 服务...');
 
+    let sigkillTimer = null;
     if (process.platform === 'win32') {
       serviceProcess.kill('SIGTERM');
-      setTimeout(() => {
+      sigkillTimer = setTimeout(() => {
         if (serviceProcess) {
           serviceProcess.kill('SIGKILL');
         }
@@ -327,6 +328,10 @@ async function stopPythonService() {
 
       serviceProcess?.on('close', () => {
         clearTimeout(timeout);
+        if (sigkillTimer) {
+          clearTimeout(sigkillTimer);
+          sigkillTimer = null;
+        }
         resolve();
       });
     });

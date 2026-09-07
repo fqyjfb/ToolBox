@@ -7,14 +7,6 @@ let openAddTodoCallback = null;
 let openAddMemoCallback = null;
 let launchPluginCallback = null;
 
-const screenshotApi = {
-  startScreenshotCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
-  cancelScreenshot: () => ipcRenderer.send('cancel-screenshot'),
-  saveScreenshot: (data) => ipcRenderer.invoke('save-screenshot', data),
-  copyScreenshotToClipboard: (dataUrl) => ipcRenderer.send('copy-screenshot-to-clipboard', dataUrl),
-  screenshotSessionComplete: () => ipcRenderer.send('screenshot-session-complete'),
-};
-
 ipcRenderer.on('navigate-to', (event, path) => {
   if (navigateCallback) {
     navigateCallback(path);

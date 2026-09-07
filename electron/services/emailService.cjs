@@ -129,6 +129,22 @@ function reapIdle() {
 const reapTimer = setInterval(reapIdle, POOL_REAP_INTERVAL);
 if (reapTimer.unref) reapTimer.unref();
 
+// 退出时关闭池中所有连接，释放服务端资源
+function disposePool() {
+  for (const [, entry] of pool) {
+    try {
+      entry.client?.close();
+    } catch {
+      /* ignore */
+    }
+    entry.client = null;
+  }
+  pool.clear();
+  if (reapTimer) {
+    clearInterval(reapTimer);
+  }
+}
+
 // —— 连接 / 文件夹 ——
 
 // 测试连接（独立建连，验证凭据/服务器可用性）
@@ -476,4 +492,5 @@ module.exports = {
   moveMessages,
   getUnreadCounts,
   searchMessages,
+  disposePool,
 };

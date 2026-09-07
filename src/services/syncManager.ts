@@ -497,6 +497,10 @@ export const syncManager = {
 
         if (!error) {
           logInfo(`Resolved conflict: local wins for ${conflict.tableName} ${conflict.recordId}`, 'syncManager');
+        } else {
+          const errMsg = error instanceof Error ? error.message : (error as { message?: string })?.message ?? 'unknown error';
+          logError(`Conflict resolve failed: ${conflict.tableName} ${conflict.recordId}`, 'syncManager', error as Error);
+          throw new Error(`Conflict resolve failed: ${errMsg}`);
         }
       } else {
         await offlineStorage.put(conflict.tableName, conflict.cloud);

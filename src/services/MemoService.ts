@@ -169,20 +169,26 @@ export const memoService = {
         range: { from: (page - 1) * pageSize, to: page * pageSize - 1 }
       })
 
-      const activeData = data.filter(item => item.status === 'active')
-
       const { data: categories } = await dal.list<MemoCategory>('memo_categories')
       const categoryMap = new Map(categories.map(c => [c.id, c]))
 
-      const list = activeData.map(item => ({
+      const activeItems = (data || []).filter(item => item.status === 'active')
+      const list = activeItems.map(item => ({
         ...item,
         category_name: (item.category_id ? categoryMap.get(item.category_id)?.name : '') || ''
       }))
 
-      return { list, total: activeData.length }
+      const totalActive = await this.countActiveMemos(dal, keyword)
+
+      return { list, total: totalActive }
     } catch (error) {
       logError('搜索备忘录失败', 'MemoService', error as Error)
       throw error
     }
-  }
+  },
+
+  async countActiveMemos(dal: ReturnType<typeof getDataAccessLayer>, keyword: string): Promise<number> {
+    const { data } = await dal.search<Memo>('memos', keyword, ['title', 'content'])
+    return (data || []).filter(item => item.status === 'active').length
+  },
 }

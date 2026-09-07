@@ -271,6 +271,7 @@ function clearByUser(table, userId) {
 }
 
 async function changePath(newPath) {
+  if (!SQL) throw new Error('SQL module not loaded');
   if (db) {
     flushPersist();
     db.close();

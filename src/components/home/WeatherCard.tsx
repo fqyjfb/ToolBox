@@ -85,10 +85,6 @@ const WeatherCard: React.FC = () => {
   useEffect(() => {
     if (isInitialized) {
       setTimeout(() => fetchWeather(), 0);
-      
-      setTimeout(() => {
-        fetchWeather().catch(() => {});
-      }, 5000);
     }
   }, [isInitialized, fetchWeather]);
 

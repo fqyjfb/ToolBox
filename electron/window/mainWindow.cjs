@@ -162,6 +162,7 @@ const startMemoryOptimization = () => {
     }
   };
   memoryCleanupTimer = setInterval(cleanup, cleanupInterval);
+  if (memoryCleanupTimer && memoryCleanupTimer.unref) memoryCleanupTimer.unref();
 };
 
 const stopMemoryOptimization = () => {

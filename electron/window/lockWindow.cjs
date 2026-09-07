@@ -1,4 +1,4 @@
-const { BrowserWindow, ipcMain, dialog, screen } = require('electron');
+const { BrowserWindow, ipcMain, dialog, screen, app } = require('electron');
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -8,7 +8,6 @@ let lockWindow = null;
 let dragOffset = { x: 0, y: 0 };
 
 const getLockPasswordPath = () => {
-  const { app } = require('electron');
   return path.join(app.getPath('userData'), 'lockPassword.json');
 };
 
@@ -24,6 +23,15 @@ const verifyPassword = (password, storedSalt, storedHash) => {
 };
 
 let isAppQuitting = false;
+
+// 模块顶层注册 before-quit，避免 createLockWindow 重复调用时累积监听器
+app.on('before-quit', () => {
+  isAppQuitting = true;
+  if (lockWindow && !lockWindow.isDestroyed()) {
+    lockWindow.removeAllListeners('close');
+    lockWindow.close();
+  }
+});
 
 const createLockWindow = () => {
   if (lockWindow) {
@@ -59,15 +67,6 @@ const createLockWindow = () => {
   });
 
   const lockHtmlPath = path.join(__dirname, './lock/lock.html');
-  const { app } = require('electron');
-
-  app.on('before-quit', () => {
-    isAppQuitting = true;
-    if (lockWindow) {
-      lockWindow.removeAllListeners('close');
-      lockWindow.close();
-    }
-  });
 
   if (app.isPackaged) {
     const packagedPath = path.join(process.resourcesPath, 'app', 'electron', 'window', 'lock', 'lock.html');
