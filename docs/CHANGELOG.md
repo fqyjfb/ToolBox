@@ -10,6 +10,7 @@
 - 新增构建密钥注入脚本 `scripts/write-env-secrets.cjs`：`electron:build` 前自动按 `process.env` > `.env` 优先级收集 4 个 OAuth 密钥，仅非空时写入 `env-secrets.cjs` 并随 asar 打入安装包
 - GitHub Actions 支持 Environments 级密钥管理：`environment: ${{ vars.BUILD_ENVIRONMENT || 'production' }}`，可在 Environment Secrets 中维护 OAuth 密钥，通过 `vars.BUILD_ENVIRONMENT` 自由切换构建环境
 - 新增 `.env.example` 模板与 `.gitignore` 规则：`electron/lib/env-secrets.cjs` 永不进仓库，本地开发填写 `.env` 即可使用
+- 修复账号管理"通用/店铺/社媒/邮箱/手机号/企业信息/证件信息"列表无法滚动的问题：滚动容器由 `overflow-hidden` 改为 `overflow-y-auto` 并补充 `min-h-0`，滚动仅在面板内部生效，不影响窗口整体布局
 
 ## v2.8.7
 

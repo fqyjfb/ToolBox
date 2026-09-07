@@ -256,7 +256,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
 
   return (
     <div className="h-full flex flex-col overflow-hidden" onClick={handleCloseContextMenu}>
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner size="lg" />
