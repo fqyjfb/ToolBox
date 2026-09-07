@@ -1,5 +1,19 @@
 # 更新日志
 
+## v2.8.9
+
+- 主进程添加全局异常兜底（uncaughtException / unhandledRejection），防止任意未捕获错误导致全窗崩溃
+- IMAP IDLE 连接退出时补全 .catch 与日志，避免连接泄漏
+- lockWindow before-quit 监听器上移，修复累积问题
+- pythonProcessService 添加 SIGKILL clearTimeout，修复竞态条件
+- WeatherCard 移除 5s 无效重试逻辑
+- 备忘录分页 total 字段修复，避免显示错误计数
+- syncManager 同步冲突错误分支补全处理
+- sqliteService changePath 添加 NPE 守卫
+- mainWindow memoryCleanupTimer 调用 unref 防止进程挂起
+- preload 删除 screenshotApi 死代码
+- 构建体积优化：Vditor 资源拷贝脚本过滤 .d.ts 冗余文件及字体非 woff2 格式
+
 ## v2.8.8
 
 **邮箱聚合插件 OAuth 密钥安全管理**
