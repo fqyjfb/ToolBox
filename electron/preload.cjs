@@ -133,8 +133,24 @@ contextBridge.exposeInMainWorld('electron', {
   updateFloatConfig: (config) => ipcRenderer.invoke('update-float-config', config),
   resetFloatConfig: () => ipcRenderer.invoke('reset-float-config'),
   ocr: {
-    recognize: (imageBase64, serviceDir) => ipcRenderer.invoke('ocr:recognize', { imageBase64: String(imageBase64 || ''), serviceDir: String(serviceDir || '') }),
-    recognizeFile: (filePath, serviceDir) => ipcRenderer.invoke('ocr:recognizeFile', { filePath: String(filePath || ''), serviceDir: String(serviceDir || '') }),
+    recognize: (imageBase64, serviceDir, config) => {
+      const payload = { imageBase64: String(imageBase64 || ''), serviceDir: String(serviceDir || '') };
+      if (config) {
+        if (config.httpPort) payload.httpPort = Number(config.httpPort);
+        if (config.wsPort) payload.wsPort = Number(config.wsPort);
+        if (config.pythonPath) payload.pythonPath = String(config.pythonPath);
+      }
+      return ipcRenderer.invoke('ocr:recognize', payload);
+    },
+    recognizeFile: (filePath, serviceDir, config) => {
+      const payload = { filePath: String(filePath || ''), serviceDir: String(serviceDir || '') };
+      if (config) {
+        if (config.httpPort) payload.httpPort = Number(config.httpPort);
+        if (config.wsPort) payload.wsPort = Number(config.wsPort);
+        if (config.pythonPath) payload.pythonPath = String(config.pythonPath);
+      }
+      return ipcRenderer.invoke('ocr:recognizeFile', payload);
+    },
     status: () => ipcRenderer.invoke('ocr:status'),
     start: (serviceDir, config) => {
       const safeConfig = {};
@@ -154,6 +170,7 @@ contextBridge.exposeInMainWorld('electron', {
     getInstallProgress: () => ipcRenderer.invoke('ocr:getInstallProgress'),
     checkPort: (port) => ipcRenderer.invoke('ocr:checkPort', Number(port)),
     selectPythonPath: () => ipcRenderer.invoke('ocr:selectPythonPath'),
+    killStaleProcess: (port) => ipcRenderer.invoke('ocr:killStaleProcess', Number(port)),
   },
   fileManager: {
     getSystemPaths: () => ipcRenderer.invoke('fileManager:getSystemPaths'),

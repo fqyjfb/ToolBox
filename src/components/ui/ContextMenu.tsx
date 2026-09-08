@@ -1,4 +1,5 @@
-import React, { useEffect, useCallback, useState, useRef } from 'react';
+import React, { useEffect, useCallback, useState, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface SubMenuItem {
   id: string;
@@ -26,8 +27,11 @@ export interface ContextMenuProps {
   containerRef?: React.RefObject<HTMLElement | null>;
 }
 
+const VIEWPORT_PADDING = 8;
+
 const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose }) => {
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
+  const [position, setPosition] = useState({ x, y });
   const menuRef = useRef<HTMLDivElement>(null);
   const subMenuRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -42,22 +46,24 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
 
   const adjustSubMenuPosition = useCallback((subMenuId: string) => {
     if (!menuRef.current) return;
-    
+
     const subMenu = subMenuRefs.current.get(subMenuId);
     if (!subMenu) return;
 
     requestAnimationFrame(() => {
       try {
         const menuRect = menuRef.current?.getBoundingClientRect();
+        // 子菜单 absolute 的包含块是触发项 li，垂直翻转需以触发项位置为基准
+        const triggerRect = subMenu.parentElement?.getBoundingClientRect();
         const subMenuRect = subMenu.getBoundingClientRect();
-        
-        if (!menuRect) return;
+
+        if (!menuRect || !triggerRect) return;
 
         const maxWidth = document.documentElement.clientWidth || window.innerWidth;
         const maxHeight = document.documentElement.clientHeight || window.innerHeight;
-        const padding = 8;
+        const padding = VIEWPORT_PADDING;
         const subMenuRight = menuRect.right + subMenuRect.width;
-        const subMenuBottom = menuRect.top + subMenuRect.height;
+        const subMenuBottom = triggerRect.top + subMenuRect.height;
 
         if (subMenuRight > maxWidth - padding) {
           subMenu.style.setProperty('left', 'auto');
@@ -97,9 +103,9 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
           adjustSubMenuPosition(activeSubMenu);
         }
       });
-      
+
       resizeObserverRef.current.observe(document.body);
-      
+
       return () => {
         resizeObserverRef.current?.disconnect();
       };
@@ -116,42 +122,26 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
     };
   }, [isOpen, handleClickOutside]);
 
-  useEffect(() => {
-    if (isOpen && menuRef.current) {
-      const menu = menuRef.current;
-      
-      const padding = 8;
-      const maxWidth = document.documentElement.clientWidth || window.innerWidth;
-      const maxHeight = document.documentElement.clientHeight || window.innerHeight;
-      
-      const itemHeight = 24;
-      const menuWindowPadding = 8;
-      const dividerHeight = 4;
-      
-      const dividerCount = items.filter(item => item.divider).length;
-      const estimatedHeight = items.length * itemHeight + dividerCount * dividerHeight + menuWindowPadding;
-      const estimatedWidth = 160;
-      
-      let newX = x;
-      let newY = y;
-      
-      if (newX + estimatedWidth > maxWidth - padding) {
-        newX = maxWidth - estimatedWidth - padding;
-      }
-      if (newX < padding) {
-        newX = padding;
-      }
-      
-      if (newY + estimatedHeight > maxHeight - padding) {
-        newY = maxHeight - estimatedHeight - padding;
-      }
-      if (newY < padding) {
-        newY = padding;
-      }
-      
-      menu.style.left = `${newX}px`;
-      menu.style.top = `${newY}px`;
+  // 绘制前根据菜单实际尺寸将位置约束在视口内（右侧/底部溢出时向左/向上翻转），避免闪烁
+  useLayoutEffect(() => {
+    if (!isOpen || !menuRef.current) return;
+
+    const rect = menuRef.current.getBoundingClientRect();
+    const maxWidth = document.documentElement.clientWidth || window.innerWidth;
+    const maxHeight = document.documentElement.clientHeight || window.innerHeight;
+    const padding = VIEWPORT_PADDING;
+
+    let newX = x;
+    let newY = y;
+
+    if (newX + rect.width > maxWidth - padding) {
+      newX = Math.max(padding, maxWidth - rect.width - padding);
     }
+    if (newY + rect.height > maxHeight - padding) {
+      newY = Math.max(padding, maxHeight - rect.height - padding);
+    }
+
+    setPosition({ x: newX, y: newY });
   }, [isOpen, x, y, items]);
 
   useEffect(() => {
@@ -163,13 +153,15 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
 
   if (!isOpen) return null;
 
-  return (
-    <div 
+  // 通过 Portal 渲染到 document.body，脱离祖先元素的 transform 包含块与 overflow 裁剪，
+  // 保证 position: fixed 始终基于真实视口定位
+  return createPortal(
+    <div
       ref={menuRef}
-      className="context-menu-container" 
-      style={{ 
-        left: x + 8, 
-        top: y + 8 
+      className="context-menu-container"
+      style={{
+        left: position.x,
+        top: position.y,
       }}
     >
       <div className="popup-menu-window">
@@ -180,8 +172,8 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
                 <li className="popup-menu-divider"></li>
               ) : (
                 <li className={`relative ${item.subMenu ? 'has-submenu' : ''}`}>
-                  <button 
-                    className={`popup-menu-item w-full ${item.className || ''}`} 
+                  <button
+                    className={`popup-menu-item w-full ${item.className || ''}`}
                     onClick={() => {
                       if (item.subMenu) {
                         setActiveSubMenu(activeSubMenu === item.id ? null : item.id);
@@ -202,10 +194,21 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
                       {item.icon}
                     </span>
                     <span>{item.label}</span>
-                    {item.subMenu && <span>▶</span>}
+                    {item.subMenu && (
+                      <span>
+                        <svg
+                          className="submenu-arrow-icon"
+                          viewBox="0 0 1024 1024"
+                          fill="currentColor"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M326.2 960L267 900.8 655.9 512 267.1 123.2 326.2 64l418.4 418.4c16.3 16.3 16.3 42.8 0 59.2L326.2 960z" />
+                        </svg>
+                      </span>
+                    )}
                   </button>
                   {item.subMenu && activeSubMenu === item.id && (
-                    <div 
+                    <div
                       ref={(el) => {
                         if (el) {
                           subMenuRefs.current.set(item.id, el as HTMLDivElement);
@@ -219,8 +222,8 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
                       <ul className="popup-menu-list">
                         {item.subMenu.map((subItem) => (
                           <li key={subItem.id}>
-                            <button 
-                              className="popup-menu-item w-full" 
+                            <button
+                              className="popup-menu-item w-full"
                               onClick={() => {
                                 subItem.onClick();
                                 onClose();
@@ -243,7 +246,8 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
           ))}
         </ul>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

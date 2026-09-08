@@ -1,4 +1,4 @@
-﻿const { spawn } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -25,6 +25,118 @@ const MAX_LOG_ENTRIES = 100;
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 let idleTimer = null;
 let isStoppingForIdle = false;
+
+// ===== 端口配置持久化（修复5） =====
+// 注：app.getPath('userData') 在不同 Electron 版本下对 ready 时机要求不一致，
+// 采用惰性函数延迟到函数调用时再解析，保证模块加载阶段不依赖 app 状态。
+function getConfigFilePath() {
+  return path.join(app.getPath('userData'), 'ocr-service-config.json');
+}
+
+function loadPersistedConfig() {
+  try {
+    const configFile = getConfigFilePath();
+    if (fs.existsSync(configFile)) {
+      return JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+    }
+  } catch (e) {
+    console.warn('[Python Service] 读取持久化配置失败:', e.message);
+  }
+  return {};
+}
+
+function savePersistedConfig(config) {
+  try {
+    const existing = loadPersistedConfig();
+    fs.writeFileSync(getConfigFilePath(), JSON.stringify({ ...existing, ...config }, null, 2));
+  } catch (e) {
+    console.warn('[Python Service] 保存持久化配置失败:', e.message);
+  }
+}
+
+// ===== 端口工具函数（修复1、修复2） =====
+function checkPortInUse(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', (err) => {
+      resolve(err.code === 'EADDRINUSE');
+    });
+    server.once('listening', () => {
+      server.close();
+      resolve(false);
+    });
+    server.listen(port, '127.0.0.1');
+  });
+}
+
+function getListeningProcessPids(port) {
+  return new Promise((resolve) => {
+    const { exec } = require('child_process');
+    const cmd = process.platform === 'win32'
+      ? `netstat -ano | findstr :${port} | findstr LISTENING`
+      : `lsof -ti :${port}`;
+
+    exec(cmd, (err, stdout) => {
+      if (err || !stdout.trim()) return resolve([]);
+      const pids = new Set();
+      if (process.platform === 'win32') {
+        for (const line of stdout.trim().split('\n')) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && pid !== '0') pids.add(pid);
+        }
+      } else {
+        for (const pid of stdout.trim().split('\n')) {
+          if (pid.trim()) pids.add(pid.trim());
+        }
+      }
+      resolve([...pids]);
+    });
+  });
+}
+
+function killProcessOnPort(port) {
+  return new Promise(async (resolve) => {
+    const { exec } = require('child_process');
+    const pids = await getListeningProcessPids(port);
+    if (pids.length === 0) return resolve(false);
+
+    let killedCount = 0;
+    let pending = pids.length;
+    for (const pid of pids) {
+      const killCmd = process.platform === 'win32'
+        ? `taskkill /F /PID ${pid}`
+        : `kill -9 ${pid}`;
+      exec(killCmd, (killErr) => {
+        if (!killErr) killedCount++;
+        if (--pending === 0) resolve(killedCount > 0);
+      });
+    }
+  });
+}
+
+function waitForPortFree(port, timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const check = () => {
+      checkPortInUse(port).then((inUse) => {
+        if (!inUse) resolve(true);
+        else if (Date.now() - start >= timeoutMs) resolve(false);
+        else setTimeout(check, 200);
+      });
+    };
+    check();
+  });
+}
+
+async function findAvailablePort(preferredPort, maxAttempts = 50) {
+  for (let i = 0; i < maxAttempts; i++) {
+    const port = preferredPort + i;
+    if (port > 65535) break;
+    if (!(await checkPortInUse(port))) return port;
+  }
+  return null;
+}
 
 function addLog(level, message) {
   recentLogs.push({ timestamp: Date.now(), level, message });
@@ -110,7 +222,18 @@ async function getPythonInterpreter(config) {
 }
 
 async function startPythonService(config = {}) {
-  serviceConfig = { ...DEFAULT_CONFIG, ...config };
+  // 修复5：合并持久化配置（优先级：传入config > 持久化配置 > 默认值）
+  const persisted = loadPersistedConfig();
+  serviceConfig = { ...DEFAULT_CONFIG, ...persisted, ...config };
+
+  // 若本次传入了端口配置，持久化保存
+  if (config.httpPort) {
+    savePersistedConfig({
+      httpPort: config.httpPort,
+      wsPort: config.wsPort,
+      pythonPath: config.pythonPath,
+    });
+  }
 
   setApiPort(serviceConfig.httpPort || DEFAULT_CONFIG.httpPort);
 
@@ -121,6 +244,46 @@ async function startPythonService(config = {}) {
   try {
     serviceStatus = 'starting';
     addLog('info', '正在启动 Python 服务...');
+
+    // 修复1：启动前检测端口占用并清理残留进程
+    let httpPort = serviceConfig.httpPort || DEFAULT_CONFIG.httpPort;
+    const portInUse = await checkPortInUse(httpPort);
+    if (portInUse) {
+      addLog('warn', `端口 ${httpPort} 已被占用，正在清理残留进程...`);
+      const killed = await killProcessOnPort(httpPort);
+      if (killed) {
+        addLog('info', `已清理占用端口 ${httpPort} 的进程`);
+        const freed = await waitForPortFree(httpPort, 5000);
+        if (!freed) {
+          addLog('warn', `端口 ${httpPort} 未及时释放，尝试备用端口...`);
+          const fallbackPort = await findAvailablePort(httpPort);
+          if (fallbackPort) {
+            addLog('info', `切换到备用端口: ${fallbackPort}`);
+            httpPort = fallbackPort;
+            serviceConfig.httpPort = fallbackPort;
+            setApiPort(fallbackPort);
+          } else {
+            lastError = `端口 ${httpPort} 被占用且无可用备用端口，请手动释放或更换端口`;
+            serviceStatus = 'error';
+            return { success: false, error: lastError };
+          }
+        }
+      } else {
+        // 无法自动清理（可能是其他应用），尝试备用端口
+        addLog('warn', `端口 ${httpPort} 被其他进程占用，尝试备用端口...`);
+        const fallbackPort = await findAvailablePort(httpPort);
+        if (fallbackPort) {
+          addLog('info', `切换到备用端口: ${fallbackPort}`);
+          httpPort = fallbackPort;
+          serviceConfig.httpPort = fallbackPort;
+          setApiPort(fallbackPort);
+        } else {
+          lastError = `端口 ${httpPort} 被占用且无可用备用端口，请手动释放或更换端口`;
+          serviceStatus = 'error';
+          return { success: false, error: lastError };
+        }
+      }
+    }
 
     const serviceDir = getServiceDirectory(serviceConfig.customDir);
     if (!serviceDir) {
@@ -166,7 +329,7 @@ async function startPythonService(config = {}) {
     env.SERVICE_PORT = String(serviceConfig.port || 8765);
     env.WS_HOST = '127.0.0.1';
     env.WS_PORT = String(serviceConfig.wsPort || 8765);
-    env.HTTP_PORT = String(serviceConfig.httpPort || 8766);
+    env.HTTP_PORT = String(httpPort);
     if (serviceConfig.env) {
       for (const key of Object.keys(serviceConfig.env)) {
         env[key] = String(serviceConfig.env[key]);
@@ -200,6 +363,18 @@ async function startPythonService(config = {}) {
       if (message) {
         addLog('warn', message);
         console.warn(`[Python Service] ${message}`);
+
+        // 修复3：检测端口绑定失败
+        const portErrorPatterns = [
+          /address already in use/i,
+          /WinError 10048/i,
+          /error while attempting to bind/i,
+          /EADDRINUSE/i,
+        ];
+        if (portErrorPatterns.some(p => p.test(message))) {
+          lastError = `端口 ${httpPort} 绑定失败：${message}`;
+          serviceStatus = 'error';
+        }
       }
     });
 
@@ -239,7 +414,6 @@ async function startPythonService(config = {}) {
 
     addLog('info', `Python 服务已启动，PID: ${serviceProcess.pid}`);
 
-    const httpPort = serviceConfig.httpPort || DEFAULT_CONFIG.httpPort;
     addLog('info', `等待 HTTP 服务就绪，端口: ${httpPort}`);
     
     const { success: portReady, cancel: cancelPortWait } = await waitForPort(httpPort, 30000, 200, () => serviceStatus === 'error');
@@ -273,7 +447,19 @@ async function startPythonService(config = {}) {
       };
     }
 
-    addLog('info', `HTTP 服务已就绪，端口: ${httpPort}`);
+    // 修复2：校验监听端口的进程是否为本次启动的进程
+    const listenerPids = await getListeningProcessPids(httpPort);
+    const currentPid = String(serviceProcess.pid);
+    if (listenerPids.length > 0 && !listenerPids.includes(currentPid)) {
+      addLog('error', `端口 ${httpPort} 被其他进程(PID:${listenerPids.join(',')})占用，当前进程 PID: ${currentPid}`);
+      lastError = `端口 ${httpPort} 被进程 ${listenerPids.join(',')} 占用，请先终止该进程`;
+      serviceStatus = 'error';
+      try { serviceProcess.kill('SIGKILL'); } catch {}
+      serviceProcess = null;
+      return { success: false, error: lastError };
+    }
+
+    addLog('info', `HTTP 服务已就绪，端口: ${httpPort}，进程校验通过`);
     serviceStatus = 'running';
     resetIdleTimer();
 
@@ -446,4 +632,8 @@ module.exports = {
   getPythonServiceInfo,
   isRunning,
   resetIdleTimer,
+  killProcessOnPort,
+  getListeningProcessPids,
+  checkPortInUse,
+  waitForPortFree,
 };

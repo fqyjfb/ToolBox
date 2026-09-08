@@ -11,7 +11,7 @@ const path = require("path");
 
 let ocrIpcRegistered = false;
 const { get, post, waitForPythonApi } = require("../services/pythonApiClient.cjs");
-const { startPythonService, stopPythonService, isRunning, resetIdleTimer, getPythonServiceInfo } = require("../services/pythonProcessService.cjs");
+const { startPythonService, stopPythonService, isRunning, resetIdleTimer, getPythonServiceInfo, killProcessOnPort, getListeningProcessPids, checkPortInUse, waitForPortFree } = require("../services/pythonProcessService.cjs");
 
 const getInstallProgressFile = () => {
   return path.join(app.getPath('temp'), 'ocr_install_progress.log');
@@ -43,14 +43,23 @@ function formatError(error) {
   return errorStr;
 }
 
-async function ensurePythonServiceRunning(customDir) {
+async function ensurePythonServiceRunning(customDir, options = {}) {
   if (isRunning()) {
     resetIdleTimer();
     return true;
   }
 
   console.log('[OCR] Python服务未运行，按需启动...');
-  const result = await startPythonService({ autoRestart: true, maxRestarts: 3, customDir });
+  const startConfig = {
+    autoRestart: true,
+    maxRestarts: 3,
+    customDir,
+  };
+  if (options.httpPort) startConfig.httpPort = options.httpPort;
+  if (options.wsPort) startConfig.wsPort = options.wsPort;
+  if (options.pythonPath) startConfig.pythonPath = options.pythonPath;
+
+  const result = await startPythonService(startConfig);
   if (result.success) {
     const apiReady = await waitForPythonApi(20000, 500);
     if (apiReady) {
@@ -100,6 +109,18 @@ async function runDiagnose(serviceDir) {
     }
     cleanEnv.PYTHONIOENCODING = 'utf-8';
     cleanEnv.PYTHONUNBUFFERED = '1';
+
+    // 读取持久化配置中的端口，传递给诊断脚本
+    try {
+      const configPath = path.join(app.getPath('userData'), 'ocr-service-config.json');
+      if (fs.existsSync(configPath)) {
+        const persistedConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        if (persistedConfig.httpPort) {
+          cleanEnv.HTTP_PORT = String(persistedConfig.httpPort);
+        }
+      }
+    } catch {}
+
     const proc = spawn(pythonCmd, [scriptPath], {
       cwd: serviceDir,
       env: cleanEnv,
@@ -249,9 +270,9 @@ function registerOcrIpc() {
   ocrIpcRegistered = true;
 
   // OCR 识别 Base64 图片（超时时间 60 秒）
-  ipcMain.handle("ocr:recognize", async (_event, { imageBase64, serviceDir }) => {
+  ipcMain.handle("ocr:recognize", async (_event, { imageBase64, serviceDir, httpPort, wsPort, pythonPath }) => {
     try {
-      const serviceReady = await ensurePythonServiceRunning(serviceDir);
+      const serviceReady = await ensurePythonServiceRunning(serviceDir, { httpPort, wsPort, pythonPath });
       if (!serviceReady) {
         return JSON.parse(JSON.stringify({
           success: false,
@@ -294,9 +315,9 @@ function registerOcrIpc() {
   });
 
   // OCR 识别图片文件（超时时间 60 秒）
-  ipcMain.handle("ocr:recognizeFile", async (_event, { filePath, serviceDir }) => {
+  ipcMain.handle("ocr:recognizeFile", async (_event, { filePath, serviceDir, httpPort, wsPort, pythonPath }) => {
     try {
-      const serviceReady = await ensurePythonServiceRunning(serviceDir);
+      const serviceReady = await ensurePythonServiceRunning(serviceDir, { httpPort, wsPort, pythonPath });
       if (!serviceReady) {
         return JSON.parse(JSON.stringify({
           success: false,
@@ -557,6 +578,53 @@ function registerOcrIpc() {
       return JSON.parse(JSON.stringify({ success: true, path: result.filePaths[0] }));
     } catch (error) {
       return JSON.parse(JSON.stringify({ success: false, error: String(error) }));
+    }
+  });
+
+  // 清理占用指定端口的残留进程
+  ipcMain.handle("ocr:killStaleProcess", async (_event, port) => {
+    try {
+      if (!port) {
+        return JSON.parse(JSON.stringify({
+          success: false,
+          error: '端口号未指定',
+        }));
+      }
+
+      const portInUse = await checkPortInUse(port);
+      if (!portInUse) {
+        return JSON.parse(JSON.stringify({
+          success: true,
+          message: `端口 ${port} 未被占用`,
+          killed: false,
+        }));
+      }
+
+      const pids = await getListeningProcessPids(port);
+      const killed = await killProcessOnPort(port);
+
+      if (killed) {
+        const portFree = await waitForPortFree(port, 3000);
+        return JSON.parse(JSON.stringify({
+          success: true,
+          message: `已清理端口 ${port} 上的残留进程 (PID: ${pids.join(', ')})`,
+          killed: true,
+          pids,
+          portFree,
+        }));
+      }
+
+      return JSON.parse(JSON.stringify({
+        success: false,
+        error: `无法清理端口 ${port} 上的进程 (PID: ${pids.join(', ')})，请手动结束`,
+        killed: false,
+        pids,
+      }));
+    } catch (error) {
+      return JSON.parse(JSON.stringify({
+        success: false,
+        error: String(error),
+      }));
     }
   });
 }

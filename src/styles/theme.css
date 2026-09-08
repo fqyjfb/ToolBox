@@ -33,6 +33,7 @@
   --color-bg-primary: #FFFFFF;
   --color-bg-secondary: #F4F4F5;
   --color-bg-tertiary: #F4F4F5;
+  --color-menu-hover: #E4E4E7;
   
   --color-border: #E4E4E7;
   --color-border-light: #E4E4E7;
@@ -211,6 +212,7 @@
   --color-bg-primary: #16181D;
   --color-bg-secondary: #1A1D23;
   --color-bg-tertiary: #262A33;
+  --color-menu-hover: #2D3139;
   
   --color-border: #2D3139;
   --color-border-light: #2D3139;
@@ -380,7 +382,7 @@ body {
 
 .context-menu-container .popup-menu-item:hover {
   color: var(--color-text-primary);
-  background: var(--color-bg-tertiary);
+  background: var(--color-menu-hover);
 }
 
 .context-menu-container .popup-menu-icon {
@@ -406,11 +408,19 @@ body {
   transition: left var(--transition-normal), right var(--transition-normal);
 }
 
-.context-menu-container .has-submenu > span:last-child {
+.context-menu-container .has-submenu > .popup-menu-item > span:last-child {
   margin-left: auto;
-  font-size: var(--text-xs);
+  display: flex;
+  align-items: center;
   color: var(--color-text-tertiary);
   opacity: 0.7;
+}
+
+.context-menu-container .submenu-arrow-icon {
+  width: var(--text-xs);
+  height: var(--text-xs);
+  display: block;
+  flex-shrink: 0;
 }
 
 #root {

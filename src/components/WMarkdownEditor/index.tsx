@@ -1,10 +1,12 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
 import './WMarkdownEditor.css';
 import { openUrl } from '../../services/browserService';
 import { logError } from '../../services/loggerService';
 import { isElectron } from '../../utils/environment';
+import ContextMenu, { ContextMenuItem } from '../ui/ContextMenu';
+import { Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, Code, Minus, Bold, Italic, Strikethrough, Link, Image, Table, GitBranch, Hash } from 'lucide-react';
 
 export interface WMarkdownEditorProps {
   value: string;
@@ -42,6 +44,115 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
   const isReadyRef = useRef(false);
   const lastValueRef = useRef(value);
   const beforePreviewRef = useRef<string>('');
+
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const [contextMenuX, setContextMenuX] = useState(0);
+  const [contextMenuY, setContextMenuY] = useState(0);
+
+  const insertText = useCallback((text: string) => {
+    const vditor = vditorRef.current;
+    if (!vditor || !isReadyRef.current) return;
+    vditor.insertValue(text);
+    vditor.focus();
+  }, []);
+
+  const insertTextWithSelection = useCallback((before: string, after: string = '') => {
+    const vditor = vditorRef.current;
+    if (!vditor || !isReadyRef.current) return;
+    const selectedText = vditor.getSelection() || '';
+    vditor.insertValue(before + selectedText + after);
+    vditor.focus();
+  }, []);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (readonly) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuX(e.clientX);
+    setContextMenuY(e.clientY);
+    setIsContextMenuOpen(true);
+  }, [readonly]);
+
+  const contextMenuItems: ContextMenuItem[] = useMemo(() => [
+    {
+      id: 'headings',
+      label: '标题',
+      icon: <Heading1 className="w-4 h-4" />,
+      subMenu: [
+        { id: 'h1', label: '一级标题', icon: <Heading1 className="w-4 h-4" />, onClick: () => insertText('# ') },
+        { id: 'h2', label: '二级标题', icon: <Heading2 className="w-4 h-4" />, onClick: () => insertText('## ') },
+        { id: 'h3', label: '三级标题', icon: <Heading3 className="w-4 h-4" />, onClick: () => insertText('### ') },
+        { id: 'h4', label: '四级标题', icon: <Heading4 className="w-4 h-4" />, onClick: () => insertText('#### ') },
+        { id: 'h5', label: '五级标题', icon: <Heading5 className="w-4 h-4" />, onClick: () => insertText('##### ') },
+        { id: 'h6', label: '六级标题', icon: <Heading6 className="w-4 h-4" />, onClick: () => insertText('###### ') },
+      ]
+    },
+    {
+      id: 'format',
+      label: '文本格式',
+      icon: <Bold className="w-4 h-4" />,
+      subMenu: [
+        { id: 'bold', label: '加粗', icon: <Bold className="w-4 h-4" />, onClick: () => insertTextWithSelection('**', '**') },
+        { id: 'italic', label: '斜体', icon: <Italic className="w-4 h-4" />, onClick: () => insertTextWithSelection('*', '*') },
+        { id: 'bold-italic', label: '加粗斜体', icon: <Bold className="w-4 h-4" />, onClick: () => insertTextWithSelection('***', '***') },
+        { id: 'strikethrough', label: '删除线', icon: <Strikethrough className="w-4 h-4" />, onClick: () => insertTextWithSelection('~~', '~~') },
+        { id: 'inline-code', label: '行内代码', icon: <Code className="w-4 h-4" />, onClick: () => insertTextWithSelection('`', '`') },
+      ]
+    },
+    {
+      id: 'lists',
+      label: '列表',
+      icon: <List className="w-4 h-4" />,
+      subMenu: [
+        { id: 'ul', label: '无序列表', icon: <List className="w-4 h-4" />, onClick: () => insertText('- ') },
+        { id: 'ol', label: '有序列表', icon: <ListOrdered className="w-4 h-4" />, onClick: () => insertText('1. ') },
+        { id: 'task', label: '任务列表', icon: <List className="w-4 h-4" />, onClick: () => insertText('- [ ] ') },
+        { id: 'task-done', label: '已完成任务', icon: <List className="w-4 h-4" />, onClick: () => insertText('- [x] ') },
+      ]
+    },
+    {
+      id: 'code',
+      label: '代码块',
+      icon: <Code className="w-4 h-4" />,
+      subMenu: [
+        { id: 'code-block', label: '代码块', icon: <Code className="w-4 h-4" />, onClick: () => insertText('\n```\n\n```\n') },
+        { id: 'code-js', label: 'JavaScript', icon: <Code className="w-4 h-4" />, onClick: () => insertText('\n```javascript\n\n```\n') },
+        { id: 'code-ts', label: 'TypeScript', icon: <Code className="w-4 h-4" />, onClick: () => insertText('\n```typescript\n\n```\n') },
+        { id: 'code-py', label: 'Python', icon: <Code className="w-4 h-4" />, onClick: () => insertText('\n```python\n\n```\n') },
+        { id: 'code-css', label: 'CSS', icon: <Code className="w-4 h-4" />, onClick: () => insertText('\n```css\n\n```\n') },
+        { id: 'code-html', label: 'HTML', icon: <Code className="w-4 h-4" />, onClick: () => insertText('\n```html\n\n```\n') },
+      ]
+    },
+    {
+      id: 'links',
+      label: '链接与图片',
+      icon: <Link className="w-4 h-4" />,
+      subMenu: [
+        { id: 'link', label: '链接', icon: <Link className="w-4 h-4" />, onClick: () => insertText('[链接文字](url)') },
+        { id: 'image', label: '图片', icon: <Image className="w-4 h-4" />, onClick: () => insertText('![图片描述](url)') },
+      ]
+    },
+    {
+      id: 'tables',
+      label: '表格',
+      icon: <Table className="w-4 h-4" />,
+      subMenu: [
+        { id: 'table-basic', label: '基础表格', icon: <Table className="w-4 h-4" />, onClick: () => insertText('\n| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n| 内容 | 内容 | 内容 |\n') },
+        { id: 'table-align', label: '对齐表格', icon: <Table className="w-4 h-4" />, onClick: () => insertText('\n| 左对齐 | 居中对齐 | 右对齐 |\n| :--- | :---: | ---: |\n| 内容 | 内容 | 内容 |\n') },
+      ]
+    },
+    {
+      id: 'other',
+      label: '其他',
+      icon: <Minus className="w-4 h-4" />,
+      subMenu: [
+        { id: 'quote', label: '引用块', icon: <Quote className="w-4 h-4" />, onClick: () => insertText('> ') },
+        { id: 'hr', label: '分割线', icon: <Minus className="w-4 h-4" />, onClick: () => insertText('\n---\n') },
+        { id: 'footnote', label: '脚注', icon: <GitBranch className="w-4 h-4" />, onClick: () => insertText('[1](@ref)') },
+        { id: 'task-list', label: '任务列表', icon: <Hash className="w-4 h-4" />, onClick: () => insertText('- [ ] 待办事项\n- [x] 已完成\n') },
+      ]
+    },
+  ], [insertText, insertTextWithSelection]);
 
   const handleLinkClick = useCallback((e: MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -351,11 +462,21 @@ export const WMarkdownEditor: React.FC<WMarkdownEditorProps> = ({
   }, [theme]);
 
   return (
-    <div
-      ref={containerRef}
-      className={`w-markdown-editor ${className}`}
-      style={{ height }}
-    />
+    <>
+      <div
+        ref={containerRef}
+        className={`w-markdown-editor ${className}`}
+        style={{ height }}
+        onContextMenu={handleContextMenu}
+      />
+      <ContextMenu
+        isOpen={isContextMenuOpen}
+        x={contextMenuX}
+        y={contextMenuY}
+        items={contextMenuItems}
+        onClose={() => setIsContextMenuOpen(false)}
+      />
+    </>
   );
 };
 
