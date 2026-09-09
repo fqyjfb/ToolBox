@@ -113,6 +113,24 @@ contextBridge.exposeInMainWorld('electron', {
     if (!item) return undefined;
     return webUtils.getPathForFile(item);
   },
+  // P1: 启动应用（带可选参数）
+  launchAppWithOptions: (options) => ipcRenderer.invoke('launch-app-with-options', options),
+  // P1: 在资源管理器中定位文件
+  revealInFolder: (filePath) => ipcRenderer.invoke('reveal-in-folder', filePath),
+  // P1: 扫描开始菜单已安装应用
+  scanInstalledApps: () => ipcRenderer.invoke('scan-installed-apps'),
+  onScanInstalledAppsProgress: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('scan-installed-apps-progress', handler);
+    return () => ipcRenderer.removeListener('scan-installed-apps-progress', handler);
+  },
+  // P2: 全局快捷键
+  registerQuickLaunchHotkey: (payload) => ipcRenderer.invoke('register-quick-launch-hotkey', payload),
+  unregisterQuickLaunchHotkey: (appId) => ipcRenderer.invoke('unregister-quick-launch-hotkey', appId),
+  getQuickLaunchHotkeys: () => ipcRenderer.invoke('get-quick-launch-hotkeys'),
+  // P2: 配置导入导出
+  exportQuickLaunchConfig: (content) => ipcRenderer.invoke('export-quick-launch-config', content),
+  importQuickLaunchConfig: () => ipcRenderer.invoke('import-quick-launch-config'),
   getAutostartStatus: () => ipcRenderer.invoke('get-autostart-status'),
   setAutostartStatus: (enable) => ipcRenderer.invoke('set-autostart-status', enable),
   getSettings: () => ipcRenderer.invoke('get-settings'),

@@ -8,7 +8,126 @@ const ShortcutManager = require('../lib/shortcutManager.cjs');
 const notesService = require('../services/notesService.cjs');
 const systemInfoService = require('../services/systemInfoService.cjs');
 const { getFloatWindow } = require('./floatWindow.cjs');
-const { getFileIcon, isSupportedFileType, getShortcutTarget, getCacheFilePath } = require('../lib/iconExtractor.cjs');
+const { getFileIcon, isSupportedFileType, getShortcutInfo, getCacheFilePath } = require('../lib/iconExtractor.cjs');
+
+// 快启动扫描统一过滤规则（桌面扫描与开始菜单扫描共享，保证整体去重一致）
+const QUICK_LAUNCH_SKIP_DIRS = ['startup', 'help', 'documentation', 'maintenance', 'readme', 'uninstall'];
+const QUICK_LAUNCH_SKIP_PATTERNS = [
+  'uninstall', 'unins', 'uninst', '卸载', 'setup', 'readme',
+  'crashreport', 'updater', 'update', 'upgrade', 'patch', 'checkforupdates',
+  'redist', 'vcredist', 'dxsetup', 'dotnet', 'msicuu', 'helper', 'crash', 'license',
+  'documentation', 'manual', 'tutorial', 'register', 'support', 'cleanup', 'repair',
+  '安装', '升级',
+  // 快速启动栏无目标系统项（显示桌面/窗口切换器，兼容 Shows/Show 两种命名）
+  'shows desktop', 'show desktop', 'window switcher'
+];
+const shouldSkipQuickLaunchEntry = (entryName) => {
+  const base = entryName.toLowerCase().replace(/\.(exe|lnk|bat|cmd|url|appref-ms)$/i, '');
+  return QUICK_LAUNCH_SKIP_PATTERNS.some(p => base.includes(p));
+};
+
+// 过滤 Windows 系统目录（C:\Windows）下的系统自带应用，不添加进快启动
+const isWindowsSystemPath = (targetPath) => {
+  const systemRoot = (process.env.SystemRoot || process.env.windir || 'C:\\Windows').toLowerCase();
+  const lower = targetPath.toLowerCase();
+  return lower === systemRoot || lower.startsWith(systemRoot + path.sep);
+};
+
+// MSI 广告快捷方式目标检测：目标位于 C:\Windows\Installer\ 下（MSI 间接启动机制的入口 exe，
+// 如 CorelDRAW/Office 等 MSI 安装应用），属于第三方应用入口而非系统自带应用
+const isWindowsInstallerPath = (targetPath) => {
+  const systemRoot = (process.env.SystemRoot || process.env.windir || 'C:\\Windows').toLowerCase();
+  return targetPath.toLowerCase().startsWith(systemRoot + '\\installer\\');
+};
+
+// 快启动扫描共享核心（桌面扫描与已安装应用扫描统一使用）：
+// 递归收集候选（.lnk/.exe，排除 .url——URL 快捷方式不作为应用添加）→ 逐项解析校验 → 实时进度推送
+// 统一约定：命名以快捷方式名称为主；显示名 + 目标路径双重去重；保留快捷方式启动参数；
+// 跳过卸载/更新/帮助等无用项、Windows 系统目录与失效快捷方式（目标不存在）
+const scanQuickLaunchPaths = async (event, scanPaths) => {
+  const logger = require('../logs/logger.cjs');
+  // 阶段一：递归收集候选文件
+  const candidates = [];
+  const collectDir = (dir, depth = 0) => {
+    if (depth > 3) return;
+    let entries;
+    try { entries = fs.readdirSync(dir); } catch { return; }
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry);
+      let stat;
+      try { stat = fs.statSync(fullPath); } catch { continue; }
+      if (stat.isDirectory()) {
+        if (QUICK_LAUNCH_SKIP_DIRS.some(d => entry.toLowerCase().includes(d))) continue;
+        collectDir(fullPath, depth + 1);
+      } else {
+        const lower = fullPath.toLowerCase();
+        if (!lower.endsWith('.lnk') && !lower.endsWith('.exe')) continue;
+        if (shouldSkipQuickLaunchEntry(entry)) continue;
+        candidates.push({ entry, fullPath });
+      }
+    }
+  };
+  scanPaths.forEach(dir => { if (fs.existsSync(dir)) collectDir(dir); });
+
+  // 阶段二：逐项解析目标并校验，实时推送进度
+  const total = candidates.length;
+  const results = [];
+  const seenTargets = new Set();
+  const seenNames = new Set();
+  let processed = 0;
+  const sendProgress = (current) => {
+    const percent = total > 0 ? Math.round((current / total) * 100) : 100;
+    try { event.sender.send('scan-installed-apps-progress', { current, total, percent }); } catch {}
+  };
+  sendProgress(0);
+
+  for (const { entry, fullPath } of candidates) {
+    processed++;
+    const displayName = entry.replace(/\.(exe|lnk)$/i, '');
+    if (seenNames.has(displayName.toLowerCase())) { sendProgress(processed); continue; }
+    seenNames.add(displayName.toLowerCase());
+
+    let targetPath = fullPath;
+    let appArgs = '';
+    if (fullPath.toLowerCase().endsWith('.lnk')) {
+      try {
+        const info = await getShortcutInfo(fullPath);
+        // 失效快捷方式（目标不存在）或解析异常时不添加
+        if (!info.targetPath) { sendProgress(processed); continue; }
+        if (isWindowsInstallerPath(info.targetPath)) {
+          // MSI 广告快捷方式：目标位于 Windows\Installer，按系统路径规则会被误杀；
+          // 保留 .lnk 本身，通过 ShellExecute 走 MSI 原生机制启动真实应用
+          targetPath = fullPath;
+          appArgs = '';
+        } else {
+          targetPath = info.targetPath;
+          appArgs = info.args;
+        }
+      } catch {
+        sendProgress(processed);
+        continue;
+      }
+    }
+    // 目标必须是真实存在的 .exe（.lnk 目标已由 PowerShell Test-Path 验证；裸 .exe 现校验）；
+    // 保留的 MSI 广告快捷方式 .lnk 例外（走 ShellExecute 机制，不经存在性/系统路径校验）
+    const lowerTarget = targetPath.toLowerCase();
+    const isExe = lowerTarget.endsWith('.exe');
+    if (!isExe && !lowerTarget.endsWith('.lnk')) { sendProgress(processed); continue; }
+    if (isExe) {
+      try { if (!fs.existsSync(targetPath)) { sendProgress(processed); continue; } } catch { sendProgress(processed); continue; }
+      if (isWindowsSystemPath(targetPath)) { sendProgress(processed); continue; }
+      // 快捷方式名称干净但目标为升级/卸载等程序（如 xxx.lnk -> update.exe）时跳过
+      if (shouldSkipQuickLaunchEntry(path.basename(targetPath))) { sendProgress(processed); continue; }
+    }
+    if (seenTargets.has(lowerTarget)) { sendProgress(processed); continue; }
+    seenTargets.add(lowerTarget);
+    results.push({ name: displayName, path: targetPath, args: appArgs || undefined });
+    sendProgress(processed);
+  }
+
+  logger.addLog('info', `[QuickLaunch] 扫描完成: 候选 ${total} 项，保留 ${results.length} 项`, 'scan');
+  return results;
+};
 
 let mainWindow = null;
 let memoryCleanupTimer = null;
@@ -17,6 +136,8 @@ let lastActivityTime = Date.now();
 let isQuitting = false;
 
 const shortcutManager = new ShortcutManager();
+// P2: 快启动全局热键映射表（appId -> accelerator），置于模块作用域以便退出时统一注销
+const quickLaunchHotkeys = new Map();
 
 // 检查锁定状态，如果已锁定则聚焦锁定窗口
 const checkLockAndShowMain = (callback) => {
@@ -450,23 +571,15 @@ const registerIpcHandlers = () => {
     return null;
   });
 
-  ipcMain.handle('scan-desktop-apps', async () => {
-    const desktopPath = require('electron').app.getPath('desktop');
-    if (!fs.existsSync(desktopPath)) return [];
+  // 桌面扫描：用户桌面 + 公共桌面（Windows 实际显示的桌面为两者合并）
+  // 命名/去重/进度/规则与已安装应用扫描完全一致（共享 scanQuickLaunchPaths）
+  ipcMain.handle('scan-desktop-apps', async (event) => {
+    const { app } = require('electron');
     try {
-      const files = fs.readdirSync(desktopPath);
-      const appFiles = [];
-      for (const file of files) {
-        const filePath = path.join(desktopPath, file);
-        const stat = fs.statSync(filePath);
-        if (stat.isFile() && isSupportedFileType(filePath)) {
-          appFiles.push({
-            name: file.replace(/\.(exe|bat|cmd|lnk)$/i, ''),
-            path: filePath
-          });
-        }
-      }
-      return appFiles;
+      return await scanQuickLaunchPaths(event, [
+        app.getPath('desktop'),
+        path.join(process.env.PUBLIC || 'C:\\Users\\Public', 'Desktop')
+      ]);
     } catch (error) {
       return [];
     }
@@ -509,9 +622,9 @@ const registerIpcHandlers = () => {
 
       if (isSupportedFileType(filePath)) {
         const targetPath = filePath.toLowerCase().endsWith('.lnk')
-          ? await getShortcutTarget(filePath)
+          ? (await getShortcutInfo(filePath)).targetPath
           : filePath;
-        
+
         if (fs.existsSync(targetPath)) {
           logger.addLog('debug', `[QuickLaunch] 路径存在: ${targetPath}`, 'drag-drop');
           result.push(targetPath);
@@ -533,6 +646,143 @@ const registerIpcHandlers = () => {
 
   ipcMain.handle('file-exists', (event, filePath) => {
     return fs.existsSync(filePath);
+  });
+
+  // P1: 启动应用（带可选参数 / 工作目录 / 管理员 / 窗口模式）
+  ipcMain.handle('launch-app-with-options', async (event, options) => {
+    const { path: filePath, args, workingDir, runAsAdmin, windowMode } = options || {};
+    if (!filePath) return { success: false, error: '路径不能为空' };
+
+    const normalized = normalizePath(filePath);
+    if (!normalized) return { success: false, error: '路径无效' };
+
+    // 构造 PowerShell Start-Process 命令
+    const parts = [`Start-Process -FilePath '${normalized.replace(/'/g, "''")}'`];
+    if (args) parts.push(`-ArgumentList '${args.replace(/'/g, "''")}'`);
+    if (workingDir) parts.push(`-WorkingDirectory '${workingDir.replace(/'/g, "''")}'`);
+    if (windowMode === 'minimized') parts.push('-WindowStyle Minimized');
+    if (windowMode === 'maximized') parts.push('-WindowStyle Maximized');
+    if (runAsAdmin) parts.push('-Verb RunAs');
+
+    return new Promise((resolve) => {
+      execFile('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-Command', parts.join(' ')], { timeout: 10000 }, (error) => {
+        if (error) {
+          logger.addLog('warn', `[QuickLaunch] 启动失败: ${error.message}`, 'launch');
+          resolve({ success: false, error: error.message });
+        } else {
+          logger.addLog('info', `[QuickLaunch] 启动成功: ${normalized}`, 'launch');
+          resolve({ success: true });
+        }
+      });
+    });
+  });
+
+  // P1: 在资源管理器中定位文件
+  ipcMain.handle('reveal-in-folder', (event, filePath) => {
+    if (!filePath) return false;
+    const normalized = normalizePath(filePath);
+    if (!normalized) return false;
+    try {
+      require('child_process').execFile('explorer.exe', ['/select,', normalized], (error) => {
+        if (error) {
+          logger.addLog('warn', `[QuickLaunch] 定位失败: ${error.message}`, 'reveal');
+        } else {
+          logger.addLog('info', `[QuickLaunch] 定位文件: ${normalized}`, 'reveal');
+        }
+      });
+      return true;
+    } catch (e) {
+      logger.addLog('warn', `[QuickLaunch] 定位异常: ${e.message}`, 'reveal');
+      return false;
+    }
+  });
+
+  // 已安装应用扫描：开始菜单（系统/用户）+ 快速启动栏（含任务栏固定项）
+  // 命名/去重/进度/规则与桌面扫描完全一致（共享 scanQuickLaunchPaths）
+  ipcMain.handle('scan-installed-apps', async (event) => {
+    const { app } = require('electron');
+    return scanQuickLaunchPaths(event, [
+      path.join(process.env.ProgramData || 'C:\\ProgramData', 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+      path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+      path.join(app.getPath('appData'), 'Microsoft', 'Internet Explorer', 'Quick Launch')
+    ]);
+  });
+
+  // P2: 全局快捷键启动应用
+  ipcMain.handle('register-quick-launch-hotkey', (event, { appId, accelerator, appPath }) => {
+    if (!appId || !accelerator || !appPath) {
+      return { success: false, error: '参数不完整' };
+    }
+    // 注销旧绑定
+    if (quickLaunchHotkeys.has(appId)) {
+      shortcutManager.unregister(quickLaunchHotkeys.get(appId));
+    }
+    // 检查冲突（已注册且非本应用）
+    if (shortcutManager.isRegistered(accelerator) && quickLaunchHotkeys.get(appId) !== accelerator) {
+      return { success: false, error: '快捷键已被占用' };
+    }
+    shortcutManager.register(accelerator, () => {
+      shell.openPath(appPath);
+    }, true);
+    quickLaunchHotkeys.set(appId, accelerator);
+    logger.addLog('info', `[QuickLaunch] 注册热键: ${accelerator} -> ${appPath}`, 'hotkey');
+    return { success: true };
+  });
+
+  ipcMain.handle('unregister-quick-launch-hotkey', (event, appId) => {
+    if (quickLaunchHotkeys.has(appId)) {
+      const acc = quickLaunchHotkeys.get(appId);
+      shortcutManager.unregister(acc);
+      quickLaunchHotkeys.delete(appId);
+      logger.addLog('info', `[QuickLaunch] 注销热键: ${acc}`, 'hotkey');
+    }
+    return true;
+  });
+
+  // 暴露批量注册接口，供 main.cjs 启动时加载
+  ipcMain.handle('get-quick-launch-hotkeys', () => {
+    return Array.from(quickLaunchHotkeys.entries()).map(([appId, accelerator]) => ({ appId, accelerator }));
+  });
+
+  // P2: 配置导出 / 导入
+  ipcMain.handle('export-quick-launch-config', async (event, content) => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: '导出快启动配置',
+      defaultPath: 'quick-launch-config.json',
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+    if (result.canceled) return null;
+    try {
+      fs.writeFileSync(result.filePath, content, 'utf-8');
+      return { success: true, filePath: result.filePath };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('import-quick-launch-config', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: '导入快启动配置',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    try {
+      const content = fs.readFileSync(result.filePaths[0], 'utf-8');
+      const data = JSON.parse(content);
+      if (!Array.isArray(data.apps) || !Array.isArray(data.categories)) {
+        return { error: '配置文件格式不正确' };
+      }
+      // 校验每条 app 必须有 id/path/name
+      for (const app of data.apps) {
+        if (!app.id || !app.path || !app.name) {
+          return { error: '应用数据字段缺失' };
+        }
+      }
+      return data;
+    } catch (e) {
+      return { error: `读取失败: ${e.message}` };
+    }
   });
 
   ipcMain.handle('get-autostart-status', () => {
@@ -1055,6 +1305,15 @@ const registerIpcHandlers = () => {
   });
 };
 
+// P2: 应用退出时统一注销所有快启动全局热键
+const cleanupQuickLaunchHotkeys = () => {
+  if (quickLaunchHotkeys.size === 0) return;
+  for (const accelerator of quickLaunchHotkeys.values()) {
+    try { shortcutManager.unregister(accelerator); } catch {}
+  }
+  quickLaunchHotkeys.clear();
+};
+
 module.exports = {
   createWindow,
   registerIpcHandlers,
@@ -1065,4 +1324,5 @@ module.exports = {
   resetAutoLockTimer,
   getMainWindow: () => mainWindow,
   setIsQuitting: (val) => { isQuitting = val; },
+  cleanupQuickLaunchHotkeys,
 };

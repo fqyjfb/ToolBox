@@ -17,6 +17,7 @@ interface QuickLoginPayload {
 interface DesktopAppInfo {
   name: string;
   path: string;
+  args?: string;
 }
 
 interface SettingItem {
@@ -226,6 +227,24 @@ declare interface Window {
     scanDesktopApps: () => Promise<DesktopAppInfo[]>;
     getDroppedFiles: (filePaths: string[]) => Promise<string[]>;
     getFileOrFolderPath: (item: File) => Promise<string | undefined>;
+    // P1: 快启动扩展
+    launchAppWithOptions: (options: {
+      path: string;
+      args?: string;
+      workingDir?: string;
+      runAsAdmin?: boolean;
+      windowMode?: 'normal' | 'minimized' | 'maximized';
+    }) => Promise<{ success: boolean; error?: string }>;
+    revealInFolder: (filePath: string) => Promise<boolean>;
+    scanInstalledApps: () => Promise<DesktopAppInfo[]>;
+    onScanInstalledAppsProgress: (callback: (data: { current: number; total: number; percent: number }) => void) => () => void;
+    // P2: 全局快捷键
+    registerQuickLaunchHotkey: (payload: { appId: string; accelerator: string; appPath: string }) => Promise<{ success: boolean; error?: string }>;
+    unregisterQuickLaunchHotkey: (appId: string) => Promise<boolean>;
+    getQuickLaunchHotkeys: () => Promise<Array<{ appId: string; accelerator: string }>>;
+    // P2: 配置导入导出
+    exportQuickLaunchConfig: (content: string) => Promise<{ success: boolean; filePath?: string; error?: string } | null>;
+    importQuickLaunchConfig: () => Promise<{ apps: unknown[]; categories: Array<{ id: string; name: string; color: string }> } | { error: string } | null>;
     getAutostartStatus: () => Promise<boolean>;
     setAutostartStatus: (enable: boolean) => Promise<boolean>;
     getSettings: () => Promise<SettingItem[]>;

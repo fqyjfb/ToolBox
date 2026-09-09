@@ -69,6 +69,86 @@
   }
 }
 
+/* 排序组合框：紧凑尺寸与工具区图标按钮对齐（4px 内边距 + 12px 字号/16px 行高，总高 24px） */
+.quick-launch-sort {
+  padding: 4px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* 应用打开方式切换按钮（勾选=单击启动，未勾选=双击启动），尺寸与 icon-toggle-container 对齐（4px padding + 16px 图标） */
+.launch-mode-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.launch-mode-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .launch-mode-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.launch-mode-toggle input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.launch-mode-toggle .checkmark {
+  position: relative;
+  height: 16px;
+  width: 16px;
+  background-color: #d1d5db;
+  border-bottom-left-radius: 9px;
+  border-top-right-radius: 9px;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.dark .launch-mode-toggle .checkmark {
+  background-color: #4b5563;
+}
+
+.launch-mode-toggle input:checked ~ .checkmark {
+  background-color: var(--color-primary);
+  box-shadow: 0 0 10px rgba(24, 24, 27, 0.25);
+}
+
+.dark .launch-mode-toggle input:checked ~ .checkmark {
+  box-shadow: 0 0 10px rgba(234, 241, 248, 0.2);
+}
+
+.launch-mode-toggle .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 5px;
+  top: 3px;
+  width: 4px;
+  height: 8px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.dark .launch-mode-toggle .checkmark:after {
+  border-color: #18181B;
+}
+
+.launch-mode-toggle input:checked ~ .checkmark:after {
+  display: block;
+}
+
 .auth-popup .popup-menu-window {
   position: absolute;
   right: 0;
@@ -159,4 +239,75 @@
 .auth-popup .popup-submenu-item:hover {
   color: var(--color-bg-primary);
   background: var(--color-primary);
+}
+
+/* 隐藏垂直滚动条（保留滚动功能） - 跨浏览器兼容 */
+.quick-launch-scroll {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+.quick-launch-scroll::-webkit-scrollbar {
+  display: none;                  /* Chrome/Safari */
+}
+
+/* 扫描进度条（现代样式：贴底悬浮 + 图标 + 百分比） */
+.quick-launch-scan-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding: 6px 12px;
+  background-color: var(--color-bg-primary);
+  border-top: 1px solid var(--color-border);
+  animation: quick-launch-scan-in 0.25s ease-out;
+}
+.quick-launch-scan-icon {
+  flex-shrink: 0;
+  color: var(--color-primary);
+  animation: quick-launch-scan-spin 1.2s linear infinite;
+}
+.quick-launch-scan-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--color-border);
+  overflow: hidden;
+}
+.quick-launch-scan-fill {
+  height: 100%;
+  border-radius: 2px;
+  background-color: var(--color-primary);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.quick-launch-scan-text {
+  flex-shrink: 0;
+  min-width: 32px;
+  text-align: right;
+  font-size: var(--text-xs, 12px);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+@keyframes quick-launch-scan-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes quick-launch-scan-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 未分类应用角标（仅在"全部"分类下显示）：低饱和中性灰，避免抢视觉焦点 */
+.quick-launch-unassigned-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-tertiary, #A1A1AA);
+  opacity: 0.65;
+  pointer-events: none;
 }

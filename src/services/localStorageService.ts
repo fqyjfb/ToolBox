@@ -17,6 +17,8 @@ export const STORAGE_KEYS = {
   QUICK_LAUNCH_CATEGORIES: 'quickLaunchCategories',
   QUICK_LAUNCH_ICON_SIZE: 'quickLaunchIconSize',
   QUICK_LAUNCH_SHOW_TEXT: 'quickLaunchShowText',
+  QUICK_LAUNCH_SORT_MODE: 'quickLaunchSortMode',
+  QUICK_LAUNCH_SINGLE_CLICK: 'quickLaunchSingleClick',
   HOME_FAVORITES: 'homeFavorites',
   HOME_TOOLS: 'homeTools',
   HOME_QUICK_LAUNCH: 'homeQuickLaunchApps',

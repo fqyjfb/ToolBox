@@ -1,0 +1,9 @@
+﻿node.exe : npm error Class extends value undefined is not a constructor or null
+At line:1 char:1
++ & "D:\Program Files\nodejs/node.exe" "D:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm error Class...tructor or null:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm error A complete log of this run can be found in: C:\Users\Administrator\AppData\Local\npm-cache\_logs\2026-09-08T0
+5_48_01_580Z-debug-0.log
