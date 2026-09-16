@@ -1,0 +1,150 @@
+import React from 'react';
+
+/* eslint-disable react-refresh/only-export-components */
+export interface RouteConfig {
+  path: string;
+  element: React.ReactNode;
+  requiresAuth?: boolean;
+  requiresAdmin?: boolean;
+}
+
+const Home = React.lazy(() => import('../pages/desktop/Home'));
+const WebHome = React.lazy(() => import('../pages/web/WebHome'));
+const MobileHome = React.lazy(() => import('../pages/mobile/MobileHome'));
+const QuickLaunch = React.lazy(() => import('../pages/desktop/QuickLaunch'));
+const HotNewsPage = React.lazy(() => import('../pages/shared/HotNewsPage'));
+const NavPage = React.lazy(() => import('../pages/shared/NavPage'));
+const LoginPage = React.lazy(() => import('../pages/shared/LoginPage'));
+const Settings = React.lazy(() => import('../pages/shared/Settings'));
+const About = React.lazy(() => import('../pages/shared/About'));
+const ToolsPage = React.lazy(() => import('../pages/shared/ToolsPage'));
+const ToolDownloadPage = React.lazy(() => import('../pages/shared/ToolDownloadPage'));
+const LogsPage = React.lazy(() => import('../pages/logs/index'));
+
+const CountryCodePage = React.lazy(() => import('../pages/tools/country-code'));
+const ExchangePage = React.lazy(() => import('../pages/tools/exchange'));
+const TranslatePage = React.lazy(() => import('../pages/tools/translate'));
+const CloudClipboardPage = React.lazy(() => import('../pages/tools/cloud-clipboard'));
+const QuickReplyPage = React.lazy(() => import('../pages/tools/quick-reply'));
+const TodoManagerPage = React.lazy(() => import('../pages/tools/todo'));
+const NotesPage = React.lazy(() => import('../pages/tools/notes'));
+const MemoPage = React.lazy(() => import('../pages/tools/memo'));
+const ProfilePage = React.lazy(() => import('../pages/tools/profile'));
+const AccountManagerPage = React.lazy(() => import('../pages/tools/account'));
+const MarkdownToWechatPage = React.lazy(() => import('../pages/tools/markdown-to-wechat'));
+const IPInfoPage = React.lazy(() => import('../pages/tools/ip-info'));
+const EmojiRemoverPage = React.lazy(() => import('../pages/tools/emoji-remover'));
+const JsonFormatterPage = React.lazy(() => import('../pages/tools/json-formatter'));
+const TimestampConverterPage = React.lazy(() => import('../pages/tools/timestamp-converter'));
+const CaseConverterPage = React.lazy(() => import('../pages/tools/case-converter'));
+const HashGeneratorPage = React.lazy(() => import('../pages/tools/hash-generator'));
+const TextDeduplicatorPage = React.lazy(() => import('../pages/tools/text-deduplicator'));
+const CsvToJsonPage = React.lazy(() => import('../pages/tools/csv-to-json'));
+const JsonToCsvPage = React.lazy(() => import('../pages/tools/json-to-csv'));
+const UrlParserPage = React.lazy(() => import('../pages/tools/url-parser'));
+const SitemapGeneratorPage = React.lazy(() => import('../pages/tools/sitemap-generator'));
+const QrGeneratorPage = React.lazy(() => import('../pages/tools/qr-generator'));
+const RegexTesterPage = React.lazy(() => import('../pages/tools/regex-tester'));
+const UrlEncodePage = React.lazy(() => import('../pages/tools/url-encode'));
+const MetaTagsGeneratorPage = React.lazy(() => import('../pages/tools/meta-tags-generator'));
+const MarkdownToTextPage = React.lazy(() => import('../pages/tools/markdown-to-text'));
+const HtmlToTextPage = React.lazy(() => import('../pages/tools/html-to-text'));
+const SqlMinifierPage = React.lazy(() => import('../pages/tools/sql-minifier'));
+const HexEncodePage = React.lazy(() => import('../pages/tools/hex-encode'));
+const HexDecodePage = React.lazy(() => import('../pages/tools/hex-decode'));
+const WeatherPage = React.lazy(() => import('../pages/tools/weather'));
+
+const PluginStorePage = React.lazy(() => import('../pages/tools/plugin-store'));
+const PluginPage = React.lazy(() => import('../pages/tools/PluginPage'));
+const OfflineToolsPage = React.lazy(() => import('../pages/tools/offline-tools'));
+
+const AdminDashboardPage = React.lazy(() => import('../pages/admin'));
+const AdminWebsitesPage = React.lazy(() => import('../pages/admin/websites'));
+const AdminUsersPage = React.lazy(() => import('../pages/admin/users'));
+
+const AdminToolsPage = React.lazy(() => import('../pages/admin/tools'));
+const AdminDatabasePage = React.lazy(() => import('../pages/admin/database'));
+
+const sharedRoutes: RouteConfig[] = [
+  { path: '/news', element: <HotNewsPage /> },
+  { path: '/nav', element: <NavPage /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/about', element: <About /> },
+];
+
+const authRequiredRoutes: RouteConfig[] = [
+  { path: '/tools', element: <ToolsPage />, requiresAuth: true },
+  { path: '/tools/tool-downloads', element: <ToolDownloadPage />, requiresAuth: true },
+  { path: '/tools/exchange', element: <ExchangePage />, requiresAuth: true },
+  { path: '/tools/translate', element: <TranslatePage />, requiresAuth: true },
+  { path: '/tools/cloud-clipboard', element: <CloudClipboardPage />, requiresAuth: true },
+  { path: '/tools/quick-reply', element: <QuickReplyPage />, requiresAuth: true },
+  { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
+  { path: '/tools/memo', element: <MemoPage />, requiresAuth: true },
+  { path: '/tools/notes', element: <NotesPage />, requiresAuth: true },
+  { path: '/tools/profile', element: <ProfilePage />, requiresAuth: true },
+  { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
+  { path: '/tools/country-code', element: <CountryCodePage />, requiresAuth: true },
+  { path: '/tools/markdown-to-wechat', element: <MarkdownToWechatPage />, requiresAuth: true },
+  { path: '/tools/ip-info', element: <IPInfoPage />, requiresAuth: true },
+  { path: '/tools/emoji-remover', element: <EmojiRemoverPage />, requiresAuth: true },
+  { path: '/tools/json-formatter', element: <JsonFormatterPage />, requiresAuth: true },
+  { path: '/tools/timestamp-converter', element: <TimestampConverterPage />, requiresAuth: true },
+  { path: '/tools/case-converter', element: <CaseConverterPage />, requiresAuth: true },
+  { path: '/tools/hash-generator', element: <HashGeneratorPage />, requiresAuth: true },
+  { path: '/tools/text-deduplicator', element: <TextDeduplicatorPage />, requiresAuth: true },
+  { path: '/tools/csv-to-json', element: <CsvToJsonPage />, requiresAuth: true },
+  { path: '/tools/json-to-csv', element: <JsonToCsvPage />, requiresAuth: true },
+  { path: '/tools/url-parser', element: <UrlParserPage />, requiresAuth: true },
+  { path: '/tools/sitemap-generator', element: <SitemapGeneratorPage />, requiresAuth: true },
+  { path: '/tools/qr-generator', element: <QrGeneratorPage />, requiresAuth: true },
+  { path: '/tools/regex-tester', element: <RegexTesterPage />, requiresAuth: true },
+  { path: '/tools/url-encode', element: <UrlEncodePage />, requiresAuth: true },
+  { path: '/tools/meta-tags-generator', element: <MetaTagsGeneratorPage />, requiresAuth: true },
+  { path: '/tools/markdown-to-text', element: <MarkdownToTextPage />, requiresAuth: true },
+  { path: '/tools/html-to-text', element: <HtmlToTextPage />, requiresAuth: true },
+  { path: '/tools/sql-minifier', element: <SqlMinifierPage />, requiresAuth: true },
+  { path: '/tools/hex-encode', element: <HexEncodePage />, requiresAuth: true },
+  { path: '/tools/hex-decode', element: <HexDecodePage />, requiresAuth: true },
+  { path: '/tools/plugin-store', element: <PluginStorePage />, requiresAuth: true },
+  { path: '/tools/offline-tools', element: <OfflineToolsPage />, requiresAuth: true },
+  { path: '/tools/:pluginId', element: <PluginPage />, requiresAuth: true },
+];
+
+const publicToolsRoutes: RouteConfig[] = [
+  { path: '/tools/weather', element: <WeatherPage /> },
+];
+
+export const desktopRoutes: RouteConfig[] = [
+  { path: '/', element: <Home /> },
+  { path: '/launch', element: <QuickLaunch /> },
+  { path: '/settings', element: <Settings /> },
+  { path: '/logs', element: <LogsPage /> },
+  ...sharedRoutes,
+  ...publicToolsRoutes,
+  ...authRequiredRoutes,
+];
+
+export const webRoutes: RouteConfig[] = [
+  { path: '/', element: <WebHome /> },
+  ...sharedRoutes,
+  ...publicToolsRoutes,
+  ...authRequiredRoutes,
+];
+
+export const mobileRoutes: RouteConfig[] = [
+  { path: '/', element: <MobileHome /> },
+  ...sharedRoutes,
+  ...publicToolsRoutes,
+  ...authRequiredRoutes,
+];
+
+export const protectedRoutes: RouteConfig[] = authRequiredRoutes;
+
+export const adminRoutes: RouteConfig[] = [
+  { path: '/admin', element: <AdminDashboardPage />, requiresAdmin: true },
+  { path: '/admin/websites', element: <AdminWebsitesPage />, requiresAdmin: true },
+  { path: '/admin/users', element: <AdminUsersPage />, requiresAdmin: true },
+  { path: '/admin/tools', element: <AdminToolsPage />, requiresAdmin: true },
+  { path: '/admin/database', element: <AdminDatabasePage />, requiresAdmin: true },
+];

@@ -1,0 +1,508 @@
+/// <reference types="vite/client" />
+
+declare module '*.svg'
+
+interface QuickLoginField {
+  label: string;
+  value: string;
+}
+
+interface QuickLoginPayload {
+  title: string;
+  url: string;
+  isDark: boolean;
+  fields: QuickLoginField[];
+}
+
+interface DesktopAppInfo {
+  name: string;
+  path: string;
+  args?: string;
+}
+
+interface SettingItem {
+  name: string;
+  value: string | number | boolean | object;
+}
+
+interface ShortcutItem {
+  id: number;
+  tag: string;
+  cmd: string;
+  isOpen: number;
+  isGlobal: number;
+}
+
+interface AppVersionInfo {
+  version: string;
+  electron: string;
+  chrome: string;
+  newVersion: string;
+  github: string;
+  download: string;
+}
+
+interface PluginInfo {
+  id: string;
+  name: string;
+  description: string;
+  iconName: string;
+  iconUrl?: string;
+  image?: string;
+  color: string;
+  textColor: string;
+  version: string;
+  author: string;
+  categories: string[];
+  path: string;
+  tags?: string[];
+  githubRepo?: string;
+  releaseUrl?: string;
+  entry?: string;
+  isBeta?: boolean;
+}
+
+interface InstalledPlugin extends PluginInfo {
+  enabled: boolean;
+  installedVersion: string;
+  installDate: number;
+  isPinned: boolean;
+}
+
+interface OfflineToolFile {
+  name: string;
+  fileName: string;
+  path: string;
+  size: number;
+  mtimeMs: number;
+}
+
+interface SystemInfo {
+  os_name: string;
+  os_version: string;
+  os_arch: string;
+  computer_name: string;
+  user_name: string;
+  cpu_info: string;
+  cpu_cores: number;
+  total_memory: number;
+  available_memory: number;
+  uptime_seconds: number;
+}
+
+interface UpdateResult {
+  code: number;
+  msg: string;
+  data?: Record<string, unknown>;
+}
+
+interface FloatConfigItem {
+  id: number;
+  type: 'nav' | 'tool' | 'app' | 'system' | 'plugin';
+  action: string;
+  name: string;
+  icon: string;
+  color: string;
+  path?: string;
+}
+
+interface DownloadResult {
+  code: number;
+  msg: string;
+  path?: string;
+}
+
+interface FileData {
+  name: string;
+  type: string;
+  size: number;
+  path?: string;
+}
+
+interface NotesFileTreeNode {
+  id: string;
+  name: string;
+  type: 'file' | 'folder';
+  path: string;
+  fileType?: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf';
+  children?: NotesFileTreeNode[];
+  expanded?: boolean;
+  active?: boolean;
+}
+
+interface NotesSelectFolderResult {
+  canceled: boolean;
+  filePaths: string[];
+}
+
+interface NotesValidateResult {
+  valid: boolean;
+  error?: string;
+}
+
+interface NotesScanResult {
+  success: boolean;
+  fileCount: number;
+  folderCount: number;
+  error?: string;
+}
+
+interface NotesCreateResult {
+  success: boolean;
+  path?: string;
+  error?: string;
+  exists?: boolean;
+}
+
+interface NotesReadResult {
+  success: boolean;
+  content?: string;
+  error?: string;
+}
+
+interface NotesSaveResult {
+  success: boolean;
+  error?: string;
+}
+
+interface NotesRenameResult {
+  success: boolean;
+  newPath?: string;
+  error?: string;
+}
+
+interface NotesDeleteResult {
+  success: boolean;
+  error?: string;
+}
+
+interface OcrBlock {
+  text: string;
+  confidence: number;
+  box: number[][];
+}
+
+interface OcrResult {
+  success: boolean;
+  text: string;
+  blocks: OcrBlock[];
+  error?: string;
+}
+
+interface PythonServiceStatus {
+  status: 'stopped' | 'starting' | 'running' | 'stopping' | 'error';
+  pid: number | null;
+  port: number | null;
+  httpPort: number | null;
+  startedAt: number | null;
+  uptime: number | null;
+  restartCount: number;
+  lastError: string | null;
+}
+
+interface OcrStatus {
+  available: boolean;
+  message: string;
+  status?: string;
+  lastError?: string | null;
+  canManualStart?: boolean;
+  pid?: number;
+  uptime?: number;
+}
+
+declare interface Window {
+  electron?: {
+    minimize: () => void;
+    maximize: () => void;
+    close: () => void;
+    restart: () => Promise<{ code: number; msg: string }>;
+    openExternal: (url: string) => void;
+    openInternal: (url: string) => void;
+    openQuickLogin: (payload: QuickLoginPayload) => Promise<{ success: boolean }>;
+    openFile: (path: string) => void;
+    selectFile: () => Promise<string | null>;
+    selectFolder: () => Promise<string | null>;
+    getFileIcon: (path: string) => Promise<string | null>;
+    fileExists: (path: string) => Promise<boolean>;
+    scanDesktopApps: () => Promise<DesktopAppInfo[]>;
+    getDroppedFiles: (filePaths: string[]) => Promise<string[]>;
+    getFileOrFolderPath: (item: File) => Promise<string | undefined>;
+    // P1: 快启动扩展
+    launchAppWithOptions: (options: {
+      path: string;
+      args?: string;
+      workingDir?: string;
+      runAsAdmin?: boolean;
+      windowMode?: 'normal' | 'minimized' | 'maximized';
+    }) => Promise<{ success: boolean; error?: string }>;
+    revealInFolder: (filePath: string) => Promise<boolean>;
+    scanInstalledApps: () => Promise<DesktopAppInfo[]>;
+    onScanInstalledAppsProgress: (callback: (data: { current: number; total: number; percent: number }) => void) => () => void;
+    // P2: 全局快捷键
+    registerQuickLaunchHotkey: (payload: { appId: string; accelerator: string; appPath: string }) => Promise<{ success: boolean; error?: string }>;
+    unregisterQuickLaunchHotkey: (appId: string) => Promise<boolean>;
+    getQuickLaunchHotkeys: () => Promise<Array<{ appId: string; accelerator: string }>>;
+    // P2: 配置导入导出
+    exportQuickLaunchConfig: (content: string) => Promise<{ success: boolean; filePath?: string; error?: string } | null>;
+    importQuickLaunchConfig: () => Promise<{ apps: unknown[]; categories: Array<{ id: string; name: string; color: string }> } | { error: string } | null>;
+    getAutostartStatus: () => Promise<boolean>;
+    setAutostartStatus: (enable: boolean) => Promise<boolean>;
+    getSettings: () => Promise<SettingItem[]>;
+    updateSetting: (setting: { name: string; value: string | number | boolean | object }) => Promise<UpdateResult>;
+    clearCache: () => Promise<UpdateResult>;
+    clearIconCache: (type: 'all' | 'expired') => Promise<{ code: number; msg: string }>;
+    networkTest: (payload: { url: string; timeout?: number }) => Promise<{ ok: boolean; statusCode: number; latencyMs: number; error: string | null }>;
+    getUserDataPath: () => Promise<string>;
+    openUserDataFolder: () => Promise<{ success: boolean }>;
+    getShortcuts: () => Promise<ShortcutItem[]>;
+    updateShortcut: (shortcut: ShortcutItem & { flag?: boolean }) => Promise<UpdateResult>;
+    resetShortcuts: () => Promise<UpdateResult>;
+    getVersion: () => Promise<AppVersionInfo>;
+    downloadUpdate: (url: string) => Promise<DownloadResult>;
+    installUpdate: (filePath: string) => Promise<UpdateResult>;
+    toggleFloatWindow: () => Promise<number>;
+    getFloatConfig: () => Promise<FloatConfigItem[]>;
+    updateFloatConfig: (config: FloatConfigItem[]) => Promise<UpdateResult>;
+    resetFloatConfig: () => Promise<UpdateResult>;
+    ocr: {
+      recognize: (imageBase64: string) => Promise<OcrResult>;
+      recognizeFile: (filePath: string) => Promise<OcrResult>;
+      status: () => Promise<OcrStatus>;
+      start: () => Promise<{ success: boolean; message: string; pid?: number; error?: string }>;
+      stop: () => Promise<{ success: boolean; message: string; error?: string }>;
+      serviceInfo: () => Promise<PythonServiceStatus>;
+      diagnose: () => Promise<{ success: boolean; output: string; error?: string; exitCode?: number }>;
+      installDeps: () => Promise<{ success: boolean; output: string; error?: string; exitCode?: number }>;
+      checkPort: (port: number) => Promise<{ success: boolean; inUse: boolean; port: number; error?: string }>;
+      selectPythonPath: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
+    };
+    fileManager: {
+      getSystemPaths: () => Promise<Array<{
+        name: string;
+        path: string;
+        icon: string;
+        isSystem: boolean;
+      }>>;
+      getPath: (pathType: string) => Promise<string | null>;
+      listFiles: (dirPath: string) => Promise<Array<{
+        name: string;
+        path: string;
+        isDirectory: boolean;
+        size?: number;
+        modifiedTime?: Date;
+      }>>;
+      getParentPath: (currentPath: string) => Promise<string | null>;
+      openFile: (filePath: string) => Promise<boolean>;
+      getFavorites: () => Promise<Array<{
+        name: string;
+        path: string;
+        icon: string;
+        isSystem: boolean;
+      }>>;
+      addFavorite: (path: string, name?: string) => Promise<boolean>;
+      removeFavorite: (path: string) => Promise<boolean>;
+      getTargetPaths: () => Promise<Array<{
+        id: string;
+        name: string;
+        path: string;
+        createdAt: Date;
+      }>>;
+      addTargetPath: (path: string, name?: string) => Promise<boolean>;
+      removeTargetPath: (id: string) => Promise<boolean>;
+      copyFiles: (sourcePaths: string[], destPath: string) => Promise<number>;
+      deleteItem: (itemPath: string) => Promise<boolean>;
+    };
+    python: {
+      start: () => Promise<{ success: boolean; pid?: number; port?: number; httpPort?: number; error?: string }>;
+      stop: () => Promise<{ success: boolean; error?: string }>;
+      status: () => Promise<PythonServiceStatus>;
+    };
+    notes: {
+      hasRootPath: () => Promise<boolean>;
+      getRootPath: () => Promise<string | null>;
+      setRootPath: (rootPath: string) => Promise<boolean>;
+      selectFolder: () => Promise<NotesSelectFolderResult>;
+      validateFolder: (folderPath: string) => Promise<NotesValidateResult>;
+      scanFolder: (rootPath: string) => Promise<NotesScanResult>;
+      getFileTree: () => Promise<NotesFileTreeNode[]>;
+      createFolder: (parentPath: string | null, name: string) => Promise<NotesCreateResult>;
+      createFolderForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy') => Promise<NotesCreateResult>;
+      createNote: (parentPath: string | null, name: string, content?: string) => Promise<NotesCreateResult>;
+      createNoteForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy', content?: string) => Promise<NotesCreateResult>;
+      readFile: (filePath: string) => Promise<NotesReadResult>;
+      readFileAsBuffer: (filePath: string) => Promise<{ success: boolean; base64?: string; mimeType?: string; error?: string }>;
+      /** 视频内嵌播放前置探测：只取 size/mtime，不读文件内容 */
+      statFile: (filePath: string) => Promise<{ success: boolean; size?: number; mtime?: number; isDirectory?: boolean; error?: string }>;
+      saveFile: (filePath: string, content: string) => Promise<NotesSaveResult>;
+      renameItem: (oldPath: string, newName: string) => Promise<NotesRenameResult>;
+      deleteItem: (itemPath: string) => Promise<NotesDeleteResult>;
+      indexAll: (rootPath: string) => Promise<{ success: boolean; error?: string }>;
+      openFileInFolder: (filePath: string) => Promise<{ success: boolean; error?: string }>;
+      moveItem: (itemPath: string, targetFolderPath: string) => Promise<{ success: boolean; newPath?: string; error?: string }>;
+      copyItem: (sourcePath: string) => Promise<{ success: boolean; error?: string }>;
+      importDroppedFiles: (rootPath: string, filePaths: string[]) => Promise<{ success: boolean; imported?: string[]; errors?: string[]; error?: string }>;
+      // T02 / 4.1 + 4.5：新增 6 个方法（异步树 + 草稿保护），现有 21 个不变
+      scanFolderAsync: (rootPath: string) => Promise<{ success: boolean; fileCount: number; folderCount: number; tree: NotesFileTreeNode[]; error?: string }>;
+      getFileTreeAsync: (rootPath: string) => Promise<NotesFileTreeNode[]>;
+      writeDraft: (absolutePath: string, content: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+      readDraft: (absolutePath: string) => Promise<{ success: boolean; content?: string; error?: string }>;
+      deleteDraft: (absolutePath: string) => Promise<{ success: boolean; error?: string }>;
+      listDrafts: () => Promise<{ success: boolean; drafts?: Array<{ hash: string; filePath: string; absolutePath: string; size: number; mtime: number }>; error?: string }>;
+      // T03 / Phase 2：全文搜索（主进程流式逐行扫描 + 加权打分 + mtime 缓存）
+      searchNotes: (opts: {
+        rootPath: string;
+        query: string;
+        fileTypes?: Array<'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf' | 'video'>;
+        maxResults?: number;
+        caseSensitive?: boolean;
+        maxFileBytes?: number;
+      }) => Promise<{
+        success: boolean;
+        results: Array<{
+          path: string;
+          name: string;
+          fileType: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf' | 'video';
+          score: number;
+          matches: Array<{ field: 'title' | 'body' | 'tag'; line: number; snippet: string }>;
+          mtime: number;
+          size: number;
+          titleHits?: number;
+          tagHits?: number;
+          bodyHits?: number;
+        }>;
+        scanned: number;
+        truncated: boolean;
+        elapsedMs: number;
+        error?: string;
+      }>;
+      // T04 / Phase 2：收藏（U8 收藏，notes_settings.json 持久化）
+      getFavorites: () => Promise<{ success: boolean; favorites: string[]; error?: string }>;
+      setFavorites: (favorites: string[]) => Promise<{ success: boolean; favorites: string[]; error?: string }>;
+      toggleFavorite: (absolutePath: string) => Promise<{ success: boolean; favorites: string[]; toggled: boolean; error?: string }>;
+      // T05 / Phase 3：标签系统（U2 多维度分类，front matter 优先 + 侧挂表兜底）
+      getFileTags: (absolutePath: string) => Promise<{ success: boolean; tags: string[]; source: 'frontmatter' | 'override' | 'none'; error?: string }>;
+      setFileTags: (absolutePath: string, tags: string[]) => Promise<{ success: boolean; tags: string[]; mode?: 'frontmatter' | 'override'; error?: string }>;
+      getAllTags: (rootPath: string) => Promise<{ success: boolean; tags: Array<{ tag: string; count: number; paths: string[] }>; scanned: number; error?: string }>;
+      getTagIndex: (rootPath: string) => Promise<{ success: boolean; index: Record<string, string[]>; error?: string }>;
+      // T06 / Phase 3：笔记模板（读取 userData/notes/templates/*.md 自定义模板）
+      listTemplates: () => Promise<{ success: boolean; templates: Array<{ id: string; name: string; content: string }>; error?: string }>;
+      // T07 / Phase 3：附件落盘（粘贴/拖入图片自动保存到 .attachments/yyyy-mm/<hash>.<ext>）
+      saveAttachment: (notePath: string, fileName: string, data: Uint8Array) => Promise<{ success: boolean; relativePath?: string; reused?: boolean; error?: string }>;
+      // T09 / Phase 4：文件监听（结构同 src/pages/tools/notes/types.ts 的 NotesFsChangeEvent）
+      startWatching: (rootPath: string) => Promise<{ success: boolean; error?: string }>;
+      stopWatching: () => Promise<{ success: boolean; error?: string }>;
+      // type 只可能是 'change'（内容写入）或 'rename'（条目增删/改名）——Node fs.watch 语义
+      onFsChanged: (callback: (event: { type: 'change' | 'rename'; path: string; rootPath: string; timestamp: number }) => void) => () => void;
+    };
+    log: {
+      open: () => void;
+      addLog: (level: 'error' | 'warn' | 'info' | 'debug', message: string, context?: string, stack?: string) => Promise<boolean>;
+      getLogs: () => Promise<Array<{
+        id: string;
+        timestamp: number;
+        level: 'error' | 'warn' | 'info' | 'debug';
+        message: string;
+        context?: string;
+        stack?: string;
+      }>>;
+      getSettings: () => Promise<{
+        enabled: boolean;
+        maxEntries: number;
+        levels: {
+          error: boolean;
+          warn: boolean;
+          info: boolean;
+          debug: boolean;
+        };
+        showTimestamp: boolean;
+        autoClean: boolean;
+      }>;
+      updateSettings: (newSettings: Partial<{
+        enabled: boolean;
+        maxEntries: number;
+        levels: {
+          error: boolean;
+          warn: boolean;
+          info: boolean;
+          debug: boolean;
+        };
+        showTimestamp: boolean;
+        autoClean: boolean;
+      }>) => Promise<{
+        enabled: boolean;
+        maxEntries: number;
+        levels: {
+          error: boolean;
+          warn: boolean;
+          info: boolean;
+          debug: boolean;
+        };
+        showTimestamp: boolean;
+        autoClean: boolean;
+      }>;
+      clearLogs: () => Promise<boolean>;
+      exportLogs: () => Promise<string>;
+      importLogs: (jsonString: string) => Promise<boolean>;
+      getStats: () => Promise<{ total: number; error: number; warn: number; info: number; debug: number }>;
+    };
+    onDownloadProgress: (callback: (progress: number) => void) => void;
+    onNavigate: (callback: (path: string) => void) => void;
+    onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean | object }) => void) => void;
+    onOpenAddTodo: (callback: () => void) => void;
+    onOpenAddMemo: (callback: () => void) => void;
+    onLaunchPlugin: (callback: (pluginId: string) => void) => void;
+    ipcRenderer: {
+      send: <T extends unknown[]>(channel: string, ...args: T) => void;
+      invoke: <T>(channel: string, ...args: unknown[]) => Promise<T>;
+      on: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;
+      off: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;
+    };
+    ipInfo: {
+      query: (ip?: string) => Promise<{
+        ip: string;
+        version: string;
+        city: string;
+        region: string;
+        country_name: string;
+        country_code: string;
+        timezone: string;
+        currency: string;
+        currency_name: string;
+        postal: string;
+        latitude: number;
+        longitude: number;
+        org: string;
+        asn: string;
+        languages: string;
+        error?: boolean;
+        reason?: string;
+      }>;
+    };
+    systemInfo: {
+      get: () => Promise<SystemInfo>;
+    };
+    plugin: {
+      getAvailable: () => Promise<PluginInfo[]>;
+      getInstalled: () => Promise<InstalledPlugin[]>;
+      install: (pluginId: string, repo?: string, releaseUrl?: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
+      uninstall: (pluginId: string) => Promise<{ success: boolean; message?: string }>;
+      toggleEnabled: (pluginId: string, enabled: boolean) => Promise<{ success: boolean }>;
+      installFromFile: () => Promise<{ success: boolean; reason?: string; message?: string; canceled?: boolean }>;
+      installFromPath: (filePath: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
+      installFromGithub: (id: string, repo: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
+      openWindow: (pluginId: string, userId?: string | null) => Promise<{ success: boolean; error?: string }>;
+      openExtensionsDir: () => Promise<{ success: boolean; error?: string }>;
+      storage: {
+        get: <T>(pluginId: string, userId: string, key?: string) => Promise<T | null>;
+        set: (pluginId: string, userId: string, key: string, value: unknown) => Promise<void>;
+        delete: (pluginId: string, userId: string, key?: string) => Promise<void>;
+      };
+    };
+    offlineTools: {
+      getDir: () => Promise<string | null>;
+      setDir: (dirPath: string) => Promise<{ success: boolean; error?: string }>;
+      list: (dirPath: string) => Promise<{ success: boolean; files: OfflineToolFile[]; error?: string }>;
+      open: (filePath: string) => Promise<{ success: boolean; error?: string }>;
+    };
+  };
+}

@@ -1,0 +1,55 @@
+# Logs
+/logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment variables
+.env
+.env.local
+
+# AWS 本地凭证（S3 插件）：仅本地保存，禁止提交到仓库
+.aws/
+
+# 本地临时调试脚本
+.tmp/
+
+# 邮箱 OAuth 密钥：由 CI 在构建时从 Secrets 注入，禁止提交到仓库
+electron/lib/env-secrets.cjs
+
+# Documentation
+doc/
+
+# Build output
+dist-electron/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Build cache
+.cache/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

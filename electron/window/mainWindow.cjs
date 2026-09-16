@@ -1,0 +1,1347 @@
+const { BrowserWindow, dialog, screen, shell, nativeTheme } = require('electron');
+const path = require('path');
+const url = require('url');
+const fs = require('fs');
+const { execFile } = require('child_process');
+const { loadSettings, saveSettings, getNetworkConfig, invalidateNetworkConfigCache } = require('../lib/config.cjs');
+const ShortcutManager = require('../lib/shortcutManager.cjs');
+const notesService = require('../services/notesService.cjs');
+const systemInfoService = require('../services/systemInfoService.cjs');
+const { getFloatWindow } = require('./floatWindow.cjs');
+const { getFileIcon, isSupportedFileType, getShortcutInfo, getCacheFilePath } = require('../lib/iconExtractor.cjs');
+
+// 快启动扫描统一过滤规则（桌面扫描与开始菜单扫描共享，保证整体去重一致）
+const QUICK_LAUNCH_SKIP_DIRS = ['startup', 'help', 'documentation', 'maintenance', 'readme', 'uninstall'];
+const QUICK_LAUNCH_SKIP_PATTERNS = [
+  'uninstall', 'unins', 'uninst', '卸载', 'setup', 'readme',
+  'crashreport', 'updater', 'update', 'upgrade', 'patch', 'checkforupdates',
+  'redist', 'vcredist', 'dxsetup', 'dotnet', 'msicuu', 'helper', 'crash', 'license',
+  'documentation', 'manual', 'tutorial', 'register', 'support', 'cleanup', 'repair',
+  '安装', '升级',
+  // 快速启动栏无目标系统项（显示桌面/窗口切换器，兼容 Shows/Show 两种命名）
+  'shows desktop', 'show desktop', 'window switcher'
+];
+const shouldSkipQuickLaunchEntry = (entryName) => {
+  const base = entryName.toLowerCase().replace(/\.(exe|lnk|bat|cmd|url|appref-ms)$/i, '');
+  return QUICK_LAUNCH_SKIP_PATTERNS.some(p => base.includes(p));
+};
+
+// 过滤 Windows 系统目录（C:\Windows）下的系统自带应用，不添加进快启动
+const isWindowsSystemPath = (targetPath) => {
+  const systemRoot = (process.env.SystemRoot || process.env.windir || 'C:\\Windows').toLowerCase();
+  const lower = targetPath.toLowerCase();
+  return lower === systemRoot || lower.startsWith(systemRoot + path.sep);
+};
+
+// MSI 广告快捷方式目标检测：目标位于 C:\Windows\Installer\ 下（MSI 间接启动机制的入口 exe，
+// 如 CorelDRAW/Office 等 MSI 安装应用），属于第三方应用入口而非系统自带应用
+const isWindowsInstallerPath = (targetPath) => {
+  const systemRoot = (process.env.SystemRoot || process.env.windir || 'C:\\Windows').toLowerCase();
+  return targetPath.toLowerCase().startsWith(systemRoot + '\\installer\\');
+};
+
+// 快启动扫描共享核心（桌面扫描与已安装应用扫描统一使用）：
+// 递归收集候选（.lnk/.exe，排除 .url——URL 快捷方式不作为应用添加）→ 逐项解析校验 → 实时进度推送
+// 统一约定：命名以快捷方式名称为主；显示名 + 目标路径双重去重；保留快捷方式启动参数；
+// 跳过卸载/更新/帮助等无用项、Windows 系统目录与失效快捷方式（目标不存在）
+const scanQuickLaunchPaths = async (event, scanPaths) => {
+  const logger = require('../logs/logger.cjs');
+  // 阶段一：递归收集候选文件
+  const candidates = [];
+  const collectDir = (dir, depth = 0) => {
+    if (depth > 3) return;
+    let entries;
+    try { entries = fs.readdirSync(dir); } catch { return; }
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry);
+      let stat;
+      try { stat = fs.statSync(fullPath); } catch { continue; }
+      if (stat.isDirectory()) {
+        if (QUICK_LAUNCH_SKIP_DIRS.some(d => entry.toLowerCase().includes(d))) continue;
+        collectDir(fullPath, depth + 1);
+      } else {
+        const lower = fullPath.toLowerCase();
+        if (!lower.endsWith('.lnk') && !lower.endsWith('.exe')) continue;
+        if (shouldSkipQuickLaunchEntry(entry)) continue;
+        candidates.push({ entry, fullPath });
+      }
+    }
+  };
+  scanPaths.forEach(dir => { if (fs.existsSync(dir)) collectDir(dir); });
+
+  // 阶段二：逐项解析目标并校验，实时推送进度
+  const total = candidates.length;
+  const results = [];
+  const seenTargets = new Set();
+  const seenNames = new Set();
+  let processed = 0;
+  const sendProgress = (current) => {
+    const percent = total > 0 ? Math.round((current / total) * 100) : 100;
+    try { event.sender.send('scan-installed-apps-progress', { current, total, percent }); } catch {}
+  };
+  sendProgress(0);
+
+  for (const { entry, fullPath } of candidates) {
+    processed++;
+    const displayName = entry.replace(/\.(exe|lnk)$/i, '');
+    if (seenNames.has(displayName.toLowerCase())) { sendProgress(processed); continue; }
+    seenNames.add(displayName.toLowerCase());
+
+    let targetPath = fullPath;
+    let appArgs = '';
+    if (fullPath.toLowerCase().endsWith('.lnk')) {
+      try {
+        const info = await getShortcutInfo(fullPath);
+        // 失效快捷方式（目标不存在）或解析异常时不添加
+        if (!info.targetPath) { sendProgress(processed); continue; }
+        if (isWindowsInstallerPath(info.targetPath)) {
+          // MSI 广告快捷方式：目标位于 Windows\Installer，按系统路径规则会被误杀；
+          // 保留 .lnk 本身，通过 ShellExecute 走 MSI 原生机制启动真实应用
+          targetPath = fullPath;
+          appArgs = '';
+        } else {
+          targetPath = info.targetPath;
+          appArgs = info.args;
+        }
+      } catch {
+        sendProgress(processed);
+        continue;
+      }
+    }
+    // 目标必须是真实存在的 .exe（.lnk 目标已由 PowerShell Test-Path 验证；裸 .exe 现校验）；
+    // 保留的 MSI 广告快捷方式 .lnk 例外（走 ShellExecute 机制，不经存在性/系统路径校验）
+    const lowerTarget = targetPath.toLowerCase();
+    const isExe = lowerTarget.endsWith('.exe');
+    if (!isExe && !lowerTarget.endsWith('.lnk')) { sendProgress(processed); continue; }
+    if (isExe) {
+      try { if (!fs.existsSync(targetPath)) { sendProgress(processed); continue; } } catch { sendProgress(processed); continue; }
+      if (isWindowsSystemPath(targetPath)) { sendProgress(processed); continue; }
+      // 快捷方式名称干净但目标为升级/卸载等程序（如 xxx.lnk -> update.exe）时跳过
+      if (shouldSkipQuickLaunchEntry(path.basename(targetPath))) { sendProgress(processed); continue; }
+    }
+    if (seenTargets.has(lowerTarget)) { sendProgress(processed); continue; }
+    seenTargets.add(lowerTarget);
+    results.push({ name: displayName, path: targetPath, args: appArgs || undefined });
+    sendProgress(processed);
+  }
+
+  logger.addLog('info', `[QuickLaunch] 扫描完成: 候选 ${total} 项，保留 ${results.length} 项`, 'scan');
+  return results;
+};
+
+let mainWindow = null;
+let memoryCleanupTimer = null;
+let autoLockTimer = null;
+let lastActivityTime = Date.now();
+let isQuitting = false;
+
+const shortcutManager = new ShortcutManager();
+// P2: 快启动全局热键映射表（appId -> accelerator），置于模块作用域以便退出时统一注销
+const quickLaunchHotkeys = new Map();
+
+// 检查锁定状态，如果已锁定则聚焦锁定窗口
+const checkLockAndShowMain = (callback) => {
+  const settings = loadSettings();
+  if (settings.isLockEnabled === 1) {
+    require('./lockWindow.cjs').toggleLock();
+    return false;
+  }
+  if (callback) callback();
+  return true;
+};
+
+const shortcutFunctions = {
+  softwareExit: () => { require('electron').app.quit(); },
+  softwareWindowVisibilityController: () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide();
+      } else {
+        checkLockAndShowMain(() => {
+          mainWindow.show();
+          mainWindow.focus();
+        });
+      }
+    }
+  },
+  isMenuVisible: () => {
+    const settings = loadSettings();
+    settings.isMenuVisible = settings.isMenuVisible === 1 ? 0 : 1;
+    saveSettings(settings);
+    mainWindow?.webContents.send('setting-changed', { name: 'isMenuVisible', value: settings.isMenuVisible });
+  },
+  softwareSetting: () => {
+    checkLockAndShowMain(() => {
+      if (mainWindow) {
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('navigate-to', '/settings');
+      }
+    });
+  },
+  windowTopmostToggle: () => {
+    if (mainWindow) {
+      const isTopmost = mainWindow.isAlwaysOnTop();
+      mainWindow.setAlwaysOnTop(!isTopmost);
+    }
+  },
+  restoreDefaultWindow: () => {
+    if (mainWindow) {
+      const [width, height] = mainWindow.getSize();
+      const origin = loadSettings().defaultWindowSize || { width: 1024, height: 800 };
+      if (width === origin.width && height === origin.height) {
+        mainWindow.maximize();
+      } else {
+        if (mainWindow.isMaximized()) mainWindow.unmaximize();
+        checkLockAndShowMain(() => {
+          if (!mainWindow.isVisible()) mainWindow.show();
+          mainWindow.setSize(origin.width, origin.height, true);
+          mainWindow.center();
+        });
+      }
+    }
+  },
+  currentPageRefresher: () => {
+    if (mainWindow) {
+      mainWindow.webContents.reload();
+    }
+  },
+  windowMinimize: () => {
+    if (mainWindow) {
+      if (mainWindow.isMaximized()) mainWindow.unmaximize();
+      mainWindow.minimize();
+    }
+  },
+  windowMaximizer: () => {
+    if (mainWindow) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+      } else {
+        mainWindow.maximize();
+      }
+    }
+  },
+  lockToggle: () => {
+    const { loadSettings } = require('../lib/config.cjs');
+    const settings = loadSettings();
+
+    if (settings.isLockEnabled === 1) {
+      require('./lockWindow.cjs').toggleLock();
+    } else {
+      require('./lockWindow.cjs').lockOrPrompt();
+    }
+  },
+};
+
+const initShortcuts = () => {
+  const { loadShortcuts } = require('../lib/config.cjs');
+  shortcutManager.unregisterAll();
+  const shortcuts = loadShortcuts();
+  shortcuts.forEach((shortcut) => {
+    if (shortcut.isOpen === 0) return;
+    if (!shortcutManager.isRegistered(shortcut.cmd)) {
+      shortcutManager.register(shortcut.cmd, shortcutFunctions[shortcut.name].bind(this), shortcut.isGlobal === 1);
+    }
+  });
+};
+
+const updateShortcut = (shortcut, oldShortcut) => {
+  if (shortcutManager.isRegistered(shortcut.cmd)) {
+    return false;
+  }
+  shortcutManager.unregister(oldShortcut.cmd);
+  shortcutManager.register(shortcut.cmd, shortcutFunctions[shortcut.name].bind(this), shortcut.isGlobal === 1);
+  return true;
+};
+
+const isDisableShortcuts = (shortcut) => {
+  if (shortcut.isOpen === 0 && shortcutManager.isRegistered(shortcut.cmd)) {
+    shortcutManager.unregister(shortcut.cmd);
+    return true;
+  }
+  if (shortcut.isOpen === 1 && !shortcutManager.isRegistered(shortcut.cmd)) {
+    shortcutManager.register(shortcut.cmd, shortcutFunctions[shortcut.name].bind(this), shortcut.isGlobal === 1);
+    return true;
+  }
+  return true;
+};
+
+const startMemoryOptimization = () => {
+  stopMemoryOptimization();
+  const settings = loadSettings();
+  if (!settings.isMemoryOptimizationEnabled) return;
+
+  const cleanupInterval = 5 * 60 * 1000;
+  const cleanup = () => {
+    try {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.executeJavaScript('window.gc && window.gc();');
+        mainWindow.webContents.send('memory-cleanup');
+      }
+    } catch (error) {
+      console.error('[MEMORY] Memory cleanup error:', error);
+    }
+  };
+  memoryCleanupTimer = setInterval(cleanup, cleanupInterval);
+  if (memoryCleanupTimer && memoryCleanupTimer.unref) memoryCleanupTimer.unref();
+};
+
+const stopMemoryOptimization = () => {
+  if (memoryCleanupTimer) {
+    clearInterval(memoryCleanupTimer);
+    memoryCleanupTimer = null;
+  }
+};
+
+const stopAutoLock = () => {
+  if (autoLockTimer) {
+    clearInterval(autoLockTimer);
+    autoLockTimer = null;
+  }
+};
+
+const startAutoLock = () => {
+  stopAutoLock();
+  const settings = loadSettings();
+  if (!settings.isAutoLockEnabled || !settings.lockPassword) return;
+
+  const threshold = (settings.autoLockTimeout || 600) * 1000;
+  const checkInterval = Math.max(5000, threshold / 10);
+  const { execFile } = require('child_process');
+
+  autoLockTimer = setInterval(() => {
+    const currentSettings = loadSettings();
+    
+    if (!currentSettings.isAutoLockEnabled || !currentSettings.lockPassword) {
+      stopAutoLock();
+      return;
+    }
+
+    if (currentSettings.isLockEnabled === 1) {
+      return;
+    }
+
+    if (process.platform === 'win32') {
+      execFile('powershell.exe', [
+        '-ExecutionPolicy', 'Bypass',
+        '-Command',
+        'Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public static class User32 { [StructLayout(LayoutKind.Sequential)] public struct LASTINPUTINFO { public uint cbSize; public uint dwTime; } [DllImport(`\"user32.dll`\")] public static extern bool GetLastInputInfo(ref LASTINPUTINFO plii); }"; $lastInputInfo = New-Object User32+LASTINPUTINFO; $lastInputInfo.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf($lastInputInfo); [User32]::GetLastInputInfo([ref]$lastInputInfo) | Out-Null; [Environment]::TickCount - $lastInputInfo.dwTime'
+      ], (error, stdout) => {
+        if (error || !stdout) return;
+        
+        const idleMs = parseInt(stdout.trim(), 10);
+        const currentThreshold = (currentSettings.autoLockTimeout || 600) * 1000;
+        
+        if (idleMs >= 0 && idleMs >= currentThreshold) {
+          require('./lockWindow.cjs').lock();
+        }
+      });
+    } else {
+      const elapsed = Date.now() - lastActivityTime;
+      const currentThreshold = (currentSettings.autoLockTimeout || 600) * 1000;
+      if (elapsed >= currentThreshold) {
+        require('./lockWindow.cjs').lock();
+      }
+    }
+  }, checkInterval);
+};
+
+const resetAutoLockTimer = () => {
+  lastActivityTime = Date.now();
+};
+
+const createWindow = (onReadyCallback, showOnReady = true) => {
+  const { app } = require('electron');
+  let iconPath = null;
+  const iconPaths = app.isPackaged
+    ? [
+        path.join(process.resourcesPath, 'app', 'public', 'favicon.ico'),
+        path.join(process.resourcesPath, 'app', 'public', 'favicon.png'),
+        path.join(process.resourcesPath, 'public', 'favicon.ico'),
+        path.join(process.resourcesPath, 'public', 'favicon.png')
+      ]
+    : [
+        path.join(__dirname, '../../public/favicon.ico'),
+        path.join(__dirname, '../../public/favicon.png')
+      ];
+
+  for (const p of iconPaths) {
+    if (fs.existsSync(p)) {
+      iconPath = p;
+      break;
+    }
+  }
+
+  // 窗口底色取当前主题底色（与 src/styles/theme.css 的 --color-bg-primary 一致），
+  // 避免窗口出现早于页面首帧时闪一下白屏
+  const appSettings = loadSettings();
+  const themePreference = appSettings.systemTheme;
+  const useDarkBackground = themePreference === 'dark'
+    || (themePreference === 'system' && nativeTheme.shouldUseDarkColors);
+
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    frame: false,
+    titleBarStyle: 'hidden',
+    icon: iconPath,
+    backgroundColor: useDarkBackground ? '#16181D' : '#FFFFFF',
+    show: false,
+    alwaysOnTop: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      backgroundThrottling: false,
+      nativeWindowOpen: true,
+    },
+  });
+
+  // T09 / Phase 4：文件监听的事件推送目标 = 主窗口（notes-fs-changed 走 webContents.send）。
+  // 必须在建窗之后注入：registerIpcHandlers 先于 createWindow 执行，那时主窗口还不存在；
+  // 而且这里只能用模块级的 mainWindow —— open-internal 那个 internalWindow 是另一个作用域的局部变量。
+  require('../services/notesWatcherService.cjs').setTargetWindow(mainWindow);
+
+  let indexPath;
+  if (app.isPackaged) {
+    const possiblePaths = [
+      path.join(__dirname, '../../dist/index.html'),
+      path.join(process.resourcesPath, 'app', 'dist', 'index.html'),
+      path.join(process.resourcesPath, 'dist', 'index.html')
+    ];
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        indexPath = p;
+        break;
+      }
+    }
+    if (indexPath) {
+      mainWindow.loadURL(url.format({
+        pathname: indexPath,
+        protocol: 'file:',
+        slashes: true,
+      }));
+    } else {
+      mainWindow.loadURL('data:text/html,<h1>Error</h1><p>Could not find index.html.</p>');
+    }
+  } else {
+    mainWindow.loadURL('http://localhost:5174');
+    mainWindow.webContents.openDevTools();
+  }
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    setTimeout(() => {
+      if (showOnReady) {
+        mainWindow.show();
+      }
+      initShortcuts();
+      startAutoLock();
+
+      if (onReadyCallback) {
+        onReadyCallback();
+      }
+    }, 100);
+  });
+
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
+  });
+
+  mainWindow.on('closed', () => {
+    stopAutoLock();
+    mainWindow = null;
+  });
+
+  mainWindow.on('minimize', (event) => {
+    event.preventDefault();
+    mainWindow.hide();
+  });
+
+  let isAdjusting = false;
+  mainWindow.on('move', () => {
+    const settings = loadSettings();
+    if (!settings.isWindowEdgeAdsorption) return;
+    if (isAdjusting) return;
+
+    const windowBounds = mainWindow.getBounds();
+    const centerPoint = {
+      x: windowBounds.x + windowBounds.width / 2,
+      y: windowBounds.y + windowBounds.height / 2
+    };
+
+    const display = screen.getDisplayNearestPoint(centerPoint);
+    const workArea = display.workArea;
+    const scaleFactor = display.scaleFactor;
+    const threshold = 30 * scaleFactor;
+
+    const leftEdgeDistance = windowBounds.x - workArea.x;
+    const rightEdgeDistance = (workArea.x + workArea.width) - (windowBounds.x + windowBounds.width);
+    let newBounds = { ...windowBounds };
+
+    if (Math.abs(leftEdgeDistance) <= threshold) {
+      Object.assign(newBounds, {
+        x: workArea.x,
+        y: workArea.y,
+        height: workArea.height
+      });
+    } else if (Math.abs(rightEdgeDistance) <= threshold) {
+      Object.assign(newBounds, {
+        x: workArea.x + workArea.width - windowBounds.width,
+        y: workArea.y,
+        height: workArea.height
+      });
+    }
+    if (JSON.stringify(newBounds) !== JSON.stringify(windowBounds)) {
+      isAdjusting = true;
+      mainWindow.setBounds(newBounds, true);
+      isAdjusting = false;
+    }
+  });
+};
+
+let ipcHandlersRegistered = false;
+
+const registerIpcHandlers = () => {
+  if (ipcHandlersRegistered) return;
+  ipcHandlersRegistered = true;
+  
+  const { ipcMain } = require('electron');
+  const { loadShortcuts, saveShortcuts, loadFloatConfig, loadFloatConfigWithIcons, saveFloatConfig, defaultFloatConfig, clearExpiredIconCache, clearAllIconCache } = require('../lib/config.cjs');
+  
+  const { registerPluginIpc } = require('../ipc/pluginIpc.cjs');
+  registerPluginIpc();
+
+  const getUpdateErrorMessage = (error) => {
+    const errorStr = error instanceof Error ? error.message : String(error);
+    
+    if (errorStr.includes('network') || errorStr.includes('connect')) {
+      return '网络连接失败，请检查网络后重试';
+    }
+    
+    if (errorStr.includes('timeout')) {
+      return '连接超时，请稍后重试';
+    }
+    
+    if (errorStr.includes('404') || errorStr.includes('not found')) {
+      return '未找到更新信息，请稍后重试';
+    }
+    
+    if (errorStr.includes('permission') || errorStr.includes('access denied')) {
+      return '没有写入权限，请以管理员身份运行';
+    }
+    
+    if (errorStr.includes('disk') || errorStr.includes('space')) {
+      return '磁盘空间不足，请清理后重试';
+    }
+    
+    if (errorStr.includes('EOF')) {
+      return '下载文件不完整，请重试';
+    }
+    
+    return errorStr || '更新失败，请稍后重试';
+  };
+
+  ipcMain.on('window-minimize', () => { mainWindow.minimize(); });
+  ipcMain.on('window-maximize', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  });
+  ipcMain.on('window-close', () => { mainWindow.hide(); });
+  ipcMain.on('open-external', (event, url) => { shell.openExternal(url); });
+
+  ipcMain.on('open-file', (event, filePath) => {
+    shell.openPath(filePath).catch((error) => { console.error('Failed to open file:', error); });
+  });
+
+  ipcMain.handle('select-file', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: '可执行文件', extensions: ['exe', 'bat', 'cmd', 'lnk'] },
+        { name: '所有文件', extensions: ['*'] }
+      ]
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      return result.filePaths[0];
+    }
+    return null;
+  });
+
+  ipcMain.handle('select-folder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      return result.filePaths[0];
+    }
+    return null;
+  });
+
+  // 桌面扫描：用户桌面 + 公共桌面（Windows 实际显示的桌面为两者合并）
+  // 命名/去重/进度/规则与已安装应用扫描完全一致（共享 scanQuickLaunchPaths）
+  ipcMain.handle('scan-desktop-apps', async (event) => {
+    const { app } = require('electron');
+    try {
+      return await scanQuickLaunchPaths(event, [
+        app.getPath('desktop'),
+        path.join(process.env.PUBLIC || 'C:\\Users\\Public', 'Desktop')
+      ]);
+    } catch (error) {
+      return [];
+    }
+  });
+
+  const logger = require('../logs/logger.cjs');
+
+  const normalizePath = (inputPath) => {
+    if (!inputPath) return null;
+    
+    let normalized = inputPath.trim();
+    normalized = normalized.replace(/\//g, '\\');
+    
+    if (normalized.startsWith('\\')) {
+      normalized = normalized.substring(1);
+    }
+    
+    const unixDriveMatch = normalized.match(/^([A-Za-z]):\\/);
+    if (!unixDriveMatch) {
+      const driveMatch = inputPath.match(/^\/([A-Za-z])\//);
+      if (driveMatch) {
+        normalized = `${driveMatch[1]}:\\${inputPath.substring(3).replace(/\//g, '\\')}`;
+      }
+    }
+    
+    return normalized;
+  };
+
+  ipcMain.handle('get-dropped-files', async (event, filePaths) => {
+    const result = [];
+
+    logger.addLog('debug', `[QuickLaunch] 接收到 ${filePaths.length} 个文件路径`, 'drag-drop');
+
+    for (const filePath of filePaths) {
+      if (!filePath || !filePath.trim()) {
+        continue;
+      }
+
+      logger.addLog('debug', `[QuickLaunch] 处理文件: ${filePath}`, 'drag-drop');
+
+      if (isSupportedFileType(filePath)) {
+        const targetPath = filePath.toLowerCase().endsWith('.lnk')
+          ? (await getShortcutInfo(filePath)).targetPath
+          : filePath;
+
+        if (fs.existsSync(targetPath)) {
+          logger.addLog('debug', `[QuickLaunch] 路径存在: ${targetPath}`, 'drag-drop');
+          result.push(targetPath);
+        } else {
+          logger.addLog('warn', `[QuickLaunch] 路径不存在: ${targetPath}`, 'drag-drop');
+        }
+      } else {
+        logger.addLog('debug', `[QuickLaunch] 路径扩展名不支持: ${filePath}`, 'drag-drop');
+      }
+    }
+
+    logger.addLog('info', `[QuickLaunch] getDroppedFiles 返回 ${result.length} 个有效路径`, 'drag-drop');
+    return result;
+  });
+
+  ipcMain.handle('get-file-icon', async (event, filePath) => {
+    return await getFileIcon(filePath);
+  });
+
+  ipcMain.handle('file-exists', (event, filePath) => {
+    return fs.existsSync(filePath);
+  });
+
+  // P1: 启动应用（带可选参数 / 工作目录 / 管理员 / 窗口模式）
+  ipcMain.handle('launch-app-with-options', async (event, options) => {
+    const { path: filePath, args, workingDir, runAsAdmin, windowMode } = options || {};
+    if (!filePath) return { success: false, error: '路径不能为空' };
+
+    const normalized = normalizePath(filePath);
+    if (!normalized) return { success: false, error: '路径无效' };
+
+    // 构造 PowerShell Start-Process 命令
+    const parts = [`Start-Process -FilePath '${normalized.replace(/'/g, "''")}'`];
+    if (args) parts.push(`-ArgumentList '${args.replace(/'/g, "''")}'`);
+    if (workingDir) parts.push(`-WorkingDirectory '${workingDir.replace(/'/g, "''")}'`);
+    if (windowMode === 'minimized') parts.push('-WindowStyle Minimized');
+    if (windowMode === 'maximized') parts.push('-WindowStyle Maximized');
+    if (runAsAdmin) parts.push('-Verb RunAs');
+
+    return new Promise((resolve) => {
+      execFile('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-Command', parts.join(' ')], { timeout: 10000 }, (error) => {
+        if (error) {
+          logger.addLog('warn', `[QuickLaunch] 启动失败: ${error.message}`, 'launch');
+          resolve({ success: false, error: error.message });
+        } else {
+          logger.addLog('info', `[QuickLaunch] 启动成功: ${normalized}`, 'launch');
+          resolve({ success: true });
+        }
+      });
+    });
+  });
+
+  // P1: 在资源管理器中定位文件
+  ipcMain.handle('reveal-in-folder', (event, filePath) => {
+    if (!filePath) return false;
+    const normalized = normalizePath(filePath);
+    if (!normalized) return false;
+    try {
+      require('child_process').execFile('explorer.exe', ['/select,', normalized], (error) => {
+        if (error) {
+          logger.addLog('warn', `[QuickLaunch] 定位失败: ${error.message}`, 'reveal');
+        } else {
+          logger.addLog('info', `[QuickLaunch] 定位文件: ${normalized}`, 'reveal');
+        }
+      });
+      return true;
+    } catch (e) {
+      logger.addLog('warn', `[QuickLaunch] 定位异常: ${e.message}`, 'reveal');
+      return false;
+    }
+  });
+
+  // 已安装应用扫描：开始菜单（系统/用户）+ 快速启动栏（含任务栏固定项）
+  // 命名/去重/进度/规则与桌面扫描完全一致（共享 scanQuickLaunchPaths）
+  ipcMain.handle('scan-installed-apps', async (event) => {
+    const { app } = require('electron');
+    return scanQuickLaunchPaths(event, [
+      path.join(process.env.ProgramData || 'C:\\ProgramData', 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+      path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+      path.join(app.getPath('appData'), 'Microsoft', 'Internet Explorer', 'Quick Launch')
+    ]);
+  });
+
+  // P2: 全局快捷键启动应用
+  ipcMain.handle('register-quick-launch-hotkey', (event, { appId, accelerator, appPath }) => {
+    if (!appId || !accelerator || !appPath) {
+      return { success: false, error: '参数不完整' };
+    }
+    // 注销旧绑定
+    if (quickLaunchHotkeys.has(appId)) {
+      shortcutManager.unregister(quickLaunchHotkeys.get(appId));
+    }
+    // 检查冲突（已注册且非本应用）
+    if (shortcutManager.isRegistered(accelerator) && quickLaunchHotkeys.get(appId) !== accelerator) {
+      return { success: false, error: '快捷键已被占用' };
+    }
+    shortcutManager.register(accelerator, () => {
+      shell.openPath(appPath);
+    }, true);
+    quickLaunchHotkeys.set(appId, accelerator);
+    logger.addLog('info', `[QuickLaunch] 注册热键: ${accelerator} -> ${appPath}`, 'hotkey');
+    return { success: true };
+  });
+
+  ipcMain.handle('unregister-quick-launch-hotkey', (event, appId) => {
+    if (quickLaunchHotkeys.has(appId)) {
+      const acc = quickLaunchHotkeys.get(appId);
+      shortcutManager.unregister(acc);
+      quickLaunchHotkeys.delete(appId);
+      logger.addLog('info', `[QuickLaunch] 注销热键: ${acc}`, 'hotkey');
+    }
+    return true;
+  });
+
+  // 暴露批量注册接口，供 main.cjs 启动时加载
+  ipcMain.handle('get-quick-launch-hotkeys', () => {
+    return Array.from(quickLaunchHotkeys.entries()).map(([appId, accelerator]) => ({ appId, accelerator }));
+  });
+
+  // P2: 配置导出 / 导入
+  ipcMain.handle('export-quick-launch-config', async (event, content) => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: '导出快启动配置',
+      defaultPath: 'quick-launch-config.json',
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+    if (result.canceled) return null;
+    try {
+      fs.writeFileSync(result.filePath, content, 'utf-8');
+      return { success: true, filePath: result.filePath };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('import-quick-launch-config', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: '导入快启动配置',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    try {
+      const content = fs.readFileSync(result.filePaths[0], 'utf-8');
+      const data = JSON.parse(content);
+      if (!Array.isArray(data.apps) || !Array.isArray(data.categories)) {
+        return { error: '配置文件格式不正确' };
+      }
+      // 校验每条 app 必须有 id/path/name
+      for (const app of data.apps) {
+        if (!app.id || !app.path || !app.name) {
+          return { error: '应用数据字段缺失' };
+        }
+      }
+      return data;
+    } catch (e) {
+      return { error: `读取失败: ${e.message}` };
+    }
+  });
+
+  ipcMain.handle('get-autostart-status', () => {
+    const settings = require('electron').app.getLoginItemSettings();
+    return settings.openAtLogin;
+  });
+
+  ipcMain.handle('set-autostart-status', (event, enable) => {
+    require('electron').app.setLoginItemSettings({ args: [], openAtLogin: enable, path: process.execPath });
+    const settings = loadSettings();
+    settings.isAutoLaunch = enable ? 1 : 0;
+    saveSettings(settings);
+    return true;
+  });
+
+  ipcMain.handle('get-settings', () => {
+    const settings = loadSettings();
+    return Object.keys(settings).map(key => ({ name: key, value: settings[key] }));
+  });
+
+  ipcMain.handle('get-float-config', () => { return loadFloatConfig(); });
+
+  ipcMain.handle('get-float-config-with-icons', async () => {
+    try {
+      return await loadFloatConfigWithIcons();
+    } catch (error) {
+      console.error('Failed to load float config with icons:', error);
+      return loadFloatConfig();
+    }
+  });
+
+  ipcMain.handle('clear-icon-cache', async (_event, { type }) => {
+    try {
+      if (type === 'all') {
+        clearAllIconCache();
+      } else {
+        clearExpiredIconCache();
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('update-float-config', (event, config) => {
+    saveFloatConfig(config);
+    const floatWindow = getFloatWindow();
+    if (floatWindow) {
+      floatWindow.webContents.send('float-config-changed', config);
+    }
+    return { code: 0, msg: '悬浮球配置已更新' };
+  });
+
+  ipcMain.handle('reset-float-config', () => {
+    saveFloatConfig([...defaultFloatConfig]);
+    return { code: 0, msg: '悬浮球配置已重置' };
+  });
+
+  ipcMain.handle('update-setting', (event, setting) => {
+    const settings = loadSettings();
+    settings[setting.name] = setting.value;
+    saveSettings(settings);
+
+    if (setting.name === 'isAutoLaunch') {
+      require('electron').app.setLoginItemSettings({ args: [], openAtLogin: setting.value === 1, path: process.execPath });
+    }
+
+    if (setting.name === 'isMemoryOptimizationEnabled') {
+      startMemoryOptimization();
+    }
+
+    if (setting.name === 'isAutoLockEnabled' || setting.name === 'autoLockTimeout') {
+      startAutoLock();
+      if (setting.name === 'isAutoLockEnabled') {
+        resetAutoLockTimer();
+      }
+    }
+
+    if (setting.name === 'networkConfig') {
+      invalidateNetworkConfigCache();
+    }
+
+    mainWindow?.webContents.send('setting-changed', { name: setting.name, value: setting.value });
+    return { code: 0, msg: '设置已更新' };
+  });
+
+  ipcMain.handle('network:test', async (event, { url, timeout }) => {
+    const start = Date.now();
+    if (!url || typeof url !== 'string' || !/^https?:\/\//.test(url)) {
+      return { ok: false, statusCode: 0, latencyMs: 0, error: '无效的 URL' };
+    }
+    const lib = url.startsWith('https') ? require('https') : require('http');
+    return await new Promise((resolve) => {
+      const req = lib.get(url, { timeout: timeout || 8000 }, (res) => {
+        res.destroy();
+        resolve({ ok: res.statusCode < 400, statusCode: res.statusCode, latencyMs: Date.now() - start, error: null });
+      });
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ ok: false, statusCode: 0, latencyMs: Date.now() - start, error: '请求超时' });
+      });
+      req.on('error', (err) => {
+        resolve({ ok: false, statusCode: 0, latencyMs: Date.now() - start, error: err.message });
+      });
+    });
+  });
+
+  ipcMain.handle('clear-cache', async () => {
+    try {
+      const userDataPath = require('electron').app.getPath('userData');
+      const cacheFolders = [
+        path.join(userDataPath, 'icon-cache'),
+        path.join(userDataPath, 'Cache'),
+        path.join(userDataPath, 'Code Cache'),
+        path.join(userDataPath, 'GPUCache'),
+        path.join(userDataPath, 'Service Worker')
+      ];
+      cacheFolders.forEach(folder => {
+        if (fs.existsSync(folder)) {
+          try { fs.rmSync(folder, { recursive: true, force: true }); } catch (folderError) {}
+        }
+      });
+      fs.mkdirSync(path.join(userDataPath, 'icon-cache'), { recursive: true });
+      if (mainWindow && mainWindow.webContents) {
+        try {
+          await mainWindow.webContents.session.clearCache();
+        } catch (sessionError) {}
+      }
+      return { code: 0, msg: '缓存已清除' };
+    } catch (error) {
+      return { code: -1, msg: '清除缓存失败: ' + error.message };
+    }
+  });
+
+  ipcMain.handle('restart-app', async () => {
+    try {
+      const { app } = require('electron');
+      app.relaunch();
+      app.exit(0);
+      return { code: 0, msg: '应用重启中...' };
+    } catch (error) {
+      return { code: -1, msg: '重启失败: ' + error.message };
+    }
+  });
+
+  ipcMain.handle('get-user-data-path', () => {
+    return require('electron').app.getPath('userData');
+  });
+
+  ipcMain.handle('open-user-data-folder', async () => {
+    const userDataPath = require('electron').app.getPath('userData');
+    await shell.openPath(userDataPath);
+    return { success: true };
+  });
+
+  ipcMain.handle('get-shortcuts', () => { return loadShortcuts(); });
+
+  ipcMain.handle('update-shortcut', (event, shortcut) => {
+    const shortcuts = loadShortcuts();
+    const index = shortcuts.findIndex(s => s.id === shortcut.id);
+    if (index !== -1) {
+      const oldShortcut = { ...shortcuts[index] };
+      shortcuts[index] = { ...shortcuts[index], ...shortcut };
+      saveShortcuts(shortcuts);
+
+      let success = true;
+      let message = '快捷键已更新';
+
+      if (shortcut.flag) {
+        success = isDisableShortcuts(shortcuts[index]);
+        if (success) { message = '快捷键状态已更新'; }
+      } else {
+        success = updateShortcut(shortcuts[index], oldShortcut);
+        if (!success) { message = '快捷键已被占用'; }
+      }
+      return { code: success ? 0 : -1, msg: message, data: shortcuts[index] };
+    }
+    return { code: -1, msg: '快捷键不存在' };
+  });
+
+  ipcMain.handle('reset-shortcuts', () => {
+    const { defaultShortcuts } = require('../lib/config.cjs');
+    const newShortcuts = [...defaultShortcuts];
+    saveShortcuts(newShortcuts);
+    initShortcuts();
+    return { code: 0, msg: '已恢复默认快捷键' };
+  });
+
+  ipcMain.handle('get-version', async () => {
+    const appUpdateConfig = getNetworkConfig().appUpdate;
+    let newVersion = '未知';
+    let downloadUrl = appUpdateConfig.repoUrl;
+
+    try {
+      const https = require('https');
+      const checkUrl = new URL(appUpdateConfig.checkUrl);
+      const options = {
+        hostname: checkUrl.hostname,
+        path: checkUrl.pathname + checkUrl.search,
+        headers: { 'User-Agent': 'ToolBox-App' },
+        timeout: appUpdateConfig.requestTimeout
+      };
+
+      const response = await new Promise((resolve, reject) => {
+        const req = https.get(options, (res) => {
+          if (res.statusCode === 301 || res.statusCode === 302) {
+            const redirectUrl = res.headers.location;
+            if (!redirectUrl) {
+              reject(new Error('重定向URL无效'));
+              return;
+            }
+            res.destroy();
+            const redirectOptions = {
+              hostname: new URL(redirectUrl).hostname,
+              path: new URL(redirectUrl).pathname + new URL(redirectUrl).search,
+              headers: { 'User-Agent': 'ToolBox-App' },
+              timeout: appUpdateConfig.requestTimeout
+            };
+            https.get(redirectOptions, (redirectRes) => {
+              let data = '';
+              redirectRes.on('data', (chunk) => { data += chunk; });
+              redirectRes.on('end', () => resolve(data));
+              redirectRes.on('error', reject);
+            }).on('error', reject);
+            return;
+          }
+
+          let data = '';
+          res.on('data', (chunk) => { data += chunk; });
+          res.on('end', () => resolve(data));
+          res.on('error', reject);
+        });
+
+        req.on('timeout', () => {
+          req.destroy();
+          reject(new Error('请求超时'));
+        });
+
+        req.on('error', reject);
+      });
+
+      const release = JSON.parse(response);
+
+      if (release.tag_name) {
+        newVersion = release.tag_name.replace('v', '');
+      }
+
+      if (release.assets && release.assets.length > 0) {
+        const installer = release.assets.find(a => a.name.endsWith('.exe'));
+        if (installer) {
+          downloadUrl = installer.browser_download_url;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check for updates:', getUpdateErrorMessage(error));
+    }
+
+    return {
+      version: require('electron').app.getVersion(),
+      electron: process.versions.electron,
+      chrome: process.versions.chrome,
+      newVersion: newVersion,
+      github: appUpdateConfig.repoUrl,
+      download: downloadUrl
+    };
+  });
+
+  ipcMain.handle('download-update', async (event, url) => {
+    try {
+      const https = require('https');
+      const http = require('http');
+      const downloadPath = path.join(require('electron').app.getPath('downloads'), 'ToolBox-Setup.exe');
+      
+      return new Promise((resolve, reject) => {
+        const download = (currentUrl) => {
+          const protocol = currentUrl.startsWith('https') ? https : http;
+          const parsedUrl = new URL(currentUrl);
+          
+          const options = {
+            hostname: parsedUrl.hostname,
+            path: parsedUrl.pathname + parsedUrl.search,
+            headers: {
+              'User-Agent': 'ToolBox-App',
+              'Accept': '*/*'
+            },
+            timeout: 30000
+          };
+          
+          protocol.get(options, (response) => {
+            if (response.statusCode === 301 || response.statusCode === 302) {
+              const redirectUrl = response.headers.location;
+              if (!redirectUrl) {
+                reject({ code: -1, msg: '重定向URL无效' });
+                return;
+              }
+              response.destroy();
+              download(redirectUrl);
+              return;
+            }
+            
+            if (response.statusCode !== 200) {
+              reject({ code: -1, msg: `下载失败，HTTP状态码: ${response.statusCode}` });
+              return;
+            }
+            
+            const totalSize = parseInt(response.headers['content-length'] || '0', 10);
+            let downloadedSize = 0;
+            const file = fs.createWriteStream(downloadPath);
+            
+            response.on('data', (chunk) => {
+              downloadedSize += chunk.length;
+              if (totalSize > 0) {
+                const progress = Math.round((downloadedSize / totalSize) * 100);
+                event.sender.send('update-download-progress', progress);
+              }
+            });
+            
+            response.pipe(file);
+            
+            file.on('finish', () => {
+              file.close();
+              event.sender.send('update-download-progress', 100);
+              resolve({ code: 0, msg: '下载完成', path: downloadPath });
+            });
+            
+            file.on('error', (err) => {
+              fs.unlink(downloadPath, () => {});
+              reject({ code: -1, msg: `文件写入失败: ${err.message}` });
+            });
+          }).on('error', (err) => {
+            fs.unlink(downloadPath, () => {});
+            reject({ code: -1, msg: `网络请求失败: ${err.message}` });
+          }).on('timeout', () => {
+            fs.unlink(downloadPath, () => {});
+            reject({ code: -1, msg: '下载超时，请重试' });
+          });
+        };
+        
+        download(url);
+      });
+    } catch (error) {
+      return { code: -1, msg: `下载失败: ${error.message}` };
+    }
+  });
+
+  ipcMain.handle('install-update', async (event, filePath) => {
+    try {
+      return new Promise((resolve, reject) => {
+        execFile(filePath, [], (error) => {
+          if (error) {
+            reject({ code: -1, msg: `安装启动失败: ${error.message}` });
+          } else {
+            setTimeout(() => {
+              require('electron').app.exit(0);
+            }, 500);
+            resolve({ code: 0, msg: '安装程序已启动，请等待安装完成' });
+          }
+        });
+      });
+    } catch (error) {
+      return { code: -1, msg: `安装失败: ${error.message}` };
+    }
+  });
+
+  ipcMain.on('open-internal', (event, urlPath) => {
+    const { BrowserWindow, Menu, MenuItem, nativeImage, app } = require('electron');
+    // 查找 icon 路径
+    let iconPath = null;
+    const iconPaths = app.isPackaged
+      ? [
+          path.join(process.resourcesPath, 'app', 'public', 'favicon.ico'),
+          path.join(process.resourcesPath, 'app', 'public', 'favicon.png'),
+          path.join(process.resourcesPath, 'public', 'favicon.ico'),
+          path.join(process.resourcesPath, 'public', 'favicon.png')
+        ]
+      : [
+          path.join(__dirname, '../../public/favicon.ico'),
+          path.join(__dirname, '../../public/favicon.png')
+        ];
+
+    for (const p of iconPaths) {
+      if (fs.existsSync(p)) {
+        iconPath = p;
+        break;
+      }
+    }
+    
+    const internalWindow = new BrowserWindow({
+      width: 1024,
+      height: 768,
+      title: 'ToolBox 浏览器',
+      icon: iconPath,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+    internalWindow.loadURL(urlPath);
+    const menu = new Menu();
+    menu.append(new MenuItem({
+      label: '导航',
+      submenu: [
+        { label: '后退', accelerator: 'Alt+左箭头', click: () => { if (internalWindow.webContents.canGoBack()) { internalWindow.webContents.goBack(); } }, enabled: false },
+        { label: '前进', accelerator: 'Alt+右箭头', click: () => { if (internalWindow.webContents.canGoForward()) { internalWindow.webContents.goForward(); } }, enabled: false },
+        { type: 'separator' },
+        { label: '刷新', accelerator: 'F5', click: () => { internalWindow.webContents.reload(); } },
+        { label: '停止', accelerator: 'Esc', click: () => { internalWindow.webContents.stop(); } },
+      ]
+    }));
+    menu.append(new MenuItem({
+      label: '编辑',
+      submenu: [
+        { label: '复制', accelerator: 'Ctrl+C', role: 'copy' },
+        { label: '粘贴', accelerator: 'Ctrl+V', role: 'paste' },
+        { label: '剪切', accelerator: 'Ctrl+X', role: 'cut' },
+        { type: 'separator' },
+        { label: '全选', accelerator: 'Ctrl+A', role: 'selectAll' },
+      ]
+    }));
+    menu.append(new MenuItem({
+      label: '查看',
+      submenu: [
+        { label: '重新加载', accelerator: 'Ctrl+R', click: () => { internalWindow.webContents.reload(); } },
+        { type: 'separator' },
+        { label: '开发者工具', accelerator: 'F12', click: () => { internalWindow.webContents.toggleDevTools(); } },
+        { type: 'separator' },
+        { label: '全屏', accelerator: 'F11', click: () => { internalWindow.setFullScreen(!internalWindow.isFullScreen()); } },
+      ]
+    }));
+    menu.append(new MenuItem({
+      label: '窗口',
+      submenu: [
+        { label: '最小化', accelerator: 'Ctrl+M', click: () => { internalWindow.minimize(); } },
+        { label: '最大化', accelerator: 'Ctrl+Shift+M', click: () => { if (internalWindow.isMaximized()) { internalWindow.unmaximize(); } else { internalWindow.maximize(); } } },
+        { type: 'separator' },
+        { label: '关闭', accelerator: 'Ctrl+W', click: () => { internalWindow.close(); } },
+      ]
+    }));
+    menu.append(new MenuItem({
+      label: '帮助',
+      submenu: [
+        { label: '关于 ToolBox', click: () => {} },
+      ]
+    }));
+    internalWindow.setMenu(menu);
+    internalWindow.webContents.on('did-navigate', () => {
+      menu.items[0].submenu.items[0].enabled = internalWindow.webContents.canGoBack();
+      menu.items[0].submenu.items[1].enabled = internalWindow.webContents.canGoForward();
+    });
+  });
+
+  ipcMain.handle('notes-has-root-path', () => notesService.hasRootPath());
+  ipcMain.handle('notes-get-root-path', () => notesService.getRootPath());
+  ipcMain.handle('notes-set-root-path', (event, rootPath) => notesService.setRootPath(rootPath));
+  ipcMain.handle('notes-select-folder', async () => notesService.selectFolder());
+  ipcMain.handle('notes-validate-folder', (event, folderPath) => notesService.validateFolder(folderPath));
+  ipcMain.handle('notes-scan-folder', (event, rootPath) => notesService.scanFolder(rootPath));
+  ipcMain.handle('notes-get-file-tree', () => notesService.getFileTree());
+  ipcMain.handle('notes-create-folder', (event, parentPath, name) => notesService.createFolder(parentPath, name));
+  ipcMain.handle('notes-create-folder-force', (event, parentPath, name, mode) => notesService.createFolderForce(parentPath, name, mode));
+  ipcMain.handle('notes-create-note', (event, parentPath, name, content) => notesService.createNote(parentPath, name, content));
+  ipcMain.handle('notes-create-note-force', (event, parentPath, name, mode, content) => notesService.createNoteForce(parentPath, name, mode, content));
+  ipcMain.handle('notes-read-file', (event, filePath) => notesService.readFile(filePath));
+  ipcMain.handle('notes-save-file', (event, filePath, content) => notesService.saveFile(filePath, content));
+  ipcMain.handle('notes-rename-item', (event, oldPath, newName) => notesService.renameItem(oldPath, newName));
+  ipcMain.handle('notes-delete-item', (event, itemPath) => notesService.deleteItem(itemPath));
+  ipcMain.handle('notes-index-all', (event, rootPath) => notesService.indexAllNotes(rootPath));
+  ipcMain.handle('notes-open-file-in-folder', (event, filePath) => notesService.openFileInFolder(filePath));
+  ipcMain.handle('notes-read-file-as-buffer', (event, filePath) => notesService.readFileAsBuffer(filePath));
+  ipcMain.handle('notes-move-item', (event, itemPath, targetFolderPath) => notesService.moveItem(itemPath, targetFolderPath));
+  ipcMain.handle('notes-copy-item', (event, sourcePath) => notesService.copyItem(sourcePath));
+  ipcMain.handle('notes-import-dropped-files', (event, rootPath, filePaths) => notesService.importDroppedFiles(rootPath, filePaths));
+
+  // T02 / 4.1 + 4.5：注册 notes 模块的新增 IPC 通道（异步树 + 草稿保护）
+  // 现有 21 个 notes-* 通道保持不变，仅追加以下 6 个：
+  //   notes-scan-folder-async / notes-get-file-tree-async /
+  //   notes-write-draft / notes-read-draft / notes-delete-draft / notes-list-drafts
+  require('../ipc/notesIpc.cjs').registerNotesIpc();
+
+  ipcMain.handle('ip-info:query', async (event, ip) => {
+    const https = require('https');
+    return new Promise((resolve) => {
+      const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
+      https.get(url, (res) => {
+        let data = '';
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(data);
+            if (result.error) {
+              resolve({ error: true, reason: result.error.message || '查询失败' });
+            } else {
+              const [latitude, longitude] = result.loc ? result.loc.split(',').map(Number) : [0, 0];
+              resolve({
+                ip: result.ip || '',
+                version: result.ip?.includes(':') ? 'IPv6' : 'IPv4',
+                city: result.city || '',
+                region: result.region || '',
+                country_name: result.country || '',
+                country_code: result.country || '',
+                timezone: result.timezone || '',
+                currency: '',
+                currency_name: '',
+                postal: result.postal || '',
+                latitude,
+                longitude,
+                org: result.org || '',
+                asn: result.asn || '',
+                languages: '',
+              });
+            }
+          } catch (error) {
+            resolve({ error: true, reason: '解析数据失败' });
+          }
+        });
+      }).on('error', (error) => {
+        resolve({ error: true, reason: error.message });
+      });
+    });
+  });
+
+  ipcMain.handle('system-info:get', () => {
+    return systemInfoService.getSystemInfo();
+  });
+};
+
+// P2: 应用退出时统一注销所有快启动全局热键
+const cleanupQuickLaunchHotkeys = () => {
+  if (quickLaunchHotkeys.size === 0) return;
+  for (const accelerator of quickLaunchHotkeys.values()) {
+    try { shortcutManager.unregister(accelerator); } catch {}
+  }
+  quickLaunchHotkeys.clear();
+};
+
+module.exports = {
+  createWindow,
+  registerIpcHandlers,
+  startMemoryOptimization,
+  stopMemoryOptimization,
+  startAutoLock,
+  stopAutoLock,
+  resetAutoLockTimer,
+  getMainWindow: () => mainWindow,
+  setIsQuitting: (val) => { isQuitting = val; },
+  cleanupQuickLaunchHotkeys,
+};

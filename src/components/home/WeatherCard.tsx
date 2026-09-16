@@ -1,0 +1,278 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { RefreshCw, Droplets, Gauge, Sun, Cloud, CloudSun, CloudRain, CloudSnow, Wind } from 'lucide-react';
+import { apiService } from '../../services/api';
+import { isWeb } from '../../utils/environment';
+import { getWeatherCity } from '../../utils/weatherLocation';
+import type { WeatherInfo, DailyForecast } from '../../types/weather';
+import LoadingSpinner from '../ui/LoadingSpinner';
+import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
+import { getDayName } from '../../utils/format';
+
+const getWeatherIcon = (condition: string, size: 'sm' | 'md' | 'lg' = 'md', color?: string) => {
+  const lowerCondition = condition.toLowerCase();
+  const sizeClasses = { sm: 'w-5 h-5', md: 'w-8 h-8', lg: 'w-12 h-12' };
+  const defaultColors = {
+    sunny: color || 'text-yellow-500',
+    cloudy: color || 'text-yellow-500',
+    rainy: color || 'text-blue-500',
+    snowy: color || 'text-blue-300',
+    default: color || 'text-gray-500',
+  };
+
+  if (lowerCondition.includes('晴')) return <Sun className={`${sizeClasses[size]} ${defaultColors.sunny}`} />;
+  if (lowerCondition.includes('多云')) return <CloudSun className={`${sizeClasses[size]} ${defaultColors.cloudy}`} />;
+  if (lowerCondition.includes('雨')) return <CloudRain className={`${sizeClasses[size]} ${defaultColors.rainy}`} />;
+  if (lowerCondition.includes('雪')) return <CloudSnow className={`${sizeClasses[size]} ${defaultColors.snowy}`} />;
+  return <Cloud className={`${sizeClasses[size]} ${defaultColors.default}`} />;
+};
+
+const WeatherCard: React.FC = () => {
+  const [weatherData, setWeatherData] = useState<WeatherInfo | null>(null);
+  const [forecast, setForecast] = useState<DailyForecast[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [showDetail, setShowDetail] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [city, setCity] = useState(localStorageService.getString(STORAGE_KEYS.WEATHER_CITY) || '无锡');
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const fetchWeather = useCallback(async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await apiService.getWeather(city);
+      if (data?.data) {
+        setWeatherData(data.data);
+      } else {
+        setError('获取天气失败');
+      }
+
+      const forecastData = await apiService.getWeatherForecast(city, 4);
+      if (forecastData?.data?.daily_forecast) {
+        setForecast(forecastData.data.daily_forecast.slice(1));
+      }
+    } catch {
+      setError('网络错误');
+    } finally {
+      setLoading(false);
+    }
+  }, [city]);
+
+  useEffect(() => {
+    const initializeCity = async () => {
+      let detectedCity = localStorageService.getString(STORAGE_KEYS.WEATHER_CITY);
+      
+      if (!detectedCity && isWeb()) {
+        detectedCity = await getWeatherCity();
+      }
+      
+      if (detectedCity) {
+        setCity(detectedCity);
+      }
+      
+      setIsInitialized(true);
+    };
+    
+    initializeCity();
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (isInitialized) {
+      setTimeout(() => fetchWeather(), 0);
+    }
+  }, [isInitialized, fetchWeather]);
+
+  useEffect(() => {
+    if (showDetail && cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      setPopupPosition({ x: rect.right + 8, y: rect.top });
+    }
+  }, [showDetail]);
+
+  const formatDate = (date: Date) => {
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${month}月${day}日`;
+  };
+
+  if (error) {
+    return (
+      <div className="w-full h-full rounded-lg bg-gray-500 flex flex-col items-center justify-center text-white gap-3 shadow-md">
+        <Cloud className="w-8 h-8 text-white/60" />
+        <p className="text-xs text-white/80">{error}</p>
+        <button
+          onClick={fetchWeather}
+          className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
+          title="重试"
+        >
+          <RefreshCw size={16} />
+        </button>
+      </div>
+    );
+  }
+
+  if (loading && !weatherData) {
+    return (
+      <div className="w-full h-full rounded-lg bg-gray-400 flex items-center justify-center shadow-md">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  const colors = weatherData?.weather?.weather_colors || ['#6366f1', '#8b5cf6'];
+  const bgStyle = {
+    backgroundColor: colors[0],
+  };
+
+  const renderWeatherDetailPopup = () => {
+    if (!showDetail) return null;
+    
+    return createPortal(
+      <div 
+        className="fixed z-[1000] pointer-events-none"
+        style={{ 
+          left: popupPosition.x, 
+          top: popupPosition.y,
+          maxWidth: '208px'
+        }}
+      >
+        <div className="w-52 rounded-lg overflow-hidden shadow-xl transition-all duration-300 pointer-events-auto">
+          <div className="bg-sky-500 text-white">
+            <div className="p-2.5">
+              <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/10 p-1.5 backdrop-blur-sm mb-2">
+                <div className="flex flex-col items-center gap-0.5">
+                  <Droplets size={12} className="text-white/80" />
+                  <span className="text-3xs opacity-80">湿度</span>
+                  <span className="text-xs font-semibold">
+                    {weatherData?.weather?.humidity ?? '--'}%
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <Wind size={12} className="text-white/80" />
+                  <span className="text-3xs opacity-80">风向</span>
+                  <span className="text-xs font-semibold">
+                    {weatherData?.weather?.wind_direction ?? '--'}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <Gauge size={12} className="text-white/80" />
+                  <span className="text-3xs opacity-80">气压</span>
+                  <span className="text-xs font-semibold">
+                    {weatherData?.weather?.pressure ?? '--'}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <Cloud size={12} className="text-white/80" />
+                  <span className="text-3xs opacity-80">降水</span>
+                  <span className="text-xs font-semibold">
+                    {weatherData?.weather?.precipitation ?? '--'}mm
+                  </span>
+                </div>
+              </div>
+
+              {weatherData?.air_quality && (
+                <div className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1 mb-1.5">
+                  <div className="flex items-center gap-1">
+                    <Sun size={12} className="text-white/80" />
+                    <span className="text-3xs">空气质量</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-2xs font-semibold">
+                      {weatherData.air_quality.quality}
+                    </span>
+                    <span className="text-3xs opacity-80">
+                      AQI {weatherData.air_quality.aqi}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {weatherData?.sunrise && (
+                <div className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1 mb-1.5">
+                  <div className="flex items-center gap-1">
+                    <Sun size={12} className="text-yellow-300" />
+                    <span className="text-3xs">日出</span>
+                    <span className="text-2xs font-semibold">
+                      {weatherData.sunrise.sunrise_desc}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-3xs">日落</span>
+                    <span className="text-2xs font-semibold">
+                      {weatherData.sunrise.sunset_desc}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {forecast.length > 0 && (
+                <div>
+                  <h4 className="mb-1.5 text-3xs font-medium text-white/80">未来2天</h4>
+                  <div className="space-y-1">
+                    {forecast.slice(0, 2).map((day, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between rounded-lg bg-white/10 px-1.5 py-1"
+                      >
+                        <span className="text-2xs font-medium">{getDayName(day.date)}</span>
+                        <div className="flex items-center gap-2">
+                          {getWeatherIcon(day.day_condition || '', 'sm', 'text-white')}
+                          <div className="flex gap-1.5">
+                            <span className="text-2xs font-semibold">{day.min_temperature}°</span>
+                            <span className="text-2xs text-white/80">{day.max_temperature}°</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  };
+
+  return (
+    <>
+      <div className="relative w-full h-full" ref={cardRef}>
+        <div
+          className="w-full h-full rounded-lg overflow-hidden shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg"
+          style={bgStyle}
+          onMouseEnter={() => setShowDetail(true)}
+          onMouseLeave={() => setShowDetail(false)}
+        >
+          <div className="h-full flex items-center gap-1.5 p-1.5">
+            <div className="flex flex-col items-center">
+              {getWeatherIcon(weatherData?.weather?.condition || '', 'sm', 'text-white')}
+              <div className="text-base font-semibold text-white">
+                {weatherData?.weather?.temperature || '--'}°
+              </div>
+            </div>
+            
+            <div className="flex flex-col justify-center">
+              <h2 className="text-[10px] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[50px]">
+                {weatherData?.location?.city || city}
+              </h2>
+              <p className="text-[9px] text-white/70">{formatDate(currentTime)}</p>
+              <p className="text-[9px] text-white/70">
+                {weatherData?.weather?.condition || '未知'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {renderWeatherDetailPopup()}
+    </>
+  );
+};
+
+export default React.memo(WeatherCard);

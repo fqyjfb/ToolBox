@@ -1,0 +1,8 @@
+packages:
+  - "."
+  - "**"
+
+ignoredBuiltDependencies:
+  - core-js
+  - electron
+  - electron-winstaller

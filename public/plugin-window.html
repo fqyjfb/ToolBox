@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToolBox 插件</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f8f9fa;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .dark body {
+      background: #1f2937;
+    }
+    #root {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .plugin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      height: 32px;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+    }
+    .dark .plugin-header {
+      background: #1f2937;
+      border-bottom-color: #374151;
+    }
+    .plugin-header-title {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+    }
+    .dark .plugin-header-title {
+      color: #e5e7eb;
+    }
+    .plugin-header-controls {
+      display: flex;
+      align-items: center;
+      -webkit-app-region: no-drag;
+    }
+    .plugin-header-controls button {
+      width: 46px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+    .plugin-header-controls button:hover {
+      background: #f3f4f6;
+    }
+    .dark .plugin-header-controls button:hover {
+      background: #374151;
+    }
+    .plugin-header-controls button:last-child:hover {
+      background: #ef4444;
+    }
+    .plugin-header-controls button:last-child:hover svg {
+      color: white;
+    }
+    .plugin-header-controls svg {
+      width: 14px;
+      height: 14px;
+      color: #6b7280;
+    }
+    .dark .plugin-header-controls svg {
+      color: #9ca3af;
+    }
+    .plugin-content {
+      flex: 1;
+      overflow: hidden;
+    }
+    .container-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .item-color {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      background-color: var(--color);
+      position: relative;
+    }
+    .item-color:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .item-color::after {
+      content: attr(data-color);
+      position: absolute;
+      bottom: -1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      color: #6b7280;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+    }
+    .item-color:hover::after {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script>
+    const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+</body>
+</html>
