@@ -10,6 +10,7 @@ export interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   deleteItemName?: string;
+  variant?: 'default' | 'danger';
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -21,6 +22,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   confirmText = '确定',
   cancelText = '取消',
   deleteItemName,
+  variant = 'default',
 }) => {
   const handleConfirm = () => {
     onConfirm();
@@ -37,6 +39,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       onConfirm={handleConfirm}
       showCancel={true}
       showConfirm={true}
+      confirmVariant={variant === 'danger' ? 'danger' : 'primary'}
       size="sm"
     >
       <div className="py-2">

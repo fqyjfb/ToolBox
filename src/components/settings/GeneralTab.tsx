@@ -262,7 +262,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
             </button>
             <button
               onClick={handleWeatherCitySave}
-              className="px-3 py-1 text-xs font-medium text-white bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 rounded-md transition-colors"
+              className="px-3 py-1 text-xs font-medium text-button-text bg-primary hover:bg-primary-hover rounded-md transition-colors"
             >
               保存
             </button>
@@ -338,7 +338,9 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
                 value={String(autoLockTimeout)}
                 onChange={(v) => onAutoLockTimeoutChange(Number(v))}
                 options={AUTO_LOCK_OPTIONS.map(option => ({ value: String(option.value), label: option.label }))}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                size="sm"
+                dense
+                className="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             )}
             <ToggleSwitch

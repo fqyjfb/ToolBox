@@ -15,6 +15,7 @@ interface ModalProps {
   showConfirm?: boolean;
   confirmDisabled?: boolean;
   clickOutsideToClose?: boolean;
+  confirmVariant?: 'primary' | 'danger';
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -31,6 +32,7 @@ const Modal: React.FC<ModalProps> = ({
   showConfirm = true,
   confirmDisabled = false,
   clickOutsideToClose = false,
+  confirmVariant = 'primary',
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -125,7 +127,11 @@ const Modal: React.FC<ModalProps> = ({
               <button
                 onClick={onConfirm}
                 disabled={confirmDisabled}
-                className="px-4 py-1.5 text-sm font-medium text-button-text bg-primary dark:bg-primary rounded-md hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  confirmVariant === 'danger'
+                    ? 'text-white bg-red-600 hover:bg-red-700'
+                    : 'text-button-text bg-primary dark:bg-primary hover:bg-primary/90 dark:hover:bg-primary/90'
+                }`}
               >
                 {confirmText}
               </button>

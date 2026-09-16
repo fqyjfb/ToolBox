@@ -15,6 +15,7 @@ interface SelectProps {
   disabled?: boolean;
   className?: string;
   size?: 'sm' | 'md';
+  dense?: boolean;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -25,6 +26,7 @@ const Select: React.FC<SelectProps> = ({
   disabled = false,
   className = '',
   size = 'md',
+  dense = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOffset, setDropdownOffset] = useState(2);
@@ -107,7 +109,7 @@ const Select: React.FC<SelectProps> = ({
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
-          className={`w-full px-3 py-2 text-sm flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none whitespace-nowrap border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white ${className}`}
+          className={`w-full flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none whitespace-nowrap border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white ${dense ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'} ${className}`}
         >
           <span className={`truncate text-left ${selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
             {selectedOption ? selectedOption.label : placeholder}

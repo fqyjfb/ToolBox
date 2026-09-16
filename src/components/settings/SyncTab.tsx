@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
+import { useShallow } from 'zustand/shallow';
 import { RefreshCw, Cloud, CloudOff, Loader2, HardDrive, Database, AlertCircle } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import SyncConflictModal from './SyncConflictModal';
@@ -9,30 +10,9 @@ import { syncManager, SyncProgressInfo } from '../../services/syncManager';
 import { useToastStore } from '../../store/toastStore';
 import { logError, logInfo } from '../../services/loggerService';
 import { SyncModuleKey, StorageLocation, MODULE_TABLE_MAP, ConflictItem, classifySyncError } from '../../types/offline';
+import { getTableNameLabel, getTimeAgo } from '../../constants/offline';
 
 const VALID_MODULE_KEYS = Object.keys(MODULE_TABLE_MAP) as SyncModuleKey[];
-
-const TABLE_LABELS: Record<string, string> = {
-  todos: '待办事项',
-  todo_categories: '待办分类',
-  shops: '店铺',
-  social_accounts: '社交账号',
-  emails: '邮箱',
-  phones: '电话',
-  companies: '公司',
-  credentials: '凭证',
-  general_accounts: '通用账号',
-  website_accounts: '网站账号',
-  website_account_categories: '网站分类',
-  quick_replies: '快捷回复',
-  quick_reply_categories: '快捷回复分类',
-  clipboard_items: '剪贴板',
-  clipboard_categories: '剪贴板分类',
-  memos: '备忘录',
-  memo_categories: '备忘录分类',
-};
-
-const getTableNameLabel = (tableName: string): string => TABLE_LABELS[tableName] || tableName;
 
 const SyncTab: React.FC = () => {
   const {
@@ -71,25 +51,47 @@ const SyncTab: React.FC = () => {
     setConflicts,
     setTableDataCounts,
     setTotalDataCount,
-  } = useSyncStore();
+  } = useSyncStore(useShallow((s) => ({
+    syncEnabled: s.syncEnabled,
+    syncModules: s.syncModules,
+    isSyncing: s.isSyncing,
+    syncProgress: s.syncProgress,
+    lastSyncTime: s.lastSyncTime,
+    storageLocation: s.storageLocation,
+    syncOnStartupEnabled: s.syncOnStartupEnabled,
+    currentSyncTable: s.currentSyncTable,
+    totalSyncedCount: s.totalSyncedCount,
+    lastSyncSummary: s.lastSyncSummary,
+    isOnline: s.isOnline,
+    isSwitching: s.isSwitching,
+    showConflictModal: s.showConflictModal,
+    conflicts: s.conflicts,
+    tableDataCounts: s.tableDataCounts,
+    totalDataCount: s.totalDataCount,
+    setSyncEnabled: s.setSyncEnabled,
+    setSyncModules: s.setSyncModules,
+    toggleModuleSync: s.toggleModuleSync,
+    setIsSyncing: s.setIsSyncing,
+    setSyncProgress: s.setSyncProgress,
+    setLastSyncTime: s.setLastSyncTime,
+    setPendingOperationsCount: s.setPendingOperationsCount,
+    setStorageLocation: s.setStorageLocation,
+    setSyncOnStartupEnabled: s.setSyncOnStartupEnabled,
+    setCurrentSyncTable: s.setCurrentSyncTable,
+    setTableSyncStatuses: s.setTableSyncStatuses,
+    updateTableSyncStatus: s.updateTableSyncStatus,
+    setTotalSyncedCount: s.setTotalSyncedCount,
+    setLastSyncSummary: s.setLastSyncSummary,
+    setIsSwitching: s.setIsSwitching,
+    setShowConflictModal: s.setShowConflictModal,
+    setConflicts: s.setConflicts,
+    setTableDataCounts: s.setTableDataCounts,
+    setTotalDataCount: s.setTotalDataCount,
+  })));
 
   const user = useAuthStore(state => state.user);
   const addToast = useToastStore(state => state.addToast);
   const [showTableStatusVisible, setShowTableStatusVisible] = useState(false);
-
-  const getTimeAgo = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return '刚刚';
-    if (diffMins < 60) return `${diffMins}分钟前`;
-    if (diffHours < 24) return `${diffHours}小时前`;
-    return `${diffDays}天前`;
-  };
 
   const refreshPendingOperations = useCallback(async () => {
     if (!user?.id) return;
@@ -142,7 +144,10 @@ const SyncTab: React.FC = () => {
   };
 
   const handleToggleSync = async (enabled: boolean) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      addToast({ type: 'warning', message: '请先登录' });
+      return;
+    }
     try {
       await syncManager.setSyncEnabled(user.id, enabled);
       setSyncEnabled(enabled);
@@ -158,7 +163,10 @@ const SyncTab: React.FC = () => {
   };
 
   const handleToggleSyncOnStartup = async (enabled: boolean) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      addToast({ type: 'warning', message: '请先登录' });
+      return;
+    }
     syncManager.setSyncOnStartupEnabled(user.id, enabled).then(() => {
       setSyncOnStartupEnabled(enabled);
       addToast({ type: 'success', message: enabled ? '启动同步已启用' : '启动同步已禁用' });
@@ -169,7 +177,10 @@ const SyncTab: React.FC = () => {
   };
 
   const handleToggleModule = async (key: SyncModuleKey, enabled: boolean) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      addToast({ type: 'warning', message: '请先登录' });
+      return;
+    }
     syncManager.toggleModuleSync(user.id, key, enabled).then(() => {
       toggleModuleSync(key);
       addToast({ type: 'success', message: `${syncModules.find(m => m.key === key)?.name} ${enabled ? '已启用' : '已禁用'}` });
@@ -180,7 +191,11 @@ const SyncTab: React.FC = () => {
   };
 
   const handleStorageLocationChange = async (location: StorageLocation) => {
-    if (!user?.id || isSwitching) return;
+    if (!user?.id) {
+      addToast({ type: 'warning', message: '请先登录' });
+      return;
+    }
+    if (isSwitching) return;
 
     setIsSwitching(true);
 

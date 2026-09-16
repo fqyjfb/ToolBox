@@ -419,7 +419,7 @@ const Settings: React.FC = () => {
   return (
     <div className="flex h-full overflow-hidden">
       <aside
-        className="flex-shrink-0 flex flex-col bg-white dark:bg-gray-900 transition-all duration-200"
+        className="flex-shrink-0 flex flex-col bg-bg-primary transition-all duration-200"
         style={{ width: sidebarCollapsed ? '48px' : '145px' }}
       >
         <div className="flex flex-col flex-1 py-2 overflow-y-auto scrollbar-hide">

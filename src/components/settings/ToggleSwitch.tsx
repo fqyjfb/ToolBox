@@ -21,7 +21,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   const text = label ?? (isChecked ? checkedLabel : uncheckedLabel);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-shrink-0">
       <button
         type="button"
         onClick={() => onChange(!isChecked)}
@@ -37,7 +37,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
         />
       </button>
       {text && (
-        <span className="text-xs text-gray-500">{text}</span>
+        <span className="text-xs text-gray-500 whitespace-nowrap">{text}</span>
       )}
     </div>
   );

@@ -237,7 +237,8 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                 { value: '', label: '请选择工具' },
                 ...ALL_TOOLS.map((tool) => ({ value: tool.id, label: tool.name }))
               ]}
-              className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              dense
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
             />
           </div>
         )}
@@ -257,7 +258,8 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                 { value: '', label: '请选择应用' },
                 ...quickLaunchApps.map((app) => ({ value: app.path, label: app.name }))
               ]}
-              className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              dense
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
             />
           </div>
         )}
@@ -356,7 +358,8 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                 value={localConfig.icon}
                 onChange={handleIconChange}
                 options={AVAILABLE_ICONS.map(({ name, label }) => ({ value: name, label }))}
-                className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                dense
+                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               />
             ) : (
               <span className="flex-1 text-xs text-gray-500 dark:text-gray-400">
@@ -373,14 +376,14 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
           className="inline-flex items-center gap-1.5 px-3 py-1 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
         >
           <RotateCcw size={14} />
-          重置
+          重置全部配置
         </button>
         <button
           onClick={onSave}
-          className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white bg-gray-800 dark:bg-gray-700 rounded-md hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-button-text bg-primary rounded-md hover:bg-primary-hover transition-colors"
         >
           <Save size={14} />
-          保存
+          保存全部配置
         </button>
       </div>
     </div>

@@ -117,7 +117,11 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
           </div>
         </div>
 
-        {floatConfig[safeActiveIndex] && (
+        {floatConfig.length === 0 ? (
+          <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+            暂无悬浮窗配置项
+          </div>
+        ) : (
           <FloatConfigEditor
             key={floatConfig[safeActiveIndex].id}
             config={floatConfig[safeActiveIndex]}

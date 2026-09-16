@@ -10,11 +10,11 @@ import SettingRow from './SettingRow';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import type { NetworkConfig, NetworkTestResult } from '../../types/network';
 
-// 默认值用于占位符显示，不预填表单
+// 需与 electron/lib/config.cjs 的 defaultNetworkConfig 保持一致，用于占位符显示与「是否自定义」判定
 const DEFAULT_CONFIG: NetworkConfig = {
   appUpdate: {
-    checkUrl: 'https://api.github.com/repos/xxx/ToolBox/releases/latest',
-    repoUrl: 'https://github.com/xxx/xxx',
+    checkUrl: 'https://api.github.com/repos/fqyjfb/ToolBox/releases/latest',
+    repoUrl: 'https://github.com/fqyjfb/ToolBox',
     requestTimeout: 10000,
   },
   hotNews: {
@@ -24,9 +24,9 @@ const DEFAULT_CONFIG: NetworkConfig = {
   },
   pluginStore: {
     registryUrls: [
-      'https://raw.githubusercontent.com/xxx/toolbox-plugins-registry/main/registry.json',
-      'https://raw.fastgit.org/xxx/toolbox-plugins-registry/main/registry.json',
-      'https://raw.gitmirror.com/xxx/toolbox-plugins-registry/main/registry.json',
+      'https://raw.githubusercontent.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
+      'https://raw.fastgit.org/fqyjfb/toolbox-plugins-registry/main/registry.json',
+      'https://raw.gitmirror.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
     ],
     githubRawMirrors: [
       'https://raw.githubusercontent.com',
@@ -338,7 +338,7 @@ const NetworkTab: React.FC = () => {
 
         <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <button onClick={() => { setForm(createEmptyForm()); setSupabaseForm({ url: '', anonKey: '' }); setEncryptionKeyInput(''); }} className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">取消</button>
-          <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white bg-gray-800 dark:bg-gray-700 rounded-md hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors disabled:opacity-50">
+          <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-button-text bg-primary rounded-md hover:bg-primary-hover transition-colors disabled:opacity-50">
             {isSaving && <Loader2 size={14} className="animate-spin" />}
             <Save size={14} />
             保存配置

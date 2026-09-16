@@ -4,7 +4,7 @@ import { useToastStore } from '../../store/toastStore';
 import { useStorageStore } from '../../store/storageStore';
 import { useAuthStore } from '../../store/AuthStore';
 import { logError, logInfo } from '../../services/loggerService';
-import { iconCacheService } from '../../services/iconCacheService';
+import { iconCacheService, IconCacheType } from '../../services/iconCacheService';
 import { offlineStorage } from '../../services/offlineStorage';
 import { sqliteClient } from '../../services/sqliteClient';
 import { formatBytes } from '../../utils';
@@ -21,6 +21,15 @@ interface StorageTabProps {
 
 const STORAGE_THRESHOLD_WARNING = 0.8;
 const STORAGE_THRESHOLD_DANGER = 0.9;
+
+type IconCacheClearTarget = IconCacheType | 'all';
+
+const ICON_CACHE_LABELS: Record<IconCacheClearTarget, string> = {
+  general: '通用',
+  plugin: '插件',
+  app: '应用',
+  all: '全部',
+};
 
 const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnText }) => {
   const addToast = useToastStore(state => state.addToast);
@@ -40,10 +49,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   const [generalCacheStats, setGeneralCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
   const [pluginCacheStats, setPluginCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
   const [appCacheStats, setAppCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
-  const [isClearingIconCache, setIsClearingIconCache] = useState(false);
-  const [isClearingGeneralCache, setIsClearingGeneralCache] = useState(false);
-  const [isClearingPluginCache, setIsClearingPluginCache] = useState(false);
-  const [isClearingAppCache, setIsClearingAppCache] = useState(false);
+  const [clearingCacheTarget, setClearingCacheTarget] = useState<IconCacheClearTarget | null>(null);
   const [isRefreshingIconCache, setIsRefreshingIconCache] = useState(false);
   const [isClearingUserData, setIsClearingUserData] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -111,52 +117,20 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
     }
   }, [storageUsagePercent, showWarning, showDanger, addToast]);
 
-  const clearAllIconCache = async () => {
-    setIsClearingIconCache(true);
+  const clearIconCache = async (target: IconCacheClearTarget) => {
+    setClearingCacheTarget(target);
     try {
-      await iconCacheService.clearAll();
-      addToast({ type: 'success', message: '图标缓存已清除' });
+      if (target === 'all') {
+        await iconCacheService.clearAll();
+      } else {
+        await iconCacheService.clearByType(target);
+      }
+      addToast({ type: 'success', message: `${ICON_CACHE_LABELS[target]}图标缓存已清除` });
       await refreshIconCacheStats();
     } catch {
       addToast({ type: 'error', message: '清理失败，请重试' });
     }
-    setIsClearingIconCache(false);
-  };
-
-  const clearGeneralIconCache = async () => {
-    setIsClearingGeneralCache(true);
-    try {
-      await iconCacheService.clearByType('general');
-      addToast({ type: 'success', message: '通用图标缓存已清除' });
-      await refreshIconCacheStats();
-    } catch {
-      addToast({ type: 'error', message: '清理失败，请重试' });
-    }
-    setIsClearingGeneralCache(false);
-  };
-
-  const clearPluginIconCache = async () => {
-    setIsClearingPluginCache(true);
-    try {
-      await iconCacheService.clearByType('plugin');
-      addToast({ type: 'success', message: '插件图标缓存已清除' });
-      await refreshIconCacheStats();
-    } catch {
-      addToast({ type: 'error', message: '清理失败，请重试' });
-    }
-    setIsClearingPluginCache(false);
-  };
-
-  const clearAppIconCache = async () => {
-    setIsClearingAppCache(true);
-    try {
-      await iconCacheService.clearByType('app');
-      addToast({ type: 'success', message: '应用图标缓存已清除' });
-      await refreshIconCacheStats();
-    } catch {
-      addToast({ type: 'error', message: '清理失败，请重试' });
-    }
-    setIsClearingAppCache(false);
+    setClearingCacheTarget(null);
   };
 
   const handleClearUserData = async () => {
@@ -326,6 +300,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
         onConfirm={handleClearUserData}
         confirmText="确认清除"
         cancelText="取消"
+        variant="danger"
       />
 
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
@@ -565,11 +540,11 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
 
           <div className="grid grid-cols-4 gap-2 mb-4">
             <button
-              onClick={clearGeneralIconCache}
-              disabled={isClearingGeneralCache || generalCacheStats.count === 0}
+              onClick={() => clearIconCache('general')}
+              disabled={clearingCacheTarget !== null || generalCacheStats.count === 0}
               className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isClearingGeneralCache ? (
+              {clearingCacheTarget === 'general' ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
                 <Database className="w-3 h-3" />
@@ -577,11 +552,11 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
               清理通用缓存
             </button>
             <button
-              onClick={clearPluginIconCache}
-              disabled={isClearingPluginCache || pluginCacheStats.count === 0}
+              onClick={() => clearIconCache('plugin')}
+              disabled={clearingCacheTarget !== null || pluginCacheStats.count === 0}
               className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isClearingPluginCache ? (
+              {clearingCacheTarget === 'plugin' ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
                 <Package className="w-3 h-3" />
@@ -589,11 +564,11 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
               清理插件缓存
             </button>
             <button
-              onClick={clearAppIconCache}
-              disabled={isClearingAppCache || appCacheStats.count === 0}
+              onClick={() => clearIconCache('app')}
+              disabled={clearingCacheTarget !== null || appCacheStats.count === 0}
               className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isClearingAppCache ? (
+              {clearingCacheTarget === 'app' ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
                 <Trash2 className="w-3 h-3" />
@@ -601,11 +576,11 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
               清理应用缓存
             </button>
             <button
-              onClick={clearAllIconCache}
-              disabled={isClearingIconCache || iconCacheStats.count === 0}
+              onClick={() => clearIconCache('all')}
+              disabled={clearingCacheTarget !== null || iconCacheStats.count === 0}
               className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isClearingIconCache ? (
+              {clearingCacheTarget === 'all' ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
                 <Trash2 className="w-3 h-3" />
@@ -632,7 +607,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             <div>
               <span className="text-sm text-gray-700 dark:text-gray-300">清除缓存</span>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                清除浏览器缓存、应用临时文件等
+                清除浏览器缓存、应用临时文件等，清除完成后应用将自动重启
               </p>
             </div>
             <button
