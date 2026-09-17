@@ -3,6 +3,7 @@ import Modal from '../../../components/ui/Modal'
 import Select from '../../../components/ui/Select'
 import { Todo, TodoCategory, CreateTodoRequest } from '../../../services/TodoService'
 import { modalControlClass, modalTextareaClass } from '../account/shared'
+import { formatDateTimeForInput } from '../../../utils'
 
 interface TodoFormModalProps {
   isOpen: boolean
@@ -12,8 +13,9 @@ interface TodoFormModalProps {
   categories: TodoCategory[]
   onNewTodoChange: (newTodo: CreateTodoRequest & { category_id: string | null }) => void
   onConfirm: () => void
-  formatDateTimeForInput: (dateTimeStr: string) => string
 }
+
+const labelClass = 'block text-xs font-medium text-text-secondary mb-1'
 
 const TodoFormModal: React.FC<TodoFormModalProps> = ({
   isOpen,
@@ -22,8 +24,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
   newTodo,
   categories,
   onNewTodoChange,
-  onConfirm,
-  formatDateTimeForInput
+  onConfirm
 }) => {
   return (
     <Modal
@@ -36,7 +37,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
     >
       <div className="space-y-2">
         <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">任务标题 *</label>
+          <label className={labelClass}>任务标题 *</label>
           <input
             type="text"
             value={newTodo.title}
@@ -45,9 +46,9 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
             className={modalControlClass}
           />
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">分类</label>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="col-span-2">
+            <label className={labelClass}>分类</label>
             <Select
               value={newTodo.category_id || ''}
               onChange={(v) => onNewTodoChange({ ...newTodo, category_id: v || null })}
@@ -59,7 +60,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">优先级</label>
+            <label className={labelClass}>优先级</label>
             <Select
               value={newTodo.priority || ''}
               onChange={(v) => onNewTodoChange({ ...newTodo, priority: v as '高' | '中' | '低' })}
@@ -72,7 +73,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">截止日期</label>
+            <label className={labelClass}>截止日期</label>
             <input
               type="datetime-local"
               value={newTodo.due_date ? formatDateTimeForInput(newTodo.due_date) : ''}
@@ -82,7 +83,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">描述</label>
+          <label className={labelClass}>描述</label>
           <textarea
             value={newTodo.description}
             onChange={(e) => onNewTodoChange({ ...newTodo, description: e.target.value })}

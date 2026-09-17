@@ -2,6 +2,7 @@ import { BaseServiceCompat as BaseService } from './entities/baseEntityService'
 import { getDataAccessLayer } from './dataAccessLayer'
 import { TodoCategory, Todo, CreateTodoCategoryRequest, CreateTodoRequest } from '../types/todo'
 import { logError, logInfo } from './loggerService'
+import { DEFAULT_CATEGORY_COLOR, DEFAULT_PRIORITY, DEFAULT_STATUS } from '../constants/todo'
 
 // 分类服务
 const categoryService = {
@@ -23,7 +24,7 @@ const categoryService = {
       const dal = getDataAccessLayer(userId)
       const data = await dal.create<TodoCategory>('todo_categories', {
         name: request.name,
-        color: request.color || '#3B82F6',
+        color: request.color || DEFAULT_CATEGORY_COLOR,
         parent_id: request.parent_id || null,
         order: 0
       })
@@ -77,8 +78,8 @@ const todoService = {
       title: request.title,
       description: request.description || null,
       due_date: request.due_date || null,
-      priority: request.priority || '中',
-      status: request.status || '待办',
+      priority: request.priority || DEFAULT_PRIORITY,
+      status: request.status || DEFAULT_STATUS,
       category_id: request.category_id || null,
       is_completed: false,
       completed_at: null,
@@ -96,8 +97,8 @@ const todoService = {
       title: request.title,
       description: request.description || null,
       due_date: request.due_date || null,
-      priority: request.priority || '中',
-      status: request.status || '待办',
+      priority: request.priority || DEFAULT_PRIORITY,
+      status: request.status || DEFAULT_STATUS,
       category_id: request.category_id || null
     })
     if (result.success) {

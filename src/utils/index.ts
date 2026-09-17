@@ -24,6 +24,23 @@ export const throttle = <T extends (...args: unknown[]) => void>(func: T, delay:
   };
 };
 
+const padDateTimePart = (value: number): string => String(value).padStart(2, '0');
+
+/** 将 'YYYY-MM-DD HH:mm' 等本地时间字符串转换为 <input type="datetime-local"> 需要的 'YYYY-MM-DDTHH:mm' */
+export const formatDateTimeForInput = (dateTimeStr: string): string => {
+  if (!dateTimeStr) return '';
+
+  const normalized = dateTimeStr.trim().replace(' ', 'T');
+  const withSeconds = /T\d{2}:\d{2}$/.test(normalized) ? `${normalized}:00` : normalized;
+  const date = new Date(withSeconds);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const month = padDateTimePart(date.getMonth() + 1);
+  const day = padDateTimePart(date.getDate());
+  const time = `${padDateTimePart(date.getHours())}:${padDateTimePart(date.getMinutes())}`;
+  return `${date.getFullYear()}-${month}-${day}T${time}`;
+};
+
 export const formatHotValue = (value: number | string): string => {
   if (typeof value === 'number') {
     if (value >= 10000) {

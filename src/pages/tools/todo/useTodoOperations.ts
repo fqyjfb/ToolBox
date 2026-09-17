@@ -42,7 +42,7 @@ export const useTodoOperations = () => {
 
     const result = await todoServiceWrapper.todo.updateTodoStatus(user.id, id, isCompleted)
     if (result.success) {
-      addToast({ message: isCompleted ? '任务已完成' : '任务已取消完成', type: 'success' })
+      addToast({ message: isCompleted ? '任务已完成' : '已标记为未完成', type: 'success' })
       refreshCount()
       return true
     } else {

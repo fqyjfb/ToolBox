@@ -1,71 +1,103 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Plus, FolderOpen } from 'lucide-react';
-import { todoServiceWrapper, Todo, TodoCategory, CreateTodoRequest, CreateTodoCategoryRequest } from '../../../services/TodoService';
+import { Plus } from 'lucide-react';
+import {
+  todoServiceWrapper,
+  Todo,
+  TodoCategory,
+  CreateTodoRequest,
+  CreateTodoCategoryRequest,
+} from '../../../services/TodoService';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
 import ContextMenu from '../../../components/ui/ContextMenu';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
-import TodoCard from '../../../components/ui/TodoCard';
+import type { TodoBoardItem, TodoCardHandlers } from '../../../components/ui/TodoCard';
 import { debounce } from '../../../utils';
+import {
+  DEFAULT_CATEGORY_COLOR,
+  DEFAULT_PRIORITY,
+  DEFAULT_STATUS,
+  TODO_DEBOUNCE_MS,
+  TODO_PAGE_SIZE,
+  TODO_TABS,
+  UNCATEGORIZED_COLOR,
+  UNCATEGORIZED_ID,
+  UNCATEGORIZED_NAME,
+} from '../../../constants/todo';
+import type { TodoTab } from '../../../constants/todo';
 import { useTodoOperations } from './useTodoOperations';
 import { useCategoryOperations } from './useCategoryOperations';
 import { useTodoContextMenu } from './useTodoContextMenu';
+import type { TodoContextMenuHandlers } from './useTodoContextMenu';
+import TodoBoard from './TodoBoard';
 import TodoFormModal from './TodoFormModal';
 import CategoryFormModal from './CategoryFormModal';
 
-const DEBOUNCE_DELAY_MS = 300;
-const PAGE_SIZE = 100;
-const DEFAULT_PRIORITY = '中';
-const DEFAULT_STATUS = '待办';
-const DEFAULT_CATEGORY_COLOR = '#3B82F6';
+const EMPTY_TODO_FORM: CreateTodoRequest & { category_id: string | null } = {
+  title: '',
+  description: '',
+  due_date: '',
+  priority: DEFAULT_PRIORITY,
+  status: DEFAULT_STATUS,
+  category_id: null,
+};
 
-function formatDateTimeForInput(dateTimeStr: string): string {
-  if (!dateTimeStr) return '';
-  
-  const trimmed = dateTimeStr.trim();
-  
-  if (trimmed.includes('T')) {
-    const parts = trimmed.split('T');
-    const datePart = parts[0];
-    let timePart = parts[1] || '';
-    
-    if (timePart.includes('.')) {
-      timePart = timePart.split('.')[0];
-    }
-    
-    if (timePart.includes('Z')) {
-      timePart = timePart.replace('Z', '');
-    }
-    
-    if (timePart.length >= 5) {
-      return `${datePart}T${timePart.substring(0, 5)}`;
-    } else if (timePart.length === 0) {
-      return `${datePart}T00:00`;
-    }
-  } else if (trimmed.includes(' ')) {
-    const parts = trimmed.split(' ');
-    const datePart = parts[0];
-    const timePart = parts[1] || '';
-    
-    if (timePart.includes(':')) {
-      const timeSegments = timePart.split(':');
-      if (timeSegments.length >= 2) {
-        return `${datePart}T${timeSegments[0]}:${timeSegments[1]}`;
-      }
-    }
-    return `${datePart}T00:00`;
+const groupByCategory = (todos: Todo[]): Record<string, Todo[]> => {
+  const grouped: Record<string, Todo[]> = {};
+  todos.forEach(todo => {
+    const categoryId = todo.category_id || UNCATEGORIZED_ID;
+    if (!grouped[categoryId]) grouped[categoryId] = [];
+    grouped[categoryId].push(todo);
+  });
+  return grouped;
+};
+
+/**
+ * 构造看板分组。
+ * 分类卡片的可见性与页签解耦：非搜索态始终展示所有分类，页签只决定分类内展示哪些任务
+ * （否则「未完成」页签下把任务全部勾完时，整个分类卡片会消失）；
+ * 搜索态下仍只展示命中的分类，避免刷出一屏空卡片。
+ */
+const buildBoards = (
+  categories: TodoCategory[],
+  filteredTodos: Todo[],
+  isSearching: boolean
+): TodoBoardItem[] => {
+  const grouped = groupByCategory(filteredTodos);
+
+  const boards = (isSearching ? categories.filter(c => (grouped[c.id]?.length ?? 0) > 0) : categories)
+    .map<TodoBoardItem>(category => ({
+      id: category.id,
+      name: category.name,
+      color: category.color || DEFAULT_CATEGORY_COLOR,
+      todos: grouped[category.id] || [],
+      isUncategorized: false,
+    }));
+
+  if (grouped[UNCATEGORIZED_ID]?.length) {
+    boards.push({
+      id: UNCATEGORIZED_ID,
+      name: UNCATEGORIZED_NAME,
+      color: UNCATEGORIZED_COLOR,
+      todos: grouped[UNCATEGORIZED_ID],
+      isUncategorized: true,
+    });
   }
-  
-  return trimmed;
-}
+
+  return boards;
+};
 
 const TodoManagerPage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
-  const { searchQuery, isSearchActive } = useNavSearch();
+  const { searchQuery, isSearchActive, clearSearch } = useNavSearch();
+
+  const searchKeyword = isSearchActive ? searchQuery.trim() : '';
+  const isSearching = searchKeyword.length > 0;
 
   const [todos, setTodos] = useState<Todo[]>([]);
   const [categories, setCategories] = useState<TodoCategory[]>([]);
-  const [activeTab, setActiveTab] = useState<'in_progress' | 'completed' | 'all'>('in_progress');
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TodoTab>('in_progress');
   const [showAddTodoModal, setShowAddTodoModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -82,19 +114,11 @@ const TodoManagerPage: React.FC = () => {
     isOpen: false,
     title: '',
     message: '',
-    onConfirm: () => {}
+    onConfirm: () => {},
   });
 
-  const [newTodo, setNewTodo] = useState<CreateTodoRequest & { category_id: string | null }>({
-    title: '',
-    description: '',
-    due_date: '',
-    priority: DEFAULT_PRIORITY,
-    status: DEFAULT_STATUS,
-    category_id: null
-  });
+  const [newTodo, setNewTodo] = useState<CreateTodoRequest & { category_id: string | null }>(EMPTY_TODO_FORM);
 
-  const debouncedLoadTodosRef = useRef<(() => void) | null>(null);
   const todosRef = useRef<Todo[]>(todos);
   useEffect(() => {
     todosRef.current = todos;
@@ -107,39 +131,58 @@ const TodoManagerPage: React.FC = () => {
   const loadTodos = useCallback(async () => {
     if (!user) return;
 
-    const categoriesResult = await todoServiceWrapper.category.getCategories(user.id);
-    if (categoriesResult.success) {
-      setCategories(categoriesResult.data || []);
-    }
+    setIsLoading(true);
+    try {
+      const categoriesResult = await todoServiceWrapper.category.getCategories(user.id);
+      if (categoriesResult.success) {
+        setCategories(categoriesResult.data || []);
+      }
 
-    let todosResult;
-    const finalSearchQuery = isSearchActive && searchQuery.trim() ? searchQuery.trim() : undefined;
+      let todosResult;
+      if (isSearching) {
+        todosResult = await todoServiceWrapper.todo.searchTodos(user.id, searchKeyword, 1, TODO_PAGE_SIZE);
+      } else {
+        todosResult = await todoServiceWrapper.todo.getTodos(user.id, undefined, 1, TODO_PAGE_SIZE);
+      }
 
-    if (finalSearchQuery) {
-      todosResult = await todoServiceWrapper.todo.searchTodos(user.id, finalSearchQuery, 1, PAGE_SIZE);
-    } else {
-      todosResult = await todoServiceWrapper.todo.getTodos(user.id, undefined, 1, PAGE_SIZE);
+      if (todosResult.success && todosResult.data) {
+        setTodos(todosResult.data.data || []);
+      }
+    } finally {
+      setIsLoading(false);
     }
+  }, [user, isSearching, searchKeyword]);
 
-    if (todosResult.success && todosResult.data) {
-      setTodos(todosResult.data.data || []);
-    }
-  }, [user, isSearchActive, searchQuery]);
+  const openCreateCategoryModal = useCallback(() => {
+    setEditingCategory(null);
+    setNewCategoryName('');
+    setNewCategoryColor(DEFAULT_CATEGORY_COLOR);
+    setShowCategoryModal(true);
+  }, []);
+
+  const handleAddTodoWithCategory = useCallback((categoryId: string | null) => {
+    setNewTodo({ ...EMPTY_TODO_FORM, category_id: categoryId });
+    setShowAddTodoModal(true);
+  }, []);
+
+  const openAddTodoModal = useCallback(() => {
+    handleAddTodoWithCategory(null);
+  }, [handleAddTodoWithCategory]);
 
   useEffect(() => {
-    const handleOpenAddTodo = () => {
-      setShowAddTodoModal(true);
-    };
-    window.electron?.onOpenAddTodo(handleOpenAddTodo);
+    window.electron?.onOpenAddTodo(openAddTodoModal);
     return () => {
+      // 预加载实现为单回调槽位，传入空实现即等价于取消订阅
       window.electron?.onOpenAddTodo(() => {});
     };
-  }, []);
+  }, [openAddTodoModal]);
+
+  const debouncedLoadTodosRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     debouncedLoadTodosRef.current = debounce(() => {
       loadTodos();
-    }, DEBOUNCE_DELAY_MS);
+    }, TODO_DEBOUNCE_MS);
   }, [loadTodos]);
 
   useEffect(() => {
@@ -149,57 +192,36 @@ const TodoManagerPage: React.FC = () => {
     return () => {
       debouncedLoadTodosRef.current = null;
     };
-  }, [searchQuery, isSearchActive]);
+  }, [searchKeyword]);
 
-  const todosByCategory = useMemo(() => {
-    const grouped: Record<string, Todo[]> = {};
-    
-    let filtered = [...todos];
-    
-    if (activeTab === 'completed') {
-      filtered = filtered.filter(t => t.is_completed);
-    } else if (activeTab === 'in_progress') {
-      filtered = filtered.filter(t => !t.is_completed);
-    }
-    
-    filtered.forEach(todo => {
-      const catId = todo.category_id || 'uncategorized';
-      if (!grouped[catId]) {
-        grouped[catId] = [];
-      }
-      grouped[catId].push(todo);
-    });
-    
-    return grouped;
+  const filteredTodos = useMemo(() => {
+    if (activeTab === 'completed') return todos.filter(t => t.is_completed);
+    if (activeTab === 'in_progress') return todos.filter(t => !t.is_completed);
+    return todos;
   }, [todos, activeTab]);
+
+  const boards = useMemo(
+    () => buildBoards(categories, filteredTodos, isSearching),
+    [categories, filteredTodos, isSearching]
+  );
 
   const inProgressCount = todos.filter(t => !t.is_completed).length;
   const completedCount = todos.filter(t => t.is_completed).length;
 
+  const tabCounts: Record<TodoTab, number> = {
+    in_progress: inProgressCount,
+    completed: completedCount,
+    all: todos.length,
+  };
+
   const resetNewTodo = useCallback(() => {
-    setNewTodo({
-      title: '',
-      description: '',
-      due_date: '',
-      priority: DEFAULT_PRIORITY,
-      status: DEFAULT_STATUS,
-      category_id: null
-    });
+    setNewTodo(EMPTY_TODO_FORM);
   }, []);
 
   const handleAddTodo = async () => {
     if (!user || !newTodo.title.trim()) return;
 
-    const todoData: CreateTodoRequest = {
-      title: newTodo.title,
-      description: newTodo.description,
-      due_date: newTodo.due_date,
-      priority: newTodo.priority,
-      status: newTodo.status,
-      category_id: newTodo.category_id
-    };
-
-    const success = await createTodo(todoData);
+    const success = await createTodo(newTodo);
     if (success) {
       resetNewTodo();
       setShowAddTodoModal(false);
@@ -212,11 +234,13 @@ const TodoManagerPage: React.FC = () => {
     const todo = todosRef.current.find(t => t.id === id);
     if (!todo) return;
 
-    const success = await toggleComplete(id, !todo.is_completed);
-    if (success) {
-      loadTodos();
-    }
-  }, [user, toggleComplete, loadTodos]);
+    const nextCompleted = !todo.is_completed;
+    const success = await toggleComplete(id, nextCompleted);
+    if (!success) return;
+
+    // 服务端已更新成功，直接同步本地状态，避免整表重拉造成的闪烁
+    setTodos(prev => prev.map(t => (t.id === id ? { ...t, is_completed: nextCompleted } : t)));
+  }, [user, toggleComplete]);
 
   const handleEditTodo = useCallback((todo: Todo) => {
     setEditingTodo(todo);
@@ -226,7 +250,7 @@ const TodoManagerPage: React.FC = () => {
       due_date: todo.due_date || '',
       priority: todo.priority,
       status: todo.status,
-      category_id: todo.category_id
+      category_id: todo.category_id,
     });
     setShowAddTodoModal(true);
     handleCloseContextMenu();
@@ -235,16 +259,7 @@ const TodoManagerPage: React.FC = () => {
   const handleSaveEdit = async () => {
     if (!user || !editingTodo || !newTodo.title.trim()) return;
 
-    const todoData: CreateTodoRequest = {
-      title: newTodo.title,
-      description: newTodo.description,
-      due_date: newTodo.due_date,
-      priority: newTodo.priority,
-      status: newTodo.status,
-      category_id: newTodo.category_id
-    };
-
-    const success = await updateTodo(editingTodo.id, todoData);
+    const success = await updateTodo(editingTodo.id, newTodo);
     if (success) {
       setEditingTodo(null);
       resetNewTodo();
@@ -266,7 +281,7 @@ const TodoManagerPage: React.FC = () => {
     const categoryData: CreateTodoCategoryRequest = {
       name: newCategoryName,
       color: newCategoryColor,
-      parent_id: null
+      parent_id: null,
     };
 
     const success = await createCategory(categoryData);
@@ -278,12 +293,15 @@ const TodoManagerPage: React.FC = () => {
     }
   };
 
-  const handleEditCategory = useCallback((category: TodoCategory) => {
-    setEditingCategory(category);
-    setNewCategoryName(category.name);
-    setNewCategoryColor(category.color || DEFAULT_CATEGORY_COLOR);
+  const handleEditCategory = useCallback((id: string) => {
+    const found = categories.find(c => c.id === id);
+    if (!found) return;
+
+    setEditingCategory(found);
+    setNewCategoryName(found.name);
+    setNewCategoryColor(found.color || DEFAULT_CATEGORY_COLOR);
     setShowCategoryModal(true);
-  }, []);
+  }, [categories]);
 
   const handleSaveCategoryEdit = async () => {
     if (!user || !editingCategory || !newCategoryName.trim()) return;
@@ -291,7 +309,7 @@ const TodoManagerPage: React.FC = () => {
     const categoryData: CreateTodoCategoryRequest = {
       name: newCategoryName,
       color: newCategoryColor,
-      parent_id: null
+      parent_id: null,
     };
 
     const success = await updateCategory(editingCategory.id, categoryData);
@@ -315,7 +333,7 @@ const TodoManagerPage: React.FC = () => {
       isOpen: true,
       title,
       message,
-      onConfirm
+      onConfirm,
     });
     handleCloseContextMenu();
   }, [handleCloseContextMenu]);
@@ -336,15 +354,37 @@ const TodoManagerPage: React.FC = () => {
     setEditingCategory(null);
   };
 
-  const handleAddTodoWithCategory = useCallback((categoryId: string | null) => {
-    resetNewTodo();
-    setNewTodo(prev => ({ ...prev, category_id: categoryId }));
-    setShowAddTodoModal(true);
-  }, [resetNewTodo]);
+  const cardHandlers = useMemo<TodoCardHandlers>(() => ({
+    onContextMenu: handleContextMenu,
+    onToggleComplete: handleToggleCompleteLocal,
+    onEditTodo: handleEditTodo,
+    onDeleteTodo: handleDeleteTodoLocal,
+    onEditCategory: handleEditCategory,
+    onDeleteCategory: handleDeleteCategoryLocal,
+    onOpenConfirmDialog: handleOpenConfirmDialog,
+    onAddTodo: handleAddTodoWithCategory,
+  }), [
+    handleContextMenu,
+    handleToggleCompleteLocal,
+    handleEditTodo,
+    handleDeleteTodoLocal,
+    handleEditCategory,
+    handleDeleteCategoryLocal,
+    handleOpenConfirmDialog,
+    handleAddTodoWithCategory,
+  ]);
 
-  const contextMenuItems = useMemo(() => getContextMenuItems(
-    todos,
-    categories,
+  const contextMenuHandlers = useMemo<TodoContextMenuHandlers>(() => ({
+    onEditTodo: handleEditTodo,
+    onToggleComplete: handleToggleCompleteLocal,
+    onDeleteTodo: handleDeleteTodoLocal,
+    onEditCategory: handleEditCategory,
+    onDeleteCategory: handleDeleteCategoryLocal,
+    onOpenConfirmDialog: handleOpenConfirmDialog,
+    onCloseContextMenu: handleCloseContextMenu,
+    onShowAddTodoModal: openAddTodoModal,
+    onShowCategoryModal: openCreateCategoryModal,
+  }), [
     handleEditTodo,
     handleToggleCompleteLocal,
     handleDeleteTodoLocal,
@@ -352,130 +392,79 @@ const TodoManagerPage: React.FC = () => {
     handleDeleteCategoryLocal,
     handleOpenConfirmDialog,
     handleCloseContextMenu,
-    () => setShowAddTodoModal(true),
-    () => setShowCategoryModal(true)
-  ), [todos, categories, handleEditTodo, handleToggleCompleteLocal, handleDeleteTodoLocal, handleEditCategory, handleDeleteCategoryLocal, handleOpenConfirmDialog, handleCloseContextMenu, getContextMenuItems]);
+    openAddTodoModal,
+    openCreateCategoryModal,
+  ]);
+
+  const contextMenuItems = useMemo(
+    () => getContextMenuItems(todos, categories, contextMenuHandlers),
+    [todos, categories, contextMenuHandlers, getContextMenuItems]
+  );
 
   if (!user) return null;
 
+  // 仅在首次加载（本地无任何数据）时展示骨架，避免搜索时闪烁
+  const showSkeleton = isLoading && categories.length === 0 && todos.length === 0;
+
   return (
-    <div 
+    <div
       className="h-full flex flex-col overflow-hidden"
       onContextMenu={(e) => handleContextMenu(e, 'empty')}
-      onClick={() => {}}
     >
       <div className="flex-1 overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">我的待办事项</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">管理您的日常任务和分组记录</p>
-            </div>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-bold text-text-primary mb-1">我的待办事项</h3>
+            <p className="text-xs text-text-secondary">管理您的日常任务和分组记录</p>
+          </div>
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowCategoryModal(true)}
-              className="bg-primary text-button-text px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-primary-hover flex items-center gap-1.5"
+              type="button"
+              onClick={openAddTodoModal}
+              className="bg-primary text-button-text px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-primary-hover flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              新建任务
+            </button>
+            <button
+              type="button"
+              onClick={openCreateCategoryModal}
+              className="border border-border text-text-secondary px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-bg-tertiary flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               新建分类
             </button>
           </div>
-
-          <div className="flex gap-6 border-b border-gray-200 dark:border-gray-700 mb-6">
-            <button
-              onClick={() => setActiveTab('in_progress')}
-              className={`pb-3 text-sm font-semibold transition-colors ${
-                activeTab === 'in_progress'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              进行中 ({inProgressCount})
-            </button>
-            <button
-              onClick={() => setActiveTab('completed')}
-              className={`pb-3 text-sm font-semibold transition-colors ${
-                activeTab === 'completed'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              已完成 ({completedCount})
-            </button>
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`pb-3 text-sm font-semibold transition-colors ${
-                activeTab === 'all'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              所有任务
-            </button>
-          </div>
-
-          {categories.length === 0 && !todosByCategory['uncategorized'] ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
-              <FolderOpen className="w-12 h-12 mb-4" />
-              <p className="text-lg mb-2">暂无分类</p>
-              <button
-                onClick={() => setShowCategoryModal(true)}
-                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                创建第一个分类
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {categories.map((category) => (
-                todosByCategory[category.id] && (
-                  <TodoCard
-                    key={category.id}
-                    category={category}
-                    todos={todosByCategory[category.id]}
-                    color={category.color || '#3B82F6'}
-                    onContextMenu={handleContextMenu}
-                    onToggleComplete={handleToggleCompleteLocal}
-                    onEditTodo={handleEditTodo}
-                    onDeleteTodo={handleDeleteTodoLocal}
-                    onEditCategory={handleEditCategory}
-                    onDeleteCategory={handleDeleteCategoryLocal}
-                    onOpenConfirmDialog={handleOpenConfirmDialog}
-                    onAddTodo={handleAddTodoWithCategory}
-                    categories={categories}
-                  />
-                )
-              ))}
-
-              {todosByCategory['uncategorized'] && todosByCategory['uncategorized'].length > 0 && (
-                <TodoCard
-                  key="uncategorized"
-                  category={{ id: 'uncategorized', name: '未分类' }}
-                  todos={todosByCategory['uncategorized']}
-                  color="#6B7280"
-                  onContextMenu={handleContextMenu}
-                  onToggleComplete={handleToggleCompleteLocal}
-                  onEditTodo={handleEditTodo}
-                  onDeleteTodo={handleDeleteTodoLocal}
-                  onEditCategory={handleEditCategory}
-                  onDeleteCategory={handleDeleteCategoryLocal}
-                  onOpenConfirmDialog={handleOpenConfirmDialog}
-                  onAddTodo={handleAddTodoWithCategory}
-                  categories={categories}
-                />
-              )}
-
-              <div
-                onClick={() => setShowCategoryModal(true)}
-                className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-6 flex flex-col items-center justify-center gap-2 hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer"
-              >
-                <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                  <Plus className="w-6 h-6" />
-                </div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">创建新任务分组</p>
-              </div>
-            </div>
-          )}
         </div>
+
+        <div className="flex gap-4 border-b border-border mb-4">
+          {TODO_TABS.map(tab => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`pb-2 text-sm font-semibold transition-colors ${
+                activeTab === tab.key
+                  ? 'border-b-2 border-primary text-primary'
+                  : 'border-b-2 border-transparent text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {tab.label} ({tabCounts[tab.key]})
+            </button>
+          ))}
+        </div>
+
+        <TodoBoard
+          boards={boards}
+          isLoading={showSkeleton}
+          isEmptySearch={isSearching && boards.length === 0}
+          searchKeyword={searchKeyword}
+          activeTab={activeTab}
+          handlers={cardHandlers}
+          onCreateCategory={openCreateCategoryModal}
+          onClearSearch={clearSearch}
+        />
+      </div>
 
       <TodoFormModal
         isOpen={showAddTodoModal}
@@ -485,7 +474,6 @@ const TodoManagerPage: React.FC = () => {
         categories={categories}
         onNewTodoChange={setNewTodo}
         onConfirm={editingTodo ? handleSaveEdit : handleAddTodo}
-        formatDateTimeForInput={formatDateTimeForInput}
       />
 
       <CategoryFormModal
@@ -522,4 +510,4 @@ const TodoManagerPage: React.FC = () => {
   );
 };
 
-export default React.memo(TodoManagerPage);
+export default TodoManagerPage;
