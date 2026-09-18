@@ -1,7 +1,8 @@
 // 固定目录列表
 
-import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Folder, Pin, Plus, Trash } from 'lucide-react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, ExternalLink, Folder, Pin, Plus, Trash } from 'lucide-react';
+import ContextMenu, { type ContextMenuItem } from '@/components/ui/ContextMenu';
 import { useToastStore } from '@/store/toastStore';
 import { useNotesSidebarSectionsStore } from '@/store/notesSidebarSectionsStore';
 import type { PinnedFolder } from '../types';
@@ -45,6 +46,50 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
   const open = useNotesSidebarSectionsStore((state) => state.sections.pinned);
   const toggleSection = useNotesSidebarSectionsStore((state) => state.toggleSection);
   const [areaActive, setAreaActive] = useState(false);
+
+  const closePinnedContextMenu = useCallback(
+    () => setPinnedContextMenu(null),
+    [setPinnedContextMenu]
+  );
+
+  const pinnedContextMenuItems = useMemo<ContextMenuItem[]>(() => {
+    const pinned = pinnedContextMenu ? pinnedFolders[pinnedContextMenu.index] : null;
+    if (!pinned) return [];
+
+    return [
+      {
+        id: 'pinned-add',
+        label: '添加固定目录',
+        icon: <Plus className="w-4 h-4" />,
+        onClick: () => {
+          void onAddPinnedFolder();
+        },
+      },
+      { id: 'pinned-divider', divider: true },
+      {
+        id: 'pinned-open-in-folder',
+        label: '打开位置',
+        icon: <ExternalLink className="w-4 h-4" />,
+        onClick: () => {
+          void window.electron?.notes.openFileInFolder(pinned.path).then((result) => {
+            if (result && !result.success) {
+              addToast({ type: 'error', message: result.error || '打开位置失败' });
+            }
+          });
+        },
+      },
+      {
+        id: 'pinned-remove',
+        label: '移除',
+        icon: <Trash className="w-4 h-4" />,
+        className: 'text-error hover:bg-error/10 dark:hover:bg-error/20',
+        onClick: () => {
+          onRemovePinnedFolder(pinned.path);
+          addToast({ type: 'success', message: `已移除固定目录: ${pinned.name}` });
+        },
+      },
+    ];
+  }, [pinnedContextMenu, pinnedFolders, onAddPinnedFolder, onRemovePinnedFolder, addToast]);
 
   return (
     <div
@@ -135,48 +180,13 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
         </div>
       )}
 
-      {pinnedContextMenu && (
-        <>
-          <div
-            className="fixed inset-0 z-50"
-            onClick={() => setPinnedContextMenu(null)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setPinnedContextMenu(null);
-            }}
-          />
-          <div
-            className="fixed z-50 min-w-[120px] rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
-            style={{ left: pinnedContextMenu.x, top: pinnedContextMenu.y }}
-          >
-            <button
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-              onClick={() => {
-                setPinnedContextMenu(null);
-                onAddPinnedFolder();
-              }}
-            >
-              <Plus className="w-4 h-4" />
-              <span>添加固定目录</span>
-            </button>
-            <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
-            <button
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-error hover:bg-error/10"
-              onClick={() => {
-                const p = pinnedFolders[pinnedContextMenu.index];
-                if (p) {
-                  onRemovePinnedFolder(p.path);
-                  addToast({ type: 'success', message: `已移除固定目录: ${p.name}` });
-                }
-                setPinnedContextMenu(null);
-              }}
-            >
-              <Trash className="w-4 h-4" />
-              <span>移除</span>
-            </button>
-          </div>
-        </>
-      )}
+      <ContextMenu
+        isOpen={!!pinnedContextMenu}
+        x={pinnedContextMenu?.x ?? 0}
+        y={pinnedContextMenu?.y ?? 0}
+        items={pinnedContextMenuItems}
+        onClose={closePinnedContextMenu}
+      />
     </div>
   );
 };
