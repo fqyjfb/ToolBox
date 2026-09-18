@@ -1,4 +1,4 @@
-// CreateNoteMenu —— 「用模板新建笔记」下拉：分组展示内置/我的模板，含 loading / error / empty 三态。
+// CreateNoteMenu —— 用模板新建笔记下拉
 
 import React from 'react';
 import { AlertCircle, FileText, Loader2, RefreshCw, User } from 'lucide-react';

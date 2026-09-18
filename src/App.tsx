@@ -191,7 +191,13 @@ const isMobile = (): boolean => {
 function App() {
   const queryClient = useQueryClient();
   const { isDark, setTheme } = useThemeStore(useShallow((s) => ({ isDark: s.isDark, setTheme: s.setTheme })));
-  const { setLastSyncTime, setStorageLocation, setSyncEnabled, setSyncModules, setSyncOnStartupEnabled } = useSyncStore();
+  const { setLastSyncTime, setStorageLocation, setSyncEnabled, setSyncModules, setSyncOnStartupEnabled } = useSyncStore(useShallow((s) => ({
+    setLastSyncTime: s.setLastSyncTime,
+    setStorageLocation: s.setStorageLocation,
+    setSyncEnabled: s.setSyncEnabled,
+    setSyncModules: s.setSyncModules,
+    setSyncOnStartupEnabled: s.setSyncOnStartupEnabled,
+  })));
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const isAdmin = useAuthStore((state) => state.isAdmin);

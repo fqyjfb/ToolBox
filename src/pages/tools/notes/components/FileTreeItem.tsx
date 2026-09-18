@@ -1,4 +1,4 @@
-// 单节点渲染：图标映射 / 拖拽 / 右键 / 选中滚动
+// FileTreeItem —— 单节点渲染
 
 import React, { useRef, useEffect } from 'react';
 import { FolderOpen, Folder, FileText, ChevronRight, Table2, FileImage, Code, Play } from 'lucide-react';
@@ -41,9 +41,15 @@ export const FileTreeItem: React.FC<FileTreeItemProps> = ({
   const isSelected = selectedFile?.path === node.path;
   const isListSelected = listSelection === node.path;
   const itemRef = useRef<HTMLDivElement>(null);
+  const wasSelectedRef = useRef<boolean | null>(null);
 
   useEffect(() => {
-    if (isSelected && itemRef.current) {
+    const prev = wasSelectedRef.current;
+    wasSelectedRef.current = isSelected;
+    // 仅在选中态真实切换（false → true）时滚动定位。
+    // 虚拟列表滚动会卸载 / 重挂载行，挂载即选中的情况若再 scrollIntoView，
+    // 列表会被不断拉回选中项，导致文件多时无法正常滚动。
+    if (isSelected && prev === false && itemRef.current) {
       requestAnimationFrame(() => {
         itemRef.current?.scrollIntoView({
           behavior: 'smooth',
@@ -68,7 +74,7 @@ export const FileTreeItem: React.FC<FileTreeItemProps> = ({
         ref={itemRef}
         className={`flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
           isSelected || isListSelected
-            ? 'bg-primary/10 text-primary'
+            ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
         } ${dragOverPath === node.path ? '!ring-2 !ring-primary' : ''} ${dragSourcePath === node.path ? 'opacity-50' : ''}`}
         style={{ paddingLeft: `${depth * 12}px` }}

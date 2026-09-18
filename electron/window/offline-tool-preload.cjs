@@ -19,5 +19,5 @@ window.prompt = (message, defaultValue) => {
     defaultValue: String(defaultValue ?? ''),
     title: document.title,
   });
-  return result.canceled ? null : result.value;
+  return result && !result.canceled ? String(result.value ?? '') : null;
 };

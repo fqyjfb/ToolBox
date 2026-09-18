@@ -1,5 +1,4 @@
-// FileTreeVirtualList —— 文件树虚拟化：把嵌套树按 expanded 扁平化为行，再交给 react-window FixedSizeList。
-// 节点 > VIRTUALIZE_THRESHOLD 时由 NotesSidebar 启用，行交互与 FileTreeItem 复用同一回调签名。
+// FileTreeVirtualList —— 文件树虚拟化
 
 import React, { useMemo } from 'react';
 import { FixedSizeList, ListChildComponentProps } from 'react-window';
@@ -7,7 +6,7 @@ import { FileTreeItem } from './FileTreeItem';
 import type { FileTreeNode } from '../types';
 
 const DEFAULT_HEIGHT = 480;
-const ROW_HEIGHT = 24; // 与 FileTreeItem 的 py-1 + text-xs（16+8）对齐
+const ROW_HEIGHT = 24;
 
 interface FlatRow {
   node: FileTreeNode;

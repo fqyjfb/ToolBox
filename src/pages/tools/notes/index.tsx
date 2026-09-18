@@ -3,7 +3,6 @@ import { PanelLeft } from 'lucide-react';
 import { useNotes, type FileTreeNode } from '@/hooks/useNotes';
 import { useChatNotes } from './hooks/useChatNotes';
 import { useNotesSearch } from './hooks/useNotesSearch';
-import { useNotesTags } from './hooks/useNotesTags';
 import {
   type NotesSearchMatch,
   type NotesSearchResultItem,
@@ -41,7 +40,6 @@ const NotesPage: React.FC = () => {
     fileMetadata,
     filePreviewUrl,
     loading,
-    selectRootFolder,
     selectFile,
     updateFileContent,
     saveFile,
@@ -62,6 +60,7 @@ const NotesPage: React.FC = () => {
     chatPath,
     chatOrganizeTree,
     addPinnedFolder,
+    addPinnedFolderByPath,
     removePinnedFolder,
     reorderPinnedFolder,
     switchToFolder,
@@ -85,14 +84,9 @@ const NotesPage: React.FC = () => {
     clearSelection,
     moveMessages,
     refreshMessages,
-  } = useChatNotes({ rootPath: chatPath || rootPath, onRefreshFileTree: refreshFileTree });
+  } = useChatNotes({ rootPath: chatPath, onRefreshFileTree: refreshFileTree });
 
-  // 只解构 loadAllTags：整个 hook 对象进 deps 会导致 effect 每次渲染重跑 → 无限全量扫描。
-  const { loadAllTags } = useNotesTags();
-  useEffect(() => {
-    if (!hasRootPath || !rootPath) return;
-    void loadAllTags(rootPath).catch(() => { /* best-effort */ });
-  }, [hasRootPath, rootPath, loadAllTags]);
+
 
   useEffect(() => {
     if (isChatMode) {
@@ -104,17 +98,16 @@ const NotesPage: React.FC = () => {
     setIsChatMode(!isChatMode);
   };
 
-  const chatBasePath = chatPath || rootPath;
-  const sep = chatBasePath && chatBasePath.includes('\\') ? '\\' : '/';
-  const chatOrganizePath = chatBasePath ? `${chatBasePath}${sep}${CHAT_ORGANIZE_FOLDER}` : null;
+  const sep = chatPath && chatPath.includes('\\') ? '\\' : '/';
+  const chatOrganizePath = chatPath ? `${chatPath}${sep}${CHAT_ORGANIZE_FOLDER}` : null;
 
   const ensureOrganizeFolder = useCallback(async () => {
-    if (!chatBasePath) return;
+    if (!chatPath) return;
     try {
-      await window.electron?.notes.createFolder(chatBasePath, CHAT_ORGANIZE_FOLDER);
-      const s = chatBasePath.includes('\\') ? '\\' : '/';
-      const oldChatPath = `${chatBasePath}${s}对话.md`;
-      const newChatPath = `${chatBasePath}${s}${CHAT_ORGANIZE_FOLDER}${s}对话.md`;
+      await window.electron?.notes.createFolder(chatPath, CHAT_ORGANIZE_FOLDER);
+      const s = chatPath.includes('\\') ? '\\' : '/';
+      const oldChatPath = `${chatPath}${s}对话.md`;
+      const newChatPath = `${chatPath}${s}${CHAT_ORGANIZE_FOLDER}${s}对话.md`;
       const result = await window.electron?.notes.readFile(oldChatPath);
       if (result?.success && result.content) {
         const newResult = await window.electron?.notes.readFile(newChatPath);
@@ -127,13 +120,13 @@ const NotesPage: React.FC = () => {
     } catch {
       // 组织目录已存在 / 旧对话迁移失败都不阻塞启动
     }
-  }, [chatBasePath, refreshFileTree]);
+  }, [chatPath, refreshFileTree]);
 
   useEffect(() => {
-    if (chatBasePath) {
+    if (chatPath) {
       ensureOrganizeFolder();
     }
-  }, [chatBasePath, ensureOrganizeFolder]);
+  }, [chatPath, ensureOrganizeFolder]);
 
   const handleSelectOrganizeFolder = useCallback(() => {
     if (!chatOrganizePath) return;
@@ -152,18 +145,17 @@ const NotesPage: React.FC = () => {
     search.bindSelectFile(selectFile);
   }, [selectFile, search]);
 
-  // 搜索 root 取当前查看路径（currentViewPath > rootPath）。
+  // 搜索范围限定在当前查看的固定目录：文件列表不显示对话路径内容，无视图时不检索。
   const handleSearch = useCallback(
     (q: string) => {
       search.setQuery(q);
-      const root = currentViewPath || rootPath;
-      if (root && q.trim().length > 0) {
-        void search.search(root);
+      if (currentViewPath && q.trim().length > 0) {
+        void search.search(currentViewPath);
       } else {
         search.clearResults();
       }
     },
-    [search, currentViewPath, rootPath]
+    [search, currentViewPath]
   );
 
   const handleSearchPaletteClose = useCallback(() => {
@@ -183,7 +175,7 @@ const NotesPage: React.FC = () => {
   // deps 用解构出的 togglePalette（引用稳定），而非整个 search 对象（identity 每次渲染都变）。
   const { togglePalette } = search;
   useEffect(() => {
-    if (!hasRootPath) return undefined;
+    if (!chatPath) return undefined;
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
         e.preventDefault();
@@ -192,7 +184,7 @@ const NotesPage: React.FC = () => {
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [hasRootPath, togglePalette]);
+    }, [chatPath, togglePalette]);
 
   const handleSelectFile = (file: FileTreeNode) => {
     setIsChatMode(false);
@@ -253,9 +245,9 @@ const NotesPage: React.FC = () => {
     clear: clearDrafts,
   } = useNotesDraftRecovery();
   useEffect(() => {
-    if (!hasRootPath) return;
+    if (!chatPath) return;
     void scanDrafts();
-  }, [hasRootPath, scanDrafts]);
+  }, [chatPath, scanDrafts]);
 
   const handleRecoverDraft = useCallback(
     async (draft: DraftInfo) => {
@@ -276,10 +268,10 @@ const NotesPage: React.FC = () => {
     [discardDraft, scanDrafts]
   );
 
-  if (!hasRootPath) {
+  if (!chatPath) {
     return (
       <div className="h-full flex flex-col overflow-hidden">
-        <FolderSelectModal onSelect={selectRootFolder} loading={loading} />
+        <FolderSelectModal onSelect={setChatPath} loading={loading} />
       </div>
     );
   }
@@ -313,6 +305,7 @@ const NotesPage: React.FC = () => {
             pinnedFolders={pinnedFolders}
             currentViewPath={currentViewPath}
             onAddPinnedFolder={addPinnedFolder}
+            onAddPinnedFolderByPath={addPinnedFolderByPath}
             onRemovePinnedFolder={removePinnedFolder}
             onReorderPinnedFolder={reorderPinnedFolder}
             onSwitchToFolder={switchToFolder}
@@ -329,20 +322,20 @@ const NotesPage: React.FC = () => {
 
         {isChatMode ? (
           <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-gray-900">
-            <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center justify-between px-3 py-2">
               <div className="flex items-center gap-2">
                 <button
                   className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                   onClick={handleToggleSidebar}
                   title={sidebarVisible ? '隐藏列表' : '显示列表'}
                 >
-                  <PanelLeft className="h-4 w-4" />
+                  <PanelLeft className="h-3.5 w-3.5" />
                 </button>
-                <h2 className="text-base font-medium text-gray-900 dark:text-white">快速记录想法，稍后整理</h2>
+                <h2 className="text-xs font-medium text-gray-600 dark:text-gray-300">快速记录想法，稍后整理</h2>
               </div>
               {selectedMessages.length > 0 && (
                 <button
-                  className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                   onClick={clearSelection}
                 >
                   清除选择 ({selectedMessages.length})

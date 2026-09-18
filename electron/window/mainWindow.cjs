@@ -1250,6 +1250,9 @@ const registerIpcHandlers = () => {
   ipcMain.handle('notes-has-root-path', () => notesService.hasRootPath());
   ipcMain.handle('notes-get-root-path', () => notesService.getRootPath());
   ipcMain.handle('notes-set-root-path', (event, rootPath) => notesService.setRootPath(rootPath));
+  // 视图根 / 对话根仅用于文件操作越界放行，与主根相互独立，不影响扫描与取树
+  ipcMain.handle('notes-set-view-path', (event, viewPath) => notesService.setViewPath(viewPath));
+  ipcMain.handle('notes-set-chat-path', (event, chatPath) => notesService.setChatRootPath(chatPath));
   ipcMain.handle('notes-select-folder', async () => notesService.selectFolder());
   ipcMain.handle('notes-validate-folder', (event, folderPath) => notesService.validateFolder(folderPath));
   ipcMain.handle('notes-scan-folder', (event, rootPath) => notesService.scanFolder(rootPath));
@@ -1268,11 +1271,6 @@ const registerIpcHandlers = () => {
   ipcMain.handle('notes-move-item', (event, itemPath, targetFolderPath) => notesService.moveItem(itemPath, targetFolderPath));
   ipcMain.handle('notes-copy-item', (event, sourcePath) => notesService.copyItem(sourcePath));
   ipcMain.handle('notes-import-dropped-files', (event, rootPath, filePaths) => notesService.importDroppedFiles(rootPath, filePaths));
-
-  // T02 / 4.1 + 4.5：注册 notes 模块的新增 IPC 通道（异步树 + 草稿保护）
-  // 现有 21 个 notes-* 通道保持不变，仅追加以下 6 个：
-  //   notes-scan-folder-async / notes-get-file-tree-async /
-  //   notes-write-draft / notes-read-draft / notes-delete-draft / notes-list-drafts
   require('../ipc/notesIpc.cjs').registerNotesIpc();
 
   ipcMain.handle('ip-info:query', async (event, ip) => {

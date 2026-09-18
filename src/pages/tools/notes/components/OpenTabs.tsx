@@ -1,5 +1,4 @@
-// OpenTabs —— 顶部标签条：标签只存路径，点击 = selectFile（编辑器始终单例）。
-// 快捷键 Ctrl+Tab / Ctrl+Shift+Tab 切标签、Ctrl+Alt+←/→ 兜底、Ctrl+Alt+W 关闭（不用 Ctrl+W，窗口菜单已占用）。
+// OpenTabs —— 顶部标签条
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { MoreHorizontal, X } from 'lucide-react';
@@ -10,7 +9,7 @@ interface OpenTabsProps {
   onSelect: (path: string) => void;
 }
 
-// 待确认的关闭动作：one=单个标签，all=关闭全部且存在脏标签；两者复用同一 ConfirmDialog。
+// 待确认的关闭动作
 type PendingClose = { scope: 'one'; path: string } | { scope: 'all' };
 
 function basenameOf(path: string): string {
@@ -23,7 +22,6 @@ const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const dragIndexRef = useRef<number | null>(null);
 
-  // 关掉当前标签时把激活位让给相邻标签（先右后左）
   const commitClose = useCallback(
     (path: string) => {
       const index = tabs.indexOf(path);

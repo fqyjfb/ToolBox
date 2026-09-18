@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clipboard, Plus, Trash2, Edit, ClipboardPaste, Tag } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
@@ -183,25 +183,26 @@ const CloudClipboardPage: React.FC = () => {
     }
   }, [categories, user, addToast]);
 
+  const listReqIdRef = useRef(0);
+  const prevPageSizeRef = useRef(pageSize);
+
   useEffect(() => {
     setCurrentPage(1);
     loadItems(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, selectedCategory]);
+  }, [user, selectedCategory, searchQuery, isSearchActive]);
 
   useEffect(() => {
-    loadItems(currentPage);
+    if (prevPageSizeRef.current === pageSize) return;
+    prevPageSizeRef.current = pageSize;
+    setCurrentPage(1);
+    loadItems(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-    loadItems(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, isSearchActive]);
-
   const loadItems = async (pageNum: number = 1) => {
     if (!user) return;
+    const reqId = ++listReqIdRef.current;
     
     try {
       setLoading(true);
@@ -214,14 +215,17 @@ const CloudClipboardPage: React.FC = () => {
         result = await clipboardService.getItems(user.id, categoryId, pageNum, pageSize);
       }
       
+      if (reqId !== listReqIdRef.current) return;
+      
       setItems(result.list);
       setTotalItems(result.total);
       setCurrentPage(pageNum);
     } catch (error) {
+      if (reqId !== listReqIdRef.current) return;
       logError('Error loading items', 'CloudClipboardPage', error as Error);
       addToast({ message: '加载项目失败', type: 'error' });
     } finally {
-      setLoading(false);
+      if (reqId === listReqIdRef.current) setLoading(false);
     }
   };
 

@@ -10,16 +10,12 @@ import { useToastStore } from '@/store/toastStore';
 import { useNotesDrafts } from '../hooks/useNotesDrafts';
 import { useNotesSearchScroll } from '../hooks/useNotesSearchScroll';
 import { useNotesStats } from '../hooks/useNotesStats';
-import { useNotesTags } from '../hooks/useNotesTags';
 import { useNotesAttachments } from '../hooks/useNotesAttachments';
 import { useNotesTabsStore } from '../../../../store/notesTabsStore';
 import NotesEditorStats from './NotesEditorStats';
 import NotesImageViewer from './NotesImageViewer';
-import TagPicker from './TagPicker';
 
-// image/pdf 用 useNotesSelection 的预览 URL；docx/xlsx/video 仅可见时加载。
-
-// canPlayType 必须带 codecs，否则恒为 "maybe"，会把不支持的容器硬塞进 <video>
+// canPlayType 必须带 codecs，否则恒为 "maybe"
 const VIDEO_CODEC_PROBES: Record<string, string> = {
   mp4: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"',
   m4v: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"',
@@ -43,10 +39,10 @@ function canPlayVideoInApp(filePath: string): boolean {
   }
 }
 
-// 超限文件不进 <video>（GB 级媒体源会拖崩渲染进程，onError 拦不住），交给系统播放器
+// 超限文件不进 <video>，交给系统播放器
 const MAX_INLINE_VIDEO_BYTES = 500 * 1024 * 1024;
 
-// 派生 state：独立 state 会留出"新 path + 旧 play"窗口，挂载未验证的大文件
+// 派生 state
 type VideoPlayback = { mode: 'checking' } | { mode: 'play' } | { mode: 'external'; notice: string };
 
 interface NotesEditorProps {
@@ -56,7 +52,6 @@ interface NotesEditorProps {
   filePreviewUrl: string | null;
   onContentChange: (content: string) => void;
   onSave: (content: string) => Promise<boolean>;
-  /** 新文件名可不带扩展名（主进程按原扩展名补齐） */
   onRenameFile: (newName: string) => Promise<boolean>;
   sidebarVisible?: boolean;
   onToggleSidebar?: () => void;
@@ -81,9 +76,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [htmlViewMode, setHtmlViewMode] = useState<'preview' | 'source'>('preview');
-  // 标题重命名草稿：null = 非编辑态
   const [renameDraft, setRenameDraft] = useState<string | null>(null);
-  // verifiedPaths：已通过探测可内嵌播放；externalNotices：改走系统播放器及原因
   const [verifiedPaths, setVerifiedPaths] = useState<Record<string, true>>({});
   const [externalNotices, setExternalNotices] = useState<Record<string, string>>({});
   const videoPlayback: VideoPlayback = (() => {
@@ -94,7 +87,6 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     return { mode: 'checking' };
   })();
   const addToast = useToastStore((state) => state.addToast);
-  // 置 false 时 docx/xlsx/video 暂停加载并 revoke
   const [previewVisible, setPreviewVisible] = useState(true);
   const lastSavedContentRef = useRef(content);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -104,8 +96,6 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   const drafts = useNotesDrafts();
   useNotesSearchScroll();
   const statsHook = useNotesStats(selectedFile?.path);
-  const tagsHook = useNotesTags();
-  // 必须解构出 upload：WMarkdownEditor 的 useEffect deps 含 onUpload，需保持引用恒定
   const { upload: handleUpload } = useNotesAttachments(selectedFile?.path);
 
   const viewerPlugins = useMemo(
@@ -120,13 +110,13 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
 
   const viewerTheme = isDark ? 'dark' : 'light';
 
-  // 切文件时复位：HTML 回到预览、退出标题重命名
+  // 切文件时复位
   useEffect(() => {
     setHtmlViewMode('preview');
     setRenameDraft(null);
   }, [selectedFile?.path]);
 
-  // 编码 + 体积都通过才把 src 交给 <video>：GB 级文件开始加载就救不回来了
+  // 编码 + 体积都通过才把 src 交给 <video>
   useEffect(() => {
     const path = selectedFile?.path;
     if (!path || selectedFile?.fileType !== 'video') return;
@@ -178,25 +168,15 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     };
   }, [selectedFile?.path, selectedFile?.fileType, verifiedPaths, externalNotices]);
 
-  // 切换文件时拉取标签，失败静默归零
-  useEffect(() => {
-    if (!selectedFile?.path) {
-      tagsHook.resetFileTags();
-      return;
-    }
-    tagsHook.loadFileTags(selectedFile.path).catch(() => {
-      /* ignore */
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFile?.path]);
 
-  // content 就绪后重算统计
+
+  // 重算统计
   useEffect(() => {
     statsHook.recompute(content);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content, selectedFile?.path]);
 
-  // cleanup 拿不到闭包旧值，用 ref 跟踪切走时的脏态与内容
+  // 用 ref 跟踪切走时的脏态与内容
   const isDirtyRef = useRef(false);
   const lastContentForFlushRef = useRef(content);
   useEffect(() => {
@@ -204,7 +184,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     lastContentForFlushRef.current = content;
   }, [isDirty, content]);
 
-  // 切文件时把未保存内容 flush 成草稿（cleanup 不能 async，fire-and-forget）
+  // 切文件时把未保存内容 flush 成草稿
   useEffect(() => {
     const prevPath = currentFilePathRef.current;
     const nextPath = selectedFile?.path ?? null;
@@ -223,7 +203,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFile?.path]);
 
-  // 自动保存 2s 防抖（草稿写入另由 1s 触发）
+  // 自动保存 2s 防抖
   useEffect(() => {
     if (!isDirty || !selectedFile) return;
 
@@ -258,7 +238,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     (value: string) => {
       onContentChange(value);
       setIsDirty(value !== lastSavedContentRef.current);
-      // 脏态上报标签页：getState 非响应式写入，避免订阅 store 引起光标抖动
+      // 脏态上报标签页
       if (selectedFile?.path) {
         useNotesTabsStore.getState().setDirty(selectedFile.path, value !== lastSavedContentRef.current);
         drafts.scheduleDraft(selectedFile.path, value);
@@ -286,14 +266,14 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     [selectedFile, onSave, drafts]
   );
 
-  // 双击标题进入重命名（不写扩展名也行，主进程会补齐）
+  // 双击标题进入重命名
   const startRename = useCallback(() => {
     if (selectedFile) setRenameDraft(selectedFile.name);
   }, [selectedFile]);
 
   const cancelRename = useCallback(() => setRenameDraft(null), []);
 
-  // 空值/未改动视为取消；先清 draft 避免 blur 与 Enter 重复提交
+  // 空值/未改动视为取消
   const commitRename = useCallback(async () => {
     const nextName = renameDraft?.trim();
     setRenameDraft(null);
@@ -302,19 +282,19 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     if (!ok) addToast({ type: 'error', message: '重命名失败，名称可能已存在' });
   }, [renameDraft, selectedFile, onRenameFile, addToast]);
 
-  // 图片预览走 main.cjs 注册的 local-media:// 协议
+  // 图片预览
   const localMediaUrl = useMemo(() => {
     if (!selectedFile) return null;
     return `local-media://host/${encodeURIComponent(selectedFile.path.replace(/\\/g, '/'))}`;
   }, [selectedFile]);
 
-  // 视频直连 file:///；只转义 % # ?（盘符 : 保留）
+  // 视频直连
   const videoFileUrl = useMemo(() => {
     if (!selectedFile) return null;
     return `file:///${selectedFile.path.replace(/\\/g, '/').replace(/[%#?]/g, encodeURIComponent)}`;
   }, [selectedFile]);
 
-  // 容器不可见或窗口进后台时暂停 docx/xlsx/video 加载
+  // 容器不可见时暂停加载
   useEffect(() => {
     if (!previewContainerRef.current) return;
     const observer = new IntersectionObserver(
@@ -381,7 +361,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   const renderEditor = () => {
     const fileType = fileMetadata?.fileType;
 
-    // image 直接走 local-media://，缩放/平移见 NotesImageViewer
+    // image 走 local-media://
     if (fileType === 'image' && localMediaUrl) {
       return <NotesImageViewer src={localMediaUrl} alt={selectedFile?.name || ''} />;
     }
@@ -389,7 +369,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     if (fileType === 'video') {
       if (!selectedFile) return null;
 
-      // 编码不支持 / 体积超限 / 加载失败 → 一律「外部打开」
+      // 编码不支持 / 体积超限 / 加载失败
       if (videoPlayback.mode === 'external') {
         return (
           <div className="flex flex-1 min-h-0 flex-col items-center justify-center gap-3 bg-gray-50 dark:bg-gray-900 px-6 text-center">
@@ -441,7 +421,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
       (fileType === 'pdf' || fileType === 'docx' || fileType === 'xlsx') &&
       filePreviewUrl
     ) {
-      // 仅可见时挂载：FileViewer 内部会走 base64 → 渲染管线，开销较大
+      // 仅可见时挂载
       return (
         <div
           ref={previewContainerRef}
@@ -539,33 +519,55 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
 
   if (!selectedFile) {
     return (
-      <section className="flex flex-1 flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
-          <Edit3 className="h-10 w-10 text-gray-400" />
+      <section className="flex flex-1 flex-col min-h-0 min-w-0 bg-gray-50 dark:bg-gray-900">
+        {/* 与打开笔记后的头部保持一致：侧边栏开关常驻，列表被隐藏后仍有入口恢复 */}
+        <div className="flex flex-shrink-0 items-center gap-3 bg-gray-50 dark:bg-gray-800/50 px-4 py-2">
+          {onToggleSidebar ? (
+            <button
+              className="rounded p-1 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              onClick={onToggleSidebar}
+              title={sidebarVisible ? '隐藏列表' : '显示列表'}
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
-        <h3 className="mt-4 text-lg font-medium text-gray-600 dark:text-gray-300">
-          选择或创建一个笔记
-        </h3>
-        <p className="mt-1 text-sm text-gray-400">
-          从左侧文件树选择笔记开始编辑
-        </p>
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            onClick={onCreateNote}
-            disabled={!onCreateNote}
-            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-button-text transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FilePlus className="h-4 w-4" />
-            新建笔记
-          </button>
-          <button
-            onClick={onCreateFolder}
-            disabled={!onCreateFolder}
-            className="flex items-center gap-2 rounded-lg bg-white dark:bg-gray-800 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FolderPlus className="h-4 w-4" />
-            新建文件夹
-          </button>
+
+        <div className="flex flex-1 flex-col items-center justify-center px-6 pb-10">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
+            <Edit3 className="h-10 w-10 text-gray-400" />
+          </div>
+          <h3 className="mt-4 text-lg font-medium text-gray-600 dark:text-gray-300">
+            还没有打开笔记
+          </h3>
+          <p className="mt-1 max-w-sm text-center text-sm text-gray-400">
+            {sidebarVisible
+              ? '从左侧文件树选择一篇笔记开始编辑，也可以现在新建'
+              : '列表已隐藏，点击左上角图标显示文件树，或直接新建一篇'}
+          </p>
+
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              onClick={onCreateNote}
+              disabled={!onCreateNote}
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-button-text transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FilePlus className="h-4 w-4" />
+              新建笔记
+            </button>
+            <button
+              onClick={onCreateFolder}
+              disabled={!onCreateFolder}
+              className="flex items-center gap-2 rounded-lg bg-white dark:bg-gray-800 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FolderPlus className="h-4 w-4" />
+              新建文件夹
+            </button>
+          </div>
+
+          <p className="mt-8 text-xs text-gray-400">
+            Ctrl + Shift + F 全文搜索 · 拖入文件到左侧列表即可导入
+          </p>
         </div>
       </section>
     );
@@ -657,18 +659,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
           </div>
         </div>
 
-        {/* 标签 + 保存（或外部打开）：与标题同行、靠右 */}
         <div className="flex flex-shrink-0 items-center gap-2">
-          {selectedFile && (fileMetadata?.fileType === 'md' || fileMetadata?.fileType === 'txt') && (
-            <TagPicker
-              filePath={selectedFile.path}
-              tags={tagsHook.tags}
-              knownTags={tagsHook.knownTags}
-              onChange={(next) => tagsHook.setFileTags(selectedFile.path, next).catch(() => {})}
-              disabled={tagsHook.loading}
-            />
-          )}
-
           {(fileMetadata?.fileType === 'md' || fileMetadata?.fileType === 'txt' || fileMetadata?.fileType === 'html' || fileMetadata?.fileType === 'json') ? (
             <button
               className="flex items-center rounded-lg bg-primary px-2 py-1.5 text-button-text transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"

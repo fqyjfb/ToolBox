@@ -1,5 +1,4 @@
-// NotesImageViewer —— 图片预览：滚轮以光标为锚点缩放、拖拽平移、双击复位、切图复位。
-// 必须原生 addEventListener({passive:false})（React onWheel 无法 preventDefault）；高频事件读 ref 而非 state。
+// NotesImageViewer —— 图片预览
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 

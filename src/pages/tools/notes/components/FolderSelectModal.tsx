@@ -16,11 +16,11 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading
 
         <div className="text-center">
           <h2 className="mb-2 text-xl font-bold text-gray-900 dark:text-white">
-            选择笔记存储位置
+            选择对话存储位置
           </h2>
           <p className="max-w-sm text-sm text-gray-600 dark:text-gray-300">
-            请选择一个文件夹用于存储您的笔记文件。所有笔记将以 Markdown
-            格式保存在该文件夹中。
+            请选择一个文件夹作为对话路径。对话记录与整理过程会保存在该文件夹中；
+            选择完成后，可在左侧列表固定目录来查看其中的笔记文件。
           </p>
         </div>
 
@@ -62,7 +62,7 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading
         </button>
 
         <p className="text-xs text-gray-400">
-          您可以随时更改存储位置
+          您可以随时更改对话存储位置
         </p>
       </div>
     </div>

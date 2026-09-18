@@ -1,7 +1,7 @@
-// SearchPalette —— Cmd/Ctrl+Shift+F 命令面板：Esc 关闭、↑↓ 导航、Enter 跳转；快捷键由父级注册。
+// SearchPalette —— 命令面板
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X, FileText, Hash, Tag, CornerDownLeft } from 'lucide-react';
+import { Search, X, FileText, Hash, CornerDownLeft } from 'lucide-react';
 import type { FileTreeNode, NotesSearchResultItem, NotesSearchMatch } from '../types';
 import { SEARCH_PALETTE_DISPLAY_LIMIT } from '../constants/limits';
 
@@ -22,7 +22,7 @@ export interface SearchPaletteProps {
   onClose: () => void;
 }
 
-// 高亮 query 关键字，返回若干 React 节点
+// 高亮 query 关键字
 function highlightSnippet(snippet: string, query: string): React.ReactNode {
   if (!query.trim()) return snippet;
   const q = query.trim();
@@ -68,13 +68,11 @@ function flattenRows(results: NotesSearchResultItem[]): FlatRow[] {
 
 function fieldIcon(field: NotesSearchMatch['field']): React.ReactNode {
   if (field === 'title') return <FileText className="h-3 w-3" />;
-  if (field === 'tag') return <Tag className="h-3 w-3" />;
   return <Hash className="h-3 w-3" />;
 }
 
 function fieldLabel(field: NotesSearchMatch['field']): string {
   if (field === 'title') return '标题';
-  if (field === 'tag') return '标签';
   return '正文';
 }
 
@@ -309,9 +307,7 @@ const SearchPalette: React.FC<SearchPaletteProps> = ({
                             ${
                               match.field === 'title'
                                 ? 'bg-primary/20 text-primary'
-                                : match.field === 'tag'
-                                  ? 'bg-accent/15 text-accent'
-                                  : 'bg-bg-secondary text-text-secondary'
+                                : 'bg-bg-secondary text-text-secondary'
                             }
                           `}
                           title={`命中类型：${fieldLabel(match.field)}`}

@@ -70,8 +70,9 @@ const LogsPage: React.FC = () => {
       setStats(newStats);
     });
 
-    if (window.electron?.ipcRenderer) {
-      const handleNewEntry = (_event: unknown, entry: LogEntry) => {
+    const logApi = window.electron?.log;
+    if (logApi) {
+      const handleNewEntry = (entry: LogEntry) => {
         setLogs(prev => [...prev, entry]);
         setStats(prev => ({
           total: prev.total + 1,
@@ -87,13 +88,13 @@ const LogsPage: React.FC = () => {
         setStats({ total: 0, byLevel: { error: 0, warn: 0, info: 0, debug: 0 } });
       };
 
-      window.electron.ipcRenderer.on('log:newEntry', handleNewEntry);
-      window.electron.ipcRenderer.on('log:cleared', handleCleared);
+      const offNewEntry = logApi.onNewEntry(handleNewEntry);
+      const offCleared = logApi.onCleared(handleCleared);
 
       return () => {
         unsubscribe();
-        window.electron?.ipcRenderer?.off('log:newEntry', handleNewEntry);
-        window.electron?.ipcRenderer?.off('log:cleared', handleCleared);
+        offNewEntry();
+        offCleared();
       };
     }
 
@@ -165,11 +166,11 @@ const LogsPage: React.FC = () => {
   }
 
   const handleMinimize = () => {
-    window.electron?.ipcRenderer?.send('log:minimize');
+    window.electron?.log?.minimize();
   };
 
   const handleClose = () => {
-    window.electron?.ipcRenderer?.send('log:close');
+    window.electron?.log?.close();
   };
 
   return (

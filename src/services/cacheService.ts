@@ -73,3 +73,7 @@ class CacheService {
 
 // 导出单例
 export const cacheService = new CacheService();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => cacheService.destroy());
+}

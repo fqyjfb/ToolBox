@@ -25,7 +25,7 @@ export function parseChatContent(content: string): ChatMessage[] {
         });
       }
       currentMessage = {
-        id: generateMessageId(msgMatch[2], msgMatch[3]),
+        id: `${generateMessageId(msgMatch[2], msgMatch[3])}-${messages.length}`,
         textLines: [msgMatch[3]],
         timestamp: msgMatch[2],
         date: currentDate || new Date().toDateString(),

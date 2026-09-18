@@ -1,4 +1,4 @@
-// NotesSidebar 交互编排：右键菜单 / 选中 / 拖拽 / 外部拖入与粘贴导入 / 对话框
+// NotesSidebar 交互编排
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToastStore } from '@/store/toastStore';
@@ -9,10 +9,12 @@ import type { NotesSidebarProps } from './sidebarTypes';
 export type UseSidebarInteractionsParams = Pick<
   NotesSidebarProps,
   | 'rootPath'
+  | 'currentViewPath'
   | 'selectedFile'
   | 'onCopyItem'
   | 'onMoveItem'
   | 'onImportDroppedFiles'
+  | 'onAddPinnedFolderByPath'
   | 'onCreateFolder'
   | 'onCreateFolderForce'
   | 'onCreateNote'
@@ -25,7 +27,6 @@ export interface UseSidebarInteractionsReturn {
   contextMenu: { x: number; y: number; node?: FileTreeNode } | null;
   listSelection: string | null;
   isOrganizeExpanded: boolean;
-  isDragOver: boolean;
   dragSourcePath: string | null;
   dragOverPath: string | null;
   pinnedDragIndex: number | null;
@@ -43,8 +44,12 @@ export interface UseSidebarInteractionsReturn {
   handleItemDrop: (e: React.DragEvent, node: FileTreeNode) => Promise<void>;
   handleItemDragEnd: () => void;
   handleAsideDragOver: (e: React.DragEvent) => void;
-  handleAsideDragLeave: (e: React.DragEvent) => void;
-  handleAsideDrop: (e: React.DragEvent) => Promise<void>;
+  handleAsideDrop: (e: React.DragEvent) => void;
+  handlePinnedDrop: (e: React.DragEvent) => Promise<void>;
+  treeAreaDragOver: boolean;
+  handleTreeAreaDragOver: (e: React.DragEvent) => void;
+  handleTreeAreaDragLeave: (e: React.DragEvent) => void;
+  handleTreeAreaDrop: (e: React.DragEvent) => Promise<void>;
   toggleOrganize: () => void;
   setListSelection: React.Dispatch<React.SetStateAction<string | null>>;
   setPinnedDragIndex: React.Dispatch<React.SetStateAction<number | null>>;
@@ -69,6 +74,32 @@ export interface UseSidebarInteractionsReturn {
   setRenameName: React.Dispatch<React.SetStateAction<string>>;
 }
 
+async function collectDroppedEntries(dataTransfer: DataTransfer | null) {
+  const results: Array<{ path: string; isDirectory: boolean }> = [];
+  const items = dataTransfer?.items ? Array.from(dataTransfer.items) : [];
+
+  if (items.length > 0) {
+    for (const item of items) {
+      if (item.kind !== 'file') continue;
+      // DataTransferItem 在事件回调结束后即失效，必须在任何 await 之前取出
+      const entry = item.webkitGetAsEntry?.();
+      const isDirectory = !!entry?.isDirectory;
+      const file = item.getAsFile();
+      if (!file || !window.electron?.getFileOrFolderPath) continue;
+      const filePath = await window.electron.getFileOrFolderPath(file);
+      if (filePath) results.push({ path: filePath, isDirectory });
+    }
+    return results;
+  }
+
+  for (const file of Array.from(dataTransfer?.files ?? [])) {
+    if (!window.electron?.getFileOrFolderPath) continue;
+    const filePath = await window.electron.getFileOrFolderPath(file);
+    if (filePath) results.push({ path: filePath, isDirectory: false });
+  }
+  return results;
+}
+
 export function useSidebarInteractions(
   params: UseSidebarInteractionsParams
 ): UseSidebarInteractionsReturn {
@@ -80,12 +111,11 @@ export function useSidebarInteractions(
     node?: FileTreeNode;
   } | null>(null);
   const [listSelection, setListSelection] = useState<string | null>(null);
-  // 展开态持久化在 notesSidebarSectionsStore（与固定目录 / 收藏 / 最近一致）
   const isOrganizeExpanded = useNotesSidebarSectionsStore((state) => state.sections.organize);
   const toggleSection = useNotesSidebarSectionsStore((state) => state.toggleSection);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [dragSourcePath, setDragSourcePath] = useState<string | null>(null);
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
+  const [treeAreaDragOver, setTreeAreaDragOver] = useState(false);
   const [pinnedDragIndex, setPinnedDragIndex] = useState<number | null>(null);
   const [pinnedDragOverIndex, setPinnedDragOverIndex] = useState<number | null>(null);
   const [pinnedContextMenu, setPinnedContextMenu] = useState<{
@@ -157,86 +187,83 @@ export function useSidebarInteractions(
     setDragOverPath(null);
   }, []);
 
-  const handleAsideDragOver = useCallback(
-    (e: React.DragEvent) => {
-      if (dragSourcePath || pinnedDragIndex !== null) {
-        if (dragOverPath) setDragOverPath(null);
-        return;
-      }
+  const handleAsideDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'none';
+  }, []);
+  const handleAsideDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handlePinnedDrop = useCallback(
+    async (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setIsDragOver(true);
+
+      const dropped = await collectDroppedEntries(e.dataTransfer);
+      if (dropped.length === 0) {
+        addToast({ type: 'error', message: '无法获取拖拽的文件路径' });
+        return;
+      }
+      const folders = dropped.filter((d) => d.isDirectory).map((d) => d.path);
+      if (folders.length === 0) {
+        addToast({ type: 'error', message: '固定目录区域仅支持拖入文件夹' });
+        return;
+      }
+      folders.forEach((p) => params.onAddPinnedFolderByPath(p));
+      const ignored = dropped.length - folders.length;
+      addToast({
+        type: 'success',
+        message:
+          ignored > 0
+            ? `已添加 ${folders.length} 个固定目录（忽略 ${ignored} 个文件）`
+            : `已添加 ${folders.length} 个固定目录`,
+      });
     },
-    [dragSourcePath, dragOverPath, pinnedDragIndex]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [params, addToast]
   );
-  const handleAsideDragLeave = useCallback((e: React.DragEvent) => {
+
+  const handleTreeAreaDragOver = useCallback((e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes('Files')) return;
     e.preventDefault();
     e.stopPropagation();
-    setIsDragOver(false);
+    e.dataTransfer.dropEffect = 'copy';
+    setTreeAreaDragOver(true);
   }, []);
-  const handleAsideDrop = useCallback(
+  const handleTreeAreaDragLeave = useCallback((e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setTreeAreaDragOver(false);
+  }, []);
+  const handleTreeAreaDrop = useCallback(
     async (e: React.DragEvent) => {
-      if (dragSourcePath || pinnedDragIndex !== null) {
-        setDragSourcePath(null);
-        setDragOverPath(null);
-        return;
-      }
+      if (!e.dataTransfer.types.includes('Files')) return;
       e.preventDefault();
       e.stopPropagation();
-      setIsDragOver(false);
+      setTreeAreaDragOver(false);
 
-      if (!params.rootPath) {
+      const dest = params.currentViewPath || params.rootPath;
+      if (!dest) {
         addToast({ type: 'error', message: '请先设置笔记存储路径' });
         return;
       }
-      const filePaths: string[] = [];
-      const items = e.dataTransfer.items;
-      if (items && items.length > 0) {
-        for (const item of Array.from(items)) {
-          if (item.kind === 'file') {
-            const file = item.getAsFile();
-            if (file && window.electron?.getFileOrFolderPath) {
-              const filePath = await window.electron.getFileOrFolderPath(file);
-              if (filePath) filePaths.push(filePath);
-            }
-          }
-        }
-      } else {
-        for (const file of Array.from(e.dataTransfer.files)) {
-          if (window.electron?.getFileOrFolderPath) {
-            const filePath = await window.electron.getFileOrFolderPath(file);
-            if (filePath) filePaths.push(filePath);
-          }
-        }
-      }
-      if (filePaths.length === 0) {
-        addToast({ type: 'error', message: '无法获取文件路径' });
+      const dropped = await collectDroppedEntries(e.dataTransfer);
+      if (dropped.length === 0) {
+        addToast({ type: 'error', message: '无法获取拖拽的文件路径' });
         return;
       }
-      const result = await params.onImportDroppedFiles(filePaths, listSelection ?? undefined);
-      if (result.success) {
-        const msg =
-          result.imported && result.imported.length > 0
-            ? `已导入 ${result.imported.length} 个文件`
-            : '导入成功';
-        addToast({ type: 'success', message: msg });
-      } else {
-        const msg = result.errors && result.errors.length > 0 ? result.errors[0] : '导入失败';
-        addToast({ type: 'error', message: msg });
-      }
+      const result = await params.onImportDroppedFiles(dropped.map((d) => d.path), dest);
+      addToast({
+        type: result.success ? 'success' : 'error',
+        message: result.success
+          ? `已导入 ${result.imported?.length ?? 0} 个项目`
+          : result.errors?.[0] || '导入失败',
+      });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      params.rootPath,
-      params.onImportDroppedFiles,
-      addToast,
-      listSelection,
-      dragSourcePath,
-      pinnedDragIndex,
-    ]
+    [params, addToast]
   );
 
-  // 键盘 Ctrl+C / 系统粘贴
   const handleKeyDown = useCallback(
     async (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -273,16 +300,7 @@ export function useSidebarInteractions(
       if (!params.rootPath) return;
       const items = e.clipboardData?.items;
       if (!items || items.length === 0) return;
-      const filePaths: string[] = [];
-      for (const item of Array.from(items)) {
-        if (item.kind === 'file') {
-          const file = item.getAsFile();
-          if (file && window.electron?.getFileOrFolderPath) {
-            const filePath = await window.electron.getFileOrFolderPath(file);
-            if (filePath) filePaths.push(filePath);
-          }
-        }
-      }
+      const filePaths = (await collectDroppedEntries(e.clipboardData)).map((d) => d.path);
       if (filePaths.length > 0) {
         e.preventDefault();
         const result = await params.onImportDroppedFiles(filePaths, listSelection ?? undefined);
@@ -305,10 +323,10 @@ export function useSidebarInteractions(
     };
   }, [handleKeyDown, handlePaste]);
 
+  const selectedFilePath = params.selectedFile?.path ?? null;
   useEffect(() => {
-    if (params.selectedFile) setListSelection(params.selectedFile.path);
-    else setListSelection(null);
-  }, [params.selectedFile]);
+    setListSelection(selectedFilePath);
+  }, [selectedFilePath]);
 
   const openCreateDialog = useCallback((type: 'folder' | 'note', parentPath: string | null) => {
     setCreateDialog({ type, parentPath });
@@ -402,7 +420,6 @@ export function useSidebarInteractions(
     contextMenu,
     listSelection,
     isOrganizeExpanded,
-    isDragOver,
     dragSourcePath,
     dragOverPath,
     pinnedDragIndex,
@@ -420,8 +437,12 @@ export function useSidebarInteractions(
     handleItemDrop,
     handleItemDragEnd,
     handleAsideDragOver,
-    handleAsideDragLeave,
     handleAsideDrop,
+    handlePinnedDrop,
+    treeAreaDragOver,
+    handleTreeAreaDragOver,
+    handleTreeAreaDragLeave,
+    handleTreeAreaDrop,
     toggleOrganize: () => toggleSection('organize'),
     setListSelection,
     setPinnedDragIndex,

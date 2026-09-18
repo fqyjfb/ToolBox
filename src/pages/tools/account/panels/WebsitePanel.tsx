@@ -281,6 +281,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
 
   useEffect(() => {
     if (categories.length > 0) {
+      setCurrentPage(1);
       loadAccounts(1);
     }
   }, [categories, selectedCategory, loadAccounts]);
@@ -289,14 +290,8 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     if (currentPage > 1 && categories.length > 0) {
       loadAccounts(currentPage);
     }
-  }, [currentPage, categories, loadAccounts]);
-
-  useEffect(() => {
-    if (categories.length > 0) {
-      setCurrentPage(1);
-      loadAccounts(1);
-    }
-  }, [searchQuery, isSearchActive, categories, loadAccounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, categories]);
 
   const handleCategorySelect = useCallback((categoryId: string | null) => {
     setSelectedCategory(categoryId);

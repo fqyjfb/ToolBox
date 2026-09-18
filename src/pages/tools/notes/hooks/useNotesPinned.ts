@@ -9,6 +9,7 @@ export interface UseNotesPinnedReturn {
   pinnedFolders: PinnedFolder[];
   currentViewPath: string | null;
   addPinnedFolder: () => Promise<boolean>;
+  addPinnedFolderByPath: (folderPath: string) => boolean;
   removePinnedFolder: (folderPath: string) => void;
   reorderPinnedFolder: (fromIndex: number, toIndex: number) => void;
   // 暴露给 useNotesTree / useNotesOperations 同步
@@ -26,9 +27,21 @@ export function useNotesPinned(): UseNotesPinnedReturn {
     }
     return stored as PinnedFolder[];
   });
-  const [currentViewPath, setCurrentViewPath] = useState<string | null>(null);
+  const [currentViewPath, setCurrentViewPathState] = useState<string | null>(() => {
+    return localStorageService.getString(STORAGE_KEYS.NOTES_CURRENT_VIEW_PATH) || null;
+  });
   const currentViewPathRef = useRef<string | null>(null);
   currentViewPathRef.current = currentViewPath;
+
+  // 当前查看目录落盘：切换导航 / 重启后按此恢复固定目录视图（null = 主根视图）
+  const setCurrentViewPath = useCallback((path: string | null) => {
+    setCurrentViewPathState(path);
+    if (path) {
+      localStorageService.setString(STORAGE_KEYS.NOTES_CURRENT_VIEW_PATH, path);
+    } else {
+      localStorageService.remove(STORAGE_KEYS.NOTES_CURRENT_VIEW_PATH);
+    }
+  }, []);
 
   const addPinnedFolder = useCallback(async (): Promise<boolean> => {
     if (!window.electron) return false;
@@ -51,15 +64,24 @@ export function useNotesPinned(): UseNotesPinnedReturn {
     }
   }, []);
 
+  const addPinnedFolderByPath = useCallback((folderPath: string): boolean => {
+    if (!folderPath) return false;
+    const folderName = folderPath.split(/[/\\]/).pop() || folderPath;
+
+    setPinnedFolders((prev) => {
+      if (prev.some((p) => p.path === folderPath)) return prev;
+      const next = [...prev, { path: folderPath, name: folderName }];
+      localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
+      return next;
+    });
+    return true;
+  }, []);
+
   const removePinnedFolder = useCallback((folderPath: string) => {
     setPinnedFolders((prev) => {
       const next = prev.filter((p) => p.path !== folderPath);
       localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
       return next;
-    });
-    setCurrentViewPath((prev) => {
-      if (prev === folderPath) return null;
-      return prev;
     });
   }, []);
 
@@ -78,6 +100,7 @@ export function useNotesPinned(): UseNotesPinnedReturn {
     pinnedFolders,
     currentViewPath,
     addPinnedFolder,
+    addPinnedFolderByPath,
     removePinnedFolder,
     reorderPinnedFolder,
     setPinnedFolders,

@@ -5,7 +5,7 @@ const notesService = require('../services/notesService.cjs');
 const notesDraftService = require('../services/notesDraftService.cjs');
 const notesSearchService = require('../services/notesSearchService.cjs');
 const notesFavoritesService = require('../services/notesFavoritesService.cjs');
-const notesTagService = require('../services/notesTagService.cjs');
+
 const notesTemplateService = require('../services/notesTemplateService.cjs');
 const notesAttachmentService = require('../services/notesAttachmentService.cjs');
 const notesWatcherService = require('../services/notesWatcherService.cjs');
@@ -21,10 +21,7 @@ const CHANNELS = [
   'notes-get-favorites',
   'notes-set-favorites',
   'notes-toggle-favorite',
-  'notes-get-file-tags',
-  'notes-set-file-tags',
-  'notes-get-all-tags',
-  'notes-get-tag-index',
+
   'notes-list-templates',
   'notes-save-attachment',
   'notes-start-watching',
@@ -83,27 +80,6 @@ function registerNotesIpc() {
   ipcMain.handle('notes-toggle-favorite', async (_event, payload) => {
     const absolutePath = payload && typeof payload.absolutePath === 'string' ? payload.absolutePath : '';
     return notesFavoritesService.toggleFavorite(absolutePath);
-  });
-
-  ipcMain.handle('notes-get-file-tags', async (_event, payload) => {
-    const absolutePath = payload && typeof payload.absolutePath === 'string' ? payload.absolutePath : '';
-    return notesTagService.getFileTags(absolutePath);
-  });
-
-  ipcMain.handle('notes-set-file-tags', async (_event, payload) => {
-    const absolutePath = payload && typeof payload.absolutePath === 'string' ? payload.absolutePath : '';
-    const tags = payload && Array.isArray(payload.tags) ? payload.tags : [];
-    return notesTagService.setFileTags(absolutePath, tags);
-  });
-
-  ipcMain.handle('notes-get-all-tags', async (_event, payload) => {
-    const rootPath = payload && typeof payload.rootPath === 'string' ? payload.rootPath : '';
-    return notesTagService.getAllTags(rootPath);
-  });
-
-  ipcMain.handle('notes-get-tag-index', async (_event, payload) => {
-    const rootPath = payload && typeof payload.rootPath === 'string' ? payload.rootPath : '';
-    return notesTagService.getTagIndex(rootPath);
   });
 
   ipcMain.handle('notes-list-templates', async () => {

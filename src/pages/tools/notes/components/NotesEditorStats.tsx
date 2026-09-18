@@ -1,6 +1,4 @@
-// NotesEditorStats —— 顶部状态栏 3 个统计 chip：字数 · 阅读时长 · 大纲数。
-// 抽为独立小组件以避免 NotesEditor.tsx 超过 600 行硬约束；是否渲染由父组件按文件类型判定
-// （仅 md / txt / html / json 显示）。
+// NotesEditorStats —— 顶部状态栏统计
 
 import React from 'react';
 import { AlignLeft, BookOpen, ListTree } from 'lucide-react';
@@ -8,7 +6,6 @@ import type { NotesStats } from '../types';
 
 interface NotesEditorStatsProps {
   stats: NotesStats;
-  /** 是否展示：false 时返回 null（供父组件按 fileType 决定） */
   visible: boolean;
 }
 

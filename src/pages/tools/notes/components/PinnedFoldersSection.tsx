@@ -1,7 +1,6 @@
-// 固定目录列表：可折叠标题 + 拖拽排序 + 右键菜单（添加 / 移除）
-// 折叠交互与条目样式与 NotesSidebarRecents 保持一致
+// 固定目录列表
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Folder, Pin, Plus, Trash } from 'lucide-react';
 import { useToastStore } from '@/store/toastStore';
 import { useNotesSidebarSectionsStore } from '@/store/notesSidebarSectionsStore';
@@ -22,7 +21,10 @@ export interface PinnedFoldersSectionProps {
   onReorderPinnedFolder: (fromIndex: number, toIndex: number) => void;
   onAddPinnedFolder: () => Promise<boolean>;
   onRemovePinnedFolder: (folderPath: string) => void;
+  onDropFiles: (e: React.DragEvent) => Promise<void>;
 }
+
+const isExternalFileDrag = (e: React.DragEvent) => e.dataTransfer.types.includes('Files');
 
 export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
   pinnedFolders,
@@ -37,15 +39,35 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
   onReorderPinnedFolder,
   onAddPinnedFolder,
   onRemovePinnedFolder,
+  onDropFiles,
 }) => {
   const addToast = useToastStore((state) => state.addToast);
   const open = useNotesSidebarSectionsStore((state) => state.sections.pinned);
   const toggleSection = useNotesSidebarSectionsStore((state) => state.toggleSection);
-
-  if (pinnedFolders.length === 0) return null;
+  const [areaActive, setAreaActive] = useState(false);
 
   return (
-    <div className="flex-shrink-0 border-b border-gray-100 dark:border-gray-800 px-2 py-2">
+    <div
+      className={`flex-shrink-0 border-b border-gray-100 px-2 py-2 transition-colors dark:border-gray-800 ${
+        areaActive ? 'bg-blue-50 ring-1 ring-blue-500/50 dark:bg-blue-500/10' : ''
+      }`}
+      onDragOver={(e) => {
+        if (!isExternalFileDrag(e)) return; // 内部排序拖拽不在此处理
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+        setAreaActive(true);
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+        setAreaActive(false);
+      }}
+      onDrop={(e) => {
+        setAreaActive(false);
+        if (!isExternalFileDrag(e)) return;
+        void onDropFiles(e); // 内部已 preventDefault / stopPropagation
+      }}
+    >
       <button
         className="flex w-full items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-400 px-1 py-1 hover:text-primary transition-colors"
         onClick={() => toggleSection('pinned')}
@@ -56,7 +78,12 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
           固定目录 ({pinnedFolders.length})
         </span>
       </button>
-      {open && (
+      {open && pinnedFolders.length === 0 && (
+        <div className="mt-1 rounded border border-dashed border-gray-300 px-2 py-2 text-[11px] text-gray-400 dark:border-gray-700">
+          拖入文件夹可添加为固定目录
+        </div>
+      )}
+      {open && pinnedFolders.length > 0 && (
         <div className="mt-1 max-h-48 overflow-y-auto scrollbar-hide space-y-0.5">
           {pinnedFolders.map((pinned, index) => (
             <div
@@ -64,39 +91,43 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
               draggable
               className={`group flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
                 currentViewPath === pinned.path
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               } ${pinnedDragOverIndex === index && pinnedDragIndex !== index ? 'ring-2 ring-accent' : ''} ${pinnedDragIndex === index ? 'opacity-50' : ''}`}
-            onClick={() => onSwitchToFolder(pinned.path)}
-            onDragStart={(e) => {
-              setPinnedDragIndex(index);
-              e.dataTransfer.effectAllowed = 'move';
-              e.dataTransfer.setData('text/plain', String(index));
-            }}
-            onDragOver={(e) => {
-              if (pinnedDragIndex === null) return;
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-              if (pinnedDragOverIndex !== index) setPinnedDragOverIndex(index);
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (pinnedDragIndex !== null && pinnedDragIndex !== index) {
-                onReorderPinnedFolder(pinnedDragIndex, index);
-              }
-              setPinnedDragIndex(null);
-              setPinnedDragOverIndex(null);
-            }}
-            onDragEnd={() => {
-              setPinnedDragIndex(null);
-              setPinnedDragOverIndex(null);
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setPinnedContextMenu({ x: e.clientX, y: e.clientY, index });
-            }}
-            title={pinned.path}
-          >
+              onClick={() => onSwitchToFolder(pinned.path)}
+              onDragStart={(e) => {
+                setPinnedDragIndex(index);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', String(index));
+              }}
+              onDragOver={(e) => {
+                if (isExternalFileDrag(e)) return; // 外部文件交给区域容器统一处理
+                if (pinnedDragIndex === null) return;
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'move';
+                if (pinnedDragOverIndex !== index) setPinnedDragOverIndex(index);
+              }}
+              onDrop={(e) => {
+                if (isExternalFileDrag(e)) return; // 外部文件交给区域容器统一处理
+                e.preventDefault();
+                e.stopPropagation();
+                if (pinnedDragIndex !== null && pinnedDragIndex !== index) {
+                  onReorderPinnedFolder(pinnedDragIndex, index);
+                }
+                setPinnedDragIndex(null);
+                setPinnedDragOverIndex(null);
+              }}
+              onDragEnd={() => {
+                setPinnedDragIndex(null);
+                setPinnedDragOverIndex(null);
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setPinnedContextMenu({ x: e.clientX, y: e.clientY, index });
+              }}
+              title={pinned.path}
+            >
               <Folder className="h-3 w-3 flex-shrink-0 text-gray-400" />
               <span className="flex-1 truncate">{pinned.name}</span>
             </div>

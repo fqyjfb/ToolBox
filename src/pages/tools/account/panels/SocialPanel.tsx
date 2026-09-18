@@ -165,22 +165,22 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
   }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
 
   useEffect(() => {
-    loadData(1);
     loadEmails();
     loadPhones();
     loadCompanies();
-  }, [loadData, loadEmails, loadPhones, loadCompanies]);
+  }, [loadEmails, loadPhones, loadCompanies]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadData(1);
+  }, [loadData]);
 
   useEffect(() => {
     if (currentPage > 1) {
       loadData(currentPage);
     }
-  }, [currentPage, loadData]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive, loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   const openModal = (item: SocialAccount | null = null) => {
     setEditingItem(item);

@@ -97,7 +97,7 @@ const createFloatWindow = () => {
 
   floatWindow.setIgnoreMouseEvents(false);
 
-  const POLL_INTERVAL = 80;
+  const POLL_INTERVAL = 150;
   const BALL_SIZE = 44;
   const pollTimer = setInterval(() => {
     if (!floatWindow || floatWindow.isDestroyed()) return;

@@ -1,5 +1,4 @@
-// ExternalChangeDialog —— 外部修改冲突裁决（纯展示组件，动作由 props 传入）。
-// busy：任一按钮点击后禁用全部，动作 settle（void/Promise 都 await）后复位。
+// ExternalChangeDialog —— 外部修改冲突裁决
 
 import React, { useState } from 'react';
 import { FileWarning } from 'lucide-react';

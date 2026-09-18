@@ -1,9 +1,7 @@
 const getElectron = () => {
   const win = window as Window & {
     electron?: {
-      ipcRenderer: {
-        invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
-      };
+      sqlite?: { invoke: (channel: string, payload?: unknown) => Promise<unknown> };
     };
   };
   return win.electron;
@@ -15,10 +13,10 @@ const isElectron = () => {
 
 async function invoke(channel: string, ...args: unknown[]) {
   const electron = getElectron();
-  if (!electron) {
+  if (!electron?.sqlite) {
     throw new Error('SQLite is only available in Electron environment');
   }
-  return electron.ipcRenderer.invoke(channel, ...args);
+  return electron.sqlite.invoke(channel, args[0]);
 }
 
 export class SQLiteClient {

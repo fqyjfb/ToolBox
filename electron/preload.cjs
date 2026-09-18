@@ -1,5 +1,12 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
+const ALLOWED_INVOKE_CHANNELS = new Set([
+  'clipboard:writeImage',
+  'clipboard:watch:start',
+  'clipboard:watch:stop',
+]);
+const ALLOWED_LISTEN_CHANNELS = new Set(['clipboard:changed', 'clipboard:image-changed']);
+
 let navigateCallback = null;
 let downloadProgressCallback = null;
 let settingChangedCallback = null;
@@ -220,6 +227,11 @@ contextBridge.exposeInMainWorld('electron', {
     maximizeWindow: () => ipcRenderer.send('plugin-window-maximize'),
     closeWindow: () => ipcRenderer.send('plugin-window-close'),
     saveFile: (filePath, data) => ipcRenderer.invoke('plugin:save-file', { path: filePath, data }),
+    onInstallProgress: (callback) => {
+      const listener = (_event, data) => callback(data);
+      ipcRenderer.on('plugin:install-progress', listener);
+      return () => ipcRenderer.removeListener('plugin:install-progress', listener);
+    },
     storage: {
       get: (pluginId, userId, key) =>
         ipcRenderer.invoke('sqlite:plugin:get', { pluginId, userId, key }),
@@ -227,6 +239,14 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.invoke('sqlite:plugin:set', { pluginId, userId, key, value }),
       delete: (pluginId, userId, key) =>
         ipcRenderer.invoke('sqlite:plugin:delete', { pluginId, userId, key }),
+    },
+  },
+  sqlite: {
+    invoke: (channel, payload) => {
+      if (typeof channel !== 'string' || !/^sqlite:[A-Za-z]+$/.test(channel)) {
+        return Promise.reject(new Error('不支持的 sqlite 通道'));
+      }
+      return ipcRenderer.invoke(channel, payload);
     },
   },
   s3: s3Api,
@@ -240,6 +260,18 @@ contextBridge.exposeInMainWorld('electron', {
   },
   log: {
     open: () => ipcRenderer.send('log:open'),
+    minimize: () => ipcRenderer.send('log:minimize'),
+    close: () => ipcRenderer.send('log:close'),
+    onNewEntry: (callback) => {
+      const listener = (_event, entry) => callback(entry);
+      ipcRenderer.on('log:newEntry', listener);
+      return () => ipcRenderer.removeListener('log:newEntry', listener);
+    },
+    onCleared: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on('log:cleared', listener);
+      return () => ipcRenderer.removeListener('log:cleared', listener);
+    },
     addLog: (level, message, context, stack) => ipcRenderer.invoke('log:addLog', { level, message, context, stack }),
     getLogs: () => ipcRenderer.invoke('log:getLogs'),
     getSettings: () => ipcRenderer.invoke('log:getSettings'),
@@ -253,6 +285,9 @@ contextBridge.exposeInMainWorld('electron', {
     hasRootPath: () => ipcRenderer.invoke('notes-has-root-path'),
     getRootPath: () => ipcRenderer.invoke('notes-get-root-path'),
     setRootPath: (rootPath) => ipcRenderer.invoke('notes-set-root-path', rootPath),
+    // 视图根（当前固定目录）/ 对话根（对话整理独立目录）：仅同步给主进程做越界放行
+    setViewPath: (viewPath) => ipcRenderer.invoke('notes-set-view-path', viewPath),
+    setChatRootPath: (chatPath) => ipcRenderer.invoke('notes-set-chat-path', chatPath),
     selectFolder: () => ipcRenderer.invoke('notes-select-folder'),
     validateFolder: (folderPath) => ipcRenderer.invoke('notes-validate-folder', folderPath),
     scanFolder: (rootPath) => ipcRenderer.invoke('notes-scan-folder', rootPath),
@@ -268,34 +303,22 @@ contextBridge.exposeInMainWorld('electron', {
     indexAll: (rootPath) => ipcRenderer.invoke('notes-index-all', rootPath),
     openFileInFolder: (filePath) => ipcRenderer.invoke('notes-open-file-in-folder', filePath),
     readFileAsBuffer: (filePath) => ipcRenderer.invoke('notes-read-file-as-buffer', filePath),
-    // 视频内嵌播放前置探测：只取 size/mtime，不读文件内容
     statFile: (filePath) => ipcRenderer.invoke('notes-stat', filePath),
     moveItem: (itemPath, targetFolderPath) => ipcRenderer.invoke('notes-move-item', itemPath, targetFolderPath),
     copyItem: (sourcePath) => ipcRenderer.invoke('notes-copy-item', sourcePath),
     importDroppedFiles: (rootPath, filePaths) => ipcRenderer.invoke('notes-import-dropped-files', rootPath, filePaths),
-    // T02 / 4.1 + 4.5：新增 6 个通道（异步树 + 草稿保护），现有 21 个不变
     scanFolderAsync: (rootPath) => ipcRenderer.invoke('notes-scan-folder-async', { rootPath }),
     getFileTreeAsync: (rootPath) => ipcRenderer.invoke('notes-get-file-tree-async', { rootPath }),
     writeDraft: (absolutePath, content) => ipcRenderer.invoke('notes-write-draft', { absolutePath, content }),
     readDraft: (absolutePath) => ipcRenderer.invoke('notes-read-draft', { absolutePath }),
     deleteDraft: (absolutePath) => ipcRenderer.invoke('notes-delete-draft', { absolutePath }),
     listDrafts: () => ipcRenderer.invoke('notes-list-drafts'),
-    // T03 / Phase 2：全文搜索（主进程流式逐行扫描 + 加权打分）
     searchNotes: (opts) => ipcRenderer.invoke('notes-search-notes', opts),
-    // T04 / Phase 2：收藏（U8 收藏，主进程持久化到 notes_settings.json）
     getFavorites: () => ipcRenderer.invoke('notes-get-favorites'),
     setFavorites: (favorites) => ipcRenderer.invoke('notes-set-favorites', { favorites }),
     toggleFavorite: (absolutePath) => ipcRenderer.invoke('notes-toggle-favorite', { absolutePath }),
-    // T05 / Phase 3：标签系统（U2 多维度分类，front matter 优先 + 侧挂表兜底）
-    getFileTags: (absolutePath) => ipcRenderer.invoke('notes-get-file-tags', { absolutePath }),
-    setFileTags: (absolutePath, tags) => ipcRenderer.invoke('notes-set-file-tags', { absolutePath, tags }),
-    getAllTags: (rootPath) => ipcRenderer.invoke('notes-get-all-tags', { rootPath }),
-    getTagIndex: (rootPath) => ipcRenderer.invoke('notes-get-tag-index', { rootPath }),
-    // T06 / Phase 3：笔记模板（读取 userData/notes/templates/*.md 自定义模板）
     listTemplates: () => ipcRenderer.invoke('notes-list-templates'),
-    // T07 / Phase 3：附件落盘（粘贴/拖入图片自动保存到 .attachments/）
     saveAttachment: (notePath, fileName, data) => ipcRenderer.invoke('notes-save-attachment', { notePath, fileName, data }),
-    // T09 / Phase 4：文件监听（外部变更由主进程清洗后经 notes-fs-changed 推送）
     startWatching: (rootPath) => ipcRenderer.invoke('notes-start-watching', { rootPath }),
     stopWatching: () => ipcRenderer.invoke('notes-stop-watching'),
     onFsChanged: (callback) => {
@@ -333,9 +356,15 @@ contextBridge.exposeInMainWorld('electron', {
     launchPluginCallback = callback;
   },
   ipcRenderer: {
-    send: (channel, ...args) => ipcRenderer.send(channel, ...args),
-    invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
-    on: (channel, listener) => ipcRenderer.on(channel, listener),
+    invoke: (channel, ...args) => {
+      if (!ALLOWED_INVOKE_CHANNELS.has(channel)) {
+        return Promise.reject(new Error(`channel not allowed: ${channel}`));
+      }
+      return ipcRenderer.invoke(channel, ...args);
+    },
+    on: (channel, listener) => {
+      if (ALLOWED_LISTEN_CHANNELS.has(channel)) ipcRenderer.on(channel, listener);
+    },
     off: (channel, listener) => ipcRenderer.off(channel, listener),
   },
 });

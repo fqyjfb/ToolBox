@@ -25,7 +25,7 @@ export interface PinnedFolder {
   name: string;
 }
 
-export type NotesSearchField = 'title' | 'body' | 'tag';
+export type NotesSearchField = 'title' | 'body';
 
 export interface NotesSearchMatch {
   field: NotesSearchField;
@@ -82,22 +82,6 @@ export interface NotesStats {
   readingMinutes: number;
   outline: NotesOutlineItem[];
 }
-
-export type NotesTagSource = 'frontmatter' | 'override' | 'none';
-
-export interface NotesFileTags {
-  path: string;
-  tags: string[];
-  source: NotesTagSource;
-}
-
-export interface NotesTagInfo {
-  tag: string;
-  count: number;
-  paths: string[];
-}
-
-export type NotesTagIndex = Record<string, string[]>;
 
 // 标签页持久化快照；脏态（dirtyMap）是运行时概念，不落盘。
 export interface NotesTabsSnapshot {

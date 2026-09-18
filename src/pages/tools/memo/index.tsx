@@ -242,8 +242,11 @@ const MemoPage: React.FC = () => {
     }
   }, [categories, user, addToast]);
 
+  const memoReqIdRef = useRef(0);
+
   const loadMemos = useCallbackRef(async (pageNum: number = 1, append: boolean = false) => {
     if (!user) return;
+    const reqId = ++memoReqIdRef.current;
     
     try {
       if (!append) {
@@ -258,6 +261,8 @@ const MemoPage: React.FC = () => {
         result = await memoService.getMemos(user.id, categoryId, pageNum, pageSize);
       }
       
+      if (reqId !== memoReqIdRef.current) return;
+      
       if (append) {
         setMemos(prev => [...prev, ...result.list]);
       } else {
@@ -266,11 +271,12 @@ const MemoPage: React.FC = () => {
       setHasMore(result.list.length >= pageSize);
       setCurrentPage(pageNum);
     } catch (error) {
+      if (reqId !== memoReqIdRef.current) return;
       logError('Error loading memos', 'MemoPage', error as Error);
       addToast({ message: '加载备忘录失败', type: 'error' });
     } finally {
-      setLoading(false);
       setIsLoadingMore(false);
+      if (reqId === memoReqIdRef.current) setLoading(false);
     }
   }, [user, isSearchActive, searchQuery, selectedCategory, pageSize, addToast]);
 
@@ -279,14 +285,7 @@ const MemoPage: React.FC = () => {
     setMemos([]);
     setHasMore(true);
     loadMemos(1, false);
-  }, [user, selectedCategory, loadMemos]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setMemos([]);
-    setHasMore(true);
-    loadMemos(1, false);
-  }, [searchQuery, isSearchActive, loadMemos]);
+  }, [user, selectedCategory, searchQuery, isSearchActive, loadMemos]);
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver(

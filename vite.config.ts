@@ -54,11 +54,15 @@ export default defineConfig(({ mode }) => {
           'electron',
         ],
         output: {
-          manualChunks: (id) => {
+          // 关闭依赖提升：避免被动态导入的工具页/文件预览依赖被提升进入口 chunk，
+          // 从而在首屏被整体预加载
+          hoistTransitiveImports: false,
+          manualChunks: (id0) => {
+            // Windows 下 id 为绝对路径，统一分隔符后再匹配
+            const id = id0.replace(/\\/g, '/');
             if (id.includes('node_modules')) {
-              if (id.includes('node_modules/@open-file-viewer') || id.includes('node_modules/pdfjs-dist')) {
-                return 'vendor-viewer';
-              }
+              // 文件预览相关（@open-file-viewer / pdfjs-dist）不做强制分组：
+              // 交由 Rollup 自动分割，避免 Vite 的 __vitePreload 辅助块落在这里而被首屏依赖
               if (id.includes('node_modules/vditor')) {
                 return 'vendor-editor';
               }
@@ -77,12 +81,13 @@ export default defineConfig(({ mode }) => {
               ) {
                 return 'vendor-react';
               }
-              return 'vendor-other';
+              // 不指定兜底块：交由 Rollup 按依赖图自动分割，
+              // 避免未分类依赖被聚成一个大块并在首屏被整体加载
+              return undefined;
             }
-            if (id.includes('/src/pages/tools/')) {
-              const toolName = id.split('/pages/tools/')[1]?.split('/')[0];
-              return toolName ? `tool-${toolName}` : undefined;
-            }
+            // 工具页不再按目录强制分组：交由 Rollup 依据动态导入关系自动分割，
+            // 使被入口共享的模块独立为共享块，而不是把整个工具页拖进首屏
+            return undefined;
           },
         },
       },

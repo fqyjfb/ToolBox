@@ -94,20 +94,38 @@ email: test@example.com
 无效邮箱: @invalid.com, missing.at.sign.com`);
   }, []);
 
-  const highlightMatches = () => {
-    if (!testString || matches.length === 0) return testString;
-    
-    let result = testString;
-    const sortedMatches = [...matches].sort((a, b) => b.index - a.index);
-    
-    sortedMatches.forEach(match => {
-      const before = result.slice(0, match.index);
-      const matched = result.slice(match.index, match.index + match.match.length);
-      const after = result.slice(match.index + match.match.length);
-      result = before + `<mark class="bg-yellow-300 dark:bg-yellow-600 px-0.5 rounded">${matched}</mark>` + after;
-    });
-    
-    return result;
+  const renderHighlighted = () => {
+    if (!testString) {
+      return <span className="text-gray-400">输入测试文本查看匹配结果...</span>;
+    }
+    if (matches.length === 0) return testString;
+
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+
+    [...matches]
+      .sort((a, b) => a.index - b.index)
+      .forEach((match, i) => {
+        const start = match.index;
+        const end = start + match.match.length;
+        if (start < lastIndex) return;
+
+        if (start > lastIndex) {
+          parts.push(testString.slice(lastIndex, start));
+        }
+        parts.push(
+          <mark key={i} className="bg-yellow-300 dark:bg-yellow-600 px-0.5 rounded">
+            {testString.slice(start, end)}
+          </mark>
+        );
+        lastIndex = end;
+      });
+
+    if (lastIndex < testString.length) {
+      parts.push(testString.slice(lastIndex));
+    }
+
+    return parts;
   };
 
   return (
@@ -201,11 +219,7 @@ email: test@example.com
               <span className="text-sm text-gray-500">找到 {matches.length} 个匹配</span>
             </div>
             <div className="flex-1 w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 font-mono text-sm overflow-auto border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg whitespace-pre-wrap break-all">
-              {testString ? (
-                <span dangerouslySetInnerHTML={{ __html: highlightMatches() }} />
-              ) : (
-                <span className="text-gray-400">输入测试文本查看匹配结果...</span>
-              )}
+              {renderHighlighted()}
             </div>
           </div>
         </div>

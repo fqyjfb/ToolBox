@@ -98,6 +98,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
   }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
 
   useEffect(() => {
+    setCurrentPage(1);
     loadData(1);
   }, [loadData]);
 
@@ -105,12 +106,8 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     if (currentPage > 1) {
       loadData(currentPage);
     }
-  }, [currentPage, loadData]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive, loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   const openModal = (item: Phone | null = null) => {
     setEditingItem(item);

@@ -1,4 +1,4 @@
-// SidebarToolbar —— 侧栏顶部工具条：刷新 / 重建索引 / 固定目录 / 对话路径 / 新建文件夹 / ▾ 用模板新建笔记。
+// SidebarToolbar —— 侧栏顶部工具条
 
 import React, { useState } from 'react';
 import { RefreshCw, RotateCcw, Pin, MessageSquare, FolderPlus, ChevronDown } from 'lucide-react';

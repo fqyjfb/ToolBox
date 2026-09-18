@@ -1,4 +1,4 @@
-const { ipcMain, BrowserWindow, Menu, MenuItem, nativeTheme } = require('electron');
+const { ipcMain, BrowserWindow, Menu, MenuItem, nativeTheme, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
@@ -262,8 +262,16 @@ function registerOfflineToolsIpc() {
   ipcMain.on('offline-tool:confirm', (event, { message, title }) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win) { event.returnValue = false; return; }
-    showModal(win, { mode: 'confirm', message, title })
-      .then((r) => { event.returnValue = !r.canceled; });
+    // 同步 IPC 必须在 handler 返回前赋值 returnValue，因此使用同步对话框
+    const choice = dialog.showMessageBoxSync(win, {
+      type: 'question',
+      buttons: ['取消', '确定'],
+      defaultId: 1,
+      cancelId: 0,
+      title: String(title ?? '确认'),
+      message: String(message ?? ''),
+    });
+    event.returnValue = choice === 1;
   });
 
   ipcMain.on('offline-tool:prompt', (event, { message, defaultValue, title }) => {

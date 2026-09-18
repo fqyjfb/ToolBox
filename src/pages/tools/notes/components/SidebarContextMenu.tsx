@@ -1,4 +1,4 @@
-// 节点右键菜单：新建 / 移动 / 打开位置 / 重命名 / 删除
+// 节点右键菜单
 
 import React, { useMemo, useCallback } from 'react';
 import { FilePlus, FolderPlus, Edit, Trash2, ExternalLink, MoveRight } from 'lucide-react';
@@ -9,11 +9,8 @@ export interface SidebarContextMenuProps {
   isOpen: boolean;
   x: number;
   y: number;
-  /** 当前右键的节点；空表示在空白处右键（仅显示"新建笔记 / 新建文件夹"） */
   node?: FileTreeNode;
-  /** 当前文件树（用于构造"移动到"子菜单） */
   fileTree: FileTreeNode[];
-  /** 根目录绝对路径（用于构造"移动到根目录"项） */
   rootPath: string | null;
   onMoveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   onOpenCreateDialog: (type: 'folder' | 'note', parentPath: string | null) => void;

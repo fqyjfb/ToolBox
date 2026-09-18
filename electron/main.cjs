@@ -155,8 +155,6 @@ app.whenReady().then(async () => {
     createWindow(onWindowReady, true);
   }
 }).catch((err) => {
-  // 启动链上任意一步抛错（注册 IPC / 建窗）都会走到这里。
-  // 没有这个 catch，异常只会变成 unhandledRejection：进程活着但永远没有窗口。
   logFatal('[Main] 初始化失败，窗口未创建:', err);
 });
 
@@ -183,7 +181,6 @@ app.on('before-quit', () => {
   } catch (e) {
     console.error('[Main] SQLite 关闭失败:', e.message);
   }
-  // 关闭 IMAP IDLE 长连接与连接池，避免退出时服务端连接泄漏
   try {
     const emailIdle = require('./services/emailIdleService.cjs');
     const emailSvc = require('./services/emailService.cjs');

@@ -70,7 +70,11 @@ const WeatherPage: React.FC = () => {
       let detectedCity = localStorageService.getString(STORAGE_KEYS.WEATHER_CITY);
       
       if (!detectedCity && isWeb()) {
-        detectedCity = await getWeatherCity();
+        try {
+          detectedCity = await getWeatherCity();
+        } catch {
+          detectedCity = '';
+        }
       }
       
       if (detectedCity) {
@@ -85,7 +89,8 @@ const WeatherPage: React.FC = () => {
 
   useEffect(() => {
     if (isInitialized) {
-      setTimeout(() => fetchWeather(), 0);
+      const timer = setTimeout(() => fetchWeather(), 0);
+      return () => clearTimeout(timer);
     }
   }, [isInitialized, fetchWeather]);
 

@@ -1,4 +1,4 @@
-// 侧栏顶部「收藏」分组：常驻可见，折叠状态持久化（默认展开）
+// 侧栏「收藏」分组
 
 import React, { useMemo } from 'react';
 import { ChevronDown, ChevronRight, Star, X } from 'lucide-react';
@@ -7,15 +7,10 @@ import type { FileTreeNode, NotesFavoritePath } from '../types';
 import { findInTree } from '../utils/treeUtils';
 
 interface NotesSidebarFavoritesProps {
-  /** 当前选中的文件路径（用于高亮） */
   selectedFile: FileTreeNode | null;
-  /** 完整文件树（用于关联文件名） */
   fileTree: FileTreeNode[];
-  /** 收藏列表（绝对路径数组） */
   favorites: NotesFavoritePath[];
-  /** 切换收藏 */
   onToggleFavorite: (absolutePath: NotesFavoritePath) => void;
-  /** 选中文件（由父组件从 fileTree 找节点） */
   onSelectFile: (fileNode: FileTreeNode) => void;
 }
 
@@ -66,7 +61,7 @@ const NotesSidebarFavorites: React.FC<NotesSidebarFavoritesProps> = ({
                 key={`fav-${item.path}`}
                 className={`group flex items-center gap-1 rounded px-2 py-1 text-xs cursor-pointer transition-colors ${
                   isActive
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 } ${!item.found ? 'opacity-60' : ''}`}
                 onClick={() => {

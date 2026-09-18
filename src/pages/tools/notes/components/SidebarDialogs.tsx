@@ -1,4 +1,4 @@
-// 新建 / 存在确认 / 删除确认 三个对话框；CreateDialog 由 NotesSidebar re-export 供 index.tsx 复用
+// 新建 / 存在确认 / 删除确认 对话框
 
 import React, { useState } from 'react';
 

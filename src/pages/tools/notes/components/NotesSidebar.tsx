@@ -1,5 +1,4 @@
-// NotesSidebar —— 编排层：aside 容器 + useSidebarInteractions + 转发 props + 对话框 + 树渲染。
-// 节点数 > VIRTUALIZE_THRESHOLD 时切 react-window 虚拟列表，否则用 FileTreeItem 递归。
+// NotesSidebar —— 侧边栏容器
 
 import React, { useEffect, useRef, useState } from 'react';
 import { FolderOpen } from 'lucide-react';
@@ -15,12 +14,10 @@ import { useSidebarInteractions } from './useSidebarInteractions';
 import { VIRTUALIZE_THRESHOLD } from '../constants/limits';
 import NotesSidebarRecents from './NotesSidebarRecents';
 import NotesSidebarFavorites from './NotesSidebarFavorites';
-import NotesSidebarTagFilter from './NotesSidebarTagFilter';
-import { useNotesTags } from '../hooks/useNotesTags';
 
 export { CreateDialog };
 
-// 统计所有节点数（含子树），用于判断是否启用虚拟化
+// 统计所有节点数
 function countTreeNodes(items: NotesSidebarProps['fileTree']): number {
   let count = 0;
   const walk = (nodes: NotesSidebarProps['fileTree']) => {
@@ -35,11 +32,10 @@ function countTreeNodes(items: NotesSidebarProps['fileTree']): number {
 
 const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
   const ix = useSidebarInteractions(props);
-  const tagsHook = useNotesTags();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(480);
 
-  // T02 / 4.3：ResizeObserver 测量 tree 容器高度，供 FixedSizeList 使用
+  // ResizeObserver 测量 tree 容器高度
   useEffect(() => {
     if (!containerRef.current) return;
     const el = containerRef.current;
@@ -48,31 +44,23 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
       if (h > 0) setContainerHeight(h);
     });
     ro.observe(el);
-    // 立即跑一次，触发首次渲染的高度
+    // 立即跑一次
     setContainerHeight(el.clientHeight || 480);
     return () => ro.disconnect();
   }, []);
 
-  // T02 / 4.3：节点数 > 阈值则虚拟化，否则保持原 FileTreeItem 递归
+  // 节点数 > 阈值则虚拟化
   const totalNodes = countTreeNodes(props.fileTree);
   const useVirtual = totalNodes > VIRTUALIZE_THRESHOLD;
 
-  // 过滤掉对话整理目录（与原行为一致） + 应用 tag 过滤（T05）
-  const filteredTree = tagsHook.filterTreeByTag(props.fileTree, tagsHook.tagFilter).filter((node) => node.path !== props.chatOrganizePath);
+  const filteredTree = props.fileTree.filter((node) => node.path !== props.chatOrganizePath);
 
   return (
     <aside
-      className={`flex h-full w-48 flex-shrink-0 flex-col bg-white dark:bg-gray-900 ${ix.isDragOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+      className="flex h-full w-48 flex-shrink-0 flex-col bg-white dark:bg-gray-900"
       onDragOver={ix.handleAsideDragOver}
-      onDragLeave={ix.handleAsideDragLeave}
       onDrop={ix.handleAsideDrop}
     >
-      {ix.isDragOver && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 pointer-events-none">
-          <div className="rounded-lg bg-white dark:bg-gray-800 px-4 py-2 text-sm text-primary shadow-lg">释放以导入文件</div>
-        </div>
-      )}
-
       <SidebarToolbar
         loading={props.loading}
         onRefresh={props.onRefresh}
@@ -121,6 +109,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
         onReorderPinnedFolder={props.onReorderPinnedFolder}
         onAddPinnedFolder={props.onAddPinnedFolder}
         onRemovePinnedFolder={props.onRemovePinnedFolder}
+        onDropFiles={ix.handlePinnedDrop}
       />
 
       <NotesSidebarFavorites
@@ -130,15 +119,18 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
         fileTree={props.fileTree}
         onSelectFile={props.onSelectFile}
       />
-      {/* rootPath：标签重命名 / 删除后要用它重建索引 */}
-      <NotesSidebarTagFilter rootPath={props.rootPath} />
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide border-t border-gray-100 dark:border-gray-800"
+        className={`flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide border-t border-gray-100 dark:border-gray-800 transition-colors ${
+          ix.treeAreaDragOver ? 'bg-blue-50 ring-2 ring-inset ring-blue-500/60 dark:bg-blue-500/10' : ''
+        }`}
         onContextMenu={(e) => {
           if ((e.target as HTMLElement).closest('.cursor-pointer')) return;
           ix.handleContextMenu(e);
         }}
+        onDragOver={ix.handleTreeAreaDragOver}
+        onDragLeave={ix.handleTreeAreaDragLeave}
+        onDrop={ix.handleTreeAreaDrop}
       >
         {filteredTree.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-gray-400">

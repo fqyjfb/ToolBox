@@ -100,7 +100,7 @@ function schedulePersist() {
   persistTimer = setTimeout(() => {
     persistTimer = null;
     persist();
-  }, 500);
+  }, 2000);
 }
 
 function flushPersist() {

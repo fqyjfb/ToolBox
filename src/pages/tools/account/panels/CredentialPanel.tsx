@@ -118,20 +118,20 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
   }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
 
   useEffect(() => {
-    loadData(1);
     loadPhones();
-  }, [loadData, loadPhones]);
+  }, [loadPhones]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadData(1);
+  }, [loadData]);
 
   useEffect(() => {
     if (currentPage > 1) {
       loadData(currentPage);
     }
-  }, [currentPage, loadData]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive, loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   const openModal = (item: Credential | null = null) => {
     setEditingItem(item);

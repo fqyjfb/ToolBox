@@ -1,4 +1,4 @@
-// 侧栏底部「最近」分组：渲染在文件树下方，折叠状态持久化（默认折叠）
+// 侧栏「最近」分组
 
 import React, { useMemo } from 'react';
 import { ChevronDown, ChevronRight, Clock, X } from 'lucide-react';
@@ -7,17 +7,11 @@ import type { FileTreeNode, NotesRecentItem, NotesFavoritePath } from '../types'
 import { findInTree } from '../utils/treeUtils';
 
 interface NotesSidebarRecentsProps {
-  /** 当前选中的文件路径（用于高亮） */
   selectedFile: FileTreeNode | null;
-  /** 完整文件树（用于关联文件名 / 校验是否存在） */
   fileTree: FileTreeNode[];
-  /** 最近列表（最多 20） */
   recents: NotesRecentItem[];
-  /** 选中文件（由父组件从 fileTree 找节点） */
   onSelectFile: (fileNode: FileTreeNode) => void;
-  /** 移除单个最近项 */
   onRemoveRecent: (absolutePath: NotesFavoritePath) => void;
-  /** 清空最近列表 */
   onClearRecents: () => void;
 }
 
@@ -84,7 +78,7 @@ const NotesSidebarRecents: React.FC<NotesSidebarRecentsProps> = ({
                 key={`rec-${item.path}`}
                 className={`group flex items-center gap-1 rounded px-2 py-1 text-xs cursor-pointer transition-colors ${
                   isActive
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 } ${!item.found ? 'opacity-60' : ''}`}
                 onClick={() => {

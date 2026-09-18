@@ -54,10 +54,42 @@ function getRootPath() {
   return getSetting('notes_root_path');
 }
 
+function isInsideRoot(targetPath, rootPath) {
+  if (!rootPath || typeof targetPath !== 'string' || !targetPath) return false;
+  const resolvedRoot = path.resolve(rootPath);
+  const resolvedTarget = path.resolve(targetPath);
+  return resolvedTarget === resolvedRoot || resolvedTarget.startsWith(resolvedRoot + path.sep);
+}
+
 function setRootPath(rootPath) {
-  const result = saveSetting('notes_root_path', rootPath);
-  console.log('[NotesService] setRootPath:', { rootPath, result });
-  return result;
+  return saveSetting('notes_root_path', rootPath);
+}
+
+// 视图根（当前查看的固定目录）与对话根（对话整理独立目录）相互独立，也独立于主根：
+// 只参与文件操作的越界校验，绝不参与 getFileTree / scanFolder 的隐式主根语义，
+// 因此查看固定目录、加载对话树都不会再改写主根、互不串扰。传空即清除。
+function setViewPath(viewPath) {
+  return saveSetting('notes_view_path', viewPath || null);
+}
+
+function setChatRootPath(chatPath) {
+  return saveSetting('notes_chat_path', chatPath || null);
+}
+
+function getAllowedRoots() {
+  const roots = [];
+  for (const key of ['notes_root_path', 'notes_view_path', 'notes_chat_path']) {
+    const value = getSetting(key);
+    if (value && typeof value === 'string' && !roots.includes(value)) {
+      roots.push(value);
+    }
+  }
+  return roots;
+}
+
+function rejectOutsideRoots(targetPath, roots) {
+  if (roots.some((rootPath) => isInsideRoot(targetPath, rootPath))) return null;
+  return { success: false, error: '路径不在笔记根目录内' };
 }
 
 async function selectFolder() {
@@ -300,6 +332,9 @@ function createFolder(parentPath, folderName) {
       ? path.join(parentPath, folderName)
       : path.join(rootPath, folderName);
 
+    const folderReject = rejectOutsideRoots(folderPath, getAllowedRoots());
+    if (folderReject) return folderReject;
+
     if (fs.existsSync(folderPath)) {
       return { success: false, error: '文件夹已存在', exists: true };
     }
@@ -326,6 +361,9 @@ function createFolderForce(parentPath, folderName, mode) {
     const folderPath = parentPath
       ? path.join(parentPath, folderName)
       : path.join(rootPath, folderName);
+
+    const folderReject = rejectOutsideRoots(folderPath, getAllowedRoots());
+    if (folderReject) return folderReject;
 
     let finalPath = folderPath;
 
@@ -369,6 +407,9 @@ function createNote(parentPath, fileName, content = '') {
       ? path.join(parentPath, finalName)
       : path.join(rootPath, finalName);
 
+    const noteReject = rejectOutsideRoots(filePath, getAllowedRoots());
+    if (noteReject) return noteReject;
+
     if (fs.existsSync(filePath)) {
       return { success: false, error: '文件已存在', exists: true };
     }
@@ -397,6 +438,9 @@ function createNoteForce(parentPath, fileName, mode, content = '') {
       ? path.join(parentPath, finalName)
       : path.join(rootPath, finalName);
 
+    const noteReject = rejectOutsideRoots(filePath, getAllowedRoots());
+    if (noteReject) return noteReject;
+
     if (mode === 'overwrite') {
       fs.writeFileSync(filePath, content, 'utf-8');
     } else {
@@ -423,6 +467,9 @@ function createNoteForce(parentPath, fileName, mode, content = '') {
 }
 
 function readFile(filePath) {
+  const outside = rejectOutsideRoots(filePath, getAllowedRoots());
+  if (outside) return outside;
+
   try {
     if (!fs.existsSync(filePath)) {
       return { success: false, error: '文件不存在' };
@@ -439,6 +486,9 @@ function readFile(filePath) {
 }
 
 function saveFile(filePath, content) {
+  const outside = rejectOutsideRoots(filePath, getAllowedRoots());
+  if (outside) return outside;
+
   try {
     const fileType = fileTypeUtils.getFileType(filePath);
     if (fileType && !fileTypeUtils.isTextFile(filePath)) {
@@ -462,6 +512,9 @@ function saveFile(filePath, content) {
 }
 
 function renameItem(oldPath, newName) {
+  const outside = rejectOutsideRoots(oldPath, getAllowedRoots());
+  if (outside) return outside;
+
   try {
     const parentPath = path.dirname(oldPath);
 
@@ -474,6 +527,9 @@ function renameItem(oldPath, newName) {
     }
 
     const newPath = path.join(parentPath, finalName);
+
+    const newOutside = rejectOutsideRoots(newPath, getAllowedRoots());
+    if (newOutside) return newOutside;
 
     if (fs.existsSync(newPath)) {
       return { success: false, error: '目标名称已存在' };
@@ -491,6 +547,9 @@ function renameItem(oldPath, newName) {
 }
 
 function deleteItem(itemPath) {
+  const outside = rejectOutsideRoots(itemPath, getAllowedRoots());
+  if (outside) return outside;
+
   try {
     if (!fs.existsSync(itemPath)) {
       return { success: false, error: '文件或文件夹不存在' };
@@ -515,9 +574,7 @@ function deleteItem(itemPath) {
 
 function hasRootPath() {
   const rootPath = getRootPath();
-  const exists = rootPath !== null && fs.existsSync(rootPath);
-  console.log('[NotesService] hasRootPath:', { rootPath, exists });
-  return exists;
+  return rootPath !== null && fs.existsSync(rootPath);
 }
 
 function indexAllNotes(rootPath) {
@@ -556,6 +613,9 @@ function openFileInFolder(filePath) {
 }
 
 function readFileAsBuffer(filePath) {
+  const outside = rejectOutsideRoots(filePath, getAllowedRoots());
+  if (outside) return outside;
+
   try {
     if (!fs.existsSync(filePath)) {
       return { success: false, error: '文件不存在' };
@@ -569,6 +629,11 @@ function readFileAsBuffer(filePath) {
 }
 
 function moveItem(itemPath, targetFolderPath) {
+  const outside = rejectOutsideRoots(itemPath, getAllowedRoots());
+  if (outside) return outside;
+  const targetOutside = rejectOutsideRoots(targetFolderPath, getAllowedRoots());
+  if (targetOutside) return targetOutside;
+
   try {
     if (!fs.existsSync(itemPath)) {
       return { success: false, error: '文件或文件夹不存在' };
@@ -661,6 +726,9 @@ function copyFolderRecursive(source, dest) {
 }
 
 function importDroppedFiles(rootPath, filePaths) {
+  const outside = rejectOutsideRoots(rootPath, getAllowedRoots());
+  if (outside) return outside;
+
   try {
     if (!rootPath || !fs.existsSync(rootPath)) {
       return { success: false, error: '目标文件夹不存在' };
@@ -722,6 +790,9 @@ async function statFile(filePath) {
   if (typeof filePath !== 'string' || !filePath) {
     return { success: false, error: '参数错误：filePath 必填' };
   }
+
+  const outside = rejectOutsideRoots(filePath, getAllowedRoots());
+  if (outside) return outside;
   try {
     const stat = await fsp.stat(filePath);
     return {
@@ -738,6 +809,8 @@ async function statFile(filePath) {
 module.exports = {
   getRootPath,
   setRootPath,
+  setViewPath,
+  setChatRootPath,
   selectFolder,
   validateFolder,
   scanFolder,

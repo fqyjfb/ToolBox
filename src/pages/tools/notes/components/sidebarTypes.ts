@@ -28,6 +28,7 @@ export interface NotesSidebarProps {
   pinnedFolders: PinnedFolder[];
   currentViewPath: string | null;
   onAddPinnedFolder: () => Promise<boolean>;
+  onAddPinnedFolderByPath: (folderPath: string) => boolean;
   onRemovePinnedFolder: (folderPath: string) => void;
   onReorderPinnedFolder: (fromIndex: number, toIndex: number) => void;
   onSwitchToFolder: (folderPath: string) => Promise<void>;

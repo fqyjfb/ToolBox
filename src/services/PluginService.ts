@@ -341,13 +341,13 @@ export default class PluginService {
 
   async installPlugin(pluginId: string, repo?: string, releaseUrl?: string, onProgress?: (progress: InstallProgress) => void): Promise<PluginServiceResponse> {
     return new Promise((resolve) => {
-      const progressHandler = (_event: unknown, data: { pluginId: string; progress: InstallProgress }) => {
+      const progressHandler = (data: { pluginId: string; progress: InstallProgress }) => {
         if (data.pluginId === pluginId && onProgress) {
           onProgress(data.progress);
         }
       };
 
-      window.electron?.ipcRenderer?.on('plugin:install-progress', progressHandler);
+      const offInstallProgress = window.electron?.plugin?.onInstallProgress(progressHandler);
 
       window.electron?.plugin?.install(pluginId, repo, releaseUrl)
         .then((result) => {
@@ -361,7 +361,7 @@ export default class PluginService {
           resolve({ success: false, error: (error as Error).message });
         })
         .finally(() => {
-          window.electron?.ipcRenderer?.off('plugin:install-progress', progressHandler);
+          offInstallProgress?.();
         });
     });
   }

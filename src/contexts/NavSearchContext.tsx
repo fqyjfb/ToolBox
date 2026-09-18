@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 
 /* eslint-disable react-refresh/only-export-components */
 export type SearchPageType = 'cloud-clipboard' | 'quick-reply' | 'todo' | 'account' | 'nav' | null;
@@ -54,23 +54,22 @@ export const NavSearchProvider = ({ children }: NavSearchProviderProps) => {
     }
   }, []);
 
-  return (
-    <NavSearchContext.Provider
-      value={{
-        searchQuery,
-        setSearchQuery,
-        isSearchActive,
-        setIsSearchActive,
-        currentPage,
-        setCurrentPage,
-        performSearch,
-        clearSearch,
-        handleSearch,
-      }}
-    >
-      {children}
-    </NavSearchContext.Provider>
+  const value = useMemo(
+    () => ({
+      searchQuery,
+      setSearchQuery,
+      isSearchActive,
+      setIsSearchActive,
+      currentPage,
+      setCurrentPage,
+      performSearch,
+      clearSearch,
+      handleSearch,
+    }),
+    [searchQuery, isSearchActive, currentPage, performSearch, clearSearch, handleSearch]
   );
+
+  return <NavSearchContext.Provider value={value}>{children}</NavSearchContext.Provider>;
 };
 
 export { NavSearchContext };

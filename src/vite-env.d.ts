@@ -321,6 +321,10 @@ declare interface Window {
       hasRootPath: () => Promise<boolean>;
       getRootPath: () => Promise<string | null>;
       setRootPath: (rootPath: string) => Promise<boolean>;
+      /** 同步当前查看的固定目录（视图根）给主进程，仅用于文件操作越界放行；null 表示主根视图 */
+      setViewPath: (viewPath: string | null) => Promise<boolean>;
+      /** 同步对话整理独立目录（对话根）给主进程，仅用于文件操作越界放行；null 表示未单独设置 */
+      setChatRootPath: (chatPath: string | null) => Promise<boolean>;
       selectFolder: () => Promise<NotesSelectFolderResult>;
       validateFolder: (folderPath: string) => Promise<NotesValidateResult>;
       scanFolder: (rootPath: string) => Promise<NotesScanResult>;
@@ -363,11 +367,10 @@ declare interface Window {
           name: string;
           fileType: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf' | 'video';
           score: number;
-          matches: Array<{ field: 'title' | 'body' | 'tag'; line: number; snippet: string }>;
+          matches: Array<{ field: 'title' | 'body'; line: number; snippet: string }>;
           mtime: number;
           size: number;
           titleHits?: number;
-          tagHits?: number;
           bodyHits?: number;
         }>;
         scanned: number;
@@ -379,11 +382,7 @@ declare interface Window {
       getFavorites: () => Promise<{ success: boolean; favorites: string[]; error?: string }>;
       setFavorites: (favorites: string[]) => Promise<{ success: boolean; favorites: string[]; error?: string }>;
       toggleFavorite: (absolutePath: string) => Promise<{ success: boolean; favorites: string[]; toggled: boolean; error?: string }>;
-      // T05 / Phase 3：标签系统（U2 多维度分类，front matter 优先 + 侧挂表兜底）
-      getFileTags: (absolutePath: string) => Promise<{ success: boolean; tags: string[]; source: 'frontmatter' | 'override' | 'none'; error?: string }>;
-      setFileTags: (absolutePath: string, tags: string[]) => Promise<{ success: boolean; tags: string[]; mode?: 'frontmatter' | 'override'; error?: string }>;
-      getAllTags: (rootPath: string) => Promise<{ success: boolean; tags: Array<{ tag: string; count: number; paths: string[] }>; scanned: number; error?: string }>;
-      getTagIndex: (rootPath: string) => Promise<{ success: boolean; index: Record<string, string[]>; error?: string }>;
+
       // T06 / Phase 3：笔记模板（读取 userData/notes/templates/*.md 自定义模板）
       listTemplates: () => Promise<{ success: boolean; templates: Array<{ id: string; name: string; content: string }>; error?: string }>;
       // T07 / Phase 3：附件落盘（粘贴/拖入图片自动保存到 .attachments/yyyy-mm/<hash>.<ext>）
@@ -444,6 +443,10 @@ declare interface Window {
       exportLogs: () => Promise<string>;
       importLogs: (jsonString: string) => Promise<boolean>;
       getStats: () => Promise<{ total: number; error: number; warn: number; info: number; debug: number }>;
+      minimize: () => void;
+      close: () => void;
+      onNewEntry: (callback: (entry: { id: string; timestamp: number; level: 'error' | 'warn' | 'info' | 'debug'; message: string; context?: string; stack?: string }) => void) => () => void;
+      onCleared: (callback: () => void) => () => void;
     };
     onDownloadProgress: (callback: (progress: number) => void) => void;
     onNavigate: (callback: (path: string) => void) => void;
@@ -451,8 +454,10 @@ declare interface Window {
     onOpenAddTodo: (callback: () => void) => void;
     onOpenAddMemo: (callback: () => void) => void;
     onLaunchPlugin: (callback: (pluginId: string) => void) => void;
+    sqlite: {
+      invoke: <T>(channel: string, payload?: unknown) => Promise<T>;
+    };
     ipcRenderer: {
-      send: <T extends unknown[]>(channel: string, ...args: T) => void;
       invoke: <T>(channel: string, ...args: unknown[]) => Promise<T>;
       on: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;
       off: <T extends unknown[]>(channel: string, listener: (event: unknown, ...args: T) => void) => void;
@@ -492,6 +497,7 @@ declare interface Window {
       installFromGithub: (id: string, repo: string) => Promise<{ success: boolean; reason?: string; message?: string }>;
       openWindow: (pluginId: string, userId?: string | null) => Promise<{ success: boolean; error?: string }>;
       openExtensionsDir: () => Promise<{ success: boolean; error?: string }>;
+      onInstallProgress: (callback: (data: { pluginId: string; progress: { status: 'starting' | 'downloading' | 'extracting' | 'installing' | 'completed' | 'error'; message: string; progress: number; mirror?: string } }) => void) => () => void;
       storage: {
         get: <T>(pluginId: string, userId: string, key?: string) => Promise<T | null>;
         set: (pluginId: string, userId: string, key: string, value: unknown) => Promise<void>;

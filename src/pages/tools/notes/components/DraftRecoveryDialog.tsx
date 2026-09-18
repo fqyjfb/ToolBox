@@ -1,11 +1,9 @@
-// 草稿恢复弹窗：纯展示组件，清单与恢复/丢弃动作全部由 props 传入
-// 「恢复」不依赖当前选中文件，草稿路径已由主进程 `<hash>.path` 还原
+// 草稿恢复弹窗
 
 import React, { useState } from 'react';
 import { AlertCircle, Trash2, RotateCcw, X } from 'lucide-react';
 import type { DraftInfo } from '../hooks/useNotesDraftRecovery';
 
-// 从绝对路径取文件名（浏览器环境不引入 node 的 path）
 const basenameOf = (absolutePath: string): string =>
   String(absolutePath).split(/[\\/]/).pop() ?? '';
 

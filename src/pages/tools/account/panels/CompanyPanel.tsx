@@ -100,6 +100,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
   }, [userId, searchQuery, isSearchActive, pageSize, addToast]);
 
   useEffect(() => {
+    setCurrentPage(1);
     loadData(1);
   }, [loadData]);
 
@@ -107,12 +108,8 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
     if (currentPage > 1) {
       loadData(currentPage);
     }
-  }, [currentPage, loadData]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadData(1);
-  }, [searchQuery, isSearchActive, loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   const openModal = (item: Company | null = null) => {
     setEditingItem(item);

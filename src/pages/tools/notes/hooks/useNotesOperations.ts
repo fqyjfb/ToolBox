@@ -1,6 +1,6 @@
 // 文件增删改移；跨 hook 状态更新所需 setter 全部由 deps 注入
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import path from 'path';
 import { logError } from '../../../../services/loggerService';
 import localStorageService, { STORAGE_KEYS } from '../../../../services/localStorageService';
@@ -52,6 +52,10 @@ export interface UseNotesOperationsReturn {
 }
 
 export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperationsReturn {
+  // 下方回调均为 [] 依赖，deps.rootPath 会停在首次渲染的快照（null），必须用 ref 读最新值
+  const rootPathRef = useRef(deps.rootPath);
+  rootPathRef.current = deps.rootPath;
+
   const createFolder = useCallback(
     async (parentPath: string | null, name: string): Promise<{ success: boolean; exists?: boolean }> => {
       if (!window.electron) return { success: false };
@@ -369,9 +373,10 @@ export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperat
       filePaths: string[],
       targetFolderPath?: string
     ): Promise<{ success: boolean; imported?: string[]; errors?: string[] }> => {
-      if (!window.electron || !deps.rootPath) return { success: false, errors: ['未设置根目录'] };
+      const currentRoot = rootPathRef.current;
+      if (!window.electron || !currentRoot) return { success: false, errors: ['未设置根目录'] };
       try {
-        const dest = targetFolderPath || deps.currentViewPathRef.current || deps.rootPath;
+        const dest = targetFolderPath || deps.currentViewPathRef.current || currentRoot;
         const result = await window.electron.notes.importDroppedFiles(dest, filePaths);
         if (result.success) {
           await deps.refreshFileTree();
