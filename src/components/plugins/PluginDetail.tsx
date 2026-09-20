@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download, Pin, PinOff, ExternalLink, Star, Play } from 'lucide-react';
 import Modal from '../ui/Modal';
+import CachedIcon from '../ui/CachedIcon';
 import { PluginInfo, InstalledPlugin } from '../../types/plugin';
 import { iconMap } from '../../utils/iconMap';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -27,7 +28,6 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
   onInstall,
   onUninstall,
 }) => {
-  const [iconError, setIconError] = React.useState(false);
   const pinnedToolIds = useSidebarStore((state) => state.pinnedToolIds);
   const addPinnedTool = useSidebarStore((state) => state.addPinnedTool);
   const removePinnedTool = useSidebarStore((state) => state.removePinnedTool);
@@ -62,15 +62,15 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
           <div
           className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-700"
         >
-          {plugin.iconUrl && !iconError && (
-            <img
-              src={plugin.iconUrl}
-              alt={plugin.name}
+          {plugin.iconUrl ? (
+            <CachedIcon
+              url={plugin.iconUrl}
+              name={plugin.name}
+              type="plugin"
               className="w-full h-full object-contain"
-              onError={() => setIconError(true)}
+              fallbackIcon={<Icon className="w-8 h-8 text-gray-600 dark:text-gray-300" />}
             />
-          )}
-          {(!plugin.iconUrl || iconError) && (
+          ) : (
             <Icon className="w-8 h-8 text-gray-600 dark:text-gray-300" />
           )}
         </div>
@@ -103,9 +103,10 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
 
         {(plugin as PluginInfo).image && (
           <div className="rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-            <img
-              src={(plugin as PluginInfo).image}
-              alt={plugin.name}
+            <CachedIcon
+              url={(plugin as PluginInfo).image}
+              name={plugin.name}
+              type="plugin"
               className="w-full h-32 object-cover"
             />
           </div>

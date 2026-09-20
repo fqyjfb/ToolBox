@@ -75,6 +75,7 @@ const CachedIcon: React.FC<CachedIconProps> = ({
   const effectiveFallback = defaultIcon ?? fallbackIcon;
 
   const requestKey = `${type}:${effectiveSrc}`;
+  const trimmedSrc = (effectiveSrc ?? '').trim();
 
   const [imageSrc, setImageSrc] = useState<string | null>(() => resolvedUrls.get(requestKey) ?? null);
   const [isLoading, setIsLoading] = useState(() => !resolvedUrls.has(requestKey));
@@ -82,8 +83,38 @@ const CachedIcon: React.FC<CachedIconProps> = ({
   const [isVisible, setIsVisible] = useState(iconOnly);
   const iconRef = React.useRef<HTMLDivElement>(null);
 
+  // Electron：远程图标统一交给主进程解析成本地地址（磁盘缓存），解析不到就抛错走兜底图标；
+  // Web：沿用 weserv 代理 + Cache API。
+  const loadIconUrl = useCallback(async (): Promise<string> => {
+    if (!trimmedSrc) throw new Error('empty icon url');
+
+    if (isElectron()) {
+      if (!window.electron?.resolveIcons) {
+        throw new Error('icon resolve unavailable');
+      }
+      const resolved = await window.electron.resolveIcons([trimmedSrc]);
+      const localUrl = resolved?.[trimmedSrc];
+      if (!localUrl) {
+        throw new Error('icon unavailable');
+      }
+      return localUrl;
+    }
+
+    const cachedResponse = await iconCacheService.get(trimmedSrc, type);
+    if (cachedResponse) {
+      return URL.createObjectURL(await cachedResponse.blob());
+    }
+
+    const response = await fetchWithFallback(trimmedSrc);
+    if (!response.ok) {
+      throw new Error(`HTTP error ${response.status}`);
+    }
+    await iconCacheService.set(trimmedSrc, response.clone(), type);
+    return URL.createObjectURL(await response.blob());
+  }, [trimmedSrc, type]);
+
   const fetchImage = useCallback(async () => {
-    if (!effectiveSrc || !effectiveSrc.trim()) {
+    if (!trimmedSrc) {
       setImageSrc(null);
       setIsLoading(false);
       setHasError(true);
@@ -100,39 +131,37 @@ const CachedIcon: React.FC<CachedIconProps> = ({
       setIsLoading(false);
     };
 
+    // data:/blob:/local-media: 等非远程地址无需解析，直接使用
+    if (!/^https?:\/\//i.test(trimmedSrc)) {
+      applyUrl(trimmedSrc);
+      return;
+    }
+
     try {
       if (activeRequests.has(requestKey)) {
         applyUrl(await activeRequests.get(requestKey)!);
         return;
       }
 
-      const cachedResponse = await iconCacheService.get(effectiveSrc, type);
-
-      if (cachedResponse) {
-        applyUrl(URL.createObjectURL(await cachedResponse.blob()));
-        return;
-      }
-
-      const requestPromise = fetchWithFallback(effectiveSrc).then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error ${response.status}`);
-        }
-        await iconCacheService.set(effectiveSrc, response.clone(), type);
-        const blob = await response.blob();
-        return URL.createObjectURL(blob);
-      }).finally(() => {
+      const requestPromise = loadIconUrl().finally(() => {
         activeRequests.delete(requestKey);
       });
 
       activeRequests.set(requestKey, requestPromise);
       applyUrl(await requestPromise);
-
     } catch {
-      // fetch 失败（通常是浏览器 CORS 限制），回退到 <img> 直接加载
+      if (isElectron()) {
+        // 主进程解析不出本地地址就用兜底图标，绝不回退裸远程 URL（国内网络下必然破图）
+        setImageSrc(null);
+        setHasError(true);
+        setIsLoading(false);
+        return;
+      }
+      // Web 端 fetch 失败（通常是浏览器 CORS 限制）时回退 <img> 直接加载
       // <img> 标签加载跨域图片不受 CORS 限制，仍可正常显示
-      applyUrl(effectiveSrc);
+      applyUrl(trimmedSrc);
     }
-  }, [effectiveSrc, type, requestKey]);
+  }, [trimmedSrc, requestKey, loadIconUrl]);
 
   useEffect(() => {
     if (iconOnly) return;

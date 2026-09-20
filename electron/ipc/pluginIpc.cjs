@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { getMimeType } = require('../services/fileTypeUtils.cjs');
+// 安装成功后把插件图标落盘到本地缓存，保证已安装插件的图标展示不再依赖网络
+const { cachePluginIcon, resolveIconUrls } = require('../lib/config.cjs');
 
 let pluginIpcRegistered = false;
 const { app } = require('electron');
@@ -448,6 +450,18 @@ function saveConfig(config) {
   } catch { /* ignore */ }
 }
 
+// 后台补齐已安装插件的本地图标缓存（best-effort，失败不影响列表返回）
+function cacheInstalledPluginIcons(plugins) {
+  try {
+    const urls = (plugins || [])
+      .map((plugin) => plugin?.iconUrl)
+      .filter((url) => typeof url === 'string' && url.startsWith('http'));
+    if (urls.length > 0) {
+      resolveIconUrls(urls);
+    }
+  } catch { /* ignore */ }
+}
+
 function registerPluginIpc() {
   if (pluginIpcRegistered) return;
   pluginIpcRegistered = true;
@@ -520,6 +534,10 @@ function registerPluginIpc() {
           }
         }
       }
+
+      // 补齐尚未落盘的图标（如升级前安装的插件）：已缓存的会直接跳过，不会产生重复下载
+      cacheInstalledPluginIcons(plugins);
+
       return plugins;
     } catch (error) {
       console.error('Failed to get installed plugins:', error);
@@ -603,6 +621,8 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
       config[pluginId] = { enabled: true };
       saveConfig(config);
 
+      cachePluginIcon(pluginDir);
+
       sendProgress({
         status: 'completed',
         message: '安装完成',
@@ -682,6 +702,8 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
       config[pluginId] = { enabled: true };
       saveConfig(config);
 
+      cachePluginIcon(pluginDir);
+
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -703,6 +725,8 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
       const config = loadConfig();
       config[pluginId] = { enabled: true };
       saveConfig(config);
+
+      cachePluginIcon(pluginDir);
 
       return { success: true };
     } catch (error) {
@@ -726,6 +750,8 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
       const config = loadConfig();
       config[id] = { enabled: true };
       saveConfig(config);
+
+      cachePluginIcon(pluginDir);
 
       return { success: true };
     } catch (error) {

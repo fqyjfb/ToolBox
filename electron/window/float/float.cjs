@@ -40,11 +40,9 @@ function getIconByName(name, item) {
   }
   
   // Handle plugin icon type
+  // 图标已由主进程落盘为本地缓存并转成 iconDataUrl（见上方分支）；走到这里说明本地
+  // 也没有图标，直接显示兜底文字，不再回退远程地址（国内网络下会破图）
   if (name.startsWith('plugin:')) {
-    if (item && item.path) {
-      return '<img src="' + item.path + '" class="app-icon plugin-icon" />';
-    }
-    const pluginId = name.substring(7);
     return '<span class="plugin-fallback-icon">插件</span>';
   }
   

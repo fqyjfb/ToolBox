@@ -10,6 +10,7 @@ import { useAuthStore } from '../../store/AuthStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { ALL_TOOLS, ToolInfo } from '../../constants/tools';
+import CachedIcon from '../ui/CachedIcon';
 import { isElectron } from '../../utils/environment';
 import { iconMap } from '../../utils/iconMap';
 import { pluginApi } from '../../services/pluginApi';
@@ -63,6 +64,23 @@ const Sidebar: React.FC = () => {
     { id: 'plugin-store', title: '插件商店', icon: <Package className="w-4 h-4 flex-shrink-0" />, path: '/tools/plugin-store', active: isActive('/tools/plugin-store') },
     { id: 'offline-tools', title: '离线工具', icon: <Wrench className="w-4 h-4 flex-shrink-0" />, path: '/tools/offline-tools', active: isActive('/tools/offline-tools') },
   ];
+
+  // 插件图标是远程地址，统一走 CachedIcon（主进程本地缓存），避免国内网络下破图
+  const renderToolIcon = (tool: ToolInfo & { iconUrl?: string }) => {
+    const Icon = iconMap[tool.iconName] || iconMap.Package;
+    const fallbackIcon = <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} />;
+    if (!tool.iconUrl) return fallbackIcon;
+    return (
+      <CachedIcon
+        url={tool.iconUrl}
+        name={tool.name}
+        type="plugin"
+        iconOnly
+        className="w-4 h-4 flex-shrink-0 object-contain"
+        fallbackIcon={fallbackIcon}
+      />
+    );
+  };
 
   const sensors = useDndSensors(false);
 
@@ -121,12 +139,7 @@ const Sidebar: React.FC = () => {
             <SortableContext items={pinnedToolIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1">
                 {pinnedTools.map((tool) => {
-                  const Icon = iconMap[tool.iconName] || iconMap.Package;
-                  const iconElement = tool.iconUrl ? (
-                    <img loading="lazy" src={tool.iconUrl} alt={tool.name} className="w-4 h-4 flex-shrink-0 object-contain" />
-                  ) : (
-                    <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} />
-                  );
+                  const iconElement = renderToolIcon(tool);
                   const plugin = installedPlugins.find((p) => p.id === tool.id);
                   return (
                     <SortableNavItem
@@ -151,12 +164,7 @@ const Sidebar: React.FC = () => {
           </DndContext>
         ) : (
           pinnedTools.map((tool) => {
-              const Icon = iconMap[tool.iconName] || iconMap.Package;
-              const iconElement = tool.iconUrl ? (
-                <img loading="lazy" src={tool.iconUrl} alt={tool.name} className="w-4 h-4 flex-shrink-0 object-contain" />
-              ) : (
-                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} />
-              );
+              const iconElement = renderToolIcon(tool);
               const plugin = installedPlugins.find((p) => p.id === tool.id);
               return (
                 <NavItem

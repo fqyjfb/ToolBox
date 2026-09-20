@@ -510,7 +510,7 @@ const registerIpcHandlers = () => {
   ipcHandlersRegistered = true;
   
   const { ipcMain } = require('electron');
-  const { loadShortcuts, saveShortcuts, loadFloatConfig, loadFloatConfigWithIcons, saveFloatConfig, defaultFloatConfig, clearExpiredIconCache, clearAllIconCache } = require('../lib/config.cjs');
+  const { loadShortcuts, saveShortcuts, loadFloatConfig, loadFloatConfigWithIcons, saveFloatConfig, defaultFloatConfig, clearExpiredIconCache, clearAllIconCache, resolveIconUrls } = require('../lib/config.cjs');
   
   const { registerPluginIpc } = require('../ipc/pluginIpc.cjs');
   registerPluginIpc();
@@ -837,6 +837,17 @@ const registerIpcHandlers = () => {
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
+    }
+  });
+
+  // 远程图标统一解析入口：返回 { 原始url: local-media 地址 | null }。
+  // 渲染层只用返回的本地地址渲染，拿不到就显示兜底图标，避免国内网络下破图。
+  ipcMain.handle('icon:resolve', async (_event, { urls }) => {
+    try {
+      return await resolveIconUrls(urls);
+    } catch (error) {
+      console.error('Failed to resolve icons:', error);
+      return {};
     }
   });
 

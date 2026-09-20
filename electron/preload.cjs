@@ -138,6 +138,7 @@ contextBridge.exposeInMainWorld('electron', {
   updateSetting: (setting) => ipcRenderer.invoke('update-setting', setting),
   clearCache: () => ipcRenderer.invoke('clear-cache'),
   clearIconCache: (type) => ipcRenderer.invoke('clear-icon-cache', { type }),
+  resolveIcons: (urls) => ipcRenderer.invoke('icon:resolve', { urls }),
   networkTest: (payload) => ipcRenderer.invoke('network:test', payload),
   getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
   openUserDataFolder: () => ipcRenderer.invoke('open-user-data-folder'),

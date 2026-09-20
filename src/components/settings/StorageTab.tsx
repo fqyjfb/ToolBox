@@ -125,6 +125,8 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       } else {
         await iconCacheService.clearByType(target);
       }
+      // Electron 下远程图标由主进程统一落盘缓存，同步清理一次，避免"清了但图标还在"
+      await window.electron?.clearIconCache?.('all');
       addToast({ type: 'success', message: `${ICON_CACHE_LABELS[target]}图标缓存已清除` });
       await refreshIconCacheStats();
     } catch {

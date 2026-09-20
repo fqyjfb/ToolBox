@@ -308,13 +308,16 @@ const getCachedIconPath = (url) => {
   return iconFilePath;
 };
 
-const downloadIcon = (url) => {
+// cacheKey：写入缓存索引时使用的键。同一图标的多个镜像地址可共用同一个键，
+// 避免渲染层切换镜像后缓存反复失效。不传则与 url 一致（保持原有行为）。
+const downloadIcon = (url, cacheKey) => {
   return new Promise((resolve) => {
     if (!url || !url.startsWith('http')) {
       resolve(null);
       return;
     }
     
+    const indexKey = cacheKey || url;
     const protocol = url.startsWith('https') ? https : http;
 
     const timeout = setTimeout(() => {
@@ -334,7 +337,13 @@ const downloadIcon = (url) => {
       response.on('end', () => {
         try {
           const buffer = Buffer.concat(chunks);
-          const hash = generateIconHash(url);
+          const contentType = response.headers['content-type'] || '';
+          // 只接受非空且非文本响应，避免把 403/404 的 HTML 页面当成图标写进缓存
+          if (buffer.length === 0 || contentType.startsWith('text/')) {
+            resolve(null);
+            return;
+          }
+          const hash = generateIconHash(indexKey);
           const ext = path.extname(url.split('?')[0]) || '.png';
           const fileName = `${hash}${ext}`;
           const filePath = path.join(iconCacheDir, fileName);
@@ -343,7 +352,7 @@ const downloadIcon = (url) => {
           fs.writeFileSync(filePath, buffer);
           
           const index = loadIconCacheIndex();
-          index.icons[url] = {
+          index.icons[indexKey] = {
             file: fileName,
             timestamp: Date.now(),
             contentType: response.headers['content-type'] || 'image/png'
@@ -388,23 +397,135 @@ const getIconDataUrl = (iconPath) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// 远程图标统一解析：把 http(s) 图标地址解析成可直接用于 <img> 的 local-media:// 地址。
+// 渲染层不再直连远程图标（国内网络下会破图），统一走这里 + 本地磁盘缓存。
+// ---------------------------------------------------------------------------
+
+// 解析失败的图标在一段时间内不再重试，避免每次打开界面都白等一轮网络超时
+const ICON_FAILURE_TTL = 30 * 60 * 1000;
+const iconFailures = new Map();
+const iconResolveTasks = new Map();
+
+// 与 NotesEditor 保持一致：local-media 处理器会 slice(1) + decodeURIComponent
+const toLocalMediaUrl = (filePath) => {
+  if (!filePath) return null;
+  return `local-media://host/${encodeURIComponent(filePath.replace(/\\/g, '/'))}`;
+};
+
+// 把镜像地址还原成规范地址，作为缓存索引键（复用已有的镜像配置，不新增配置项）
+const toCanonicalIconUrl = (url) => {
+  if (typeof url !== 'string' || !url.startsWith('http')) return '';
+  const mirrors = getNetworkConfig().pluginStore.githubRawMirrors || [];
+  for (const mirror of mirrors) {
+    if (mirror && url.startsWith(mirror)) {
+      return `https://raw.githubusercontent.com${url.slice(mirror.length)}`;
+    }
+  }
+  return url;
+};
+
+// 原始地址优先（渲染层可能已按网络状况挑过镜像），其后依次尝试其余镜像
+const buildIconUrlCandidates = (canonicalUrl) => {
+  if (!canonicalUrl.startsWith('https://raw.githubusercontent.com')) {
+    return [canonicalUrl];
+  }
+  const candidates = [canonicalUrl];
+  const mirrors = [...(getNetworkConfig().pluginStore.githubRawMirrors || []), 'https://raw.githubusercontent.com'];
+  for (const mirror of mirrors) {
+    const candidate = canonicalUrl.replace('https://raw.githubusercontent.com', mirror);
+    if (!candidates.includes(candidate)) candidates.push(candidate);
+  }
+  return candidates;
+};
+
+const downloadIconWithMirrors = async (canonicalUrl) => {
+  for (const candidate of buildIconUrlCandidates(canonicalUrl)) {
+    const filePath = await downloadIcon(candidate, canonicalUrl);
+    if (filePath) return filePath;
+  }
+  return null;
+};
+
+const resolveSingleIcon = (canonicalUrl) => {
+  const cachedPath = getCachedIconPath(canonicalUrl);
+  if (cachedPath) return Promise.resolve(toLocalMediaUrl(cachedPath));
+
+  const failedAt = iconFailures.get(canonicalUrl);
+  if (failedAt && Date.now() - failedAt < ICON_FAILURE_TTL) {
+    return Promise.resolve(null);
+  }
+
+  if (iconResolveTasks.has(canonicalUrl)) return iconResolveTasks.get(canonicalUrl);
+
+  const task = downloadIconWithMirrors(canonicalUrl)
+    .then((filePath) => {
+      if (filePath) return toLocalMediaUrl(filePath);
+      iconFailures.set(canonicalUrl, Date.now());
+      return null;
+    })
+    .catch(() => {
+      iconFailures.set(canonicalUrl, Date.now());
+      return null;
+    })
+    .finally(() => iconResolveTasks.delete(canonicalUrl));
+
+  iconResolveTasks.set(canonicalUrl, task);
+  return task;
+};
+
+// 批量解析：{ 原始url: local-media 地址 | null }。缓存命中时零网络请求。
+const resolveIconUrls = async (urls) => {
+  const result = {};
+  if (!Array.isArray(urls)) return result;
+
+  const rawByCanonical = new Map();
+  for (const raw of urls) {
+    if (typeof raw !== 'string' || !raw.startsWith('http')) continue;
+    result[raw] = null;
+    const canonical = toCanonicalIconUrl(raw);
+    const bucket = rawByCanonical.get(canonical);
+    if (bucket) bucket.push(raw);
+    else rawByCanonical.set(canonical, [raw]);
+  }
+
+  await Promise.all(
+    [...rawByCanonical.entries()].map(async ([canonical, raws]) => {
+      const localUrl = await resolveSingleIcon(canonical);
+      if (localUrl) {
+        for (const raw of raws) result[raw] = localUrl;
+      }
+    })
+  );
+
+  return result;
+};
+
+// 安装插件后调用：趁联网把图标落盘，保证已安装插件的图标展示不再依赖网络。
+// best-effort —— 失败不影响安装结果。
+const cachePluginIcon = async (pluginDir) => {
+  try {
+    const manifestPath = path.join(pluginDir, 'manifest.json');
+    if (!fs.existsSync(manifestPath)) return;
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    if (manifest && typeof manifest.iconUrl === 'string') {
+      await resolveIconUrls([manifest.iconUrl]);
+    }
+  } catch {
+    // 图标缓存失败不影响插件安装
+  }
+};
+
 const loadFloatConfigWithIcons = async () => {
   const config = loadFloatConfig();
   
   const results = await Promise.all(
     config.map(async (item) => {
       if (item.type === 'plugin' && item.path && item.path.startsWith('http')) {
-        const cachedPath = getCachedIconPath(item.path);
-        
-        let dataUrl = null;
-        if (cachedPath) {
-          dataUrl = getIconDataUrl(cachedPath);
-        } else {
-          const downloadedPath = await downloadIcon(item.path);
-          if (downloadedPath) {
-            dataUrl = getIconDataUrl(downloadedPath);
-          }
-        }
+        // 与 resolveIconUrls 共用同一份缓存键：插件安装时落盘的图标这里可直接命中
+        const canonical = toCanonicalIconUrl(item.path);
+        const iconPath = getCachedIconPath(canonical) || await downloadIconWithMirrors(canonical);
+        const dataUrl = iconPath ? getIconDataUrl(iconPath) : null;
         
         if (dataUrl) {
           return { ...item, iconDataUrl: dataUrl };
@@ -453,6 +574,7 @@ const clearAllIconCache = () => {
       }
     }
     iconCacheIndex = { icons: {} };
+    iconFailures.clear();
     saveIconCacheIndex();
     console.log('Cleared all icon cache');
   } catch (error) {
@@ -470,6 +592,8 @@ module.exports = {
   saveFloatConfig,
   clearExpiredIconCache,
   clearAllIconCache,
+  resolveIconUrls,
+  cachePluginIcon,
   defaultShortcuts,
   defaultFloatConfig,
   getNetworkConfig,

@@ -251,6 +251,7 @@ declare interface Window {
     updateSetting: (setting: { name: string; value: string | number | boolean | object }) => Promise<UpdateResult>;
     clearCache: () => Promise<UpdateResult>;
     clearIconCache: (type: 'all' | 'expired') => Promise<{ code: number; msg: string }>;
+    resolveIcons: (urls: string[]) => Promise<Record<string, string | null>>;
     networkTest: (payload: { url: string; timeout?: number }) => Promise<{ ok: boolean; statusCode: number; latencyMs: number; error: string | null }>;
     getUserDataPath: () => Promise<string>;
     openUserDataFolder: () => Promise<{ success: boolean }>;
