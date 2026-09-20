@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 let configChangedCallback = null;
 let appearanceChangedCallback = null;
+let themeChangedCallback = null;
 
 ipcRenderer.on('float-config-changed', (event, config) => {
   if (configChangedCallback) {
@@ -12,6 +13,12 @@ ipcRenderer.on('float-config-changed', (event, config) => {
 ipcRenderer.on('appearance-changed', (event, data) => {
   if (appearanceChangedCallback) {
     appearanceChangedCallback(data);
+  }
+});
+
+ipcRenderer.on('theme-changed', (event, data) => {
+  if (themeChangedCallback) {
+    themeChangedCallback(data);
   }
 });
 
@@ -30,5 +37,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppearance: () => ipcRenderer.invoke('float-get-appearance'),
   onAppearanceChanged: (callback) => {
     appearanceChangedCallback = callback;
+  },
+  getTheme: () => ipcRenderer.invoke('float-get-theme'),
+  onThemeChanged: (callback) => {
+    themeChangedCallback = callback;
   },
 });

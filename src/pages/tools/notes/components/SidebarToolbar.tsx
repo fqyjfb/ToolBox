@@ -56,9 +56,9 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // 无任何模板时不展示入口
+  // 无任何模板、或未配置固定目录（新建只在固定目录内生效）时不展示入口
   const hasTemplates = all().length > 0;
-  const showTemplateEntry = Boolean(onCreateNote) && hasTemplates;
+  const showTemplateEntry = Boolean(onCreateNote) && hasTemplates && Boolean(currentViewPath);
 
   const handleRebuildIndex = async () => {
     if (!onRebuildIndex || isRebuilding) return;
@@ -135,9 +135,10 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
           <MessageSquare className="w-4 h-4" />
         </button>
         <button
-          className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+          className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
           onClick={() => onOpenCreateDialog('folder', currentViewPath)}
-          title="新建文件夹"
+          disabled={!currentViewPath}
+          title={currentViewPath ? '新建文件夹' : '请先添加固定目录'}
         >
           <FolderPlus className="w-4 h-4" />
         </button>

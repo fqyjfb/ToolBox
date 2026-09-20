@@ -322,7 +322,7 @@ declare interface Window {
       hasRootPath: () => Promise<boolean>;
       getRootPath: () => Promise<string | null>;
       setRootPath: (rootPath: string) => Promise<boolean>;
-      /** 同步当前查看的固定目录（视图根）给主进程，仅用于文件操作越界放行；null 表示主根视图 */
+      /** 同步当前查看的固定目录（视图根）给主进程，仅用于文件操作越界放行；null 表示未配置固定目录 */
       setViewPath: (viewPath: string | null) => Promise<boolean>;
       /** 同步对话整理独立目录（对话根）给主进程，仅用于文件操作越界放行；null 表示未单独设置 */
       setChatRootPath: (chatPath: string | null) => Promise<boolean>;
@@ -341,6 +341,8 @@ declare interface Window {
       saveFile: (filePath: string, content: string) => Promise<NotesSaveResult>;
       renameItem: (oldPath: string, newName: string) => Promise<NotesRenameResult>;
       deleteItem: (itemPath: string) => Promise<NotesDeleteResult>;
+      /** 移入系统回收站（可恢复）；与 deleteItem 的彻底删除区分 */
+      trashItem: (itemPath: string) => Promise<NotesDeleteResult>;
       indexAll: (rootPath: string) => Promise<{ success: boolean; error?: string }>;
       openFileInFolder: (filePath: string) => Promise<{ success: boolean; error?: string }>;
       moveItem: (itemPath: string, targetFolderPath: string) => Promise<{ success: boolean; newPath?: string; error?: string }>;

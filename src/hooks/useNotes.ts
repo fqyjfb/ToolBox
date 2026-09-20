@@ -34,8 +34,6 @@ export interface UseNotesReturn extends NotesState {
   currentViewPath: string | null;
   chatPath: string | null;
   chatOrganizeTree: FileTreeNode[];
-  selectRootFolder: () => Promise<boolean>;
-  setRootPath: (path: string) => Promise<void>;
   refreshFileTree: () => Promise<void>;
   selectFile: (file: FileTreeNode) => Promise<void>;
   updateFileContent: (content: string) => void;
@@ -46,6 +44,8 @@ export interface UseNotesReturn extends NotesState {
   createNoteForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy', content?: string) => Promise<boolean>;
   renameItem: (oldPath: string, newName: string) => Promise<boolean>;
   deleteItem: (itemPath: string) => Promise<boolean>;
+  /** 移入系统回收站（可恢复），删除的替代路径 */
+  trashItem: (itemPath: string) => Promise<boolean>;
   moveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   copyItem: (sourcePath: string) => Promise<boolean>;
   importDroppedFiles: (filePaths: string[], targetFolderPath?: string) => Promise<{ success: boolean; imported?: string[]; errors?: string[] }>;
@@ -101,7 +101,6 @@ export function useNotes(): UseNotesReturn {
     setSelectedFile: selection.setSelectedFile,
     setExpandedFolders: tree.setExpandedFolders,
     setPinnedFolders: pinned.setPinnedFolders,
-    rootPath: tree.rootPath,
     currentViewPathRef: pinned.currentViewPathRef,
   });
 
@@ -140,34 +139,14 @@ export function useNotes(): UseNotesReturn {
     return unbind;
   }, []);
 
-  // 删除文件夹会同步移除指向它的固定目录；若删除的是当前查看目录（或其上级），
-  // 视图随之失效——切回主根，避免文件列表停留在已删除目录、重启后恢复坏视图
-  // （仅移除固定目录的场景由下方视图校验统一处理）
-  const deleteItem = useCallback(
-    async (itemPath: string) => {
-      const success = await operations.deleteItem(itemPath);
-      const view = pinned.currentViewPathRef.current;
-      const viewInvalidated =
-        !!view &&
-        (view === itemPath ||
-          view.startsWith(itemPath + '/') ||
-          view.startsWith(itemPath + '\\'));
-      if (success && viewInvalidated && tree.rootPath) {
-        await tree.switchToFolder(tree.rootPath);
-      }
-      return success;
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tree.rootPath, operations.deleteItem]
-  );
-
-  // 视图只允许指向仍被固定的目录：固定目录被移除（含被移除的正是当前目录、或全部移除）后，
-  // 视图若仍停在已取消固定的目录上，下方文件列表会一直是它的内容。这里只重置视图路径，
-  // 文件树刷新由 useNotesTree 的 viewSync effect 统一处理，避免与 refreshFileTree 重复扫描。
+  // 视图只允许指向仍被固定的目录：固定目录被移除 / 被删除（含当前目录或其上级被删）后，
+  // 视图若仍停在失效目录上，下方文件列表会一直是它的内容。这里只重置视图路径，文件树刷新
+  // 由 useNotesTree 的 viewSync effect 统一处理，避免与 refreshFileTree 重复扫描。
+  // 还有固定目录时回落到第一个：目录体系只有"对话目录 + 固定目录"两种，列表必须指向固定目录
   useEffect(() => {
     const view = pinned.currentViewPath;
-    if (!view || pinned.pinnedFolders.some((p) => p.path === view)) return;
-    pinned.setCurrentViewPath(null);
+    if (view && pinned.pinnedFolders.some((p) => p.path === view)) return;
+    pinned.setCurrentViewPath(pinned.pinnedFolders[0]?.path ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pinned.pinnedFolders, pinned.currentViewPath]);
 
@@ -189,7 +168,7 @@ export function useNotes(): UseNotesReturn {
         if (cancelled) return;
 
         const fileNode = tree.findFileInTree(lastOpened, tree.fileTree);
-        // 找不到节点（如重启后回到主根目录视图，而上次选中的文件在外部固定目录）时
+        // 找不到节点（如未配置固定目录、或上次选中的文件已不在当前固定目录）时
         // 保留存储键不删除，避免其他视图 / 会话的选中状态被永久清除
         if (!fileNode) return;
 
@@ -198,7 +177,7 @@ export function useNotes(): UseNotesReturn {
 
         // 父链基准取当前视图目录（固定目录视图下相对固定目录展开）；
         // useNotesPinned 恢复视图在首次渲染即完成，此处闭包取值稳定
-        const viewBase = pinned.currentViewPath ?? tree.rootPath;
+        const viewBase = pinned.currentViewPath;
         if (viewBase) {
           const parents = tree.getParentFolders(fileNode.path, viewBase);
           if (parents.length > 0) {
@@ -237,8 +216,6 @@ export function useNotes(): UseNotesReturn {
     chatPath: chatPathHook.chatPath,
     chatOrganizeTree: tree.expandTree(chatPathHook.chatOrganizeTree),
     // actions
-    selectRootFolder: tree.selectRootFolder,
-    setRootPath: tree.setRootPath,
     refreshFileTree: tree.refreshFileTree,
     selectFile: selection.selectFile,
     updateFileContent: selection.updateFileContent,
@@ -248,7 +225,8 @@ export function useNotes(): UseNotesReturn {
     createNote: operations.createNote,
     createNoteForce: operations.createNoteForce,
     renameItem: operations.renameItem,
-    deleteItem,
+    deleteItem: operations.deleteItem,
+    trashItem: operations.trashItem,
     moveItem: operations.moveItem,
     copyItem: operations.copyItem,
     importDroppedFiles: operations.importDroppedFiles,

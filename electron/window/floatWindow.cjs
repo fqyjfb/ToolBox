@@ -1,4 +1,4 @@
-const { BrowserWindow, Menu, screen, ipcMain, app } = require('electron');
+const { BrowserWindow, Menu, screen, ipcMain, app, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
@@ -415,6 +415,8 @@ const registerFloatIpcHandlers = () => {
     const dataUrl = name ? getFloatImgDataUrl(name) : '';
     return { name, dataUrl };
   });
+
+  ipcMain.handle('float-get-theme', () => ({ isDark: nativeTheme.shouldUseDarkColors }));
 };
 
 module.exports = {

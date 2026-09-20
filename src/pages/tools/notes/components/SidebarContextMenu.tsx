@@ -1,21 +1,26 @@
 // 节点右键菜单
 
 import React, { useMemo, useCallback } from 'react';
-import { FilePlus, FolderPlus, Edit, Trash2, ExternalLink, MoveRight } from 'lucide-react';
+import { FilePlus, FolderPlus, Edit, Trash2, Recycle, ExternalLink, MoveRight } from 'lucide-react';
 import ContextMenu, { type ContextMenuItem } from '@/components/ui/ContextMenu';
 import type { FileTreeNode } from '../types';
+import type { SidebarContextMenuArea } from './sidebarTypes';
 
 export interface SidebarContextMenuProps {
   isOpen: boolean;
   x: number;
   y: number;
   node?: FileTreeNode;
+  area: SidebarContextMenuArea;
   fileTree: FileTreeNode[];
-  rootPath: string | null;
+  // 当前查看的固定目录：新建只在固定目录内生效，为空（未配置固定目录）时不提供新建
+  currentViewPath: string | null;
   onMoveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   onOpenCreateDialog: (type: 'folder' | 'note', parentPath: string | null) => void;
   onOpenRenameDialog: (node: FileTreeNode) => void;
   onOpenDeleteDialog: (node: FileTreeNode) => void;
+  // 移入系统回收站（可恢复），与「删除」的彻底删除区分
+  onOpenTrashDialog: (node: FileTreeNode) => void;
   onClose: () => void;
 }
 
@@ -43,16 +48,44 @@ export const SidebarContextMenu: React.FC<SidebarContextMenuProps> = ({
   x,
   y,
   node,
+  area,
   fileTree,
-  rootPath,
+  currentViewPath,
   onMoveItem,
   onOpenCreateDialog,
   onOpenRenameDialog,
   onOpenDeleteDialog,
+  onOpenTrashDialog,
   onClose,
 }) => {
   const items = useMemo<ContextMenuItem[]>(() => {
     if (!isOpen) return [];
+
+    const openInFolderItem = (n: FileTreeNode): ContextMenuItem => ({
+      id: 'open-in-folder',
+      label: '打开位置',
+      icon: <ExternalLink className="w-4 h-4" />,
+      onClick: () => {
+        window.electron?.notes.openFileInFolder(n.path);
+        onClose();
+      },
+    });
+
+    const deleteItem = (n: FileTreeNode): ContextMenuItem => ({
+      id: 'delete',
+      label: '删除',
+      icon: <Trash2 className="w-4 h-4" />,
+      onClick: () => {
+        onOpenDeleteDialog(n);
+        onClose();
+      },
+      className: 'text-error hover:bg-error/10 dark:hover:bg-error/20',
+    });
+
+    // 对话整理区只保留「打开位置 / 删除」，固定目录与文件列表区走下方完整菜单
+    if (area === 'chat') {
+      return node ? [openInFolderItem(node), deleteItem(node)] : [];
+    }
 
     const result: ContextMenuItem[] = [];
 
@@ -66,39 +99,33 @@ export const SidebarContextMenu: React.FC<SidebarContextMenuProps> = ({
       return pathParts.join(separator) || null;
     };
 
-    result.push({
-      id: 'create-note',
-      label: '新建笔记',
-      icon: <FilePlus className="w-4 h-4" />,
-      onClick: () => {
-        onOpenCreateDialog('note', getParentPath(node));
-        onClose();
-      },
-    });
+    // 新建只在固定目录内生效：未配置固定目录时不提供入口，避免建到对话目录
+    if (currentViewPath) {
+      result.push({
+        id: 'create-note',
+        label: '新建笔记',
+        icon: <FilePlus className="w-4 h-4" />,
+        onClick: () => {
+          onOpenCreateDialog('note', getParentPath(node));
+          onClose();
+        },
+      });
 
-    result.push({
-      id: 'create-folder',
-      label: '新建文件夹',
-      icon: <FolderPlus className="w-4 h-4" />,
-      onClick: () => {
-        onOpenCreateDialog('folder', getParentPath(node));
-        onClose();
-      },
-    });
+      result.push({
+        id: 'create-folder',
+        label: '新建文件夹',
+        icon: <FolderPlus className="w-4 h-4" />,
+        onClick: () => {
+          onOpenCreateDialog('folder', getParentPath(node));
+          onClose();
+        },
+      });
+    }
 
     if (node) {
       result.push({ id: 'divider1', divider: true });
 
-      const allFolders = getFoldersFromTree(fileTree, node.path);
-      const separator = node.path.includes('\\') ? '\\' : '/';
-      const nodeParentPath = node.path.includes(separator)
-        ? node.path.substring(0, node.path.lastIndexOf(separator))
-        : null;
-      const normalizedRootPath = rootPath ? rootPath.replace(/[\\/]+$/, '') : null;
-      const normalizedParentPath = nodeParentPath ? nodeParentPath.replace(/[\\/]+$/, '') : null;
-      const normalizedNodePath = node.path.replace(/[\\/]+$/, '');
-
-      const moveSubItems = allFolders.map((folder) => ({
+      const moveSubItems = getFoldersFromTree(fileTree, node.path).map((folder) => ({
         id: `move-to-${folder.path}`,
         label: folder.label,
         onClick: async () => {
@@ -107,38 +134,17 @@ export const SidebarContextMenu: React.FC<SidebarContextMenuProps> = ({
         },
       }));
 
-      if (
-        normalizedRootPath &&
-        normalizedParentPath !== normalizedRootPath &&
-        normalizedRootPath !== normalizedNodePath
-      ) {
-        moveSubItems.unshift({
-          id: 'move-to-root',
-          label: '根目录',
-          onClick: async () => {
-            const success = await onMoveItem(node.path, normalizedRootPath);
-            if (success) onClose();
-          },
+      // 无其他文件夹可去时不展示「移动」：菜单里只保留真正可用的项
+      if (moveSubItems.length > 0) {
+        result.push({
+          id: 'move',
+          label: '移动',
+          icon: <MoveRight className="w-4 h-4" />,
+          subMenu: moveSubItems,
         });
       }
 
-      result.push({
-        id: 'move',
-        label: '移动',
-        icon: <MoveRight className="w-4 h-4" />,
-        subMenu: moveSubItems.length > 0 ? moveSubItems : undefined,
-        onClick: () => {},
-      });
-
-      result.push({
-        id: 'open-in-folder',
-        label: '打开位置',
-        icon: <ExternalLink className="w-4 h-4" />,
-        onClick: () => {
-          window.electron?.notes.openFileInFolder(node.path);
-          onClose();
-        },
-      });
+      result.push(openInFolderItem(node));
 
       result.push({
         id: 'rename',
@@ -150,28 +156,32 @@ export const SidebarContextMenu: React.FC<SidebarContextMenuProps> = ({
         },
       });
 
+      // 回收站可恢复，排在「删除」之上：误点时还有找回余地
       result.push({
-        id: 'delete',
-        label: '删除',
-        icon: <Trash2 className="w-4 h-4" />,
+        id: 'trash',
+        label: '移入回收站',
+        icon: <Recycle className="w-4 h-4" />,
         onClick: () => {
-          onOpenDeleteDialog(node);
+          onOpenTrashDialog(node);
           onClose();
         },
-        className: 'text-error hover:bg-error/10 dark:hover:bg-error/20',
       });
+
+      result.push(deleteItem(node));
     }
 
     return result;
   }, [
     isOpen,
+    area,
     node,
     fileTree,
-    rootPath,
+    currentViewPath,
     onMoveItem,
     onOpenCreateDialog,
     onOpenRenameDialog,
     onOpenDeleteDialog,
+    onOpenTrashDialog,
     onClose,
   ]);
 

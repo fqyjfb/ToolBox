@@ -572,6 +572,29 @@ function deleteItem(itemPath) {
   }
 }
 
+// 移入系统回收站（可恢复）：与 deleteItem 的唯一差别是走 shell.trashItem。
+// 失败时直接返回失败，绝不回退到递归删除——否则会变成「以为能找回，实际已彻底删除」
+async function trashItem(itemPath) {
+  const outside = rejectOutsideRoots(itemPath, getAllowedRoots());
+  if (outside) return outside;
+
+  try {
+    if (!fs.existsSync(itemPath)) {
+      return { success: false, error: '文件或文件夹不存在' };
+    }
+
+    // path.resolve 统一分隔符：Windows 下回收站调用对斜杠敏感
+    await shell.trashItem(path.resolve(itemPath));
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '移入回收站失败',
+    };
+  }
+}
+
 function hasRootPath() {
   const rootPath = getRootPath();
   return rootPath !== null && fs.existsSync(rootPath);
@@ -826,6 +849,8 @@ module.exports = {
   saveFile,
   renameItem,
   deleteItem,
+  // 移入系统回收站（可恢复），删除的替代路径
+  trashItem,
   hasRootPath,
   indexAllNotes,
   openFileInFolder,

@@ -161,6 +161,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   };
 
   const handleThemeChange = (value: string) => {
+    // 同步主进程（托盘菜单 / 悬浮球）由 themeStore 统一处理，此处无需重复发送
     setTheme(value as 'light' | 'dark');
     addToast({ type: 'success', message: `主题已切换为${value === 'dark' ? '深色' : '浅色'}` });
   };

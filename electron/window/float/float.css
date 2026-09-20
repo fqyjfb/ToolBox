@@ -4,6 +4,30 @@
   box-sizing: border-box;
 }
 
+/* 主题变量：与 src/styles/theme.css 的 :root / .dark 约定保持一致，
+   <html class="dark"> 由 float.cjs 的 applyTheme 切换 */
+:root {
+  --float-menu-bg: #FFFFFF;
+  --float-menu-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --float-menu-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --float-icon-fill: #FFFFFF;
+  --float-tip-bg: rgba(0, 0, 0, 0.8);
+  --float-tip-text: #FFFFFF;
+  --float-fallback-bg: #F0F0F0;
+  --float-fallback-text: #666666;
+}
+
+.dark {
+  --float-menu-bg: #262A33;
+  --float-menu-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --float-menu-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.55);
+  --float-icon-fill: #EAF1F8;
+  --float-tip-bg: rgba(31, 41, 55, 0.95);
+  --float-tip-text: #F9FAFB;
+  --float-fallback-bg: #2D3139;
+  --float-fallback-text: #94A3B8;
+}
+
 html, body {
   width: 300px;
   height: 300px;
@@ -75,7 +99,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  fill: #fff;
+  fill: var(--float-icon-fill);
 }
 
 /* ── 展开菜单项 ── */
@@ -85,7 +109,7 @@ html, body {
   top: 50%;
   opacity: 0;
   visibility: hidden;
-  background: #fff;
+  background: var(--float-menu-bg);
   padding: 10px;
   border-radius: 50px;
   /* 折叠态：缩回中心 */
@@ -95,7 +119,7 @@ html, body {
               visibility 0.3s ease,
               box-shadow 0.2s ease;
   z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--float-menu-shadow);
   cursor: pointer;
 }
 
@@ -118,7 +142,7 @@ html, body {
 /* 展开+悬停：放大并增强阴影，优先级高于基础展开态 */
 .float-ball.expanded .tooltip-item:hover {
   transform: translate(calc(-50% + var(--dx, 0)), calc(-50% + var(--dy, 0))) scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--float-menu-shadow-hover);
   z-index: 20;
 }
 
@@ -127,8 +151,8 @@ html, body {
   bottom: -28px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
+  background: var(--float-tip-bg);
+  color: var(--float-tip-text);
   font-size: 11px;
   padding: 4px 10px;
   border-radius: 4px;
@@ -167,8 +191,8 @@ html, body {
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  color: #666;
-  background: #f0f0f0;
+  color: var(--float-fallback-text);
+  background: var(--float-fallback-bg);
   border-radius: 4px;
 }
 

@@ -33,7 +33,7 @@ export function useNotesPinned(): UseNotesPinnedReturn {
   const currentViewPathRef = useRef<string | null>(null);
   currentViewPathRef.current = currentViewPath;
 
-  // 当前查看目录落盘：切换导航 / 重启后按此恢复固定目录视图（null = 主根视图）
+  // 当前查看目录落盘：切换导航 / 重启后按此恢复固定目录视图（null = 未配置固定目录）
   const setCurrentViewPath = useCallback((path: string | null) => {
     setCurrentViewPathState(path);
     if (path) {

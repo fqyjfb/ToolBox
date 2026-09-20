@@ -1,6 +1,6 @@
 // 文件增删改移；跨 hook 状态更新所需 setter 全部由 deps 注入
 
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import path from 'path';
 import { logError } from '../../../../services/loggerService';
 import localStorageService, { STORAGE_KEYS } from '../../../../services/localStorageService';
@@ -16,7 +16,6 @@ export interface UseNotesOperationsDeps {
   setSelectedFile: (file: FileTreeNode | null) => void;
   setExpandedFolders: React.Dispatch<React.SetStateAction<Set<string>>>;
   setPinnedFolders: React.Dispatch<React.SetStateAction<PinnedFolder[]>>;
-  rootPath: string | null;
   currentViewPathRef: React.RefObject<string | null>;
 }
 
@@ -43,6 +42,8 @@ export interface UseNotesOperationsReturn {
   ) => Promise<boolean>;
   renameItem: (oldPath: string, newName: string) => Promise<boolean>;
   deleteItem: (itemPath: string) => Promise<boolean>;
+  /** 移入系统回收站（可恢复） */
+  trashItem: (itemPath: string) => Promise<boolean>;
   moveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   copyItem: (sourcePath: string) => Promise<boolean>;
   importDroppedFiles: (
@@ -52,10 +53,6 @@ export interface UseNotesOperationsReturn {
 }
 
 export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperationsReturn {
-  // 下方回调均为 [] 依赖，deps.rootPath 会停在首次渲染的快照（null），必须用 ref 读最新值
-  const rootPathRef = useRef(deps.rootPath);
-  rootPathRef.current = deps.rootPath;
-
   const createFolder = useCallback(
     async (parentPath: string | null, name: string): Promise<{ success: boolean; exists?: boolean }> => {
       if (!window.electron) return { success: false };
@@ -258,39 +255,68 @@ export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperat
     []
   );
 
+  // 删除 / 移入回收站共用：移除成功后刷新树，并清掉选中项与指向该路径的固定目录
+  const afterRemove = useCallback(async (itemPath: string) => {
+    await deps.refreshFileTree();
+
+    if (deps.selectedFile?.path === itemPath) {
+      deps.clearSelection();
+    }
+
+    deps.setPinnedFolders((prev) => {
+      const next = prev.filter((pinned) => {
+        return (
+          pinned.path !== itemPath &&
+          !pinned.path.startsWith(itemPath + '/') &&
+          !pinned.path.startsWith(itemPath + '\\')
+        );
+      });
+      localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const deleteItem = useCallback(
     async (itemPath: string): Promise<boolean> => {
       if (!window.electron) return false;
       try {
         const result = await window.electron.notes.deleteItem(itemPath);
 
-        if (result.success) {
-          await deps.refreshFileTree();
-
-          if (deps.selectedFile?.path === itemPath) {
-            deps.clearSelection();
-          }
-
-          deps.setPinnedFolders((prev) => {
-            const next = prev.filter((pinned) => {
-              return (
-                pinned.path !== itemPath &&
-                !pinned.path.startsWith(itemPath + '/') &&
-                !pinned.path.startsWith(itemPath + '\\')
-              );
-            });
-            localStorageService.set(STORAGE_KEYS.NOTES_PINNED_FOLDERS, next);
-            return next;
-          });
-
-          return true;
-        } else {
+        if (!result.success) {
           deps.setError(result.error || '删除失败');
           return false;
         }
+
+        await afterRemove(itemPath);
+        return true;
       } catch (err) {
         logError('删除失败', 'useNotes', err as Error);
         deps.setError('删除失败');
+        return false;
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  // 移入系统回收站：可在回收站还原；失败时不回退彻底删除，只提示失败
+  const trashItem = useCallback(
+    async (itemPath: string): Promise<boolean> => {
+      if (!window.electron) return false;
+      try {
+        const result = await window.electron.notes.trashItem(itemPath);
+
+        if (!result.success) {
+          deps.setError(result.error || '移入回收站失败');
+          return false;
+        }
+
+        await afterRemove(itemPath);
+        return true;
+      } catch (err) {
+        logError('移入回收站失败', 'useNotes', err as Error);
+        deps.setError('移入回收站失败');
         return false;
       }
     },
@@ -373,10 +399,11 @@ export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperat
       filePaths: string[],
       targetFolderPath?: string
     ): Promise<{ success: boolean; imported?: string[]; errors?: string[] }> => {
-      const currentRoot = rootPathRef.current;
-      if (!window.electron || !currentRoot) return { success: false, errors: ['未设置根目录'] };
+      // 导入落点只在固定目录内：未配置固定目录时直接拒绝，绝不落到对话目录
+      const currentView = deps.currentViewPathRef.current;
+      if (!window.electron || !currentView) return { success: false, errors: ['请先添加固定目录'] };
       try {
-        const dest = targetFolderPath || deps.currentViewPathRef.current || currentRoot;
+        const dest = targetFolderPath || currentView;
         const result = await window.electron.notes.importDroppedFiles(dest, filePaths);
         if (result.success) {
           await deps.refreshFileTree();
@@ -402,6 +429,7 @@ export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperat
     createNoteForce,
     renameItem,
     deleteItem,
+    trashItem,
     moveItem,
     copyItem,
     importDroppedFiles,

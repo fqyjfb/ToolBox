@@ -69,14 +69,14 @@ function renderFloatBall() {
   } else {
     const tooltipContainer = getTooltipContainer();
     if (floatConfig.length === 0) {
-      tooltipContainer.innerHTML = '<div class="tooltip-item"><span style="color: #666; font-size: 12px;">暂无配置</span></div>';
+      tooltipContainer.innerHTML = '<div class="tooltip-item"><span style="color: var(--float-fallback-text); font-size: 12px;">暂无配置</span></div>';
     } else {
       const itemsHTML = floatConfig.map((item, index) => {
         const iconHTML = getIconByName(item.icon, item);
         if (iconHTML) {
           return '<div class="tooltip-item" data-index="' + index + '" title="' + item.name + '">' + iconHTML + '<span class="tooltip-label">' + item.name + '</span></div>';
         } else {
-          return '<div class="tooltip-item" data-index="' + index + '" title="' + item.name + '"><span style="color: #666;">' + item.name.charAt(0) + '</span><span class="tooltip-label">' + item.name + '</span></div>';
+          return '<div class="tooltip-item" data-index="' + index + '" title="' + item.name + '"><span style="color: var(--float-fallback-text);">' + item.name.charAt(0) + '</span><span class="tooltip-label">' + item.name + '</span></div>';
         }
       }).join('');
       tooltipContainer.innerHTML = itemsHTML;
@@ -291,6 +291,24 @@ function initFloatBall() {
       if (!isExpanded) {
         renderFloatBall();
       }
+    });
+  }
+
+  // 主题跟随主窗口：只切 <html class="dark">，配色全部由 float.css 的 CSS 变量承担，
+  // 因此不需要重渲染（否则会打断展开动画/位置状态）
+  function applyTheme(isDark) {
+    document.documentElement.classList.toggle('dark', !!isDark);
+  }
+
+  if (window.electronAPI.getTheme) {
+    window.electronAPI.getTheme().then(function(data) {
+      applyTheme(data && data.isDark);
+    }).catch(function() {});
+  }
+
+  if (window.electronAPI.onThemeChanged) {
+    window.electronAPI.onThemeChanged(function(data) {
+      applyTheme(data && data.isDark);
     });
   }
 

@@ -376,6 +376,8 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   // 避免窗口出现早于页面首帧时闪一下白屏
   const appSettings = loadSettings();
   const themePreference = appSettings.systemTheme;
+  // 同步给原生 UI（托盘菜单、系统对话框等），否则它们只跟随系统、不跟随应用内主题设置
+  nativeTheme.themeSource = themePreference || 'system';
   const useDarkBackground = themePreference === 'dark'
     || (themePreference === 'system' && nativeTheme.shouldUseDarkColors);
 
@@ -889,6 +891,14 @@ const registerIpcHandlers = () => {
       invalidateNetworkConfigCache();
     }
 
+    // 主题：切完后原生 UI 与悬浮球窗口都要跟着变（主窗口由下面的 setting-changed 自行处理）
+    if (setting.name === 'systemTheme') {
+      nativeTheme.themeSource = setting.value || 'system';
+      const floatWindow = getFloatWindow();
+      floatWindow?.webContents.send('theme-changed', { isDark: nativeTheme.shouldUseDarkColors });
+      require('./tray.cjs').refreshTrayMenu();
+    }
+
     mainWindow?.webContents.send('setting-changed', { name: setting.name, value: setting.value });
     return { code: 0, msg: '设置已更新' };
   });
@@ -1276,6 +1286,7 @@ const registerIpcHandlers = () => {
   ipcMain.handle('notes-save-file', (event, filePath, content) => notesService.saveFile(filePath, content));
   ipcMain.handle('notes-rename-item', (event, oldPath, newName) => notesService.renameItem(oldPath, newName));
   ipcMain.handle('notes-delete-item', (event, itemPath) => notesService.deleteItem(itemPath));
+  ipcMain.handle('notes-trash-item', async (event, itemPath) => notesService.trashItem(itemPath));
   ipcMain.handle('notes-index-all', (event, rootPath) => notesService.indexAllNotes(rootPath));
   ipcMain.handle('notes-open-file-in-folder', (event, filePath) => notesService.openFileInFolder(filePath));
   ipcMain.handle('notes-read-file-as-buffer', (event, filePath) => notesService.readFileAsBuffer(filePath));

@@ -9,9 +9,10 @@ import {
   AVAILABLE_ICONS
 } from '../../constants/settings';
 import { ALL_TOOLS } from '../../constants/tools';
-import { renderFloatIcon, isPredefinedIcon, formatIconSrc } from '../../utils/floatIconRenderer';
+import { isPredefinedIcon, formatIconSrc } from '../../utils/floatIconRenderer';
 import { usePluginStore } from '../../store/pluginStore';
 import CachedIcon from '../ui/CachedIcon';
+import FloatIconView from '../ui/FloatIconView';
 import Select from '../ui/Select';
 import { iconMap } from '../../utils/iconMap';
 
@@ -149,26 +150,14 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
           className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
           style={{ backgroundColor: 'var(--color-primary)' }}
         >
-          {localConfig.type === 'plugin' && localConfig.path ? (
-            <CachedIcon
-              url={localConfig.path}
-              name={localConfig.name}
-              type="plugin"
-              className="w-full h-full object-contain"
-              fallbackIcon={
-                (() => {
-                  const { element } = renderFloatIcon(localConfig.icon, 18);
-                  return <span className="text-white">{element}</span>;
-                })()
-              }
-              iconOnly
-            />
-          ) : (
-            (() => {
-              const { element } = renderFloatIcon(localConfig.icon, 18);
-              return <span className="text-white">{element}</span>;
-            })()
-          )}
+          <FloatIconView
+            icon={localConfig.icon}
+            path={localConfig.path}
+            isPlugin={localConfig.type === 'plugin'}
+            name={localConfig.name}
+            size={20}
+            className="text-white"
+          />
         </div>
         <div>
           <div className="font-medium text-gray-800 dark:text-gray-200 text-sm">{localConfig.name}</div>
@@ -312,11 +301,11 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                           name={plugin.name}
                           type="plugin"
                           className="w-4 h-4"
-                          fallbackIcon={<PluginIcon className="w-3 h-3" />}
+                          fallbackIcon={<PluginIcon className="w-4 h-4" />}
                           iconOnly
                         />
                       ) : (
-                        <PluginIcon className="w-3 h-3" />
+                        <PluginIcon className="w-4 h-4" />
                       )}
                       {plugin.name}
                     </button>
@@ -331,26 +320,14 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
           <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">图标</label>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 dark:bg-gray-600 overflow-hidden">
-              {localConfig.type === 'plugin' && localConfig.path ? (
-                <CachedIcon
-                  url={localConfig.path}
-                  name={localConfig.name}
-                  type="plugin"
-                  className="w-full h-full object-contain"
-                  iconOnly
-                  fallbackIcon={
-                    (() => {
-                      const { element } = renderFloatIcon(localConfig.icon, 20);
-                      return <span className="text-gray-600 dark:text-gray-300">{element}</span>;
-                    })()
-                  }
-                />
-              ) : (
-                (() => {
-                  const { element } = renderFloatIcon(localConfig.icon, 20);
-                  return element;
-                })()
-              )}
+              <FloatIconView
+                icon={localConfig.icon}
+                path={localConfig.path}
+                isPlugin={localConfig.type === 'plugin'}
+                name={localConfig.name}
+                size={20}
+                className="text-gray-600 dark:text-gray-300"
+              />
             </div>
 
             {!isAppType && !hasIconImg && localConfig.type !== 'plugin' ? (

@@ -42,6 +42,15 @@ function canPlayVideoInApp(filePath: string): boolean {
 // 超限文件不进 <video>，交给系统播放器
 const MAX_INLINE_VIDEO_BYTES = 500 * 1024 * 1024;
 
+// 文件名拆分为「主名 + 后缀」：重命名时只编辑主名，后缀单独固定展示并提交，
+// 避免双击编辑时误删 .md 之类后缀（删掉会改变文件类型、图标与解析方式）。
+// 无后缀或点开头的文件（.gitignore 等）整体视为主名，不给空主名。
+function splitFileName(name: string): { base: string; ext: string } {
+  const dot = name.lastIndexOf('.');
+  if (dot <= 0) return { base: name, ext: '' };
+  return { base: name.slice(0, dot), ext: name.slice(dot) };
+}
+
 // 派生 state
 type VideoPlayback = { mode: 'checking' } | { mode: 'play' } | { mode: 'external'; notice: string };
 
@@ -266,21 +275,28 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     [selectedFile, onSave, drafts]
   );
 
-  // 双击标题进入重命名
+  // 双击标题进入重命名：只带入主名，后缀不进输入框（输入框右侧单独展示，提交时自动补回）
   const startRename = useCallback(() => {
-    if (selectedFile) setRenameDraft(selectedFile.name);
+    if (selectedFile) setRenameDraft(splitFileName(selectedFile.name).base);
   }, [selectedFile]);
 
   const cancelRename = useCallback(() => setRenameDraft(null), []);
 
-  // 空值/未改动视为取消
+  // 空值/未改动视为取消；提交时把后缀补回主名（用户自己输入了同名后缀则不再重复追加）
   const commitRename = useCallback(async () => {
-    const nextName = renameDraft?.trim();
+    const draft = renameDraft?.trim();
     setRenameDraft(null);
-    if (!selectedFile || !nextName || nextName === selectedFile.name) return;
-    const ok = await onRenameFile(nextName);
+    if (!selectedFile || !draft) return;
+    const { ext } = splitFileName(selectedFile.name);
+    const withExt =
+      ext && draft.toLowerCase().endsWith(ext.toLowerCase()) ? draft : `${draft}${ext}`;
+    if (withExt === selectedFile.name) return;
+    const ok = await onRenameFile(withExt);
     if (!ok) addToast({ type: 'error', message: '重命名失败，名称可能已存在' });
   }, [renameDraft, selectedFile, onRenameFile, addToast]);
+
+  // 编辑态下固定展示的后缀（不参与编辑，提交时按此补回）
+  const renameExt = selectedFile ? splitFileName(selectedFile.name).ext : '';
 
   // 图片预览
   const localMediaUrl = useMemo(() => {
@@ -598,25 +614,31 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
                 {selectedFile.name}
               </span>
             ) : (
-              <input
-                autoFocus
-                value={renameDraft}
-                onChange={(e) => setRenameDraft(e.target.value)}
-                onFocus={(e) => e.currentTarget.select()}
-                onBlur={() => {
-                  void commitRename();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
+              // 输入框只编辑主名，后缀紧随其后固定展示，避免误删导致文件类型变化
+              <span className="flex min-w-0 items-center">
+                <input
+                  autoFocus
+                  value={renameDraft}
+                  onChange={(e) => setRenameDraft(e.target.value)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onBlur={() => {
                     void commitRename();
-                  } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    cancelRename();
-                  }
-                }}
-                className="min-w-0 max-w-[240px] rounded border border-primary bg-white px-1 py-0.5 text-sm text-gray-900 outline-none dark:bg-gray-800 dark:text-white"
-              />
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void commitRename();
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      cancelRename();
+                    }
+                  }}
+                  className="min-w-0 max-w-[240px] rounded border border-primary bg-white px-1 py-0.5 text-sm text-gray-900 outline-none dark:bg-gray-800 dark:text-white"
+                />
+                {renameExt && (
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{renameExt}</span>
+                )}
+              </span>
             )}
             {getFileTypeLabel() && (
               <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 rounded">

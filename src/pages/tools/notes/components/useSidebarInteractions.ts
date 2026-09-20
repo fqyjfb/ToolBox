@@ -4,11 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToastStore } from '@/store/toastStore';
 import { useNotesSidebarSectionsStore } from '@/store/notesSidebarSectionsStore';
 import type { FileTreeNode } from '../types';
-import type { NotesSidebarProps } from './sidebarTypes';
+import type { NotesSidebarProps, SidebarContextMenuArea } from './sidebarTypes';
 
 export type UseSidebarInteractionsParams = Pick<
   NotesSidebarProps,
-  | 'rootPath'
   | 'currentViewPath'
   | 'selectedFile'
   | 'onCopyItem'
@@ -21,10 +20,11 @@ export type UseSidebarInteractionsParams = Pick<
   | 'onCreateNoteForce'
   | 'onRenameItem'
   | 'onDeleteItem'
+  | 'onTrashItem'
 >;
 
 export interface UseSidebarInteractionsReturn {
-  contextMenu: { x: number; y: number; node?: FileTreeNode } | null;
+  contextMenu: { x: number; y: number; node?: FileTreeNode; area: SidebarContextMenuArea } | null;
   listSelection: string | null;
   isOrganizeExpanded: boolean;
   dragSourcePath: string | null;
@@ -37,8 +37,9 @@ export interface UseSidebarInteractionsReturn {
   existsDialog: { type: 'folder' | 'note'; name: string; parentPath: string | null } | null;
   renameDialog: { node: FileTreeNode } | null;
   renameName: string;
-  deleteDialog: { node: FileTreeNode } | null;
+  deleteDialog: { node: FileTreeNode; toTrash: boolean } | null;
   handleContextMenu: (e: React.MouseEvent, node?: FileTreeNode) => void;
+  handleChatContextMenu: (e: React.MouseEvent, node?: FileTreeNode) => void;
   handleItemDragStart: (e: React.DragEvent, node: FileTreeNode) => void;
   handleItemDragOver: (e: React.DragEvent, node: FileTreeNode) => void;
   handleItemDrop: (e: React.DragEvent, node: FileTreeNode) => Promise<void>;
@@ -58,6 +59,7 @@ export interface UseSidebarInteractionsReturn {
   openCreateDialog: (type: 'folder' | 'note', parentPath: string | null) => void;
   openRenameDialog: (node: FileTreeNode) => void;
   openDeleteDialog: (node: FileTreeNode) => void;
+  openTrashDialog: (node: FileTreeNode) => void;
   closeContextMenu: () => void;
   handleCreateFolder: () => Promise<void>;
   handleCreateNote: () => Promise<void>;
@@ -74,28 +76,42 @@ export interface UseSidebarInteractionsReturn {
   setRenameName: React.Dispatch<React.SetStateAction<string>>;
 }
 
-async function collectDroppedEntries(dataTransfer: DataTransfer | null) {
-  const results: Array<{ path: string; isDirectory: boolean }> = [];
-  const items = dataTransfer?.items ? Array.from(dataTransfer.items) : [];
+// 拖拽 / 粘贴的原始项：File 对象已同步取出，isDirectory 来自同步的 webkitGetAsEntry
+type DroppedEntry = { file: File; isDirectory: boolean };
+type DroppedPath = { path: string; isDirectory: boolean };
 
+// DataTransfer 只在事件派发的同步阶段可读：一旦 await 让出到宏任务（IPC 往返等），
+// Chromium 会把 drag data store 切到 protected，items / files 变空、getAsFile() 返回 null，
+// 之后再也取不到路径（表现为「无法获取拖拽的文件路径」）。
+// 故拆两步：先同步取走全部 File 对象，再异步解析真实路径。
+function extractDroppedEntries(dataTransfer: DataTransfer | null): DroppedEntry[] {
+  const items = dataTransfer?.items ? Array.from(dataTransfer.items) : [];
   if (items.length > 0) {
+    const entries: DroppedEntry[] = [];
     for (const item of items) {
       if (item.kind !== 'file') continue;
-      // DataTransferItem 在事件回调结束后即失效，必须在任何 await 之前取出
-      const entry = item.webkitGetAsEntry?.();
-      const isDirectory = !!entry?.isDirectory;
+      // webkitGetAsEntry / getAsFile 均为同步调用，必须在这里一次性取完，不能跨 await
+      const isDirectory = item.webkitGetAsEntry?.()?.isDirectory === true;
       const file = item.getAsFile();
-      if (!file || !window.electron?.getFileOrFolderPath) continue;
-      const filePath = await window.electron.getFileOrFolderPath(file);
-      if (filePath) results.push({ path: filePath, isDirectory });
+      if (file) entries.push({ file, isDirectory });
     }
-    return results;
+    return entries;
   }
+  // items 不可用时退回 files 快照
+  return Array.from(dataTransfer?.files ?? []).map((file) => ({ file, isDirectory: false }));
+}
 
-  for (const file of Array.from(dataTransfer?.files ?? [])) {
-    if (!window.electron?.getFileOrFolderPath) continue;
-    const filePath = await window.electron.getFileOrFolderPath(file);
-    if (filePath) results.push({ path: filePath, isDirectory: false });
+// 路径解析放在 File 对象取出之后：单个项解析失败不影响其余项
+async function resolveDroppedPaths(entries: DroppedEntry[]): Promise<DroppedPath[]> {
+  if (!window.electron?.getFileOrFolderPath) return [];
+  const results: DroppedPath[] = [];
+  for (const { file, isDirectory } of entries) {
+    try {
+      const path = await window.electron.getFileOrFolderPath(file);
+      if (path) results.push({ path, isDirectory });
+    } catch {
+      /* 单个项取不到路径时跳过，不影响其它项 */
+    }
   }
   return results;
 }
@@ -109,6 +125,7 @@ export function useSidebarInteractions(
     x: number;
     y: number;
     node?: FileTreeNode;
+    area: SidebarContextMenuArea;
   } | null>(null);
   const [listSelection, setListSelection] = useState<string | null>(null);
   const isOrganizeExpanded = useNotesSidebarSectionsStore((state) => state.sections.organize);
@@ -136,13 +153,28 @@ export function useSidebarInteractions(
   } | null>(null);
   const [renameDialog, setRenameDialog] = useState<{ node: FileTreeNode } | null>(null);
   const [renameName, setRenameName] = useState('');
-  const [deleteDialog, setDeleteDialog] = useState<{ node: FileTreeNode } | null>(null);
+  // toTrash：true 走回收站（可恢复），false 走彻底删除
+  const [deleteDialog, setDeleteDialog] = useState<{
+    node: FileTreeNode;
+    toTrash: boolean;
+  } | null>(null);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, node?: FileTreeNode) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, node });
-  }, []);
+  const openContextMenu = useCallback(
+    (e: React.MouseEvent, area: SidebarContextMenuArea, node?: FileTreeNode) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({ x: e.clientX, y: e.clientY, node, area });
+    },
+    []
+  );
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, node?: FileTreeNode) => openContextMenu(e, 'files', node),
+    [openContextMenu]
+  );
+  const handleChatContextMenu = useCallback(
+    (e: React.MouseEvent, node?: FileTreeNode) => openContextMenu(e, 'chat', node),
+    [openContextMenu]
+  );
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
   const handleItemDragStart = useCallback((e: React.DragEvent, node: FileTreeNode) => {
@@ -200,7 +232,9 @@ export function useSidebarInteractions(
       e.preventDefault();
       e.stopPropagation();
 
-      const dropped = await collectDroppedEntries(e.dataTransfer);
+      // 必须在任何 await 之前同步取走拖拽项
+      const entries = extractDroppedEntries(e.dataTransfer);
+      const dropped = await resolveDroppedPaths(entries);
       if (dropped.length === 0) {
         addToast({ type: 'error', message: '无法获取拖拽的文件路径' });
         return;
@@ -220,9 +254,20 @@ export function useSidebarInteractions(
             : `已添加 ${folders.length} 个固定目录`,
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [params, addToast]
   );
+
+  // 外部文件落点：优先落在列表里选中的目录，未选中 / 选中的是文件则落到当前固定目录；
+  // 未配置固定目录时返回 null，绝不允许落到对话目录
+  const resolveImportTarget = useCallback(async (): Promise<string | null> => {
+    const view = params.currentViewPath;
+    if (!view) return null;
+    if (!listSelection) return view;
+    const validation = await window.electron?.notes
+      .validateFolder(listSelection)
+      .catch(() => null);
+    return validation?.valid ? listSelection : view;
+  }, [params.currentViewPath, listSelection]);
 
   const handleTreeAreaDragOver = useCallback((e: React.DragEvent) => {
     if (!e.dataTransfer.types.includes('Files')) return;
@@ -242,12 +287,14 @@ export function useSidebarInteractions(
       e.stopPropagation();
       setTreeAreaDragOver(false);
 
-      const dest = params.currentViewPath || params.rootPath;
+      // 先同步取走拖拽项：resolveImportTarget 内含 IPC 往返，await 过后 DataTransfer 已失效
+      const entries = extractDroppedEntries(e.dataTransfer);
+      const dest = await resolveImportTarget();
       if (!dest) {
-        addToast({ type: 'error', message: '请先设置笔记存储路径' });
+        addToast({ type: 'error', message: '请先添加固定目录' });
         return;
       }
-      const dropped = await collectDroppedEntries(e.dataTransfer);
+      const dropped = await resolveDroppedPaths(entries);
       if (dropped.length === 0) {
         addToast({ type: 'error', message: '无法获取拖拽的文件路径' });
         return;
@@ -297,13 +344,15 @@ export function useSidebarInteractions(
         (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
       )
         return;
-      if (!params.rootPath) return;
-      const items = e.clipboardData?.items;
-      if (!items || items.length === 0) return;
-      const filePaths = (await collectDroppedEntries(e.clipboardData)).map((d) => d.path);
+      // 与拖拽同理：先同步取走剪贴板里的文件项，再做 IPC 解析与目标判定
+      const entries = extractDroppedEntries(e.clipboardData);
+      if (entries.length === 0) return;
+      const dest = await resolveImportTarget();
+      if (!dest) return;
+      const filePaths = (await resolveDroppedPaths(entries)).map((d) => d.path);
       if (filePaths.length > 0) {
         e.preventDefault();
-        const result = await params.onImportDroppedFiles(filePaths, listSelection ?? undefined);
+        const result = await params.onImportDroppedFiles(filePaths, dest);
         addToast({
           type: result.success ? 'success' : 'error',
           message: result.success ? '已粘贴到当前目录' : '粘贴失败',
@@ -311,7 +360,7 @@ export function useSidebarInteractions(
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [params.rootPath, params.onImportDroppedFiles, addToast, listSelection]
+    [resolveImportTarget, params.onImportDroppedFiles, addToast]
   );
 
   useEffect(() => {
@@ -328,16 +377,29 @@ export function useSidebarInteractions(
     setListSelection(selectedFilePath);
   }, [selectedFilePath]);
 
-  const openCreateDialog = useCallback((type: 'folder' | 'note', parentPath: string | null) => {
-    setCreateDialog({ type, parentPath });
-    setCreateName('');
-  }, []);
+  // 新建只作用于固定目录：未指定父目录时落在当前固定目录；未配置固定目录时不开对话框，
+  // 绝不回退到对话目录（文件列表不显示对话目录内容，建在那里等于建了个看不见的项）
+  const openCreateDialog = useCallback(
+    (type: 'folder' | 'note', parentPath: string | null) => {
+      const target = parentPath ?? params.currentViewPath;
+      if (!target) {
+        addToast({ type: 'warning', message: '请先添加固定目录' });
+        return;
+      }
+      setCreateDialog({ type, parentPath: target });
+      setCreateName('');
+    },
+    [params.currentViewPath, addToast]
+  );
   const openRenameDialog = useCallback((node: FileTreeNode) => {
     setRenameDialog({ node });
     setRenameName(node.name);
   }, []);
   const openDeleteDialog = useCallback((node: FileTreeNode) => {
-    setDeleteDialog({ node });
+    setDeleteDialog({ node, toTrash: false });
+  }, []);
+  const openTrashDialog = useCallback((node: FileTreeNode) => {
+    setDeleteDialog({ node, toTrash: true });
   }, []);
 
   const cancelCreateOrRename = useCallback(() => {
@@ -410,11 +472,16 @@ export function useSidebarInteractions(
     }
   }, [renameDialog, renameName, params]);
   const handleConfirmDelete = useCallback(async () => {
-    if (deleteDialog) {
-      await params.onDeleteItem(deleteDialog.node.path);
-      setDeleteDialog(null);
+    if (!deleteDialog) return;
+    const { node, toTrash } = deleteDialog;
+    setDeleteDialog(null);
+    const success = toTrash
+      ? await params.onTrashItem(node.path)
+      : await params.onDeleteItem(node.path);
+    if (!success) {
+      addToast({ type: 'error', message: toTrash ? '移入回收站失败' : '删除失败' });
     }
-  }, [deleteDialog, params]);
+  }, [deleteDialog, params, addToast]);
 
   return {
     contextMenu,
@@ -432,6 +499,7 @@ export function useSidebarInteractions(
     renameName,
     deleteDialog,
     handleContextMenu,
+    handleChatContextMenu,
     handleItemDragStart,
     handleItemDragOver,
     handleItemDrop,
@@ -451,6 +519,7 @@ export function useSidebarInteractions(
     openCreateDialog,
     openRenameDialog,
     openDeleteDialog,
+    openTrashDialog,
     closeContextMenu,
     handleCreateFolder,
     handleCreateNote,

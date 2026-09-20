@@ -301,6 +301,8 @@ contextBridge.exposeInMainWorld('electron', {
     saveFile: (filePath, content) => ipcRenderer.invoke('notes-save-file', filePath, content),
     renameItem: (oldPath, newName) => ipcRenderer.invoke('notes-rename-item', oldPath, newName),
     deleteItem: (itemPath) => ipcRenderer.invoke('notes-delete-item', itemPath),
+    // 移入系统回收站（可恢复），与 deleteItem 的彻底删除区分
+    trashItem: (itemPath) => ipcRenderer.invoke('notes-trash-item', itemPath),
     indexAll: (rootPath) => ipcRenderer.invoke('notes-index-all', rootPath),
     openFileInFolder: (filePath) => ipcRenderer.invoke('notes-open-file-in-folder', filePath),
     readFileAsBuffer: (filePath) => ipcRenderer.invoke('notes-read-file-as-buffer', filePath),

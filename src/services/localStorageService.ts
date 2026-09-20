@@ -36,7 +36,7 @@ export const STORAGE_KEYS = {
   NOTES_PINNED_FOLDERS: 'notes_pinned_folders',
   NOTES_CHAT_PATH: 'notes_chat_path',
   NOTES_ROOT_PATH: 'notes_root_path',
-  // 当前查看的固定目录（null = 主根视图）；切导航 / 重启后按此恢复视图
+  // 当前查看的固定目录（null = 未配置 / 未选中固定目录）；切导航 / 重启后按此恢复视图
   NOTES_CURRENT_VIEW_PATH: 'notes_current_view_path',
   // T04 / Phase 2：最近打开（U3 最近列表，渲染层 store，localStorage 持久化）
   NOTES_RECENTS: 'notes_recents',

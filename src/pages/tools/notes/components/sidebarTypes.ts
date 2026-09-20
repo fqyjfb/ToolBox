@@ -2,9 +2,11 @@
 
 import type { PinnedFolder, FileTreeNode, NotesRecentItem, NotesFavoritePath } from '../types';
 
+// 右键菜单的触发区域：对话整理区只保留「打开位置 / 删除」，固定目录与文件列表区保持完整菜单
+export type SidebarContextMenuArea = 'chat' | 'files';
+
 export interface NotesSidebarProps {
   fileTree: FileTreeNode[];
-  rootPath: string | null;
   selectedFile: FileTreeNode | null;
   onSelectFile: (file: FileTreeNode) => void;
   onToggleFolder: (folderPath: string) => void;
@@ -15,6 +17,8 @@ export interface NotesSidebarProps {
   onCreateNoteForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy', content?: string) => Promise<boolean>;
   onRenameItem: (oldPath: string, newName: string) => Promise<boolean>;
   onDeleteItem: (itemPath: string) => Promise<boolean>;
+  /** 移入系统回收站（可恢复），删除的替代路径 */
+  onTrashItem: (itemPath: string) => Promise<boolean>;
   onMoveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   onRefresh: () => void;
   onRebuildIndex?: () => Promise<void>;

@@ -3,8 +3,10 @@ import FloatConfigEditor from './FloatConfigEditor';
 import SettingCard from './SettingCard';
 import { FloatConfigItem } from '../../types/settings';
 import { QuickLaunchItem } from '../../utils/quickLaunch';
-import { renderFloatIcon, isPluginIcon } from '../../utils/floatIconRenderer';
-import CachedIcon from '../ui/CachedIcon';
+import FloatIconView from '../ui/FloatIconView';
+
+// 圆形按钮内径 40px，图标统一 20px（与真实悬浮窗菜单项一致）
+const BALL_ICON_SIZE = 20;
 
 interface FloatWindowTabProps {
   floatConfig: FloatConfigItem[];
@@ -58,9 +60,7 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
             {floatConfig.map((config, index) => {
               const pos = getRadialPosition(index, floatConfig.length);
               const isActive = safeActiveIndex === index;
-              const isPlugin = isPluginIcon(config.icon);
-              const { element } = renderFloatIcon(config.icon, 16);
-              
+
               return (
                 <button
                   key={config.id}
@@ -79,18 +79,14 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
                   }}
                   title={config.name}
                 >
-                  {isPlugin && config.path ? (
-                    <CachedIcon
-                      url={config.path}
-                      name={config.name}
-                      type="plugin"
-                      className="w-full h-full object-contain"
-                      fallbackIcon={<span className="text-white">{element}</span>}
-                      iconOnly
-                    />
-                  ) : (
-                    <span className="text-white">{element}</span>
-                  )}
+                  <FloatIconView
+                    icon={config.icon}
+                    path={config.path}
+                    isPlugin={config.type === 'plugin'}
+                    name={config.name}
+                    size={BALL_ICON_SIZE}
+                    className="text-white"
+                  />
                 </button>
               );
             })}

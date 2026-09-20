@@ -87,7 +87,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
         setListSelection={ix.setListSelection}
         onSelectFile={props.onSelectFile}
         onToggleFolder={props.onToggleFolder}
-        onContextMenu={ix.handleContextMenu}
+        onContextMenu={ix.handleChatContextMenu}
         onItemDragStart={ix.handleItemDragStart}
         onItemDragOver={ix.handleItemDragOver}
         onItemDrop={ix.handleItemDrop}
@@ -136,7 +136,9 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
           <div className="flex flex-col items-center justify-center py-8 text-gray-400">
             <FolderOpen className="mb-2 h-12 w-12" />
             <span className="text-sm">暂无笔记</span>
-            <span className="text-xs">点击上方按钮创建</span>
+            <span className="text-xs">
+              {props.currentViewPath ? '点击上方按钮创建' : '请先添加固定目录'}
+            </span>
           </div>
         ) : useVirtual ? (
           /* T02 / 4.3：节点数 > VIRTUALIZE_THRESHOLD 时启用虚拟化 */
@@ -196,12 +198,14 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
         x={ix.contextMenu?.x ?? 0}
         y={ix.contextMenu?.y ?? 0}
         node={ix.contextMenu?.node}
+        area={ix.contextMenu?.area ?? 'files'}
         fileTree={props.fileTree}
-        rootPath={props.rootPath}
+        currentViewPath={props.currentViewPath}
         onMoveItem={props.onMoveItem}
         onOpenCreateDialog={ix.openCreateDialog}
         onOpenRenameDialog={ix.openRenameDialog}
         onOpenDeleteDialog={ix.openDeleteDialog}
+        onOpenTrashDialog={ix.openTrashDialog}
         onClose={ix.closeContextMenu}
       />
 
@@ -227,7 +231,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
         />
       )}
       {ix.deleteDialog && (
-        <DeleteConfirmDialog type={ix.deleteDialog.node.type} name={ix.deleteDialog.node.name} onConfirm={ix.handleConfirmDelete} onCancel={ix.cancelDelete} />
+        <DeleteConfirmDialog type={ix.deleteDialog.node.type} name={ix.deleteDialog.node.name} toTrash={ix.deleteDialog.toTrash} onConfirm={ix.handleConfirmDelete} onCancel={ix.cancelDelete} />
       )}
     </aside>
   );

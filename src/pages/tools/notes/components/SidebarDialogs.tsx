@@ -124,6 +124,8 @@ export const ExistsConfirmDialog: React.FC<ExistsConfirmDialogProps> = ({
 export interface DeleteConfirmDialogProps {
   type: 'folder' | 'file';
   name: string;
+  /** true：移入系统回收站（可恢复）；false：彻底删除 */
+  toTrash?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -131,17 +133,22 @@ export interface DeleteConfirmDialogProps {
 export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   type,
   name,
+  toTrash = false,
   onConfirm,
   onCancel,
 }) => {
+  const target = type === 'folder' ? `文件夹 "${name}" 及其所有内容` : `文件 "${name}"`;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-96 rounded-xl bg-white dark:bg-gray-800 p-4 shadow-xl">
-        <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">确认删除</h3>
+        <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+          {toTrash ? '确认移入回收站' : '确认删除'}
+        </h3>
         <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-          {type === 'folder'
-            ? `确定要删除文件夹 "${name}" 及其所有内容吗？此操作不可撤销。`
-            : `确定要删除文件 "${name}" 吗？此操作不可撤销。`}
+          {toTrash
+            ? `确定要将${target}移入回收站吗？可在系统回收站中还原。`
+            : `确定要删除${target}吗？此操作不可撤销。`}
         </p>
 
         <div className="flex justify-end gap-2">
@@ -152,10 +159,14 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             取消
           </button>
           <button
-            className="rounded-lg bg-error px-3 py-1.5 text-sm text-white hover:bg-error/80"
+            className={`rounded-lg px-3 py-1.5 text-sm ${
+              toTrash
+                ? 'bg-primary text-button-text hover:bg-primary-hover'
+                : 'bg-error text-white hover:bg-error/80'
+            }`}
             onClick={onConfirm}
           >
-            删除
+            {toTrash ? '移入回收站' : '删除'}
           </button>
         </div>
       </div>

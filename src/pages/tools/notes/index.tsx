@@ -32,7 +32,6 @@ const NotesPage: React.FC = () => {
   } | null>(null);
   const [createName, setCreateName] = useState('');
   const {
-    hasRootPath,
     rootPath,
     fileTree,
     selectedFile,
@@ -49,6 +48,7 @@ const NotesPage: React.FC = () => {
     createNoteForce,
     renameItem,
     deleteItem,
+    trashItem,
     moveItem,
     copyItem,
     importDroppedFiles,
@@ -200,8 +200,10 @@ const NotesPage: React.FC = () => {
     [selectedFile, renameItem]
   );
 
+  // 新建只在固定目录内生效：未配置固定目录时入口即禁用，绝不能落到对话目录
   const handleOpenCreateDialog = (type: 'folder' | 'note') => {
-    setCreateDialog({ type, parentPath: null });
+    if (!currentViewPath) return;
+    setCreateDialog({ type, parentPath: currentViewPath });
     setCreateName('');
   };
 
@@ -226,9 +228,12 @@ const NotesPage: React.FC = () => {
   };
 
   // 外部文件变更监听 + 冲突裁决（挂页面，须早于 early return 以保证 hooks 顺序稳定）。
+  // 监听范围跟随当前查看的固定目录：文件列表与编辑器只处理固定目录内的文件；
+  // 未配置固定目录时退回监听对话目录（对话记录本身仍在读写）
+  const watchPath = currentViewPath || rootPath;
   const watcher = useNotesWatcher({
-    rootPath,
-    hasRootPath,
+    rootPath: watchPath,
+    hasRootPath: Boolean(watchPath),
     onExternalChange: refreshFileTree,
     selectedFile,
     fileContent,
@@ -282,7 +287,6 @@ const NotesPage: React.FC = () => {
         {sidebarVisible && (
           <NotesSidebar
             fileTree={fileTree}
-            rootPath={rootPath}
             selectedFile={selectedFile}
             onSelectFile={handleSelectFile}
             onToggleFolder={toggleFolderExpand}
@@ -292,6 +296,7 @@ const NotesPage: React.FC = () => {
             onCreateNoteForce={createNoteForce}
             onRenameItem={renameItem}
             onDeleteItem={deleteItem}
+            onTrashItem={trashItem}
             onMoveItem={moveItem}
             onRefresh={refreshFileTree}
             onRebuildIndex={rebuildIndex}
@@ -366,8 +371,8 @@ const NotesPage: React.FC = () => {
               onRenameFile={handleRenameFile}
               sidebarVisible={sidebarVisible}
               onToggleSidebar={handleToggleSidebar}
-              onCreateNote={() => handleOpenCreateDialog('note')}
-              onCreateFolder={() => handleOpenCreateDialog('folder')}
+              onCreateNote={currentViewPath ? () => handleOpenCreateDialog('note') : undefined}
+              onCreateFolder={currentViewPath ? () => handleOpenCreateDialog('folder') : undefined}
             />
           </div>
         )}
