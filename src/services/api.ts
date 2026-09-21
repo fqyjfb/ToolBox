@@ -2,24 +2,24 @@ import { baseApi } from './baseApi';
 import { localStorageService } from './localStorageService';
 import type { WeatherData, ForecastData } from '../types/weather';
 
+export interface TranslateLanguageInfo {
+  pronounce: string;
+  text: string;
+  type: string;
+  type_desc: string;
+}
+
 export interface TranslateResult {
   code: number;
   message: string;
   data?: {
-    source: {
-      pronounce: string;
-      text: string;
-      type: string;
-      type_desc: string;
-    };
-    target: {
-      pronounce: string;
-      text: string;
-      type: string;
-      type_desc: string;
-    };
+    source: TranslateLanguageInfo;
+    target: TranslateLanguageInfo;
   };
 }
+
+/** 翻译接口成功后的有效载荷（source 为识别/指定的源语言，target 为译文） */
+export type TranslateData = NonNullable<TranslateResult['data']>;
 
 export interface ExchangeRateResult {
   code: number;
@@ -66,19 +66,15 @@ export const apiService = {
     }
   },
 
-  async translate(text: string, from: string = 'auto', to: string = 'auto'): Promise<TranslateResult> {
-    const encodedText = encodeURIComponent(text);
-    const data = await baseApi.fetch<TranslateResult>(`/fanyi?text=${encodedText}&from=${from}&to=${to}`);
+  async translate(text: string, from: string = 'auto', to: string = 'auto'): Promise<TranslateData> {
+    const query = `text=${encodeURIComponent(text)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    const data = await baseApi.fetch<TranslateResult>(`/fanyi?${query}`);
 
-    if (!data) {
-      throw new Error('翻译请求失败');
+    if (data?.code === 200 && data.data) {
+      return data.data;
     }
 
-    if (data.code === 200) {
-      return data;
-    } else {
-      throw new Error(data.message || '翻译失败');
-    }
+    throw new Error(data?.message || '翻译失败');
   },
 
   async getWeather(city: string): Promise<WeatherData> {

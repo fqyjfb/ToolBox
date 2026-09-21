@@ -15,7 +15,7 @@ import { useNotesFavorites } from '../pages/tools/notes/hooks/useNotesFavorites'
 import { useNotesTabs } from '../pages/tools/notes/hooks/useNotesTabs';
 import { bindNotesRecentsStorageSync } from '../store/notesRecentsStore';
 import { useToastStore } from '../store/toastStore';
-import type { FileTreeNode, FileMetadata, PinnedFolder, NotesRecentItem, NotesFavoritePath } from '../pages/tools/notes/types';
+import type { FileTreeNode, FileMetadata, PinnedFolder, NotesRecentItem, NotesFavoritePath, NotesSendTarget } from '../pages/tools/notes/types';
 
 export interface NotesState {
   hasRootPath: boolean;
@@ -48,6 +48,8 @@ export interface UseNotesReturn extends NotesState {
   trashItem: (itemPath: string) => Promise<boolean>;
   moveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   copyItem: (sourcePath: string) => Promise<boolean>;
+  /** 发送：desktop=复制到系统桌面；qq/wechat=写入系统剪贴板并唤起应用 */
+  sendItem: (sourcePath: string, target: NotesSendTarget) => Promise<boolean>;
   importDroppedFiles: (filePaths: string[], targetFolderPath?: string) => Promise<{ success: boolean; imported?: string[]; errors?: string[] }>;
   toggleFolderExpand: (folderPath: string) => void;
   rebuildIndex: () => Promise<void>;
@@ -229,6 +231,7 @@ export function useNotes(): UseNotesReturn {
     trashItem: operations.trashItem,
     moveItem: operations.moveItem,
     copyItem: operations.copyItem,
+    sendItem: operations.sendItem,
     importDroppedFiles: operations.importDroppedFiles,
     toggleFolderExpand: tree.toggleFolderExpand,
     rebuildIndex: tree.rebuildIndex,

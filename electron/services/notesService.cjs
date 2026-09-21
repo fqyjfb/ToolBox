@@ -748,6 +748,58 @@ function copyFolderRecursive(source, dest) {
   }
 }
 
+// 目标已存在同名时追加序号，避免覆盖已有文件
+function uniqueDestPath(dir, name) {
+  let destPath = path.join(dir, name);
+  if (!fs.existsSync(destPath)) return destPath;
+  const ext = path.extname(name);
+  const baseName = ext ? name.slice(0, -ext.length) : name;
+  let counter = 1;
+  while (fs.existsSync(destPath)) {
+    destPath = path.join(dir, `${baseName} (${counter})${ext}`);
+    counter++;
+  }
+  return destPath;
+}
+
+// 发送：desktop=复制一份到系统桌面；qq/wechat=写入系统剪贴板后唤起应用，用户在窗口内 Ctrl+V 粘贴。
+const SEND_APP_PROTOCOLS = { qq: 'tencent://', wechat: 'weixin://' };
+
+function sendItem(sourcePath, target) {
+  if (!fs.existsSync(sourcePath)) {
+    return { success: false, error: '文件或文件夹不存在' };
+  }
+
+  if (target === 'desktop') {
+    try {
+      const desktopPath = require('electron').app.getPath('desktop');
+      const destPath = uniqueDestPath(desktopPath, path.basename(sourcePath));
+      if (fs.statSync(sourcePath).isDirectory()) {
+        copyFolderRecursive(sourcePath, destPath);
+      } else {
+        fs.copyFileSync(sourcePath, destPath);
+      }
+      return { success: true, newPath: destPath };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : '发送到桌面失败' };
+    }
+  }
+
+  const protocol = SEND_APP_PROTOCOLS[target];
+  if (typeof protocol !== 'string') return { success: false, error: '不支持的发送目标' };
+  if (!writeFilesToSystemClipboard([sourcePath])) {
+    return { success: false, error: '写入系统剪贴板失败' };
+  }
+  // 唤起失败不算发送失败：文件已在剪贴板，用户可切到应用窗口手动粘贴
+  try {
+    const opened = shell.openExternal(protocol);
+    if (opened && typeof opened.catch === 'function') opened.catch(() => {});
+  } catch {
+    /* 未安装 / 未注册协议时静默忽略 */
+  }
+  return { success: true };
+}
+
 function importDroppedFiles(rootPath, filePaths) {
   const outside = rejectOutsideRoots(rootPath, getAllowedRoots());
   if (outside) return outside;
@@ -858,6 +910,7 @@ module.exports = {
   statFile,
   moveItem,
   copyItem,
+  sendItem,
   importDroppedFiles,
   // 暴露给 notesFavoritesService.cjs 复用
   getSetting,

@@ -626,6 +626,8 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
+                      // 输入法组合态下的回车是「确认候选词」，此时 value 还是拼音串，提交会把文件改成拼音
+                      if (e.nativeEvent.isComposing) return;
                       e.preventDefault();
                       void commitRename();
                     } else if (e.key === 'Escape') {

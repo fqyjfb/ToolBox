@@ -1,9 +1,10 @@
 // 节点右键菜单
 
 import React, { useMemo, useCallback } from 'react';
-import { FilePlus, FolderPlus, Edit, Trash2, Recycle, ExternalLink, MoveRight } from 'lucide-react';
+import { FilePlus, FolderPlus, Edit, Trash2, Recycle, ExternalLink, MoveRight, Copy, Send } from 'lucide-react';
 import ContextMenu, { type ContextMenuItem } from '@/components/ui/ContextMenu';
-import type { FileTreeNode } from '../types';
+import { useToastStore } from '@/store/toastStore';
+import type { FileTreeNode, NotesSendTarget } from '../types';
 import type { SidebarContextMenuArea } from './sidebarTypes';
 
 export interface SidebarContextMenuProps {
@@ -16,6 +17,10 @@ export interface SidebarContextMenuProps {
   // 当前查看的固定目录：新建只在固定目录内生效，为空（未配置固定目录）时不提供新建
   currentViewPath: string | null;
   onMoveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
+  // 复制：写入系统剪贴板（等价 Ctrl+C，可粘贴到任意位置）
+  onCopyItem: (sourcePath: string) => Promise<boolean>;
+  // 发送：desktop=复制到系统桌面；qq/wechat=写入系统剪贴板并唤起应用
+  onSendItem: (sourcePath: string, target: NotesSendTarget) => Promise<boolean>;
   onOpenCreateDialog: (type: 'folder' | 'note', parentPath: string | null) => void;
   onOpenRenameDialog: (node: FileTreeNode) => void;
   onOpenDeleteDialog: (node: FileTreeNode) => void;
@@ -23,6 +28,13 @@ export interface SidebarContextMenuProps {
   onOpenTrashDialog: (node: FileTreeNode) => void;
   onClose: () => void;
 }
+
+// 右键「发送」子菜单：桌面=复制一份到系统桌面；QQ/微信=写入系统剪贴板并唤起应用窗口
+const SEND_TARGETS: { target: NotesSendTarget; label: string }[] = [
+  { target: 'desktop', label: '桌面' },
+  { target: 'qq', label: 'QQ' },
+  { target: 'wechat', label: '微信' },
+];
 
 // 收集树中所有文件夹，label 带层级缩进
 function getFoldersFromTree(
@@ -52,12 +64,15 @@ export const SidebarContextMenu: React.FC<SidebarContextMenuProps> = ({
   fileTree,
   currentViewPath,
   onMoveItem,
+  onCopyItem,
+  onSendItem,
   onOpenCreateDialog,
   onOpenRenameDialog,
   onOpenDeleteDialog,
   onOpenTrashDialog,
   onClose,
 }) => {
+  const addToast = useToastStore((state) => state.addToast);
   const items = useMemo<ContextMenuItem[]>(() => {
     if (!isOpen) return [];
 
@@ -146,6 +161,44 @@ export const SidebarContextMenu: React.FC<SidebarContextMenuProps> = ({
 
       result.push(openInFolderItem(node));
 
+      // 复制：写系统剪贴板，等价 Ctrl+C，可粘贴到系统任意位置
+      result.push({
+        id: 'copy',
+        label: '复制',
+        icon: <Copy className="w-4 h-4" />,
+        onClick: async () => {
+          const success = await onCopyItem(node.path);
+          addToast({
+            type: success ? 'success' : 'error',
+            message: success ? `已复制「${node.name}」，可粘贴到任意位置` : `复制「${node.name}」失败`,
+          });
+          onClose();
+        },
+      });
+
+      // 发送：桌面=复制一份到桌面；QQ/微信=写入剪贴板并唤起应用，用户直接粘贴
+      result.push({
+        id: 'send',
+        label: '发送',
+        icon: <Send className="w-4 h-4" />,
+        subMenu: SEND_TARGETS.map(({ target, label }) => ({
+          id: `send-${target}`,
+          label,
+          onClick: async () => {
+            const success = await onSendItem(node.path, target);
+            addToast({
+              type: success ? 'success' : 'error',
+              message: success
+                ? target === 'desktop'
+                  ? `已发送「${node.name}」到桌面`
+                  : `已复制「${node.name}」，请在${label}中粘贴`
+                : `发送「${node.name}」失败`,
+            });
+            onClose();
+          },
+        })),
+      });
+
       result.push({
         id: 'rename',
         label: '重命名',
@@ -178,6 +231,9 @@ export const SidebarContextMenu: React.FC<SidebarContextMenuProps> = ({
     fileTree,
     currentViewPath,
     onMoveItem,
+    onCopyItem,
+    onSendItem,
+    addToast,
     onOpenCreateDialog,
     onOpenRenameDialog,
     onOpenDeleteDialog,

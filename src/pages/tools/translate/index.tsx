@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { RefreshCw, Copy, ArrowRight, Check } from 'lucide-react';
-import { apiService } from '../../../services/api';
+import { apiService, type TranslateLanguageInfo } from '../../../services/api';
+import { logError } from '../../../services/loggerService';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Select, { SelectOption } from '../../../components/ui/Select';
 
@@ -127,65 +128,38 @@ const TranslatePage: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
   const [sourceLang, setSourceLang] = useState('auto');
-  const [targetLang, setTargetLang] = useState('zh-CHS');
+  const [targetLang, setTargetLang] = useState('auto');
   const [loading, setLoading] = useState(false);
-  const [sourceInfo, setSourceInfo] = useState<{ type: string; type_desc: string; pronounce: string } | null>(null);
-  const [targetInfo, setTargetInfo] = useState<{ type: string; type_desc: string; pronounce: string } | null>(null);
+  const [error, setError] = useState('');
+  const [sourceInfo, setSourceInfo] = useState<TranslateLanguageInfo | null>(null);
+  const [targetInfo, setTargetInfo] = useState<TranslateLanguageInfo | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const groupedLanguages = useMemo(() => {
-    const groups: Record<string, Language[]> = {};
-    LANGUAGES.forEach((lang) => {
-      const key = lang.alphabet || 'other';
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-      groups[key].push(lang);
-    });
-    return groups;
-  }, []);
+  const languageOptions = useMemo<SelectOption[]>(
+    () => LANGUAGES.map((lang) => ({ value: lang.code, label: lang.label })),
+    []
+  );
 
-  const sourceLangOptions = useMemo<SelectOption[]>(() => {
-    const options: SelectOption[] = [];
-    Object.entries(groupedLanguages).forEach(([, langs]) => {
-      langs.forEach((lang) => {
-        options.push({ value: lang.code, label: lang.label });
-      });
-    });
-    return options;
-  }, [groupedLanguages]);
-
-  const targetLangOptions = useMemo<SelectOption[]>(() => {
-    const options: SelectOption[] = [];
-    Object.entries(groupedLanguages).forEach(([, langs]) => {
-      langs.filter((lang) => lang.code !== 'auto').forEach((lang) => {
-        options.push({ value: lang.code, label: lang.label });
-      });
-    });
-    return options;
-  }, [groupedLanguages]);
+  // 目标语言「自动选择」：由接口按文档规则决定，源语言为中文则译英文，否则译中文
+  const targetLangOptions = useMemo<SelectOption[]>(
+    () => [{ value: 'auto', label: '自动选择' }, ...languageOptions.filter((opt) => opt.value !== 'auto')],
+    [languageOptions]
+  );
 
   const handleTranslate = async () => {
-    if (!inputText.trim()) return;
+    const text = inputText.trim();
+    if (!text) return;
 
     setLoading(true);
+    setError('');
     try {
-      const result = await apiService.translate(inputText, sourceLang, targetLang);
-      if (result.data) {
-        setOutputText(result.data.target.text);
-        setSourceInfo({
-          type: result.data.source.type,
-          type_desc: result.data.source.type_desc,
-          pronounce: result.data.source.pronounce,
-        });
-        setTargetInfo({
-          type: result.data.target.type,
-          type_desc: result.data.target.type_desc,
-          pronounce: result.data.target.pronounce,
-        });
-      }
-    } catch (error) {
-      console.error('翻译失败:', error);
+      const { source, target } = await apiService.translate(text, sourceLang, targetLang);
+      setOutputText(target.text);
+      setSourceInfo(source);
+      setTargetInfo(target);
+    } catch (err) {
+      logError('翻译失败', 'Translate', err as Error);
+      setError(err instanceof Error ? err.message : '翻译失败');
       setOutputText('');
       setSourceInfo(null);
       setTargetInfo(null);
@@ -195,13 +169,15 @@ const TranslatePage: React.FC = () => {
   };
 
   const handleSwapLanguages = () => {
-    if (sourceLang === 'auto') return;
+    if (sourceLang === 'auto' && targetLang === 'auto') return;
     const temp = sourceLang;
     setSourceLang(targetLang);
     setTargetLang(temp);
     if (outputText) {
       setInputText(outputText);
       setOutputText('');
+      setSourceInfo(null);
+      setTargetInfo(null);
     }
   };
 
@@ -212,7 +188,7 @@ const TranslatePage: React.FC = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('复制失败:', err);
+      logError('复制失败', 'Translate', err as Error);
     }
   };
 
@@ -228,15 +204,15 @@ const TranslatePage: React.FC = () => {
         <Select
           value={sourceLang}
           onChange={setSourceLang}
-          options={sourceLangOptions}
+          options={languageOptions}
           className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
         />
 
         <button
           onClick={handleSwapLanguages}
-          disabled={sourceLang === 'auto'}
+          disabled={sourceLang === 'auto' && targetLang === 'auto'}
           className={`p-2 rounded-lg transition-colors ${
-            sourceLang === 'auto'
+            sourceLang === 'auto' && targetLang === 'auto'
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
               : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
           }`}
@@ -304,6 +280,8 @@ const TranslatePage: React.FC = () => {
               <div className="flex items-center justify-center h-full">
                 <LoadingSpinner />
               </div>
+            ) : error ? (
+              <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
             ) : outputText ? (
               <p className="text-sm whitespace-pre-wrap">{outputText}</p>
             ) : (

@@ -202,6 +202,8 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
         fileTree={props.fileTree}
         currentViewPath={props.currentViewPath}
         onMoveItem={props.onMoveItem}
+        onCopyItem={props.onCopyItem}
+        onSendItem={props.onSendItem}
         onOpenCreateDialog={ix.openCreateDialog}
         onOpenRenameDialog={ix.openRenameDialog}
         onOpenDeleteDialog={ix.openDeleteDialog}

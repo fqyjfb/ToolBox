@@ -1,6 +1,6 @@
 // Sidebar 共享类型（抽出来让 NotesSidebar.tsx 只保留编排代码）
 
-import type { PinnedFolder, FileTreeNode, NotesRecentItem, NotesFavoritePath } from '../types';
+import type { PinnedFolder, FileTreeNode, NotesRecentItem, NotesFavoritePath, NotesSendTarget } from '../types';
 
 // 右键菜单的触发区域：对话整理区只保留「打开位置 / 删除」，固定目录与文件列表区保持完整菜单
 export type SidebarContextMenuArea = 'chat' | 'files';
@@ -28,6 +28,8 @@ export interface NotesSidebarProps {
   chatOrganizePath?: string | null;
   onSelectOrganizeFolder?: () => void;
   onCopyItem: (sourcePath: string) => Promise<boolean>;
+  /** 发送：desktop=复制到系统桌面；qq/wechat=写入系统剪贴板并唤起应用 */
+  onSendItem: (sourcePath: string, target: NotesSendTarget) => Promise<boolean>;
   onImportDroppedFiles: (filePaths: string[], targetFolderPath?: string) => Promise<{ success: boolean; imported?: string[]; errors?: string[] }>;
   pinnedFolders: PinnedFolder[];
   currentViewPath: string | null;

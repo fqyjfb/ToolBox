@@ -347,6 +347,8 @@ declare interface Window {
       openFileInFolder: (filePath: string) => Promise<{ success: boolean; error?: string }>;
       moveItem: (itemPath: string, targetFolderPath: string) => Promise<{ success: boolean; newPath?: string; error?: string }>;
       copyItem: (sourcePath: string) => Promise<{ success: boolean; error?: string }>;
+      /** 发送：desktop=复制到系统桌面；qq/wechat=写入系统剪贴板并唤起应用 */
+      sendItem: (sourcePath: string, target: 'desktop' | 'qq' | 'wechat') => Promise<{ success: boolean; newPath?: string; error?: string }>;
       importDroppedFiles: (rootPath: string, filePaths: string[]) => Promise<{ success: boolean; imported?: string[]; errors?: string[]; error?: string }>;
       // T02 / 4.1 + 4.5：新增 6 个方法（异步树 + 草稿保护），现有 21 个不变
       scanFolderAsync: (rootPath: string) => Promise<{ success: boolean; fileCount: number; folderCount: number; tree: NotesFileTreeNode[]; error?: string }>;

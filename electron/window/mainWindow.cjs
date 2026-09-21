@@ -1292,6 +1292,7 @@ const registerIpcHandlers = () => {
   ipcMain.handle('notes-read-file-as-buffer', (event, filePath) => notesService.readFileAsBuffer(filePath));
   ipcMain.handle('notes-move-item', (event, itemPath, targetFolderPath) => notesService.moveItem(itemPath, targetFolderPath));
   ipcMain.handle('notes-copy-item', (event, sourcePath) => notesService.copyItem(sourcePath));
+  ipcMain.handle('notes-send-item', (event, sourcePath, target) => notesService.sendItem(sourcePath, target));
   ipcMain.handle('notes-import-dropped-files', (event, rootPath, filePaths) => notesService.importDroppedFiles(rootPath, filePaths));
   require('../ipc/notesIpc.cjs').registerNotesIpc();
 

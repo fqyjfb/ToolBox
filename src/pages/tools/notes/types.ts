@@ -98,6 +98,9 @@ export interface NotesTemplate {
   content: string;
 }
 
+// 文件列表右键「发送」目标：desktop=复制一份到系统桌面；qq/wechat=写入系统剪贴板并唤起应用。
+export type NotesSendTarget = 'desktop' | 'qq' | 'wechat';
+
 // Node fs.watch 事件名白名单（非 chokidar 词汇，本项目不引入 chokidar）。
 export type NotesFsChangeType = 'change' | 'rename';
 

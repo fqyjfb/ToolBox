@@ -309,6 +309,7 @@ contextBridge.exposeInMainWorld('electron', {
     statFile: (filePath) => ipcRenderer.invoke('notes-stat', filePath),
     moveItem: (itemPath, targetFolderPath) => ipcRenderer.invoke('notes-move-item', itemPath, targetFolderPath),
     copyItem: (sourcePath) => ipcRenderer.invoke('notes-copy-item', sourcePath),
+    sendItem: (sourcePath, target) => ipcRenderer.invoke('notes-send-item', sourcePath, target),
     importDroppedFiles: (rootPath, filePaths) => ipcRenderer.invoke('notes-import-dropped-files', rootPath, filePaths),
     scanFolderAsync: (rootPath) => ipcRenderer.invoke('notes-scan-folder-async', { rootPath }),
     getFileTreeAsync: (rootPath) => ipcRenderer.invoke('notes-get-file-tree-async', { rootPath }),

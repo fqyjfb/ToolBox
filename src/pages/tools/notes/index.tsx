@@ -51,6 +51,7 @@ const NotesPage: React.FC = () => {
     trashItem,
     moveItem,
     copyItem,
+    sendItem,
     importDroppedFiles,
     toggleFolderExpand,
     refreshFileTree,
@@ -306,6 +307,7 @@ const NotesPage: React.FC = () => {
             chatOrganizePath={chatOrganizePath}
             onSelectOrganizeFolder={handleSelectOrganizeFolder}
             onCopyItem={copyItem}
+            onSendItem={sendItem}
             onImportDroppedFiles={importDroppedFiles}
             pinnedFolders={pinnedFolders}
             currentViewPath={currentViewPath}

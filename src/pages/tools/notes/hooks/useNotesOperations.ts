@@ -1,11 +1,10 @@
 // 文件增删改移；跨 hook 状态更新所需 setter 全部由 deps 注入
 
-import { useCallback } from 'react';
-import path from 'path';
+import { useCallback, useEffect, useRef } from 'react';
 import { logError } from '../../../../services/loggerService';
 import localStorageService, { STORAGE_KEYS } from '../../../../services/localStorageService';
 import { useNotesTabsStore } from '../../../../store/notesTabsStore';
-import type { FileTreeNode, PinnedFolder } from '../types';
+import type { FileTreeNode, NotesSendTarget, PinnedFolder } from '../types';
 
 export interface UseNotesOperationsDeps {
   setError: (e: string | null) => void;
@@ -46,6 +45,7 @@ export interface UseNotesOperationsReturn {
   trashItem: (itemPath: string) => Promise<boolean>;
   moveItem: (itemPath: string, targetFolderPath: string) => Promise<boolean>;
   copyItem: (sourcePath: string) => Promise<boolean>;
+  sendItem: (sourcePath: string, target: NotesSendTarget) => Promise<boolean>;
   importDroppedFiles: (
     filePaths: string[],
     targetFolderPath?: string
@@ -53,6 +53,14 @@ export interface UseNotesOperationsReturn {
 }
 
 export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperationsReturn {
+  // 下方回调全部是 useCallback([])（保持引用稳定），闭包里的 deps 永远停在首帧，
+  // deps.selectedFile 恒为 null —— 重命名 / 移动 / 删除后选中项不会同步，右侧标题不刷新。
+  // 故选中项一律经 ref 读最新值。
+  const selectedFileRef = useRef(deps.selectedFile);
+  useEffect(() => {
+    selectedFileRef.current = deps.selectedFile;
+  }, [deps.selectedFile]);
+
   const createFolder = useCallback(
     async (parentPath: string | null, name: string): Promise<{ success: boolean; exists?: boolean }> => {
       if (!window.electron) return { success: false };
@@ -220,19 +228,23 @@ export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperat
             return next;
           });
 
-          if (deps.selectedFile?.path === oldPath && result.newPath) {
+          const current = selectedFileRef.current;
+          if (current?.path === oldPath && result.newPath) {
+            // 渲染进程没有 node:path（window 以 nodeIntegration:false + sandbox 创建，Vite 会把
+            // 'path' 外部化，访问任意属性即抛错）—— 取最后一段文件名只能用分隔符切，与 moveItem 一致。
+            const newName = result.newPath.split(/[/\\]/).pop();
             deps.setSelectedFile({
-              ...deps.selectedFile,
+              ...current,
               id: result.newPath,
-              name: path.basename(result.newPath),
+              name: newName || current.name,
               path: result.newPath,
             });
-          } else if (deps.selectedFile?.path && result.newPath) {
+          } else if (current?.path && result.newPath) {
             const sep = oldPath.includes('/') ? '/' : '\\';
-            if (deps.selectedFile.path.startsWith(oldPath + sep)) {
-              const newFilePath = deps.selectedFile.path.replace(oldPath, result.newPath);
+            if (current.path.startsWith(oldPath + sep)) {
+              const newFilePath = current.path.replace(oldPath, result.newPath);
               deps.setSelectedFile({
-                ...deps.selectedFile,
+                ...current,
                 id: newFilePath,
                 path: newFilePath,
               });
@@ -259,7 +271,7 @@ export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperat
   const afterRemove = useCallback(async (itemPath: string) => {
     await deps.refreshFileTree();
 
-    if (deps.selectedFile?.path === itemPath) {
+    if (selectedFileRef.current?.path === itemPath) {
       deps.clearSelection();
     }
 
@@ -333,12 +345,13 @@ export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperat
         if (result.success && result.newPath) {
           await deps.refreshFileTree();
 
-          if (deps.selectedFile?.path === itemPath) {
+          const current = selectedFileRef.current;
+          if (current?.path === itemPath) {
             const newName = itemPath.split(/[/\\]/).pop();
             deps.setSelectedFile({
-              ...deps.selectedFile,
+              ...current,
               id: result.newPath,
-              name: newName || deps.selectedFile.name,
+              name: newName || current.name,
               path: result.newPath,
             });
             localStorageService.setString(STORAGE_KEYS.NOTES_LAST_OPENED_FILE, result.newPath);
@@ -394,6 +407,27 @@ export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperat
     []
   );
 
+  // 发送：桌面=复制一份到桌面；QQ/微信=写入系统剪贴板并唤起应用，用户直接粘贴
+  const sendItem = useCallback(
+    async (sourcePath: string, target: NotesSendTarget): Promise<boolean> => {
+      if (!window.electron) return false;
+      try {
+        const result = await window.electron.notes.sendItem(sourcePath, target);
+        if (!result.success) {
+          deps.setError(result.error || '发送失败');
+          return false;
+        }
+        return true;
+      } catch (err) {
+        logError('发送文件失败', 'useNotes', err as Error);
+        deps.setError('发送失败');
+        return false;
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
   const importDroppedFiles = useCallback(
     async (
       filePaths: string[],
@@ -432,6 +466,7 @@ export function useNotesOperations(deps: UseNotesOperationsDeps): UseNotesOperat
     trashItem,
     moveItem,
     copyItem,
+    sendItem,
     importDroppedFiles,
   };
 }
