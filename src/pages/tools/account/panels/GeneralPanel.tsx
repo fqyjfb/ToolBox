@@ -340,7 +340,8 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                 {generalAccounts.map((general) => (
                   <tr
                     key={general.id}
-                    className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
                     onClick={() => handleRowClick(general)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', general.id)}
                   >

@@ -57,7 +57,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
 
   return (
     <aside
-      className="flex h-full w-48 flex-shrink-0 flex-col bg-white dark:bg-gray-900"
+      className="flex h-full w-48 flex-shrink-0 flex-col bg-white/60 dark:bg-gray-900/40"
       onDragOver={ix.handleAsideDragOver}
       onDrop={ix.handleAsideDrop}
     >

@@ -182,7 +182,7 @@ const ProfilePage: React.FC = () => {
   } as React.CSSProperties);
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
       <style>{`
         @keyframes profileFadeIn {
           from { opacity: 0; transform: translateY(8px); }
@@ -280,7 +280,7 @@ const ProfilePage: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto px-8 pb-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
+        <div className="rounded-lg overflow-hidden" style={{ background: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
 
           <div className="profile-section px-6 py-4 border-b border-gray-100 dark:border-gray-700">
             <h2 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
@@ -290,8 +290,8 @@ const ProfilePage: React.FC = () => {
             <div className="mt-3">
               {fieldData[0] && (
                 <div
-                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 profile-field profile-field-1 ${
-                    isFieldEditing(fieldData[0].key) ? 'bg-gray-50 dark:bg-gray-700/50' : ''
+                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-gray-100/40 dark:hover:bg-gray-800/30 profile-field profile-field-1 ${
+                    isFieldEditing(fieldData[0].key) ? 'bg-gray-100/60 dark:bg-gray-800/30' : ''
                   }`}
                 >
                   <span className="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0 rounded">
@@ -317,8 +317,8 @@ const ProfilePage: React.FC = () => {
               {fieldData.slice(1).map((field, idx) => (
                 <div
                   key={field.key}
-                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 profile-field profile-field-${idx + 2} ${
-                    isFieldEditing(field.key) ? 'bg-gray-50 dark:bg-gray-700/50' : ''
+                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-gray-100/40 dark:hover:bg-gray-800/30 profile-field profile-field-${idx + 2} ${
+                    isFieldEditing(field.key) ? 'bg-gray-100/60 dark:bg-gray-800/30' : ''
                   }`}
                 >
                   <span className="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0 rounded">
@@ -377,8 +377,8 @@ const ProfilePage: React.FC = () => {
             </h2>
             <div className="mt-3">
               <div
-                className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 profile-field profile-field-5 ${
-                  editingPassword ? 'bg-gray-50 dark:bg-gray-700/50' : ''
+                className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-gray-100/40 dark:hover:bg-gray-800/30 profile-field profile-field-5 ${
+                  editingPassword ? 'bg-gray-100/60 dark:bg-gray-800/30' : ''
                 }`}
               >
                 <span className="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0 rounded">

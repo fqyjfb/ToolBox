@@ -388,7 +388,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
       // 编码不支持 / 体积超限 / 加载失败
       if (videoPlayback.mode === 'external') {
         return (
-          <div className="flex flex-1 min-h-0 flex-col items-center justify-center gap-3 bg-gray-50 dark:bg-gray-900 px-6 text-center">
+          <div className="flex flex-1 min-h-0 flex-col items-center justify-center gap-3 px-6 text-center">
             <Play className="h-10 w-10 text-gray-300" />
             <span className="max-w-full truncate text-sm text-gray-600 dark:text-gray-300">
               {selectedFile.name}
@@ -466,7 +466,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
 
     if (fileType === 'html') {
       return (
-        <div className="flex flex-1 flex-col bg-white dark:bg-gray-900 min-h-0">
+        <div className="flex flex-1 flex-col min-h-0">
           <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <button
               className={`px-3 py-1 text-sm rounded transition-colors ${
@@ -490,7 +490,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
             </button>
           </div>
           {htmlViewMode === 'preview' ? (
-            <div className="flex flex-1 min-h-0 overflow-auto bg-gray-50">
+            <div className="flex flex-1 min-h-0 overflow-auto">
               <iframe
                 key={`${selectedFile?.path}-${!!content}`}
                 srcDoc={content}
@@ -535,9 +535,9 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
 
   if (!selectedFile) {
     return (
-      <section className="flex flex-1 flex-col min-h-0 min-w-0 bg-gray-50 dark:bg-gray-900">
+      <section className="flex flex-1 flex-col min-h-0 min-w-0">
         {/* 与打开笔记后的头部保持一致：侧边栏开关常驻，列表被隐藏后仍有入口恢复 */}
-        <div className="flex flex-shrink-0 items-center gap-3 bg-gray-50 dark:bg-gray-800/50 px-4 py-2">
+        <div className="flex flex-shrink-0 items-center gap-3 bg-gray-50/40 dark:bg-gray-800/30 px-4 py-2">
           {onToggleSidebar ? (
             <button
               className="rounded p-1 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -574,7 +574,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
             <button
               onClick={onCreateFolder}
               disabled={!onCreateFolder}
-              className="flex items-center gap-2 rounded-lg bg-white dark:bg-gray-800 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 rounded-lg bg-white/60 dark:bg-gray-900/40 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-100/40 dark:hover:bg-gray-800/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FolderPlus className="h-4 w-4" />
               新建文件夹
@@ -590,9 +590,9 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   }
 
   return (
-    <section className="flex flex-1 flex-col min-h-0 min-w-0 bg-white dark:bg-gray-900">
+    <section className="flex flex-1 flex-col min-h-0 min-w-0">
       {/* flex-shrink-0：头部固定，滚动只发生在下方内容区 */}
-      <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 bg-gray-50 dark:bg-gray-800/50 px-4 py-2">
+      <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 bg-gray-50/40 dark:bg-gray-800/30 px-4 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <div className="flex min-w-0 items-center gap-2 text-sm">
             {onToggleSidebar && (
@@ -635,7 +635,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
                       cancelRename();
                     }
                   }}
-                  className="min-w-0 max-w-[240px] rounded border border-primary bg-white px-1 py-0.5 text-sm text-gray-900 outline-none dark:bg-gray-800 dark:text-white"
+                  className="min-w-0 max-w-[240px] rounded border border-primary bg-white/60 px-1 py-0.5 text-sm text-gray-900 outline-none dark:bg-gray-900/40 dark:text-white"
                 />
                 {renameExt && (
                   <span className="text-sm text-gray-500 dark:text-gray-400">{renameExt}</span>

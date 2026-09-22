@@ -223,7 +223,7 @@ const NetworkTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <SettingCard>
-        <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 settings-section-header">
           <Network size={16} className="text-blue-600" />
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">网络配置</h2>
           <div className="ml-auto">
@@ -336,7 +336,7 @@ const NetworkTab: React.FC = () => {
           </SettingRow>
         </SettingSection>
 
-        <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 settings-section-header">
           <button onClick={() => { setForm(createEmptyForm()); setSupabaseForm({ url: '', anonKey: '' }); setEncryptionKeyInput(''); }} className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">取消</button>
           <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-button-text bg-primary rounded-md hover:bg-primary-hover transition-colors disabled:opacity-50">
             {isSaving && <Loader2 size={14} className="animate-spin" />}

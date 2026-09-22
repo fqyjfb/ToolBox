@@ -49,7 +49,7 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+        <div className="min-h-screen flex flex-col items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 max-w-md w-full text-center">
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
               页面出现错误

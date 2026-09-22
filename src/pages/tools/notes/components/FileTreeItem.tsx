@@ -75,7 +75,7 @@ export const FileTreeItem: React.FC<FileTreeItemProps> = ({
         className={`flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
           isSelected || isListSelected
             ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/40 dark:hover:bg-gray-800/30'
         } ${dragOverPath === node.path ? '!ring-2 !ring-primary' : ''} ${dragSourcePath === node.path ? 'opacity-50' : ''}`}
         style={{ paddingLeft: `${depth * 12}px` }}
         onClick={handleClick}

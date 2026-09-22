@@ -52,7 +52,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
 
   return (
     <div
-      className="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:shadow-md transition-all duration-200 cursor-pointer"
+      className="group relative bg-white/60 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 p-3 transition-all duration-200 cursor-pointer"
       onClick={onViewDetail}
     >
       <div className="flex items-start gap-2">

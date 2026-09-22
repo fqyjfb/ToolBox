@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, RefreshCw, Upload, Package, FolderOpen } from 'lucide-react';
+import { RefreshCw, Upload, Package, FolderOpen } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
+import { useNavSearch } from '../../../contexts/NavSearchContext';
 import PluginCard from '../../../components/plugins/PluginCard';
 import PluginDetail from '../../../components/plugins/PluginDetail';
 import DragOverlay from '../../../components/plugins/DragOverlay';
@@ -40,6 +41,14 @@ const PluginStorePage: React.FC = () => {
 
   const removePinnedTool = useSidebarStore((s) => s.removePinnedTool);
   const addToast = useToastStore((s) => s.addToast);
+  const { searchQuery: globalSearchQuery } = useNavSearch();
+
+  // 同步全局搜索框与本地搜索状态
+  useEffect(() => {
+    if (globalSearchQuery !== searchQuery) {
+      setSearchQuery(globalSearchQuery);
+    }
+  }, [globalSearchQuery]);
 
   const [activeTab, setActiveTab] = useState<'explore' | 'installed'>('explore');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -261,8 +270,8 @@ const PluginStorePage: React.FC = () => {
   }, [availablePlugins]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <Package className="w-4 h-4 text-button-text" />
@@ -293,16 +302,6 @@ const PluginStorePage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="搜索..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-48 pl-8 pr-3 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md focus:outline-none focus:border-primary text-gray-900 dark:text-gray-100 placeholder-gray-400"
-            />
-          </div>
           <button
             onClick={() => {
               window.electron?.plugin?.openExtensionsDir();
@@ -330,7 +329,7 @@ const PluginStorePage: React.FC = () => {
       </div>
 
       {activeTab === 'explore' && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white/30 dark:bg-gray-800/30 overflow-x-auto">
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
           {categories.map((category) => (
             <button
               key={category.id}

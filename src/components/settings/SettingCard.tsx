@@ -7,7 +7,7 @@ interface SettingCardProps {
 
 const SettingCard: React.FC<SettingCardProps> = ({ children, className = '' }) => {
   return (
-    <div className={`bg-card rounded-lg border border-border ${className}`}>
+    <div className={`rounded-lg border border-border ${className}`} style={{ background: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
       {children}
     </div>
   );

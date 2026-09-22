@@ -251,7 +251,7 @@ const UserListPage: React.FC = () => {
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
               placeholder="搜索用户..."
-              className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+              className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-900/40 dark:text-white text-xs"
             />
             {searchQuery && (
               <button
@@ -330,7 +330,7 @@ const UserListPage: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
               {users.map((user) => (
                 <tr 
                   key={user.id} 

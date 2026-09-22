@@ -712,7 +712,8 @@ const MemoPage: React.FC = () => {
                         <div 
                           key={memo.id}
                           ref={colIndex === columnCount - 1 && index === colMemos.length - 1 ? lastMemoRef : null}
-                          className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors shadow-sm"
+                          className="rounded-md p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600/30 transition-colors"
+                          style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
                           onClick={() => handleOpenPreview(memo)}
                           onContextMenu={(e) => handleContextMenu(e, 'memo', memo.id)}
                         >
@@ -817,7 +818,7 @@ const MemoPage: React.FC = () => {
               placeholder="标题"
               className={modalControlClass}
             />
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group">
+            <div className="rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
               <textarea
                 value={newMemoContent}
                 onChange={(e) => setNewMemoContent(e.target.value)}
@@ -869,7 +870,7 @@ const MemoPage: React.FC = () => {
                 placeholder="标题"
                 className={modalControlClass}
               />
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group">
+              <div className="rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
                 <textarea
                   value={editingMemo.content}
                   onChange={(e) => setEditingMemo({ ...editingMemo, content: e.target.value })}
@@ -986,7 +987,7 @@ const MemoPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[120px] max-h-64 overflow-auto relative group scrollbar-hide">
+              <div className="rounded-lg p-4 min-h-[120px] max-h-64 overflow-auto relative group scrollbar-hide" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
                 <button
                   onClick={() => handleCopyMemoContent(previewMemo)}
                   className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded hover:bg-gray-200 dark:hover:bg-gray-700"

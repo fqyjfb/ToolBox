@@ -40,6 +40,10 @@
   padding: 0 var(--space-1);
 }
 
+.dark .tools-grid-item-name {
+  color: #FFFFFF !important;
+}
+
 @media (max-width: 480px) {
   .tools-grid-wrapper {
     grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));

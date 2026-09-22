@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, MapPin, Loader2 } from 'lucide-react';
-import { useShallow } from 'zustand/shallow';
 import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
 import Modal from '../ui/Modal';
@@ -10,7 +9,6 @@ import SettingSection from './SettingSection';
 import SettingRow from './SettingRow';
 import { WindowSize } from '../../types/settings';
 import { useToastStore } from '../../store/toastStore';
-import { useThemeStore } from '../../store/themeStore';
 import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
 import { IP_API_URL } from '../../utils/weatherLocation';
 
@@ -68,7 +66,6 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   onAutoLockTimeoutChange,
 }) => {
   const addToast = useToastStore(state => state.addToast);
-  const { isDark, setTheme } = useThemeStore(useShallow((s) => ({ isDark: s.isDark, setTheme: s.setTheme })));
   const [locationLoading, setLocationLoading] = React.useState(false);
   const [passwordSet, setPasswordSet] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -160,12 +157,6 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
     }
   };
 
-  const handleThemeChange = (value: string) => {
-    // 同步主进程（托盘菜单 / 悬浮球）由 themeStore 统一处理，此处无需重复发送
-    setTheme(value as 'light' | 'dark');
-    addToast({ type: 'success', message: `主题已切换为${value === 'dark' ? '深色' : '浅色'}` });
-  };
-
   const handleWeatherCitySave = () => {
     const city = weatherCity.trim();
     if (city) {
@@ -176,7 +167,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 
   return (
     <SettingCard>
-      <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 settings-section-header">
         <div className="w-5 h-5 flex items-center justify-center text-primary">
           <SettingsIcon size={16} />
         </div>
@@ -225,13 +216,6 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
             value={leftMenuPosition} 
             options={[{ label: '左侧', value: 'left' }, { label: '右侧', value: 'right' }]} 
             onChange={onMenuPositionChange} 
-          />
-        </SettingRow>
-        <SettingRow label="主题切换">
-          <RadioGroup 
-            value={isDark ? 'dark' : 'light'} 
-            options={[{ label: '浅色', value: 'light' }, { label: '深色', value: 'dark' }]} 
-            onChange={handleThemeChange} 
           />
         </SettingRow>
         <SettingRow label="外部链接">

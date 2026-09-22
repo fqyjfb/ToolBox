@@ -405,7 +405,7 @@ const NavPage: React.FC = () => {
       onMouseLeave={() => setHoveredBookmark(null)}
     >
       <div
-        className={`bookmark-card${isSearchResult ? ' search-highlight' : ''}`}
+        className="bookmark-card"
         onClick={() => navigateToBookmark(bookmark.url)}
       >
         <div className="card-content">
@@ -525,7 +525,7 @@ const NavPage: React.FC = () => {
                   onClick={() => switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
                     getActiveSubCategoryId(activeMainCategoryId) === subCategory.id
-                      ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md backdrop-blur-sm'
+                      ? 'bg-gray-800/60 text-white dark:bg-white/60 dark:text-gray-800 shadow-sm backdrop-blur-sm'
                       : 'bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm'
                   }`}
                 >
@@ -547,6 +547,17 @@ const NavPage: React.FC = () => {
                   <ChevronDown className="w-3 h-3" />
                 </button>
               )}
+            </div>
+          )}
+
+          {/* 收藏分类子分类导航 - 与普通分类保持同一位置 */}
+          {favoritesView && (
+            <div className="subcategory-nav flex flex-wrap gap-2">
+              <button
+                className="px-3 py-1 rounded-full text-xs font-medium bg-gray-800/60 text-white dark:bg-white/60 dark:text-gray-800 shadow-sm backdrop-blur-sm"
+              >
+                全部收藏
+              </button>
             </div>
           )}
         </div>
@@ -645,17 +656,8 @@ const NavPage: React.FC = () => {
               {favoritesView && (
                 <div>
                   {isAuthenticated && !favoritesLoaded ? null : favorites.length > 0 ? (
-                    <div>
-                      <div className="subcategory-nav flex flex-wrap gap-2 mb-4">
-                        <button
-                          className="px-3 py-1 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md backdrop-blur-sm"
-                        >
-                          全部收藏
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                        {favorites.map((bookmark) => renderBookmarkCard(bookmark))}
-                      </div>
+                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                      {favorites.map((bookmark) => renderBookmarkCard(bookmark))}
                     </div>
                   ) : (
                     <div className="text-center py-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg">

@@ -328,11 +328,11 @@ const NotesPage: React.FC = () => {
         )}
 
         {isChatMode ? (
-          <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-gray-900">
+          <div className="flex flex-1 flex-col overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2">
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="rounded p-1 text-gray-400 hover:bg-gray-100/40 dark:hover:bg-gray-800/30"
                   onClick={handleToggleSidebar}
                   title={sidebarVisible ? '隐藏列表' : '显示列表'}
                 >

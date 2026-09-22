@@ -195,7 +195,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
   };
 
   return (
-    <div className="card flex-1 h-full flex flex-col">
+    <div className="card flex-1 h-full flex flex-col" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)', boxShadow: 'var(--shadow-sm)' }}>
       <div className="card__content flex flex-col flex-1 min-h-0 overflow-hidden">
         <div className="news-tabs flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-600 mb-2 items-center">
           {tabs.map((tab) => (

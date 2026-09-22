@@ -570,7 +570,8 @@ const QuickReplyPage: React.FC = () => {
             quickReplies.map((quickReply) => (
               <div 
                 key={quickReply.id} 
-                className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 border border-gray-200 dark:border-gray-600"
+                className="rounded-md p-3 border border-gray-200 dark:border-gray-600"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
                 onContextMenu={(e) => handleContextMenu(e, 'item', quickReply.id)}
               >
                 <div className="flex items-start gap-3">

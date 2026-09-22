@@ -445,7 +445,7 @@ const ToolsPage: React.FC = () => {
                 onChange={handleSearchChange}
                 onKeyDown={handleKeyDown}
                 placeholder="搜索工具..."
-                className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+                className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-900/40 dark:text-white text-xs"
               />
               {searchTerm && (
                 <button
@@ -515,7 +515,7 @@ const ToolsPage: React.FC = () => {
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">状态</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
                   {tools.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">

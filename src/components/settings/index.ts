@@ -2,6 +2,7 @@ export { default as ToggleSwitch } from './ToggleSwitch';
 export { default as RadioGroup } from './RadioGroup';
 export { default as FloatConfigEditor } from './FloatConfigEditor';
 export { default as ShortcutRow } from './ShortcutRow';
+export { default as ThemeTab } from './ThemeTab';
 export { default as GeneralTab } from './GeneralTab';
 export { default as ShortcutsTab } from './ShortcutsTab';
 export { default as FloatWindowTab } from './FloatWindowTab';

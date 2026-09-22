@@ -128,7 +128,7 @@ const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
 
   // 内层负责裁剪（min-w-0 让 truncate 生效）；外层不设 overflow-hidden，否则「更多」面板会被裁掉。
   return (
-    <div className="flex flex-shrink-0 items-center gap-1 border-b border-gray-200 bg-gray-50 px-2 py-1 dark:border-gray-700 dark:bg-gray-800">
+    <div className="flex flex-shrink-0 items-center gap-1 border-b border-gray-200 dark:border-gray-700 px-2 py-1">
       <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
         {tabs.map((path, index) => {
           const isActive = path === activePath;
@@ -146,8 +146,8 @@ const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
               title={path}
               className={`group flex min-w-0 max-w-[180px] cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
                 isActive
-                  ? 'bg-white text-primary shadow-sm dark:bg-gray-900 dark:text-primary'
-                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+                  ? 'bg-white/60 dark:bg-gray-900/40 text-primary shadow-sm dark:text-primary'
+                  : 'text-gray-600 hover:bg-gray-100/40 dark:text-gray-400 dark:hover:bg-gray-800/30'
               }`}
             >
               <span className="truncate">{basenameOf(path)}</span>

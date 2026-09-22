@@ -616,7 +616,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex-1 category-dropdown-container relative">
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2">
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <button onClick={() => handleCategorySelect(null)} className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 ${selectedCategory === null ? 'bg-gray-800 text-white dark:bg-gray-600' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
                     全部

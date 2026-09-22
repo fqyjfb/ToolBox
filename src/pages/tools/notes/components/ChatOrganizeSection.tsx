@@ -54,7 +54,7 @@ export const ChatOrganizeSection: React.FC<ChatOrganizeSectionProps> = ({
         className={`flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
           isChatMode
             ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/40 dark:hover:bg-gray-800/30'
         }`}
         onClick={onToggleChatMode}
       >

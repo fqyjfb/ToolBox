@@ -79,7 +79,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       className={`chat-message flex cursor-pointer items-start gap-1.5 rounded px-2 py-1.5 text-xs transition-colors ${
                         isSelected
                           ? 'bg-blue-100 dark:bg-blue-500/25'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                          : 'hover:bg-gray-100/40 dark:hover:bg-gray-800/30'
                       } ${message.done ? 'opacity-60' : ''}`}
                       onClick={(e) => handleMessageClick(e, message.id)}
                       onDoubleClick={() => onToggleDone(message.id)}

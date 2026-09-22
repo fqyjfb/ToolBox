@@ -73,7 +73,7 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
 
   return (
     <SettingCard>
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 settings-section-header">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">日志监控设置</h3>
         <button
           onClick={handleOpenLogWindow}

@@ -2,7 +2,6 @@
 
 .hot-news-content {
   min-height: 90vh;
-  background-color: var(--color-bg-primary);
 }
 
 .refresh-btn {
@@ -334,10 +333,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2) var(--space-3);
-  background: var(--color-card);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
   gap: var(--space-3);
 }
 

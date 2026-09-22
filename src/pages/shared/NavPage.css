@@ -10,7 +10,7 @@
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.75rem;
-  background: var(--color-card);
+  background: color-mix(in srgb, var(--color-card) 60%, transparent);
   backdrop-filter: var(--blur-md);
   -webkit-backdrop-filter: var(--blur-md);
   border: none;
@@ -20,7 +20,6 @@
   text-align: left;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
   min-height: 90px;
   border-left: var(--space-1) solid transparent;
   will-change: transform, box-shadow;
@@ -329,7 +328,6 @@ main::-webkit-scrollbar-thumb:hover {
 
 .homenav-page {
   position: relative;
-  background-color: var(--color-bg-primary);
 }
 
 .nav-container {
@@ -343,19 +341,15 @@ main::-webkit-scrollbar-thumb:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.1875rem;
-  padding: 0.1875rem;
-  background: var(--color-bg-primary);
+  padding: 0.125rem;
   border: none;
   border-radius: 999px;
-  box-shadow:
-    0 1px 1px rgba(14, 17, 22, 0.04),
-    0 20px 40px -24px rgba(14, 17, 22, 0.18);
   font-size: 0.8125rem;
   width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  min-height: 36px;
+  min-height: 30px;
 }
 
 .radio-inputs::-webkit-scrollbar {
@@ -375,8 +369,8 @@ main::-webkit-scrollbar-thumb:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
-  padding: 0 14px;
+  height: 26px;
+  padding: 0 12px;
   border-radius: 999px;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -747,9 +741,8 @@ main::-webkit-scrollbar-thumb:hover {
 
 .search-section-header {
   padding: 1rem;
-  background: var(--color-bg-secondary);
+  background: color-mix(in srgb, var(--color-card) 60%, transparent);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
   margin-bottom: 1rem !important;
 }
 
@@ -788,15 +781,6 @@ main::-webkit-scrollbar-thumb:hover {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
-}
-
-.search-highlight {
-  border-left-color: var(--color-primary);
-}
-
-.search-highlight:hover {
-  border-left-color: var(--color-primary-hover);
-  box-shadow: var(--shadow-lg);
 }
 
 .search-empty-state {

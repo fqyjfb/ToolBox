@@ -305,7 +305,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
         variant="danger"
       />
 
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 settings-section-header">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 flex items-center justify-center text-blue-600">
             <HardDrive size={16} />
@@ -423,7 +423,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       </div>
 
       <div className="border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center justify-between px-4 py-3 settings-section-header">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 flex items-center justify-center text-blue-600">
               <HardDrive size={16} />
@@ -464,7 +464,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       </div>
 
       <div className="border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center justify-between px-4 py-3 settings-section-header">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 flex items-center justify-center text-blue-600">
               <BarChart3 size={16} />
@@ -598,7 +598,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       </div>
 
       <div className="border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center gap-2 px-4 py-3 settings-section-header">
           <div className="w-5 h-5 flex items-center justify-center text-orange-600">
             <Trash2 size={16} />
           </div>

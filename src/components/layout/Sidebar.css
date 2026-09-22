@@ -3,13 +3,13 @@
   flex-direction: column;
   height: 100%;
   flex-shrink: 0;
-  background-color: var(--color-bg-tertiary);
+  background-color: color-mix(in srgb, var(--color-bg-tertiary) 60%, transparent);
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
 .dark .sidebar-root {
-  background-color: var(--color-bg-secondary);
+  background-color: color-mix(in srgb, var(--color-bg-secondary) 40%, transparent);
 }
 
 .sidebar-root.expanded {

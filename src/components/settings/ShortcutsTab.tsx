@@ -13,7 +13,7 @@ interface ShortcutsTabProps {
 const ShortcutsTab: React.FC<ShortcutsTabProps> = ({ shortcuts, onUpdateShortcut, onResetShortcuts }) => {
   return (
     <SettingCard>
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 settings-section-header">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 flex items-center justify-center text-primary">
             <Keyboard size={16} />
@@ -29,7 +29,7 @@ const ShortcutsTab: React.FC<ShortcutsTabProps> = ({ shortcuts, onUpdateShortcut
           </button>
         )}
       </div>
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2">
+      <div className="border-b border-gray-200 dark:border-gray-700 settings-section-header px-4 py-2">
         <div className="flex items-center">
           <div className="flex-1 text-sm font-medium text-gray-600 dark:text-gray-400">功能描述</div>
           <div className="w-48 text-center text-sm font-medium text-gray-600 dark:text-gray-400">自定义快捷键</div>

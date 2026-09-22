@@ -278,7 +278,8 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
                 {phones.map((phone) => (
                   <tr
                     key={phone.id}
-                    className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
                     onClick={() => handleRowClick(phone)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', phone.id)}
                   >

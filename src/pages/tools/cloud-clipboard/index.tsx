@@ -615,7 +615,8 @@ const CloudClipboardPage: React.FC = () => {
             items.map((item) => (
               <div 
                 key={item.id} 
-                className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 border border-gray-200 dark:border-gray-600"
+                className="rounded-md p-3 border border-gray-200 dark:border-gray-600"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
                 onContextMenu={(e) => handleContextMenu(e, 'item', item.id)}
               >
                 <div className="flex items-start gap-3">

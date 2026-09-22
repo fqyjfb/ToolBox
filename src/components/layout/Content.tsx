@@ -27,7 +27,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
 
 
 
-  const showSearch = ['/launch', '/nav', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/memo', '/tools/account', '/tools/profile'].includes(location.pathname);
+  const showSearch = ['/launch', '/nav', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/memo', '/tools/account', '/tools/profile', '/tools/plugin-store'].includes(location.pathname);
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
@@ -35,7 +35,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
   };
 
   return (
-    <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white ${className}`} style={{ overflowX: 'hidden' }}>
+    <div className={`flex-1 flex flex-col text-gray-900 dark:text-white ${className}`} style={{ overflowX: 'hidden' }}>
       <div className="pl-4 pr-0 py-0 flex items-center justify-between" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <button className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-300/50 dark:hover:bg-gray-600/50 transition-colors" onClick={toggleSidebar} title={isCollapsed ? '展开侧边栏' : '收起侧边栏'}>
@@ -53,13 +53,13 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
               <div className="relative">
                 <input
                   placeholder="搜索..."
-                  className="border border-transparent focus:border-gray-300 px-4 py-1.5 rounded-xl w-56 transition-[width] duration-300 focus:w-64 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
+                  className="border border-transparent focus:border-gray-300 px-4 py-1 rounded-xl w-56 transition-[width] duration-300 focus:w-64 outline-none bg-white/60 dark:bg-gray-900/40 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
                   name="search"
                   type="search"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && performSearch()}
-                  style={{ height: '32px' } as React.CSSProperties}
+                  style={{ height: '28px' } as React.CSSProperties}
                 />
                 {searchQuery && (
                   <button onClick={clearSearch} className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-300 ease-in-out">
@@ -72,7 +72,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
               </div>
             )}
 
-            <div className="flex items-center overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-900">
+            <div className="flex items-center overflow-hidden rounded-lg">
               <button className="w-9 h-9 flex items-center justify-center text-gray-600 transition-colors duration-200 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={toggleTheme} title={isDark ? '浅色模式' : '深色模式'}>
                 {isDark ? (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,8 +115,8 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden p-2">
-        <div className="w-full h-full overflow-auto scrollbar-hide">
+      <div className="flex-1 overflow-hidden">
+        <div className="w-full h-full overflow-auto scrollbar-hide p-2">
           <PageTransition>
             {children}
           </PageTransition>

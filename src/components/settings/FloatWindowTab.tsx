@@ -44,7 +44,7 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
 
   return (
     <SettingCard>
-      <div className="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-800">
+      <div className="flex items-center gap-2 p-4 settings-section-header">
         <div className="w-5 h-5 flex items-center justify-center text-primary">
           <svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor">
             <circle cx="512" cy="512" r="480" fill="none" stroke="currentColor" strokeWidth="40" opacity="0.3" />

@@ -87,8 +87,8 @@ const OfflineToolsPage: React.FC = () => {
   }, [files, searchQuery]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <Wrench className="w-4 h-4 text-button-text" />
@@ -163,7 +163,7 @@ const OfflineToolsPage: React.FC = () => {
             {filteredFiles.map((file) => (
               <div
                 key={file.path}
-                className="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:shadow-md transition-all duration-200 cursor-pointer"
+                className="group relative bg-white/60 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:shadow-md transition-all duration-200 cursor-pointer"
                 onClick={() => handleOpenFile(file)}
                 title={`在新窗口打开 ${file.fileName}`}
               >

@@ -221,7 +221,7 @@ interface NavItemProps {
 const NavItem: React.FC<NavItemProps> = ({ icon, title, active, collapsed, onClick, onRemove }) => (
   <div className="relative group">
     <button
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-left transition-colors ${
         active ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
       } ${collapsed ? 'justify-center' : ''}`}
       title={collapsed ? title : ''}
@@ -254,7 +254,7 @@ const SortableNavItem: React.FC<SortableNavItemProps> = ({ id, icon, title, acti
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative group cursor-grab active:cursor-grabbing">
       <button
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-left transition-colors ${
           active ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
         }`}
         onClick={onClick}

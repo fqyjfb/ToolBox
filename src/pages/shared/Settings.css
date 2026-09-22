@@ -3,9 +3,13 @@
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 16px;
+  padding: 0;
 }
 
 .settings-scroll-container::-webkit-scrollbar {
   display: none;
+}
+
+.settings-section-header {
+  background: color-mix(in srgb, var(--color-card) 60%, transparent);
 }

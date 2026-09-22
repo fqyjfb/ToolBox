@@ -363,7 +363,7 @@ const SyncTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <SettingCard>
-        <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 settings-section-header">
           <HardDrive size={16} className="text-blue-600" />
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">数据存储位置</h2>
         </div>
@@ -410,7 +410,7 @@ const SyncTab: React.FC = () => {
 
       {storageLocation === 'cloud' && (
         <SettingCard>
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 settings-section-header">
             <div className="flex items-center gap-2">
               <Database size={16} className="text-blue-600" />
               <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">同步模块</h2>

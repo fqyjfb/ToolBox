@@ -1024,7 +1024,7 @@ const QuickLaunch: React.FC = () => {
             <Plus size={16} />
           </button>
         </div>
-        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/60 rounded-lg px-2 py-1">
+        <div className="flex items-center gap-2 rounded-lg px-2 py-1">
           {/* P0: 自动排序模式下拉 */}
           <Select
             value={sortMode}

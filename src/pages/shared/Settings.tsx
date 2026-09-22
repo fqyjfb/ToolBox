@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft, Network } from 'lucide-react';
+import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft, Network, Palette } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -16,6 +16,7 @@ import { logError } from '../../services/loggerService';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 import {
   GeneralTab,
+  ThemeTab,
   ShortcutsTab,
   FloatWindowTab,
   StorageTab,
@@ -407,6 +408,7 @@ const Settings: React.FC = () => {
 
   // Tab config
   const tabs = [
+    { id: 'theme' as const, label: '主题设置', icon: Palette },
     { id: 'general' as const, label: '通用设置', icon: SettingsIcon },
     { id: 'storage' as const, label: '存储管理', icon: Database },
     { id: 'sync' as const, label: '数据同步', icon: RefreshCw },
@@ -419,7 +421,7 @@ const Settings: React.FC = () => {
   return (
     <div className="flex h-full overflow-hidden">
       <aside
-        className="flex-shrink-0 flex flex-col bg-bg-primary transition-all duration-200"
+        className="flex-shrink-0 flex flex-col bg-white/60 dark:bg-gray-900/40 transition-all duration-200"
         style={{ width: sidebarCollapsed ? '48px' : '145px' }}
       >
         <div className="flex flex-col flex-1 py-2 overflow-y-auto scrollbar-hide">
@@ -427,10 +429,10 @@ const Settings: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors mx-1 mb-1 rounded-lg ${
+              className={`flex items-center justify-start gap-2 px-3 py-2 text-sm font-medium transition-colors mx-1 mb-1 rounded-lg ${
                 activeTab === tab.id
-                  ? 'text-primary bg-blue-50 dark:bg-blue-900/30'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'text-primary bg-blue-50/60 dark:bg-blue-900/30'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-800/30'
               }`}
               title={tab.label}
             >
@@ -441,7 +443,7 @@ const Settings: React.FC = () => {
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700 p-2">
           <button
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-800/30"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
           >
@@ -451,8 +453,10 @@ const Settings: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden bg-white/40 dark:bg-gray-900/20">
         <div className="settings-scroll-container">
+          {activeTab === 'theme' && <ThemeTab />}
+
           {activeTab === 'general' && (
             <GeneralTab
               autostartEnabled={autostartEnabled}

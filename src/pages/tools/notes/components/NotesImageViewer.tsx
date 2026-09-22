@@ -93,7 +93,7 @@ const NotesImageViewer: React.FC<NotesImageViewerProps> = ({ src, alt }) => {
   return (
     <div
       ref={wrapRef}
-      className="relative flex flex-1 min-h-0 select-none overflow-hidden bg-gray-50 dark:bg-gray-900"
+      className="relative flex flex-1 min-h-0 select-none overflow-hidden"
       style={{ cursor: dragging ? 'grabbing' : 'grab' }}
       title="滚轮缩放 · 按住拖拽移动 · 双击复位"
       onMouseDown={handleMouseDown}
