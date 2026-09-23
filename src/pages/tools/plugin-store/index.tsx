@@ -271,19 +271,19 @@ const PluginStorePage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <Package className="w-4 h-4 text-button-text" />
           </div>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">插件商店</h1>
-          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-md p-0.5">
+          <h1 className="text-lg font-semibold text-content-primary">插件商店</h1>
+          <div className="flex items-center gap-1 bg-surface-secondary rounded-md p-0.5">
             <button
               onClick={() => setActiveTab('explore')}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 activeTab === 'explore'
-                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  ? 'bg-primary text-button-text'
+                  : 'text-content-secondary hover:text-content-primary'
               }`}
             >
               发现
@@ -292,8 +292,8 @@ const PluginStorePage: React.FC = () => {
               onClick={() => setActiveTab('installed')}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 activeTab === 'installed'
-                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  ? 'bg-primary text-button-text'
+                  : 'text-content-secondary hover:text-content-primary'
               }`}
             >
               已安装 ({installedPlugins.length})
@@ -306,21 +306,21 @@ const PluginStorePage: React.FC = () => {
             onClick={() => {
               window.electron?.plugin?.openExtensionsDir();
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-content-secondary bg-surface-secondary rounded-md hover:bg-menu-hover transition-colors"
           >
             <FolderOpen className="w-3 h-3" />
             目录
           </button>
           <button
             onClick={handleInstallFromFile}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-content-secondary bg-surface-secondary rounded-md hover:bg-menu-hover transition-colors"
           >
             <Upload className="w-3 h-3" />
             上传
           </button>
           <button
             onClick={handleRefresh}
-            className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
+            className="w-6 h-6 flex items-center justify-center rounded-md text-content-tertiary hover:text-content-primary hover:bg-menu-hover dark:hover:text-content-secondary transition-colors"
             title="刷新"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -329,7 +329,7 @@ const PluginStorePage: React.FC = () => {
       </div>
 
       {activeTab === 'explore' && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto">
           {categories.map((category) => (
             <button
               key={category.id}
@@ -337,7 +337,7 @@ const PluginStorePage: React.FC = () => {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
                 selectedCategory === category.id
                   ? 'bg-primary text-button-text'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  : 'text-content-secondary hover:bg-menu-hover'
               }`}
             >
               <category.icon className="w-3.5 h-3.5" />
@@ -353,7 +353,7 @@ const PluginStorePage: React.FC = () => {
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : loadError ? (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+          <div className="flex flex-col items-center justify-center h-64 text-content-tertiary">
             <Package className="w-12 h-12 mb-3 opacity-50" />
             <p className="text-sm">{loadError}</p>
             <button
@@ -390,7 +390,7 @@ const PluginStorePage: React.FC = () => {
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+            <div className="flex flex-col items-center justify-center h-64 text-content-tertiary">
               <Package className="w-12 h-12 mb-3 opacity-50" />
               <p className="text-sm">没有找到匹配的插件</p>
               <p className="text-xs mt-1">尝试更换搜索关键词或分类</p>
@@ -419,7 +419,7 @@ const PluginStorePage: React.FC = () => {
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+            <div className="flex flex-col items-center justify-center h-64 text-content-tertiary">
               <Package className="w-12 h-12 mb-3 opacity-50" />
               <p className="text-sm">还没有安装任何插件</p>
               <button

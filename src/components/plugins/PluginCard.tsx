@@ -52,12 +52,12 @@ const PluginCard: React.FC<PluginCardProps> = ({
 
   return (
     <div
-      className="group relative bg-white/60 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 p-3 transition-all duration-200 cursor-pointer"
+      className="group relative bg-surface-60 rounded-lg p-3 transition-all duration-200 cursor-pointer hover:shadow-md"
       onClick={onViewDetail}
     >
       <div className="flex items-start gap-2">
         <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-700"
+        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-surface-secondary"
       >
         {plugin.iconUrl ? (
           <CachedIcon
@@ -65,17 +65,17 @@ const PluginCard: React.FC<PluginCardProps> = ({
             name={plugin.name}
             type="plugin"
             className="w-full h-full object-contain"
-            fallbackIcon={<Icon className="w-5 h-5 text-gray-600 dark:text-gray-300" />}
+            fallbackIcon={<Icon className="w-5 h-5 text-content-secondary" />}
             iconOnly
           />
         ) : (
-          <Icon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          <Icon className="w-5 h-5 text-content-secondary" />
         )}
       </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+            <h3 className="text-sm font-semibold text-content-primary truncate">
               {plugin.name}
             </h3>
             {(plugin as InstalledPlugin).isBeta && (
@@ -85,7 +85,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
             )}
           </div>
 
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+          <p className="text-xs text-content-secondary mt-0.5 truncate">
             {plugin.description}
           </p>
 
@@ -93,12 +93,12 @@ const PluginCard: React.FC<PluginCardProps> = ({
             {plugin.categories.slice(0, 2).map((category) => (
               <span
                 key={category}
-                className="px-1.5 py-0.5 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded"
+                className="px-1.5 py-0.5 text-xs text-content-secondary bg-surface-secondary rounded"
               >
                 {category}
               </span>
             ))}
-            <span className="px-1.5 py-0.5 text-xs text-gray-500 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 rounded">
+            <span className="px-1.5 py-0.5 text-xs text-content-tertiary bg-surface rounded">
               v{(plugin as InstalledPlugin).installedVersion || plugin.version}
             </span>
             {hasUpdate && updateInfo && (
@@ -111,7 +111,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+      <div className="flex items-center justify-between mt-2 pt-2">
         <div className="flex items-center gap-1.5">
           {(plugin as PluginInfo).githubRepo && (
             <button
@@ -119,7 +119,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
                 e.stopPropagation();
                 window.electron?.openExternal(`https://github.com/${(plugin as PluginInfo).githubRepo}`);
               }}
-              className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded text-content-tertiary hover:text-content-primary transition-colors"
               title="查看 GitHub"
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -128,7 +128,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
           <button
             onClick={handlePin}
             className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
-              isInSidebar ? 'text-primary dark:text-primary' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+              isInSidebar ? 'text-primary dark:text-primary' : 'text-content-tertiary hover:text-content-primary'
             }`}
             title={isInSidebar ? '移除侧边栏' : '添加到侧边栏'}
           >
@@ -148,13 +148,13 @@ const PluginCard: React.FC<PluginCardProps> = ({
                   disabled={isInstalling}
                   className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     isInstalling
-                      ? 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                      ? 'text-content-tertiary bg-surface-secondary cursor-not-allowed'
                       : 'text-white bg-green-600 dark:bg-green-600 hover:bg-green-700 dark:hover:bg-green-700'
                   }`}
                 >
                   {isInstalling && installProgress ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden">
+                      <div className="w-16 h-1.5 bg-menu-hover rounded-full overflow-hidden">
                         <div
                           className="h-full bg-green-600 transition-all duration-200"
                           style={{ width: `${installProgress.progress}%` }}
@@ -163,7 +163,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
                       <span className="w-8 text-right">{installProgress.progress}%</span>
                     </div>
                   ) : isInstalling ? (
-                    <span className="w-3.5 h-3.5 border-1.5 border-gray-400 dark:border-gray-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="w-3.5 h-3.5 border-1.5 border-content border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <RefreshCw className="w-3.5 h-3.5" />
                   )}
@@ -201,13 +201,13 @@ const PluginCard: React.FC<PluginCardProps> = ({
               disabled={isInstalling}
               className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                 isInstalling
-                  ? 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                  ? 'text-content-tertiary bg-surface-secondary cursor-not-allowed'
                   : 'text-button-text bg-primary dark:bg-primary hover:bg-primary/90 dark:hover:bg-primary/90'
               }`}
             >
               {isInstalling && installProgress ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-16 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden">
+                  <div className="w-16 h-1.5 bg-menu-hover rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary dark:bg-primary transition-all duration-200"
                       style={{ width: `${installProgress.progress}%` }}
@@ -216,7 +216,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
                   <span className="w-8 text-right">{installProgress.progress}%</span>
                 </div>
               ) : isInstalling ? (
-                <span className="w-3.5 h-3.5 border-1.5 border-gray-400 dark:border-gray-500 border-t-transparent rounded-full animate-spin" />
+                <span className="w-3.5 h-3.5 border-1.5 border-content border-t-transparent rounded-full animate-spin" />
               ) : (
                 <Download className="w-3.5 h-3.5" />
               )}
@@ -231,7 +231,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
           e.stopPropagation();
           onViewDetail?.();
         }}
-        className="absolute right-2 top-2 w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 transition-colors opacity-0 group-hover:opacity-100"
+        className="absolute right-2 top-2 w-5 h-5 flex items-center justify-center rounded text-content-tertiary hover:text-content-secondary transition-colors opacity-0 group-hover:opacity-100"
       >
         <ChevronRight className="w-4 h-4" />
       </button>

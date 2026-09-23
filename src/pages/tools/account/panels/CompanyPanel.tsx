@@ -260,48 +260,47 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
           </div>
         ) : companies.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="w-12 h-12 rounded-full bg-surface-secondary flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-content-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4"/>
               </svg>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">暂无企业信息</p>
+            <p className="text-content-secondary text-sm">暂无企业信息</p>
           </div>
         ) : (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <div className="rounded-lg overflow-hidden">
             <table className="w-full table-fixed">
-              <thead className="bg-gray-50 dark:bg-gray-800">
+              <thead className="bg-surface-secondary dark:bg-content-primary">
                 <tr>
-                  {visibleColumns.includes('name') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">企业名称</th>}
-                  {visibleColumns.includes('unified_social_credit_code') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">统一社会信用代码</th>}
-                  {visibleColumns.includes('legal_person') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">法人</th>}
-                  {visibleColumns.includes('establishment_date') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">成立日期</th>}
-                  {visibleColumns.includes('address') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">注册地址</th>}
-                  {visibleColumns.includes('registered_capital') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">注册资本</th>}
-                  {visibleColumns.includes('business_scope') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider max-w-[120px] truncate">经营范围</th>}
+                  {visibleColumns.includes('name') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider max-w-[120px] truncate">企业名称</th>}
+                  {visibleColumns.includes('unified_social_credit_code') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider max-w-[120px] truncate">统一社会信用代码</th>}
+                  {visibleColumns.includes('legal_person') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider max-w-[120px] truncate">法人</th>}
+                  {visibleColumns.includes('establishment_date') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider max-w-[120px] truncate">成立日期</th>}
+                  {visibleColumns.includes('address') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider max-w-[120px] truncate">注册地址</th>}
+                  {visibleColumns.includes('registered_capital') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider max-w-[120px] truncate">注册资本</th>}
+                  {visibleColumns.includes('business_scope') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider max-w-[120px] truncate">经营范围</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody>
                 {companies.map((company) => (
                   <tr
                     key={company.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
+                    className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                     onClick={() => handleRowClick(company)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', company.id)}
                   >
                     {visibleColumns.includes('name') && (
                       <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
-                        <span className="font-medium text-sm text-gray-900 dark:text-white">{company.name}</span>
+                        <span className="font-medium text-sm text-content-primary dark:text-white">{company.name}</span>
                       </td>
                     )}
                     {visibleColumns.includes('unified_social_credit_code') && (
                       <td className="px-4 py-3 max-w-[120px]">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate flex-1">{company.unified_social_credit_code || '-'}</span>
+                          <span className="text-sm text-content-secondary truncate flex-1">{company.unified_social_credit_code || '-'}</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleCopyText(company.unified_social_credit_code || '', '信用代码已复制'); }}
-                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
+                            className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors flex-shrink-0"
                             title="复制信用代码"
                           >
                             <Copy className="w-3 h-3" />
@@ -311,28 +310,28 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
                     )}
                     {visibleColumns.includes('legal_person') && (
                       <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
-                        <span className="text-sm text-gray-900 dark:text-white">{company.legal_person || '-'}</span>
+                        <span className="text-sm text-content-primary dark:text-white">{company.legal_person || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('establishment_date') && (
                       <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{company.establishment_date || '-'}</span>
+                        <span className="text-sm text-content-secondary">{company.establishment_date || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('address') && (
                       <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{company.address || '-'}</span>
+                        <span className="text-sm text-content-secondary">{company.address || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('registered_capital') && (
                       <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{company.registered_capital || '-'}</span>
+                        <span className="text-sm text-content-secondary">{company.registered_capital || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('business_scope') && (
                       <td className="px-4 py-3 max-w-[120px]">
                         <span 
-                          className="text-sm text-gray-500 dark:text-gray-400"
+                          className="text-sm text-content-secondary"
                           style={{ 
                             display: '-webkit-box', 
                             WebkitLineClamp: 2, 

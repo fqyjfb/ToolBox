@@ -113,13 +113,13 @@ const IPInfoPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 mb-4">
-        <Globe className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">IP 地址信息查询</h2>
+        <Globe className="w-6 h-6 text-content-secondary" />
+        <h2 className="text-lg font-semibold text-content-primary">IP 地址信息查询</h2>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4">
+      <div className="bg-surface rounded-lg shadow-md p-4 mb-4">
         <div className="mb-4">
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+          <label className="block text-sm text-content-secondary mb-2">
             查询 IP 地址（留空查询本机 IP）：
           </label>
           <div className="flex gap-2">
@@ -129,7 +129,7 @@ const IPInfoPage: React.FC = () => {
               onChange={(e) => setIpInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleQuery()}
               placeholder="例如: 8.8.8.8"
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500"
+              className="flex-1 px-4 py-2 border border-content rounded-lg bg-surface text-content-primary focus:outline-none focus:border-blue-500"
             />
             <button
               onClick={handleQuery}
@@ -145,7 +145,7 @@ const IPInfoPage: React.FC = () => {
         <button
           onClick={handleGetMyIP}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           查询本机 IP
@@ -159,24 +159,24 @@ const IPInfoPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md flex items-center justify-center">
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+        <div className="flex-1 bg-surface rounded-lg shadow-md flex items-center justify-center">
+          <div className="flex items-center gap-2 text-content-secondary">
             <RefreshCw className="w-5 h-5 animate-spin" />
             <span>正在查询...</span>
           </div>
         </div>
       ) : ipInfo ? (
-        <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 overflow-auto">
+        <div className="flex-1 bg-surface rounded-lg shadow-md p-4 overflow-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {infoItems.map((item, index) => {
               const Icon = item.icon;
               return (
-                <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div key={index} className="bg-surface-secondary rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{item.label}</span>
+                    <Icon className="w-4 h-4 text-content-secondary" />
+                    <span className="text-sm text-content-secondary">{item.label}</span>
                   </div>
-                  <div className="text-gray-800 dark:text-gray-200 font-semibold break-all">
+                  <div className="text-content-primary font-semibold break-all">
                     {item.value}
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, MapPin, Loader2 } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
@@ -167,11 +167,11 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 
   return (
     <SettingCard>
-      <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 settings-section-header">
+      <div className="flex items-center gap-2 p-4 settings-section-header">
         <div className="w-5 h-5 flex items-center justify-center text-primary">
           <SettingsIcon size={16} />
         </div>
-        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">通用设置</h2>
+        <h2 className="text-sm font-semibold text-content-primary">通用设置</h2>
       </div>
 
       <SettingSection title="窗口设置">
@@ -181,14 +181,14 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               type="number"
               value={defaultWindowSize.width}
               onChange={(e) => onWindowSizeChange('width', e.target.value)}
-              className="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              className="w-20 px-2 py-1 text-xs border border-content bg-surface text-content-primary"
             />
-            <span className="text-gray-500">x</span>
+            <span className="text-content-secondary">x</span>
             <input
               type="number"
               value={defaultWindowSize.height}
               onChange={(e) => onWindowSizeChange('height', e.target.value)}
-              className="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              className="w-20 px-2 py-1 text-xs border border-content bg-surface text-content-primary"
             />
             <span className="text-xs text-gray-500 ml-1">px</span>
           </div>
@@ -235,12 +235,12 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               value={weatherCity}
               onChange={(e) => setWeatherCity(e.target.value)}
               placeholder="请输入城市名称"
-              className="w-28 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              className="w-28 px-2 py-1 text-xs border border-content bg-surface text-content-primary"
             />
             <button
               onClick={handleLocationClick}
               disabled={locationLoading}
-              className="p-1 text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-md transition-colors disabled:opacity-50"
+              className="p-1 text-xs bg-surface-secondary hover:bg-menu-hover text-content-secondary rounded-md transition-colors disabled:opacity-50"
               title="获取当前位置"
             >
               {locationLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5" />}
@@ -279,7 +279,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               <>
                 <button
                   onClick={handleSetPassword}
-                  className="p-1 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  className="p-1 text-content-secondary hover:text-content-primary hover:bg-menu-hover rounded transition-colors"
                   title="修改锁定密码"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,7 +313,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
           <div className="flex items-center gap-2">
             <span>自动锁定</span>
             {!passwordSet && (
-              <span className="text-xs text-gray-400">(需先设置锁定密码)</span>
+              <span className="text-xs text-content-tertiary">(需先设置锁定密码)</span>
             )}
           </div>
         }>
@@ -325,7 +325,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
                 options={AUTO_LOCK_OPTIONS.map(option => ({ value: String(option.value), label: option.label }))}
                 size="sm"
                 dense
-                className="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="border border-content bg-surface text-content-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             )}
             <ToggleSwitch
@@ -345,22 +345,22 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         clickOutsideToClose
       >
         <div>
-          <label className="block text-xs text-gray-700 dark:text-gray-300 mb-1.5">新密码</label>
+          <label className="block text-xs text-content-primary mb-1.5">新密码</label>
           <input
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full px-2.5 py-1.5 text-sm border border-content bg-surface text-content-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="请输入密码"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-700 dark:text-gray-300 mb-1.5">确认密码</label>
+          <label className="block text-xs text-content-primary mb-1.5">确认密码</label>
           <input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full px-2.5 py-1.5 text-sm border border-content bg-surface text-content-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="请再次输入密码"
             onKeyDown={(e) => e.key === 'Enter' && handleSavePassword()}
           />

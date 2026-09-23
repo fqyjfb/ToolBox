@@ -103,17 +103,17 @@ const SelectWithCustom: React.FC<SelectWithCustomProps> = ({
   const dropdown = isOpen ? (
     <div
       ref={dropdownRef}
-      className="fixed bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[1000] flex flex-col"
+      className="fixed bg-surface rounded-lg shadow-lg z-[1000] flex flex-col"
       style={{ ...dropdownStyle, maxHeight: DROPDOWN_HEIGHT }}
     >
       <div className="relative flex-shrink-0">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-content-secondary" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="搜索..."
-          className="w-full px-3 py-2 pl-10 border-b border-gray-200 dark:border-gray-700 focus:outline-none dark:bg-gray-800 dark:text-white text-sm"
+          className="w-full px-3 py-2 pl-10 focus:outline-none bg-surface text-content-primary text-sm"
           autoFocus
         />
       </div>
@@ -128,7 +128,7 @@ const SelectWithCustom: React.FC<SelectWithCustomProps> = ({
                 className={`w-full px-3 py-2 text-left text-sm transition-colors truncate ${
                   option.label === value
                     ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : 'text-content-primary hover:bg-menu-hover'
                 }`}
               >
                 {option.label}
@@ -136,13 +136,13 @@ const SelectWithCustom: React.FC<SelectWithCustomProps> = ({
             ))}
           </div>
         ) : (
-          <div className="py-2 px-3 text-sm text-gray-500 dark:text-gray-400">
+          <div className="py-2 px-3 text-sm text-content-secondary">
             {searchTerm ? '无匹配结果' : '暂无数据'}
           </div>
         )}
       </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-700 p-2 flex-shrink-0">
+      <div className="p-2 flex-shrink-0">
         <input
           type="text"
           value={searchTerm || (!selectedOption ? value : '')}
@@ -151,7 +151,7 @@ const SelectWithCustom: React.FC<SelectWithCustomProps> = ({
             if (!searchTerm && !value) setIsOpen(false);
           }}
           placeholder="输入自定义值..."
-          className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          className="w-full px-3 py-1.5 text-sm border border-content rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-surface-secondary text-content-primary"
         />
       </div>
     </div>
@@ -167,10 +167,10 @@ const SelectWithCustom: React.FC<SelectWithCustomProps> = ({
           disabled={disabled}
           className={`${className} text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed`.trim()}
         >
-          <span className={`truncate ${value ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+          <span className={`truncate ${value ? 'text-content-primary' : 'text-content-secondary'}`}>
             {value || placeholder}
           </span>
-          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ml-1 ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-content-secondary transition-transform flex-shrink-0 ml-1 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
       </div>
       {createPortal(dropdown, document.body)}

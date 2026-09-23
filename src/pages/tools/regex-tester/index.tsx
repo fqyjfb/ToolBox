@@ -96,7 +96,7 @@ email: test@example.com
 
   const renderHighlighted = () => {
     if (!testString) {
-      return <span className="text-gray-400">输入测试文本查看匹配结果...</span>;
+      return <span className="text-content-tertiary">输入测试文本查看匹配结果...</span>;
     }
     if (matches.length === 0) return testString;
 
@@ -132,13 +132,13 @@ email: test@example.com
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Code className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">正则表达式测试器</h2>
+          <Code className="w-6 h-6 text-content-secondary" />
+          <h2 className="text-lg font-semibold text-content-primary">正则表达式测试器</h2>
         </div>
         <div className="flex items-center gap-2">
           <button 
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
           >
             <FileText className="w-4 h-4" />
             示例
@@ -156,21 +156,21 @@ email: test@example.com
 
       <div className="flex items-center gap-4 mb-4">
         <div className="flex-1">
-          <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-            <span className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500">/</span>
+          <div className="flex items-center border border-content rounded-lg overflow-hidden">
+            <span className="px-3 py-2 bg-surface-secondary text-content-tertiary">/</span>
             <input
               type="text"
               value={pattern}
               onChange={(e) => setPattern(e.target.value)}
-              className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-mono outline-none"
+              className="flex-1 px-3 py-2 bg-surface text-content-primary font-mono outline-none"
               placeholder="输入正则表达式"
             />
-            <span className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500">/</span>
+            <span className="px-3 py-2 bg-surface-secondary text-content-tertiary">/</span>
             <input
               type="text"
               value={flags}
               onChange={(e) => setFlags(e.target.value)}
-              className="w-12 px-3 py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-mono outline-none text-center"
+              className="w-12 px-3 py-2 bg-surface text-content-primary font-mono outline-none text-center"
             />
           </div>
         </div>
@@ -183,7 +183,7 @@ email: test@example.com
               className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                 flags.includes(flag.value)
                   ? 'bg-red-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  : 'bg-gray-200 dark:bg-surface text-content-primary hover:bg-gray-300 dark:hover:bg-menu-hover'
               }`}
               title={flag.desc}
             >
@@ -199,40 +199,40 @@ email: test@example.com
         </div>
       )}
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden flex flex-col">
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-hidden flex flex-col">
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 min-h-0">
           <div className="flex flex-col min-h-0">
-            <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-t-lg">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">测试文本</span>
+            <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border border-content rounded-t-lg">
+              <span className="text-sm font-medium text-content-secondary">测试文本</span>
             </div>
             <textarea
               value={testString}
               onChange={(e) => setTestString(e.target.value)}
-              className="flex-1 w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-mono text-sm resize-none outline-none border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg"
+              className="flex-1 w-full px-4 py-3 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none border border-t-0 border-content rounded-b-lg"
               placeholder="在此输入测试文本..."
             />
           </div>
           
           <div className="flex flex-col min-h-0">
-            <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-t-lg flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">匹配结果</span>
-              <span className="text-sm text-gray-500">找到 {matches.length} 个匹配</span>
+            <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border border-content rounded-t-lg flex items-center justify-between">
+              <span className="text-sm font-medium text-content-secondary">匹配结果</span>
+              <span className="text-sm text-content-tertiary">找到 {matches.length} 个匹配</span>
             </div>
-            <div className="flex-1 w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 font-mono text-sm overflow-auto border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg whitespace-pre-wrap break-all">
+            <div className="flex-1 w-full px-4 py-3 bg-surface-secondary dark:bg-content-primary font-mono text-sm overflow-auto border border-t-0 border-content rounded-b-lg whitespace-pre-wrap break-all">
               {renderHighlighted()}
             </div>
           </div>
         </div>
 
         {matches.length > 0 && (
-          <div className="px-4 py-3 bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">匹配详情</h4>
+          <div className="px-4 py-3 bg-surface-secondary dark:bg-content-primary">
+            <h4 className="text-sm font-medium text-content-primary mb-2">匹配详情</h4>
             <div className="flex flex-wrap gap-2">
               {matches.map((match, index) => (
-                <div key={index} className="bg-white dark:bg-gray-700 px-3 py-1.5 rounded text-sm">
-                  <span className="text-gray-500">#{index + 1}: </span>
-                  <span className="font-mono text-gray-800 dark:text-gray-200">"${match.match}"</span>
-                  <span className="text-gray-500 ml-2">@ {match.index}</span>
+                <div key={index} className="bg-surface px-3 py-1.5 rounded text-sm">
+                  <span className="text-content-tertiary">#{index + 1}: </span>
+                  <span className="font-mono text-content-primary">"${match.match}"</span>
+                  <span className="text-content-tertiary ml-2">@ {match.index}</span>
                 </div>
               ))}
             </div>

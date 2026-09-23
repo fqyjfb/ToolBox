@@ -3,11 +3,11 @@
 
 // 输入框/下拉框/日期等单行控件（固定 35px 高度）
 export const modalControlClass =
-  'w-full h-[35px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white';
+  'w-full h-[35px] px-3 py-2 text-sm border border-content rounded-lg focus:outline-none focus:border-content bg-surface text-content-primary';
 
 // 多行文本框（不限制高度，仅统一字体与内外边距）
 export const modalTextareaClass =
-  'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-500 dark:bg-gray-700 dark:text-white';
+  'w-full px-3 py-2 text-sm border border-content rounded-lg focus:outline-none focus:border-content bg-surface text-content-primary resize-none';
 
 // 模态框表单容器的行间距（减少行间距，统一为 8px）
 export const modalFormSpacingClass = 'space-y-2';

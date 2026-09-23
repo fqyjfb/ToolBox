@@ -41,13 +41,13 @@ const EmojiRemoverPage: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Smile className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Emoji 清理器</h2>
+          <Smile className="w-6 h-6 text-content-secondary" />
+          <h2 className="text-lg font-semibold text-content-primary">Emoji 清理器</h2>
         </div>
         <div className="flex items-center gap-2">
           <button 
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
           >
             <FileText className="w-4 h-4" />
             示例
@@ -62,34 +62,34 @@ const EmojiRemoverPage: React.FC = () => {
           </button>
           <button 
             onClick={handleClear}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 text-content-secondary hover:bg-menu-hover dark:hover:bg-surface rounded-lg transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 overflow-hidden flex flex-col">
+      <div className="flex-1 bg-surface rounded-lg shadow-md p-4 overflow-hidden flex flex-col">
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
           <div className="flex flex-col min-h-0">
-            <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">输入文本</label>
+            <label className="block text-sm text-content-secondary mb-2">输入文本</label>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 resize-none outline-none focus:border-blue-500"
+              className="flex-1 px-4 py-3 border border-content rounded-lg bg-surface text-content-primary resize-none outline-none focus:border-blue-500"
               placeholder="粘贴包含 Emoji 的文本..."
             />
           </div>
           
           <div className="flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm text-gray-600 dark:text-gray-400">输出结果</label>
+              <label className="text-sm text-content-secondary">输出结果</label>
               <span className="text-sm text-green-600 dark:text-green-400">已移除 {count} 个 Emoji</span>
             </div>
             <textarea
               value={output}
               readOnly
-              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 resize-none outline-none"
+              className="flex-1 px-4 py-3 border border-content rounded-lg bg-surface-secondary text-content-primary resize-none outline-none"
               placeholder="清理后的文本..."
             />
           </div>

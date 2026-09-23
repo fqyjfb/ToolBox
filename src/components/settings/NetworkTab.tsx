@@ -82,7 +82,7 @@ const TestButton: React.FC<{ keyName: string; url: string }> = ({ keyName, url }
       <button
         onClick={handleTest}
         disabled={state === 'loading'}
-        className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+        className="px-2 py-1 text-xs font-medium text-content-secondary rounded-md hover:bg-menu-hover disabled:opacity-50"
         title="测试连接"
       >
         {state === 'loading' ? <Loader2 size={14} className="animate-spin" /> : '测试'}
@@ -223,13 +223,13 @@ const NetworkTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <SettingCard>
-        <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700 settings-section-header">
+        <div className="flex items-center gap-2 p-4 settings-section-header">
           <Network size={16} className="text-blue-600" />
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">网络配置</h2>
+          <h2 className="text-sm font-semibold text-content-primary">网络配置</h2>
           <div className="ml-auto">
             <button
               onClick={() => setShowResetConfirm(true)}
-              className="flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="flex items-center gap-1 px-3 py-1 text-xs text-content-secondary rounded-md hover:bg-menu-hover"
             >
               <RefreshCw size={14} />
               全部恢复默认
@@ -240,88 +240,88 @@ const NetworkTab: React.FC = () => {
         <SettingSection title="应用更新">
           <SettingRow label="检查更新 API">
             <div className="flex items-center gap-2">
-              <input type="text" value={form.appUpdate.checkUrl} onChange={e => updateField('appUpdate', 'checkUrl', e.target.value)} placeholder={DEFAULT_CONFIG.appUpdate.checkUrl} className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+              <input type="text" value={form.appUpdate.checkUrl} onChange={e => updateField('appUpdate', 'checkUrl', e.target.value)} placeholder={DEFAULT_CONFIG.appUpdate.checkUrl} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
               <TestButton keyName="appUpdate.checkUrl" url={form.appUpdate.checkUrl} />
               <DefaultButton onClick={() => updateField('appUpdate', 'checkUrl', '')} />
             </div>
           </SettingRow>
           <SettingRow label="仓库主页">
             <div className="flex items-center gap-2">
-              <input type="text" value={form.appUpdate.repoUrl} onChange={e => updateField('appUpdate', 'repoUrl', e.target.value)} placeholder={DEFAULT_CONFIG.appUpdate.repoUrl} className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+              <input type="text" value={form.appUpdate.repoUrl} onChange={e => updateField('appUpdate', 'repoUrl', e.target.value)} placeholder={DEFAULT_CONFIG.appUpdate.repoUrl} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
               <DefaultButton onClick={() => updateField('appUpdate', 'repoUrl', '')} />
             </div>
           </SettingRow>
           <SettingRow label="请求超时 (ms)">
-            <input type="number" value={form.appUpdate.requestTimeout || ''} onChange={e => updateField('appUpdate', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.appUpdate.requestTimeout)} className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+            <input type="number" value={form.appUpdate.requestTimeout || ''} onChange={e => updateField('appUpdate', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.appUpdate.requestTimeout)} className="w-24 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
           </SettingRow>
         </SettingSection>
 
         <SettingSection title="60s 新闻 API">
           <SettingRow label="主源">
             <div className="flex items-center gap-2">
-              <input type="text" value={form.hotNews.primaryUrl} onChange={e => updateField('hotNews', 'primaryUrl', e.target.value)} placeholder={DEFAULT_CONFIG.hotNews.primaryUrl} className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+              <input type="text" value={form.hotNews.primaryUrl} onChange={e => updateField('hotNews', 'primaryUrl', e.target.value)} placeholder={DEFAULT_CONFIG.hotNews.primaryUrl} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
               <TestButton keyName="hotNews.primaryUrl" url={form.hotNews.primaryUrl} />
               <DefaultButton onClick={() => updateField('hotNews', 'primaryUrl', '')} />
             </div>
           </SettingRow>
           <SettingRow label="备源">
             <div className="flex items-center gap-2">
-              <input type="text" value={form.hotNews.fallbackUrl} onChange={e => updateField('hotNews', 'fallbackUrl', e.target.value)} placeholder={DEFAULT_CONFIG.hotNews.fallbackUrl} className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+              <input type="text" value={form.hotNews.fallbackUrl} onChange={e => updateField('hotNews', 'fallbackUrl', e.target.value)} placeholder={DEFAULT_CONFIG.hotNews.fallbackUrl} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
               <TestButton keyName="hotNews.fallbackUrl" url={form.hotNews.fallbackUrl} />
               <DefaultButton onClick={() => updateField('hotNews', 'fallbackUrl', '')} />
             </div>
           </SettingRow>
           <SettingRow label="请求超时 (ms)">
-            <input type="number" value={form.hotNews.requestTimeout || ''} onChange={e => updateField('hotNews', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.hotNews.requestTimeout)} className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+            <input type="number" value={form.hotNews.requestTimeout || ''} onChange={e => updateField('hotNews', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.hotNews.requestTimeout)} className="w-24 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface text-content-primary" />
           </SettingRow>
         </SettingSection>
 
         <SettingSection title="插件商店镜像">
           <SettingRow label="注册表镜像">
             <div className="flex items-center gap-2">
-              <textarea rows={4} value={urlsToText(form.pluginStore.registryUrls)} onChange={e => updateField('pluginStore', 'registryUrls', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.registryUrls.join('\n')} className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-mono" />
+              <textarea rows={4} value={urlsToText(form.pluginStore.registryUrls)} onChange={e => updateField('pluginStore', 'registryUrls', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.registryUrls.join('\n')} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
               <DefaultButton onClick={() => updateField('pluginStore', 'registryUrls', [])} />
             </div>
           </SettingRow>
           <SettingRow label="GitHub Raw">
             <div className="flex items-center gap-2">
-              <textarea rows={4} value={urlsToText(form.pluginStore.githubRawMirrors)} onChange={e => updateField('pluginStore', 'githubRawMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubRawMirrors.join('\n')} className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-mono" />
+              <textarea rows={4} value={urlsToText(form.pluginStore.githubRawMirrors)} onChange={e => updateField('pluginStore', 'githubRawMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubRawMirrors.join('\n')} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
               <DefaultButton onClick={() => updateField('pluginStore', 'githubRawMirrors', [])} />
             </div>
           </SettingRow>
           <SettingRow label="GitHub API">
             <div className="flex items-center gap-2">
-              <textarea rows={3} value={urlsToText(form.pluginStore.githubApiMirrors)} onChange={e => updateField('pluginStore', 'githubApiMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubApiMirrors.join('\n')} className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-mono" />
+              <textarea rows={3} value={urlsToText(form.pluginStore.githubApiMirrors)} onChange={e => updateField('pluginStore', 'githubApiMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubApiMirrors.join('\n')} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
               <DefaultButton onClick={() => updateField('pluginStore', 'githubApiMirrors', [])} />
             </div>
           </SettingRow>
           <SettingRow label="请求超时 (ms)">
-            <input type="number" value={form.pluginStore.requestTimeout || ''} onChange={e => updateField('pluginStore', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.pluginStore.requestTimeout)} className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+            <input type="number" value={form.pluginStore.requestTimeout || ''} onChange={e => updateField('pluginStore', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.pluginStore.requestTimeout)} className="w-24 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface text-content-primary" />
           </SettingRow>
         </SettingSection>
 
         <SettingSection title="图标下载缓存">
           <SettingRow label="缓存有效期 (ms)">
-            <input type="number" value={form.iconCache.ttl || ''} onChange={e => updateField('iconCache', 'ttl', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.iconCache.ttl)} className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+            <input type="number" value={form.iconCache.ttl || ''} onChange={e => updateField('iconCache', 'ttl', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.iconCache.ttl)} className="w-24 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface text-content-primary" />
           </SettingRow>
           <SettingRow label="最大条目">
-            <input type="number" value={form.iconCache.maxItems || ''} onChange={e => updateField('iconCache', 'maxItems', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.iconCache.maxItems)} className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+            <input type="number" value={form.iconCache.maxItems || ''} onChange={e => updateField('iconCache', 'maxItems', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.iconCache.maxItems)} className="w-24 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface text-content-primary" />
           </SettingRow>
           <SettingRow label="下载超时 (ms)">
-            <input type="number" value={form.iconCache.requestTimeout || ''} onChange={e => updateField('iconCache', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.iconCache.requestTimeout)} className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+            <input type="number" value={form.iconCache.requestTimeout || ''} onChange={e => updateField('iconCache', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.iconCache.requestTimeout)} className="w-24 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface text-content-primary" />
           </SettingRow>
         </SettingSection>
 
         <SettingSection title="Supabase 配置" subtitle="留空表示使用打包时的默认配置。配置后无需重启即可生效。">
           <SettingRow label="Supabase URL">
             <div className="flex items-center gap-2">
-              <input type="text" value={supabaseForm.url} onChange={e => setSupabaseForm(prev => ({ ...prev, url: e.target.value }))} placeholder="https://xxxx.supabase.co" className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+              <input type="text" value={supabaseForm.url} onChange={e => setSupabaseForm(prev => ({ ...prev, url: e.target.value }))} placeholder="https://xxxx.supabase.co" className="w-64 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface text-content-primary" />
               <DefaultButton onClick={() => setSupabaseForm(prev => ({ ...prev, url: '' }))} />
             </div>
           </SettingRow>
           <SettingRow label="Anon Key">
             <div className="flex items-center gap-2">
-              <input type="text" value={supabaseForm.anonKey} onChange={e => setSupabaseForm(prev => ({ ...prev, anonKey: e.target.value }))} placeholder="eyJhbGciOiJIUzI1NiIs..." className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+              <input type="text" value={supabaseForm.anonKey} onChange={e => setSupabaseForm(prev => ({ ...prev, anonKey: e.target.value }))} placeholder="eyJhbGciOiJIUzI1NiIs..." className="w-64 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface text-content-primary" />
               <DefaultButton onClick={() => setSupabaseForm(prev => ({ ...prev, anonKey: '' }))} />
             </div>
           </SettingRow>
@@ -330,14 +330,14 @@ const NetworkTab: React.FC = () => {
         <SettingSection title="加密密钥" subtitle="用于本地敏感数据加密。留空表示使用打包时的默认配置。修改后新数据将使用新密钥，旧数据需用旧密钥解密。">
           <SettingRow label="加密密钥">
             <div className="flex items-center gap-2">
-              <input type="text" value={encryptionKeyInput} onChange={e => setEncryptionKeyInput(e.target.value)} placeholder="留空使用默认" className="w-64 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" />
+              <input type="text" value={encryptionKeyInput} onChange={e => setEncryptionKeyInput(e.target.value)} placeholder="留空使用默认" className="w-64 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface text-content-primary" />
               <DefaultButton onClick={() => setEncryptionKeyInput('')} />
             </div>
           </SettingRow>
         </SettingSection>
 
-        <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 settings-section-header">
-          <button onClick={() => { setForm(createEmptyForm()); setSupabaseForm({ url: '', anonKey: '' }); setEncryptionKeyInput(''); }} className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">取消</button>
+        <div className="flex items-center justify-center gap-2 px-4 py-3 settings-section-header">
+          <button onClick={() => { setForm(createEmptyForm()); setSupabaseForm({ url: '', anonKey: '' }); setEncryptionKeyInput(''); }} className="px-3 py-1 text-xs font-medium text-content-secondary rounded-md hover:bg-menu-hover transition-colors">取消</button>
           <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-button-text bg-primary rounded-md hover:bg-primary-hover transition-colors disabled:opacity-50">
             {isSaving && <Loader2 size={14} className="animate-spin" />}
             <Save size={14} />

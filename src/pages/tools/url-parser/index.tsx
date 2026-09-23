@@ -60,13 +60,13 @@ const UrlParserPage: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Link className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">URL 解析器</h2>
+          <Link className="w-6 h-6 text-content-secondary" />
+          <h2 className="text-lg font-semibold text-content-primary">URL 解析器</h2>
         </div>
         <div className="flex items-center gap-2">
           <button 
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
           >
             <FileText className="w-4 h-4" />
             示例
@@ -75,7 +75,7 @@ const UrlParserPage: React.FC = () => {
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">输入 URL</label>
+        <label className="block text-sm text-content-secondary mb-2">输入 URL</label>
         <div className="flex gap-2">
           <input
             type="text"
@@ -83,11 +83,11 @@ const UrlParserPage: React.FC = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && parseURL()}
             placeholder="https://example.com/path?query=value"
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500"
+            className="flex-1 px-4 py-2 border border-content rounded-lg bg-surface text-content-primary focus:outline-none focus:border-blue-500"
           />
           <button
             onClick={handleReset}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="px-4 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors"
           >
             重置
           </button>
@@ -100,14 +100,14 @@ const UrlParserPage: React.FC = () => {
         </div>
       )}
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-auto">
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-auto">
         <div className="p-4">
           {parsed ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {urlParts.map((part, index) => (
-                <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">{part.label}</div>
-                  <div className="text-gray-800 dark:text-gray-200 font-mono text-sm break-all mb-2">
+                <div key={index} className="bg-surface-secondary rounded-lg p-4">
+                  <div className="text-sm text-content-secondary mb-2">{part.label}</div>
+                  <div className="text-content-primary font-mono text-sm break-all mb-2">
                     {part.value}
                   </div>
                   <button
@@ -121,7 +121,7 @@ const UrlParserPage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-400">
+            <div className="h-full flex items-center justify-center text-content-tertiary">
               输入 URL 查看解析结果
             </div>
           )}

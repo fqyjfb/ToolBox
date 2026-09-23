@@ -386,6 +386,7 @@ main::-webkit-scrollbar-thumb:hover {
 
 .radio-inputs .radio input + .name:hover {
   color: var(--color-text-primary);
+  background-color: var(--color-menu-hover);
 }
 
 .radio-inputs .radio input + .name .pre-name,

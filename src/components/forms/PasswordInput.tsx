@@ -36,7 +36,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
           type="button"
           onClick={() => setShowPassword(!showPassword)}
           disabled={disabled}
-          className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="text-content-secondary hover:text-content-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>

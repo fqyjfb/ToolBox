@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
+import { useThemeStore } from '../../store/themeStore';
 
 interface BreadcrumbItem {
   path: string;
@@ -69,6 +70,8 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  // 订阅 themeKey，确保自定义主题保存后面包屑能立即重渲染并应用新颜色
+  useThemeStore((s) => s.themeKey);
 
   const generateBreadcrumbItems = (pathname: string): BreadcrumbItem[] => {
     const items: BreadcrumbItem[] = [];
@@ -115,14 +118,14 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
       {items.map((item, index) => (
         <React.Fragment key={item.path}>
           {index > 0 && (
-            <ChevronRight className="w-3 h-3 text-gray-400" />
+            <ChevronRight className="w-3 h-3 text-content-secondary" />
           )}
           <span
             className={`
               text-xs
               ${item.isActive
-                ? 'text-gray-700 dark:text-gray-200 font-medium'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer'
+                ? 'text-content-primary font-medium'
+                : 'text-content-secondary hover:text-content-primary cursor-pointer'
               }
               transition-colors duration-200
             `}

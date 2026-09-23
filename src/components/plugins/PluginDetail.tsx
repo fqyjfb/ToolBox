@@ -60,7 +60,7 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-4">
           <div
-          className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-700"
+          className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-surface-secondary"
         >
           {plugin.iconUrl ? (
             <CachedIcon
@@ -68,16 +68,16 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
               name={plugin.name}
               type="plugin"
               className="w-full h-full object-contain"
-              fallbackIcon={<Icon className="w-8 h-8 text-gray-600 dark:text-gray-300" />}
+              fallbackIcon={<Icon className="w-8 h-8 text-content-secondary" />}
             />
           ) : (
-            <Icon className="w-8 h-8 text-gray-600 dark:text-gray-300" />
+            <Icon className="w-8 h-8 text-content-secondary" />
           )}
         </div>
 
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h2 className="text-lg font-semibold text-content-primary">
                 {plugin.name}
               </h2>
               {(plugin as InstalledPlugin).isBeta && (
@@ -87,11 +87,11 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
               )}
             </div>
 
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm text-content-secondary mt-1">
               {plugin.description}
             </p>
 
-            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-4 mt-2 text-xs text-content-secondary">
               <span className="flex items-center gap-1">
                 <Star className="w-3.5 h-3.5 text-amber-500" />
                 v{plugin.version}
@@ -102,7 +102,7 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
         </div>
 
         {(plugin as PluginInfo).image && (
-          <div className="rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+          <div className="rounded-lg overflow-hidden bg-surface-secondary">
             <CachedIcon
               url={(plugin as PluginInfo).image}
               name={plugin.name}
@@ -114,12 +114,12 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
 
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">分类</span>
+            <span className="text-xs font-medium text-content-secondary">分类</span>
             <div className="flex flex-wrap gap-1.5">
               {plugin.categories.map((category) => (
                 <span
                   key={category}
-                  className="px-2 py-0.5 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded"
+                  className="px-2 py-0.5 text-xs text-content-secondary bg-surface-secondary rounded"
                 >
                   {category}
                 </span>
@@ -129,12 +129,12 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
 
           {(plugin as PluginInfo).tags && (plugin as PluginInfo).tags!.length > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">标签</span>
+              <span className="text-xs font-medium text-content-secondary">标签</span>
               <div className="flex flex-wrap gap-1.5">
                 {(plugin as PluginInfo).tags!.map((tag) => (
                   <span
                     key={tag}
-                    className="px-2 py-0.5 text-xs text-gray-500 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 rounded"
+                    className="px-2 py-0.5 text-xs text-content-secondary bg-surface rounded"
                   >
                     {translateTag(tag)}
                   </span>
@@ -144,14 +144,14 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between pt-3">
           <div className="flex items-center gap-2">
             {(plugin as PluginInfo).githubRepo && (
               <button
                 onClick={() => {
                   window.electron?.openExternal(`https://github.com/${(plugin as PluginInfo).githubRepo}`);
                 }}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-content-secondary bg-surface-secondary hover:bg-menu-hover transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 GitHub
@@ -162,7 +162,7 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
               className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 isInSidebar
                   ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
-                  : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  : 'text-content-primary bg-surface-secondary hover:bg-menu-hover'
               }`}
             >
               {isInSidebar ? <Pin className="w-3.5 h-3.5" /> : <PinOff className="w-3.5 h-3.5" />}

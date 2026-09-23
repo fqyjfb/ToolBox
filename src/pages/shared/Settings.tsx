@@ -255,6 +255,7 @@ const Settings: React.FC = () => {
       if (result && result.code === 0) {
         localStorageService.clearAllExcept([
           STORAGE_KEYS.THEME,
+          STORAGE_KEYS.CUSTOM_THEME,
           STORAGE_KEYS.BROWSER_MODE,
           STORAGE_KEYS.WEATHER_CITY,
           STORAGE_KEYS.SIDEBAR,
@@ -421,7 +422,7 @@ const Settings: React.FC = () => {
   return (
     <div className="flex h-full overflow-hidden">
       <aside
-        className="flex-shrink-0 flex flex-col bg-white/60 dark:bg-gray-900/40 transition-all duration-200"
+        className="flex-shrink-0 flex flex-col bg-surface-60 transition-all duration-200"
         style={{ width: sidebarCollapsed ? '48px' : '145px' }}
       >
         <div className="flex flex-col flex-1 py-2 overflow-y-auto scrollbar-hide">
@@ -432,7 +433,7 @@ const Settings: React.FC = () => {
               className={`flex items-center justify-start gap-2 px-3 py-2 text-sm font-medium transition-colors mx-1 mb-1 rounded-lg ${
                 activeTab === tab.id
                   ? 'text-primary bg-blue-50/60 dark:bg-blue-900/30'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-800/30'
+                  : 'text-content-secondary hover:text-content-primary hover:bg-menu-hover'
               }`}
               title={tab.label}
             >
@@ -441,9 +442,9 @@ const Settings: React.FC = () => {
             </button>
           ))}
         </div>
-        <div className="border-t border-gray-200 dark:border-gray-700 p-2">
+        <div className="p-2">
           <button
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-800/30"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg text-content-secondary hover:text-content-primary hover:bg-menu-hover"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
           >
@@ -453,7 +454,7 @@ const Settings: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-hidden bg-white/40 dark:bg-gray-900/20">
+      <main className="flex-1 overflow-hidden bg-surface-40">
         <div className="settings-scroll-container">
           {activeTab === 'theme' && <ThemeTab />}
 

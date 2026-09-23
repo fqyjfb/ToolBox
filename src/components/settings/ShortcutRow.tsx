@@ -73,9 +73,9 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, allShortcuts, onUpd
   };
 
   return (
-    <div className={`flex items-center justify-between py-2 px-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${isEditing ? 'bg-gray-100 dark:bg-gray-700' : ''}`}>
+    <div className={`flex items-center justify-between py-2 px-4 hover:bg-menu-hover transition-colors ${isEditing ? 'bg-surface-secondary' : ''}`}>
       <div className="flex-1 min-w-0">
-        <span className="text-sm text-gray-700 dark:text-gray-300">
+        <span className="text-sm text-content-primary">
           {shortcut.tag}
         </span>
       </div>
@@ -90,11 +90,11 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, allShortcuts, onUpd
           onBlur={() => setIsEditing(false)}
           className={`w-full px-2 py-1 text-xs text-center border rounded-md transition-colors ${
             isEditing
-              ? 'border-primary bg-gray-50 dark:bg-gray-700 outline-none'
+              ? 'border-primary bg-surface-secondary outline-none'
               : conflict
                 ? 'border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-900/30 cursor-pointer'
-                : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer'
-          } text-gray-700 dark:text-gray-300`}
+                : 'border-content bg-surface cursor-pointer'
+          } text-content-primary`}
           placeholder="按快捷键"
         />
         {conflict && (
@@ -107,7 +107,7 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, allShortcuts, onUpd
         onClick={handleToggle}
         disabled={!!conflict}
         className={`relative inline-flex items-center h-5 rounded-full w-9 transition-colors focus:outline-none focus:ring-1.5 focus:ring-offset-1.5 focus:ring-primary ${
-          shortcut.isOpen === 1 ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'
+          shortcut.isOpen === 1 ? 'bg-primary' : 'bg-surface-secondary'
         } ${conflict ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <span

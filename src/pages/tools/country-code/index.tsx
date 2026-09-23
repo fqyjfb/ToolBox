@@ -61,8 +61,8 @@ const CountryCodePage: React.FC = () => {
               onClick={() => setSelectedRegion(region)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 selectedRegion === region
-                  ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-sm'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-primary text-button-text shadow-sm'
+                  : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
               }`}
             >
               {region}
@@ -71,14 +71,14 @@ const CountryCodePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col min-h-0">
+      <div className="flex-1 bg-surface rounded-lg shadow-sm flex flex-col min-h-0">
         <table className="w-full flex-shrink-0">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-2 px-3 text-xs font-medium text-gray-600 dark:text-gray-300">国家/地区</th>
-              <th className="text-left py-2 px-3 text-xs font-medium text-gray-600 dark:text-gray-300">国家代码</th>
-              <th className="text-left py-2 px-3 text-xs font-medium text-gray-600 dark:text-gray-300">电话区号</th>
-              <th className="text-left py-2 px-3 text-xs font-medium text-gray-600 dark:text-gray-300">时差</th>
+            <tr className="bg-surface-secondary/50">
+              <th className="text-left py-2 px-3 text-xs font-medium text-content-secondary">国家/地区</th>
+              <th className="text-left py-2 px-3 text-xs font-medium text-content-secondary">国家代码</th>
+              <th className="text-left py-2 px-3 text-xs font-medium text-content-secondary">电话区号</th>
+              <th className="text-left py-2 px-3 text-xs font-medium text-content-secondary">时差</th>
             </tr>
           </thead>
         </table>
@@ -90,25 +90,25 @@ const CountryCodePage: React.FC = () => {
                 filteredCodes.map((item: CountryCode, index: number) => (
                   <tr
                     key={`${item.country}-${item.phoneCode}-${index}`}
-                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                    className="hover:bg-surface-secondary dark:hover:bg-surface/$1 transition-colors cursor-pointer"
                     onClick={() => handleCopy(item.phoneCode)}
                   >
                     <td className="py-1.5 px-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-900 dark:text-white">{item.country}</span>
+                        <span className="text-xs text-content-primary dark:text-white">{item.country}</span>
                         <span className={`px-1.5 py-0.5 rounded-full text-2xs font-medium ${regionColors[item.region]}`}>
                           {item.region}
                         </span>
                       </div>
-                      <span className="text-2xs text-gray-500 dark:text-gray-400">{item.englishName}</span>
+                      <span className="text-2xs text-content-secondary">{item.englishName}</span>
                     </td>
                     <td className="py-1.5 px-3">
-                      <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-600 dark:text-gray-400">
+                      <code className="px-1.5 py-0.5 bg-surface-secondary rounded text-xs font-mono text-content-secondary">
                         {item.countryCode}
                       </code>
                     </td>
                     <td className="py-1.5 px-3">
-                      <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-blue-600 dark:text-blue-400">
+                      <code className="px-1.5 py-0.5 bg-surface-secondary rounded text-xs font-mono text-blue-600 dark:text-blue-400">
                         {item.phoneCode}
                       </code>
                     </td>
@@ -116,7 +116,7 @@ const CountryCodePage: React.FC = () => {
                       <span className={`text-xs font-medium ${
                         item.timeDifference && item.timeDifference.startsWith('+') 
                           ? 'text-green-600 dark:text-green-400' 
-                          : 'text-gray-600 dark:text-gray-400'
+                          : 'text-content-secondary'
                       }`}>
                         {formatTimeDifference(item.timeDifference)}
                       </span>
@@ -125,7 +125,7 @@ const CountryCodePage: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={4} className="py-8 text-center text-content-secondary">
                     <p className="text-xs">未找到匹配的国家/地区</p>
                     <p className="text-2xs mt-1">请尝试其他搜索关键词或选择其他区域</p>
                   </td>
@@ -136,9 +136,9 @@ const CountryCodePage: React.FC = () => {
         </div>
 
         {filteredCodes.length > 0 && (
-          <div className="flex-shrink-0 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              共找到 <span className="font-medium text-gray-700 dark:text-gray-300">{filteredCodes.length}</span> 个国家/地区，点击行复制区号
+          <div className="flex-shrink-0 px-3 py-2 bg-surface-secondary/50">
+            <p className="text-xs text-content-secondary">
+              共找到 <span className="font-medium text-content-primary">{filteredCodes.length}</span> 个国家/地区，点击行复制区号
             </p>
           </div>
         )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { AlertCircle, AlertTriangle, Info, Bug, ExternalLink } from 'lucide-react';
 import { loggerService, LoggerSettings, LogLevel } from '../../services/loggerService';
 import { NotificationSettings } from '../../types/settings';
@@ -59,10 +59,10 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
       <SettingCard>
         <div className="p-4">
           <div className="animate-pulse">
-            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+            <div className="h-5 bg-surface-secondary rounded w-1/3 mb-4"></div>
             <div className="space-y-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div key={i} className="h-8 bg-surface-secondary rounded"></div>
               ))}
             </div>
           </div>
@@ -73,8 +73,8 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
 
   return (
     <SettingCard>
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 settings-section-header">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">日志监控设置</h3>
+      <div className="flex items-center justify-between p-4 settings-section-header">
+        <h3 className="text-sm font-semibold text-content-primary">日志监控设置</h3>
         <button
           onClick={handleOpenLogWindow}
           className="px-3 py-1.5 text-xs font-medium text-primary border border-primary rounded-md hover:bg-primary/5 transition-colors flex items-center gap-1.5"
@@ -88,7 +88,7 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="text-red-500" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">错误通知</span>
+            <span className="text-sm font-medium text-content-primary">错误通知</span>
           </div>
           <ToggleSwitch
             enabled={notifications.errors}
@@ -98,8 +98,8 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">开启监控</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">启用后可记录和分析应用错误</p>
+            <p className="text-sm font-medium text-content-primary">开启监控</p>
+            <p className="text-xs text-content-secondary">启用后可记录和分析应用错误</p>
           </div>
           <ToggleSwitch
             enabled={settings.enabled}
@@ -109,8 +109,8 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">显示时间戳</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">在日志中显示精确时间</p>
+            <p className="text-sm font-medium text-content-primary">显示时间戳</p>
+            <p className="text-xs text-content-secondary">在日志中显示精确时间</p>
           </div>
           <ToggleSwitch
             enabled={settings.showTimestamp}
@@ -120,8 +120,8 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">自动清理</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">日志达到上限时自动清理旧日志</p>
+            <p className="text-sm font-medium text-content-primary">自动清理</p>
+            <p className="text-xs text-content-secondary">日志达到上限时自动清理旧日志</p>
           </div>
           <ToggleSwitch
             enabled={settings.autoClean}
@@ -130,14 +130,14 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
         </div>
 
         <div>
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">日志级别</p>
+          <p className="text-sm font-medium text-content-primary mb-2">日志级别</p>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleLevelToggle('error')}
               className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1.5 transition-colors ${
                 settings.levels.error
                   ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
-                  : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400'
+                  : 'bg-surface-secondary border-content text-content-secondary'
               }`}
             >
               <AlertCircle size={12} /> Error
@@ -147,7 +147,7 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
               className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1.5 transition-colors ${
                 settings.levels.warn
                   ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400'
-                  : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400'
+                  : 'bg-surface-secondary border-content text-content-secondary'
               }`}
             >
               <AlertTriangle size={12} /> Warn
@@ -157,7 +157,7 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
               className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1.5 transition-colors ${
                 settings.levels.info
                   ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400'
-                  : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400'
+                  : 'bg-surface-secondary border-content text-content-secondary'
               }`}
             >
               <Info size={12} /> Info
@@ -166,8 +166,8 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
               onClick={() => handleLevelToggle('debug')}
               className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1.5 transition-colors ${
                 settings.levels.debug
-                  ? 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
-                  : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500'
+                  ? 'bg-surface-secondary border-content text-content-primary'
+                  : 'bg-surface-secondary border-content text-content-secondary'
               }`}
             >
               <Bug size={12} /> Debug
@@ -176,7 +176,7 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="text-sm font-medium text-content-primary">
             最大日志数量: {settings.maxEntries}
           </label>
           <input

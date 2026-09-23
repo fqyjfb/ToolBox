@@ -145,13 +145,13 @@ const JsonFormatterPage: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Code2 className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">JSON 格式化工具</h2>
+          <Code2 className="w-6 h-6 text-content-secondary" />
+          <h2 className="text-lg font-semibold text-content-primary">JSON 格式化工具</h2>
         </div>
         <div className="flex items-center gap-2">
           <button 
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
           >
             <FileText className="w-4 h-4" />
             示例
@@ -174,7 +174,7 @@ const JsonFormatterPage: React.FC = () => {
           </button>
           <button 
             onClick={handleClear}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 text-content-secondary hover:bg-menu-hover dark:hover:bg-surface rounded-lg transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -199,12 +199,12 @@ const JsonFormatterPage: React.FC = () => {
         
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-gray-600 dark:text-gray-400">缩进:</span>
+            <span className="text-content-secondary">缩进:</span>
             <Select
               value={indentStyle}
               onChange={(v) => setIndentStyle(v as '2' | '4' | 'tab')}
               options={[{ value: '2', label: '2 空格' }, { value: '4', label: '4 空格' }, { value: 'tab', label: 'Tab' }]}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+              className="px-3 py-1 border border-content rounded-lg bg-surface text-content-primary"
             />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -212,9 +212,9 @@ const JsonFormatterPage: React.FC = () => {
               type="checkbox"
               checked={sortKeys}
               onChange={(e) => setSortKeys(e.target.checked)}
-              className="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-blue-600"
+              className="rounded border-content bg-surface text-blue-600"
             />
-            <span className="text-gray-600 dark:text-gray-400">排序键名</span>
+            <span className="text-content-secondary">排序键名</span>
           </label>
         </div>
       </div>
@@ -225,30 +225,30 @@ const JsonFormatterPage: React.FC = () => {
         </div>
       )}
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden flex">
-        <div className="w-1/2 flex flex-col border-r border-gray-200 dark:border-gray-700">
-          <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">输入 JSON</span>
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-hidden flex">
+        <div className="w-1/2 flex flex-col border-r border-content">
+          <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+            <span className="text-sm font-medium text-content-secondary">输入 JSON</span>
           </div>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 w-full p-4 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-mono text-sm resize-none outline-none"
+            className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
             placeholder='在此输入 JSON，例如：{"name": "John", "age": 30}'
           />
         </div>
         
         <div className="w-1/2 flex flex-col">
-          <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">输出结果</span>
+          <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+            <span className="text-sm font-medium text-content-secondary">输出结果</span>
           </div>
           <textarea
             value={output}
             readOnly
-            className="flex-1 w-full p-4 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-mono text-sm resize-none outline-none"
+            className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
             placeholder="格式化后的 JSON 将显示在这里..."
           />
-          <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+          <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-t border-content flex items-center gap-4 text-sm text-content-secondary">
             <span>字符: <strong className="text-blue-600 dark:text-blue-400">{charCount.toLocaleString()}</strong></span>
             <span>行数: <strong className="text-blue-600 dark:text-blue-400">{lineCount.toLocaleString()}</strong></span>
             <span>大小: <strong className="text-blue-600 dark:text-blue-400">{size}</strong></span>

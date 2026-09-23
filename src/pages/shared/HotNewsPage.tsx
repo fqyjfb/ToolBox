@@ -203,9 +203,8 @@ const HotNewsPage: React.FC = () => {
           <RefreshCw className={`w-5 h-5 ${isCurrentPlatformLoading ? 'animate-spin' : ''}`} />
         </button>
       </div>
-      
-      <div className="hot-list-container">
-        <div className="hot-list">
+
+      <div className="hot-list">
           {isCurrentPlatformLoading && currentHotNews.length === 0 ? (
             <div className="loading-state">
               <div className="loading-content">
@@ -239,7 +238,6 @@ const HotNewsPage: React.FC = () => {
             </>
           )}
         </div>
-      </div>
     </div>
   );
 };

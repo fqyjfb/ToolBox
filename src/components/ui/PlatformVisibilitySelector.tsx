@@ -72,25 +72,25 @@ const PlatformVisibilitySelector: React.FC<PlatformVisibilitySelectorProps> = ({
     <div className="relative inline-block" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+        className="p-2 text-content-secondary hover:text-content-primary hover:bg-menu-hover rounded-full transition-colors"
         title="设置可见平台"
       >
         <Settings size={16} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
-          <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+        <div className="absolute right-0 top-full mt-2 w-48 bg-surface rounded-lg shadow-lg z-50 overflow-hidden">
+          <div className="p-2">
             <div className="flex gap-2">
               <button
                 onClick={handleSelectAll}
-                className="flex-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
+                className="flex-1 px-3 py-1.5 text-xs font-medium text-content-primary bg-surface-secondary hover:bg-menu-hover rounded-md transition-colors"
               >
                 全选
               </button>
               <button
                 onClick={handleReset}
-                className="flex-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
+                className="flex-1 px-3 py-1.5 text-xs font-medium text-content-primary bg-surface-secondary hover:bg-menu-hover rounded-md transition-colors"
               >
                 重置
               </button>
@@ -104,16 +104,16 @@ const PlatformVisibilitySelector: React.FC<PlatformVisibilitySelectorProps> = ({
                 <button
                   key={platform.id}
                   onClick={() => handlePlatformToggle(platform.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-menu-hover transition-colors ${
                     visibility[platform.id]
-                      ? 'text-gray-900 dark:text-white'
-                      : 'text-gray-500 dark:text-gray-400'
+                      ? 'text-content-primary'
+                      : 'text-content-secondary'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{platform.name}</span>
                   {visibility[platform.id] && (
-                    <Check className="w-4 h-4 text-gray-600 dark:text-gray-400 ml-auto" />
+                    <Check className="w-4 h-4 text-content-secondary ml-auto" />
                   )}
                 </button>
               );

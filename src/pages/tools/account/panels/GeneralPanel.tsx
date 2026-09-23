@@ -315,33 +315,32 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
           </div>
         ) : generalAccounts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="w-12 h-12 rounded-full bg-surface-secondary flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-content-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
               </svg>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">暂无通用账号</p>
+            <p className="text-content-secondary text-sm">暂无通用账号</p>
           </div>
         ) : (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <div className="rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800">
+              <thead className="bg-surface-secondary dark:bg-content-primary">
                 <tr>
-                  {visibleColumns.includes('platform_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider cursor-help" title="存在网址时可点击">平台名称</th>}
-                  {visibleColumns.includes('account') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>}
-                  {visibleColumns.includes('password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">密码</th>}
-                  {visibleColumns.includes('notes') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">备注</th>}
-                  {visibleColumns.includes('status') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>}
-                  {visibleColumns.includes('url') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">网址</th>}
-                  {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>}
+                  {visibleColumns.includes('platform_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider cursor-help" title="存在网址时可点击">平台名称</th>}
+                  {visibleColumns.includes('account') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">账号</th>}
+                  {visibleColumns.includes('password') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">密码</th>}
+                  {visibleColumns.includes('notes') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">备注</th>}
+                  {visibleColumns.includes('status') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">状态</th>}
+                  {visibleColumns.includes('url') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">网址</th>}
+                  {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">邮箱</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody>
                 {generalAccounts.map((general) => (
                   <tr
                     key={general.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
+                    className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                     onClick={() => handleRowClick(general)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', general.id)}
                   >
@@ -356,17 +355,17 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                             {general.platform_name}
                           </button>
                         ) : (
-                          <span className="font-medium text-sm text-gray-900 dark:text-white">{general.platform_name}</span>
+                          <span className="font-medium text-sm text-content-primary dark:text-white">{general.platform_name}</span>
                         )}
                       </td>
                     )}
                     {visibleColumns.includes('account') && (
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-900 dark:text-white">{general.account}</span>
+                          <span className="text-sm text-content-primary dark:text-white">{general.account}</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleCopyText(general.account || '', '账号已复制'); }}
-                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
                             title="复制账号"
                           >
                             <Copy className="w-3 h-3" />
@@ -377,10 +376,10 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                     {visibleColumns.includes('password') && (
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">******</span>
+                          <span className="text-sm text-content-secondary">******</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleCopyText(general.password || '', '密码已复制'); }}
-                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
                             title="复制密码"
                           >
                             <Copy className="w-3 h-3" />
@@ -390,7 +389,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                     )}
                     {visibleColumns.includes('notes') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-w-[300px]" title={general.notes}>{general.notes || '-'}</span>
+                        <span className="text-sm text-content-secondary whitespace-pre-wrap break-words max-w-[300px]" title={general.notes}>{general.notes || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('status') && (
@@ -399,7 +398,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                           general.status === 'active' ? 'bg-green-50 text-green-600' :
                           general.status === 'abnormal' ? 'bg-yellow-50 text-yellow-600' :
                           general.status === 'banned' ? 'bg-red-50 text-red-600' :
-                          'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                          'bg-surface-secondary text-content-secondary'
                         }`}>
                           {general.status === 'active' ? '活跃' : general.status === 'abnormal' ? '异常' : general.status === 'banned' ? '封禁' : '过期'}
                         </span>
@@ -407,12 +406,12 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                     )}
                     {visibleColumns.includes('url') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{general.website || '-'}</span>
+                        <span className="text-sm text-content-secondary truncate max-w-[150px]">{general.website || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('email') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{general.email || '-'}</span>
+                        <span className="text-sm text-content-secondary truncate max-w-[150px]">{general.email || '-'}</span>
                       </td>
                     )}
                   </tr>

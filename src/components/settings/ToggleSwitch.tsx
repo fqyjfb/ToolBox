@@ -26,14 +26,13 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
         type="button"
         onClick={() => onChange(!isChecked)}
         className={`relative inline-flex items-center h-5 rounded-full w-9 transition-colors focus:outline-none focus:ring-1.5 focus:ring-offset-1.5 focus:ring-primary ${
-          isChecked ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'
+          isChecked ? 'bg-primary' : 'bg-surface-secondary'
         }`}
       >
         <span
-          className={`inline-block w-3 h-3 transform rounded-full transition-transform ${
-            isChecked ? 'translate-x-5' : 'translate-x-1'
+          className={`inline-block w-3 h-3 transform rounded-full transition-all ${
+            isChecked ? 'translate-x-5 switch-thumb-active' : 'translate-x-1 switch-thumb-inactive'
           }`}
-          style={{ backgroundColor: 'white' }}
         />
       </button>
       {text && (

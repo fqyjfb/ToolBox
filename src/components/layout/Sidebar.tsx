@@ -119,7 +119,7 @@ const Sidebar: React.FC = () => {
     <aside className={`sidebar-root ${isCollapsed ? 'collapsed' : 'expanded'}`} style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
       <div className="sidebar-logo" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties} onClick={() => navigate('/')}>
         <img src="./favicon.svg" alt="ToolBox" className="w-8 h-8 flex-shrink-0" />
-        {!isCollapsed && <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">ToolBox</span>}
+        {!isCollapsed && <span className="text-sm font-semibold text-content-primary whitespace-nowrap">ToolBox</span>}
       </div>
 
       <nav className="sidebar-fixed" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
@@ -132,7 +132,7 @@ const Sidebar: React.FC = () => {
 
       <nav className="sidebar-pinned" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {pinnedTools.length === 0 && !isCollapsed && (
-          <div className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2">右键工具卡片添加到此处</div>
+          <div className="text-xs text-content-secondary px-3 py-2">右键工具卡片添加到此处</div>
         )}
         {!isCollapsed && pinnedTools.length > 0 ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -197,12 +197,12 @@ const Sidebar: React.FC = () => {
           </div>
         )}
         <div className={`flex items-center gap-1 px-1 ${isCollapsed ? 'flex-col' : ''}`}>
-          <SidebarBottomButton icon={<User className="w-4 h-4" />} title={isAuthenticated ? '个人信息' : '登录'} onClick={() => navigate(isAuthenticated ? '/tools/profile' : '/login')} />
+          <SidebarBottomButton icon={<User className="w-4 h-4" />} title={isAuthenticated ? '个人信息' : '登录'} active={isActive('/tools/profile') || isActive('/login')} onClick={() => navigate(isAuthenticated ? '/tools/profile' : '/login')} />
           {isAdmin && (
-            <SidebarBottomButton icon={<LayoutDashboard className="w-4 h-4" />} title="管理" onClick={() => navigate('/admin')} />
+            <SidebarBottomButton icon={<LayoutDashboard className="w-4 h-4" />} title="管理" active={isStartsWith('/admin')} onClick={() => navigate('/admin')} />
           )}
-          <SidebarBottomButton icon={<Settings className="w-4 h-4" />} title="设置" onClick={() => navigate('/settings')} />
-          <SidebarBottomButton icon={<Info className="w-4 h-4" />} title="关于" onClick={() => navigate('/about')} />
+          <SidebarBottomButton icon={<Settings className="w-4 h-4" />} title="设置" active={isStartsWith('/settings')} onClick={() => navigate('/settings')} />
+          <SidebarBottomButton icon={<Info className="w-4 h-4" />} title="关于" active={isActive('/about')} onClick={() => navigate('/about')} />
         </div>
       </div>
     </aside>
@@ -221,8 +221,8 @@ interface NavItemProps {
 const NavItem: React.FC<NavItemProps> = ({ icon, title, active, collapsed, onClick, onRemove }) => (
   <div className="relative group">
     <button
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-left transition-colors ${
-        active ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
+      className={`sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-left ${
+        active ? 'sidebar-nav-item--active text-button-text shadow-sm' : 'text-content-primary'
       } ${collapsed ? 'justify-center' : ''}`}
       title={collapsed ? title : ''}
       onClick={onClick}
@@ -231,7 +231,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, title, active, collapsed, onCli
       {!collapsed && <span className="whitespace-nowrap">{title}</span>}
     </button>
     {!collapsed && onRemove && (
-      <button className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemove(); }} title="移除">
+      <button className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-content-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemove(); }} title="移除">
         <X className="w-3 h-3" />
       </button>
     )}
@@ -254,8 +254,8 @@ const SortableNavItem: React.FC<SortableNavItemProps> = ({ id, icon, title, acti
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative group cursor-grab active:cursor-grabbing">
       <button
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-left transition-colors ${
-          active ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
+        className={`sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-left ${
+          active ? 'sidebar-nav-item--active text-button-text shadow-sm' : 'text-content-primary'
         }`}
         onClick={onClick}
       >
@@ -263,7 +263,7 @@ const SortableNavItem: React.FC<SortableNavItemProps> = ({ id, icon, title, acti
         <span className="whitespace-nowrap flex-1">{title}</span>
       </button>
       {onRemove && (
-        <button className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemove(); }} title="移除">
+        <button className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-content-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemove(); }} title="移除">
           <X className="w-3 h-3" />
         </button>
       )}
@@ -275,10 +275,18 @@ interface SidebarBottomButtonProps {
   icon: React.ReactNode;
   title: string;
   onClick: () => void;
+  /** 当前路由命中该按钮时高亮（底部按钮此前完全无激活态） */
+  active?: boolean;
 }
 
-const SidebarBottomButton: React.FC<SidebarBottomButtonProps> = ({ icon, title, onClick }) => (
-  <button className="flex items-center justify-center w-8 h-8 rounded-md text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors" title={title} onClick={onClick}>
+const SidebarBottomButton: React.FC<SidebarBottomButtonProps> = ({ icon, title, onClick, active }) => (
+  <button
+    className={`sidebar-nav-item flex items-center justify-center w-8 h-8 rounded-md ${
+      active ? 'sidebar-nav-item--active text-button-text' : 'text-content-primary'
+    }`}
+    title={title}
+    onClick={onClick}
+  >
     {icon}
   </button>
 );

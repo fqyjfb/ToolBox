@@ -120,10 +120,10 @@ const ProfilePage: React.FC = () => {
     editingField === field || (field === 'password' && editingPassword);
 
   const inputClassName = (field: string) =>
-    `flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-800 border rounded text-gray-900 dark:text-white focus:outline-none transition-all duration-200 ${
+    `flex-1 px-3 py-2 text-sm bg-surface border rounded text-content-primary dark:text-white focus:outline-none transition-all duration-200 ${
       errors[field]
         ? 'border-red-400 focus:border-red-400'
-        : 'border-gray-200 dark:border-gray-600 focus:border-gray-400 dark:focus:border-gray-400'
+        : 'border-gray-200 dark:border-content focus:border-gray-400 dark:focus:border-content'
     }`;
 
   const currentLevel = (user?.memberLevel as MemberLevel) || '普通';
@@ -132,7 +132,7 @@ const ProfilePage: React.FC = () => {
   if (!user) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-center text-gray-500 dark:text-gray-400">
+        <div className="text-center text-content-secondary">
           <User className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>请先登录</p>
         </div>
@@ -251,7 +251,7 @@ const ProfilePage: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{user.name || '未设置'}</h1>
+              <h1 className="text-lg font-semibold text-content-primary dark:text-white">{user.name || '未设置'}</h1>
               <span
                 className="profile-badge"
                 style={badgeStyle(levelConfig.color)}
@@ -267,7 +267,7 @@ const ProfilePage: React.FC = () => {
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{user.username}</p>
+            <p className="text-xs text-content-secondary mt-0.5">{user.username}</p>
           </div>
         </div>
         <button
@@ -282,25 +282,25 @@ const ProfilePage: React.FC = () => {
       <div className="flex-1 overflow-y-auto px-8 pb-4">
         <div className="rounded-lg overflow-hidden" style={{ background: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
 
-          <div className="profile-section px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-            <h2 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+          <div className="profile-section px-6 py-4">
+            <h2 className="text-sm font-medium text-content-primary dark:text-white flex items-center gap-2">
               <span className="w-1 h-4 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }}></span>
               账户信息
             </h2>
             <div className="mt-3">
               {fieldData[0] && (
                 <div
-                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-gray-100/40 dark:hover:bg-gray-800/30 profile-field profile-field-1 ${
-                    isFieldEditing(fieldData[0].key) ? 'bg-gray-100/60 dark:bg-gray-800/30' : ''
+                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1 profile-field profile-field-1 ${
+                    isFieldEditing(fieldData[0].key) ? 'bg-surface-secondary/$1 dark:bg-content-primary/$1' : ''
                   }`}
                 >
-                  <span className="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0 rounded">
+                  <span className="w-8 h-8 flex items-center justify-center text-content-tertiary shrink-0 rounded">
                     {fieldData[0].icon}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 w-12 shrink-0">
+                  <span className="text-xs text-content-secondary w-12 shrink-0">
                     {fieldData[0].label}
                   </span>
-                  <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <span className="flex-1 text-sm font-medium text-content-primary dark:text-white truncate">
                     {fieldData[0].value}
                   </span>
                 </div>
@@ -308,8 +308,8 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="profile-section px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-            <h2 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+          <div className="profile-section px-6 py-4">
+            <h2 className="text-sm font-medium text-content-primary dark:text-white flex items-center gap-2">
               <span className="w-1 h-4 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }}></span>
               基本信息
             </h2>
@@ -317,14 +317,14 @@ const ProfilePage: React.FC = () => {
               {fieldData.slice(1).map((field, idx) => (
                 <div
                   key={field.key}
-                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-gray-100/40 dark:hover:bg-gray-800/30 profile-field profile-field-${idx + 2} ${
-                    isFieldEditing(field.key) ? 'bg-gray-100/60 dark:bg-gray-800/30' : ''
+                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1 profile-field profile-field-${idx + 2} ${
+                    isFieldEditing(field.key) ? 'bg-surface-secondary/$1 dark:bg-content-primary/$1' : ''
                   }`}
                 >
-                  <span className="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0 rounded">
+                  <span className="w-8 h-8 flex items-center justify-center text-content-tertiary shrink-0 rounded">
                     {field.icon}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 w-12 shrink-0">
+                  <span className="text-xs text-content-secondary w-12 shrink-0">
                     {field.label}
                   </span>
                   {editingField === field.key ? (
@@ -345,20 +345,20 @@ const ProfilePage: React.FC = () => {
                       </button>
                       <button
                         onClick={() => resetField(field.key)}
-                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors shrink-0"
+                        className="p-1.5 text-content-tertiary hover:text-content-secondary hover:bg-surface-secondary dark:hover:bg-menu-hover rounded transition-colors shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </>
                   ) : (
                     <>
-                      <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <span className="flex-1 text-sm font-medium text-content-primary dark:text-white truncate">
                         {field.value}
                       </span>
                       {field.editable && (
                         <button
                           onClick={() => setEditingField(field.key)}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-600 rounded transition-colors shrink-0"
+                          className="p-1.5 text-content-tertiary hover:text-content-secondary hover:bg-surface-secondary dark:hover:text-content-secondary dark:hover:bg-menu-hover rounded transition-colors shrink-0"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -371,20 +371,20 @@ const ProfilePage: React.FC = () => {
           </div>
 
           <div className="profile-section px-6 py-4">
-            <h2 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+            <h2 className="text-sm font-medium text-content-primary dark:text-white flex items-center gap-2">
               <span className="w-1 h-4 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }}></span>
               修改密码
             </h2>
             <div className="mt-3">
               <div
-                className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-gray-100/40 dark:hover:bg-gray-800/30 profile-field profile-field-5 ${
-                  editingPassword ? 'bg-gray-100/60 dark:bg-gray-800/30' : ''
+                className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1 profile-field profile-field-5 ${
+                  editingPassword ? 'bg-surface-secondary/$1 dark:bg-content-primary/$1' : ''
                 }`}
               >
-                <span className="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0 rounded">
+                <span className="w-8 h-8 flex items-center justify-center text-content-tertiary shrink-0 rounded">
                   <Lock className="w-4 h-4" />
                 </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400 w-12 shrink-0">
+                <span className="text-xs text-content-secondary w-12 shrink-0">
                   密码
                 </span>
                 {editingPassword ? (
@@ -421,7 +421,7 @@ const ProfilePage: React.FC = () => {
                           setEditingPassword(false);
                           setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
                         }}
-                        className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+                        className="px-3 py-1.5 text-sm text-content-secondary hover:bg-surface-secondary dark:hover:bg-menu-hover rounded transition-colors"
                       >
                         取消
                       </button>
@@ -436,12 +436,12 @@ const ProfilePage: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <span className="flex-1 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="flex-1 text-sm text-content-secondary">
                       点击编辑按钮修改密码
                     </span>
                     <button
                       onClick={() => setEditingPassword(true)}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-600 rounded transition-colors shrink-0"
+                      className="p-1.5 text-content-tertiary hover:text-content-secondary hover:bg-surface-secondary dark:hover:text-content-secondary dark:hover:bg-menu-hover rounded transition-colors shrink-0"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>

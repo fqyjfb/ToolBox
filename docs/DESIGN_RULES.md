@@ -201,7 +201,7 @@ export default NewToolPage;
 
 ### 组件复杂度限制
 
-- **单个组件文件**：≤ 300 行
+- **单个组件文件**：≤ 500 行
 - **单个函数**：≤ 30 行
 - **Props 数量**：≤ 8 个，超过时考虑拆分为子组件
 - **状态变量**：≤ 10 个，超过时考虑状态管理优化
@@ -635,7 +635,7 @@ interface Window {
 <button className="px-4 py-2 border border-border rounded-md hover:bg-bg-secondary">
 
 // ✅ 主题适配（使用主题类名自动支持深色模式）
-<div className="bg-bg-primary text-text-primary">
+<div className="bg-surface text-content-primary">
 ```
 
 ### 暗色模式适配

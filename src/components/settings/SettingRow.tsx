@@ -8,8 +8,8 @@ interface SettingRowProps {
 
 const SettingRow: React.FC<SettingRowProps> = ({ label, children, className = '' }) => {
   return (
-    <div className={`flex items-center justify-between px-4 py-2 hover:bg-gray-100/50 dark:hover:bg-gray-800/30 ${className}`}>
-      <div className="text-sm text-gray-700 dark:text-gray-300">{label}</div>
+    <div className={`flex items-center justify-between px-4 py-2 hover:bg-menu-hover ${className}`}>
+      <div className="text-sm text-content-primary">{label}</div>
       {children}
     </div>
   );

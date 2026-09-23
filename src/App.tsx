@@ -333,7 +333,7 @@ function App() {
   // 只等本地初始化完成；鉴权是网络请求，不能阻塞首屏（首页是公开路由，不依赖登录态）
   if (!isInitialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <LoadingSpinner size="lg" />
       </div>
     );

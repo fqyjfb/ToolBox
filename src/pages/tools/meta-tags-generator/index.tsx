@@ -61,8 +61,8 @@ const MetaTagsGeneratorPage: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Tag className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Meta 标签生成器</h2>
+          <Tag className="w-6 h-6 text-content-secondary" />
+          <h2 className="text-lg font-semibold text-content-primary">Meta 标签生成器</h2>
         </div>
         <div className="flex items-center gap-2">
           <button 
@@ -82,127 +82,127 @@ const MetaTagsGeneratorPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-auto">
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-auto">
         <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">基本信息</h3>
+            <h3 className="text-sm font-semibold text-content-primary mb-4">基本信息</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">页面标题</label>
+                <label className="block text-sm text-content-secondary mb-1">页面标题</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                  className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   placeholder="网站标题"
                 />
               </div>
               
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">页面描述</label>
+                <label className="block text-sm text-content-secondary mb-1">页面描述</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm resize-none"
+                  className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm resize-none"
                   rows={3}
                   placeholder="网站描述"
                 />
               </div>
               
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">关键词</label>
+                <label className="block text-sm text-content-secondary mb-1">关键词</label>
                 <input
                   type="text"
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                  className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   placeholder="用逗号分隔"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">作者</label>
+                  <label className="block text-sm text-content-secondary mb-1">作者</label>
                   <input
                     type="text"
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                    className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Robots</label>
+                  <label className="block text-sm text-content-secondary mb-1">Robots</label>
                   <input
                     type="text"
                     value={robots}
                     onChange={(e) => setRobots(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                    className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Viewport</label>
+                <label className="block text-sm text-content-secondary mb-1">Viewport</label>
                 <input
                   type="text"
                   value={viewport}
                   onChange={(e) => setViewport(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                  className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                 />
               </div>
             </div>
           </div>
           
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Open Graph</h3>
+            <h3 className="text-sm font-semibold text-content-primary mb-4">Open Graph</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">OG 标题</label>
+                <label className="block text-sm text-content-secondary mb-1">OG 标题</label>
                 <input
                   type="text"
                   value={ogTitle}
                   onChange={(e) => setOgTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                  className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   placeholder="可选"
                 />
               </div>
               
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">OG 描述</label>
+                <label className="block text-sm text-content-secondary mb-1">OG 描述</label>
                 <textarea
                   value={ogDescription}
                   onChange={(e) => setOgDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm resize-none"
+                  className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm resize-none"
                   rows={2}
                   placeholder="可选"
                 />
               </div>
               
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">OG 图片</label>
+                <label className="block text-sm text-content-secondary mb-1">OG 图片</label>
                 <input
                   type="text"
                   value={ogImage}
                   onChange={(e) => setOgImage(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                  className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   placeholder="图片 URL"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">OG URL</label>
+                  <label className="block text-sm text-content-secondary mb-1">OG URL</label>
                   <input
                     type="text"
                     value={ogUrl}
                     onChange={(e) => setOgUrl(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                    className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">OG 类型</label>
+                  <label className="block text-sm text-content-secondary mb-1">OG 类型</label>
                   <Select
                     value={ogType}
                     onChange={setOgType}
@@ -212,18 +212,18 @@ const MetaTagsGeneratorPage: React.FC = () => {
                       { value: 'blog', label: 'blog' },
                       { value: 'product', label: 'product' }
                     ]}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                    className="w-full px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   />
                 </div>
               </div>
             </div>
             
             <div className="mt-6">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">生成的代码</h3>
+              <h3 className="text-sm font-semibold text-content-primary mb-3">生成的代码</h3>
               <textarea
                 value={generateMetaTags()}
                 readOnly
-                className="w-full h-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-mono text-xs resize-none outline-none"
+                className="w-full h-48 px-3 py-2 border border-content rounded-lg bg-surface-secondary text-content-primary font-mono text-xs resize-none outline-none"
               />
             </div>
           </div>

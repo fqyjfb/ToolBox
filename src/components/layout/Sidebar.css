@@ -14,20 +14,10 @@
 
 .sidebar-root.expanded {
   width: 180px;
-  border-right: 1px solid var(--color-border);
-}
-
-.dark .sidebar-root.expanded {
-  border-right-color: var(--color-border);
 }
 
 .sidebar-root.collapsed {
   width: 48px;
-  border-right: 1px solid var(--color-border);
-}
-
-.dark .sidebar-root.collapsed {
-  border-right-color: var(--color-border);
 }
 
 .sidebar-logo {
@@ -80,4 +70,27 @@
 .sidebar-bottom {
   padding: 0 8px 8px;
   flex-shrink: 0;
+}
+
+/* 侧边栏项（导航项 / 底部按钮）的悬停与激活态。
+   注意：不能写成 hover:bg-surface-50 —— surface-50 只是本文件/theme.css 里的纯类名，
+   Tailwind 无法为它生成 hover: 变体，实际不会产出任何 CSS，悬停会完全失效。
+   这里统一走语义变量，预设模式与自定义主题都能生效。 */
+.sidebar-nav-item {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav-item:hover:not(.sidebar-nav-item--active) {
+  background-color: var(--color-sidebar-item);
+}
+
+.sidebar-nav-item--active {
+  background-color: var(--color-sidebar-item-active);
+}
+
+/* 自定义主题接管侧边栏容器：让「表面颜色 → 侧边栏」设置生效。
+   预设模式保持既有半透明质感（浅 60% / 深 40%），不受影响。
+   特异性 (0,2,1) 高于 .dark .sidebar-root (0,2,0)，自定义模式下覆盖成立。 */
+:root[data-custom-theme="active"] .sidebar-root {
+  background-color: color-mix(in srgb, var(--color-sidebar) var(--ct-surface-opacity), transparent);
 }

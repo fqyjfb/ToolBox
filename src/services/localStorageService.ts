@@ -46,6 +46,8 @@ export const STORAGE_KEYS = {
   NOTES_SIDEBAR_SECTIONS: 'notes_sidebar_sections',
 
   PLUGINS: 'toolbox_plugins',
+  // 自定义主题配置（含背景图 data URI）；与 THEME='custom' 联用，缓存清理时需保留
+  CUSTOM_THEME: 'toolbox_custom_theme',
 };
 
 export const localStorageService = {

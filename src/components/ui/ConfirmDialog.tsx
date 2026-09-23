@@ -43,7 +43,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       size="sm"
     >
       <div className="py-2">
-        <p className="text-gray-600 dark:text-gray-400 text-sm">{message}</p>
+        <p className="text-content-secondary text-sm">{message}</p>
         {deleteItemName && (
           <p className="text-red-500 dark:text-red-400 text-sm mt-2 font-medium">
             {deleteItemName}

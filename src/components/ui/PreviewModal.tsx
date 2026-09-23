@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { X, Copy, Share2, ExternalLink } from 'lucide-react';
 import { Shop, SocialAccount, Email, Phone, Company, Credential, GeneralAccount } from '../../types/account';
 import { WebsiteAccount } from '../../types/websiteAccount';
@@ -135,22 +135,22 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
     if (wrap) {
       return (
         <div className="py-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</span>
+          <span className="text-sm text-content-secondary font-medium">{label}</span>
           <div className="mt-1 max-h-24 overflow-y-auto">
-            <span className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap break-words">{value}</span>
+            <span className="text-sm text-content-primary whitespace-pre-wrap break-words">{value}</span>
           </div>
         </div>
       );
     }
     return (
       <div className="flex items-center justify-between py-2">
-        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</span>
+        <span className="text-sm text-content-secondary font-medium">{label}</span>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-900 dark:text-white max-w-[200px] truncate">{value}</span>
+          <span className="text-sm text-content-primary max-w-[200px] truncate">{value}</span>
           {copyable && (
             <button
               onClick={() => handleCopyText(value, `${label}已复制`)}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1 text-content-tertiary hover:text-content-primary rounded hover:bg-menu-hover transition-colors"
               title="复制"
             >
               <Copy className="w-3 h-3" />
@@ -165,7 +165,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
     if (!url) return null;
     return (
       <div className="flex items-center justify-between py-2">
-        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</span>
+        <span className="text-sm text-content-secondary font-medium">{label}</span>
         <button
           onClick={() => openUrl(url)}
           className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate max-w-[200px]"
@@ -186,7 +186,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
       } else if (status === 'inactive') {
         return { text: '非活跃', colorClass: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' };
       } else if (status === 'expired') {
-        return { text: '已过期', colorClass: 'bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-400' };
+        return { text: '已过期', colorClass: 'bg-surface-secondary text-content-primary' };
       } else if (status === 'abnormal') {
         return { text: '异常', colorClass: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' };
       } else if (status === 'banned') {
@@ -194,7 +194,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
       } else if (status === '正常') {
         return { text: '正常', colorClass: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' };
       } else if (status === '失效') {
-        return { text: '失效', colorClass: 'bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-400' };
+        return { text: '失效', colorClass: 'bg-surface-secondary text-content-primary' };
       } else if (status === '到期') {
         return { text: '到期', colorClass: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' };
       }
@@ -239,10 +239,10 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-lg max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div className="relative bg-surface rounded-lg shadow-lg w-full max-w-lg max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
+            <h3 className="text-base font-semibold text-content-primary">{title}</h3>
             {(() => {
               const statusBadge = getStatusBadge(item);
               const categoryBadge = getCategoryBadge(item);
@@ -254,7 +254,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                     </span>
                   )}
                   {categoryBadge && (
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-400">
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-surface-secondary text-content-primary">
                       {categoryBadge}
                     </span>
                   )}
@@ -291,7 +291,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
         <div className="flex-1 overflow-y-auto p-4">
           {('shop_name' in item) && (
             <>
-              <div className="border-b border-gray-100 dark:border-gray-700 pb-3 mb-3">
+              <div className="pb-3 mb-3">
                 {renderField('店铺名称', (item as Shop).shop_name)}
                 {renderField('平台', (item as Shop).platform)}
               </div>
@@ -309,12 +309,12 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('风险保证金', (item as Shop).risk_deposit)}
               </div>
               {(item as Shop).address && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('地址', (item as Shop).address)}
                 </div>
               )}
               {(item as Shop).remark && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('备注', (item as Shop).remark, false, true)}
                 </div>
               )}
@@ -323,7 +323,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
 
           {('user_name' in item && 'platform' in item) && !('shop_name' in item) && (
             <>
-              <div className="border-b border-gray-100 dark:border-gray-700 pb-3 mb-3">
+              <div className="pb-3 mb-3">
                 {renderField('用户名', (item as SocialAccount).user_name || (item as SocialAccount).account)}
                 {renderField('平台', (item as SocialAccount).platform)}
               </div>
@@ -336,7 +336,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('注册时间', (item as SocialAccount).register_time)}
               </div>
               {(item as SocialAccount).remark && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('备注', (item as SocialAccount).remark, false, true)}
                 </div>
               )}
@@ -345,7 +345,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
 
           {('email' in item && !('platform' in item) && !('shop_name' in item) && !('platform_name' in item) && !('category_id' in item) && !('username' in item)) && (
             <>
-              <div className="border-b border-gray-100 dark:border-gray-700 pb-3 mb-3">
+              <div className="pb-3 mb-3">
                 {renderField('邮箱地址', (item as Email).email, true)}
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2">
@@ -354,7 +354,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('验证信息', (item as Email).verification_info)}
               </div>
               {(item as Email).remark && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('备注', (item as Email).remark, false, true)}
                 </div>
               )}
@@ -363,7 +363,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
 
           {('phone_number' in item) && (
             <>
-              <div className="border-b border-gray-100 dark:border-gray-700 pb-3 mb-3">
+              <div className="pb-3 mb-3">
                 {renderField('手机号', (item as Phone).phone_number, true)}
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2">
@@ -372,7 +372,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('地区', (item as Phone).phone_region)}
               </div>
               {(item as Phone).remarks && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('备注', (item as Phone).remarks, false, true)}
                 </div>
               )}
@@ -381,7 +381,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
 
           {('name' in item && 'unified_social_credit_code' in item && !('shop_name' in item)) && (
             <>
-              <div className="border-b border-gray-100 dark:border-gray-700 pb-3 mb-3">
+              <div className="pb-3 mb-3">
                 {renderField('企业名称', (item as Company).name)}
                 {renderField('统一社会信用代码', (item as Company).unified_social_credit_code, true)}
               </div>
@@ -391,12 +391,12 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('注册资本', (item as Company).registered_capital)}
               </div>
               {(item as Company).address && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('注册地址', (item as Company).address, false, true)}
                 </div>
               )}
               {(item as Company).business_scope && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('经营范围', (item as Company).business_scope, false, true)}
                 </div>
               )}
@@ -405,7 +405,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
 
           {('certificate_name' in item) && (
             <>
-              <div className="border-b border-gray-100 dark:border-gray-700 pb-3 mb-3">
+              <div className="pb-3 mb-3">
                 {renderField('证件名称', (item as Credential).certificate_name)}
                 {renderField('身份证号', (item as Credential).id_card_number, true)}
               </div>
@@ -417,12 +417,12 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('手机号', (item as Credential).phone, true)}
               </div>
               {(item as Credential).id_card_address && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('身份证地址', (item as Credential).id_card_address)}
                 </div>
               )}
               {(item as Credential).certificate_remark && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('备注', (item as Credential).certificate_remark, false, true)}
                 </div>
               )}
@@ -431,7 +431,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
 
           {('platform_name' in item && !('shop_name' in item)) && (
             <>
-              <div className="border-b border-gray-100 dark:border-gray-700 pb-3 mb-3">
+              <div className="pb-3 mb-3">
                 {renderField('平台名称', (item as GeneralAccount).platform_name)}
                 {renderUrlField('网站', (item as GeneralAccount).website)}
               </div>
@@ -443,12 +443,12 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('注册日期', (item as GeneralAccount).registration_date)}
               </div>
               {(item as GeneralAccount).security_question && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('安全问题', (item as GeneralAccount).security_question, false, true)}
                 </div>
               )}
               {(item as GeneralAccount).notes && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('备注', (item as GeneralAccount).notes, false, true)}
                 </div>
               )}
@@ -465,12 +465,12 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('日期', (item as WebsiteAccount).date)}
               </div>
               {(item as WebsiteAccount).security_question && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('安全问题', (item as WebsiteAccount).security_question, false, true)}
                 </div>
               )}
               {(item as WebsiteAccount).notes && (
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                <div className="pt-3 mt-3">
                   {renderField('备注', (item as WebsiteAccount).notes, false, true)}
                 </div>
               )}

@@ -43,11 +43,11 @@ const SortableFavoriteItem: React.FC<{ bookmark: Bookmark; onClick: () => void; 
           src={bookmark.ico_url}
           alt={bookmark.title}
           className="w-8 h-8 object-contain"
-          defaultIcon={<Globe className="w-8 h-8 text-gray-500 dark:text-gray-400" />}
+          defaultIcon={<Globe className="w-8 h-8 text-content-secondary" />}
           type="general"
         />
       ) : (
-        <Globe className="w-8 h-8 text-gray-500 dark:text-gray-400" />
+        <Globe className="w-8 h-8 text-content-secondary" />
       )}
     </div>
   );

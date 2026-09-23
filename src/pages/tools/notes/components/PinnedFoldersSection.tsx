@@ -93,7 +93,7 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
 
   return (
     <div
-      className={`flex-shrink-0 border-b border-gray-100 px-2 py-2 transition-colors dark:border-gray-800 ${
+      className={`flex-shrink-0 px-2 py-2 transition-colors dark:border-content ${
         areaActive ? 'bg-blue-50 ring-1 ring-blue-500/50 dark:bg-blue-500/10' : ''
       }`}
       onDragOver={(e) => {
@@ -114,7 +114,7 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
       }}
     >
       <button
-        className="flex w-full items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-400 px-1 py-1 hover:text-primary transition-colors"
+        className="flex w-full items-center justify-between text-xs font-medium text-content-secondary px-1 py-1 hover:text-primary transition-colors"
         onClick={() => toggleSection('pinned')}
       >
         <span className="flex items-center gap-1">
@@ -124,7 +124,7 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
         </span>
       </button>
       {open && pinnedFolders.length === 0 && (
-        <div className="mt-1 rounded border border-dashed border-gray-300 px-2 py-2 text-[11px] text-gray-400 dark:border-gray-700">
+        <div className="mt-1 rounded border border-dashed border-gray-300 px-2 py-2 text-[11px] text-content-tertiary dark:border-content">
           拖入文件夹可添加为固定目录
         </div>
       )}
@@ -137,7 +137,7 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
               className={`group flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
                 currentViewPath === pinned.path
                   ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/40 dark:hover:bg-gray-800/30'
+                  : 'text-content-primary hover:bg-surface-secondary dark:hover:bg-content-primary'
               } ${pinnedDragOverIndex === index && pinnedDragIndex !== index ? 'ring-2 ring-accent' : ''} ${pinnedDragIndex === index ? 'opacity-50' : ''}`}
               onClick={() => onSwitchToFolder(pinned.path)}
               onDragStart={(e) => {
@@ -173,7 +173,7 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
               }}
               title={pinned.path}
             >
-              <Folder className="h-3 w-3 flex-shrink-0 text-gray-400" />
+              <Folder className="h-3 w-3 flex-shrink-0 text-content-tertiary" />
               <span className="flex-1 truncate">{pinned.name}</span>
             </div>
           ))}

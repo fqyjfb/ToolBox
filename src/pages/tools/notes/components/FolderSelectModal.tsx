@@ -9,37 +9,37 @@ interface FolderSelectModalProps {
 const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading }) => {
   return (
     <div className="flex h-full w-full items-center justify-center">
-      <div className="flex flex-col items-center gap-6 rounded-2xl bg-white dark:bg-gray-800 p-8 shadow-xl">
+      <div className="flex flex-col items-center gap-6 rounded-2xl bg-surface p-8 shadow-xl">
         <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 dark:bg-primary/20">
           <FolderOpen className="h-12 w-12 text-primary" />
         </div>
 
         <div className="text-center">
-          <h2 className="mb-2 text-xl font-bold text-gray-900 dark:text-white">
+          <h2 className="mb-2 text-xl font-bold text-content-primary dark:text-white">
             选择对话存储位置
           </h2>
-          <p className="max-w-sm text-sm text-gray-600 dark:text-gray-300">
+          <p className="max-w-sm text-sm text-gray-600 dark:text-content-secondary">
             请选择一个文件夹作为对话路径。对话记录与整理过程会保存在该文件夹中；
             选择完成后，可在左侧列表固定目录来查看其中的笔记文件。
           </p>
         </div>
 
         <div className="grid w-full max-w-sm grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-700 p-3">
+          <div className="flex items-center gap-2 rounded-lg bg-surface-secondary p-3">
             <FileText className="h-6 w-6 text-primary" />
-            <span className="text-xs text-gray-600 dark:text-gray-300">Markdown 格式</span>
+            <span className="text-xs text-gray-600 dark:text-content-secondary">Markdown 格式</span>
           </div>
-          <div className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-700 p-3">
+          <div className="flex items-center gap-2 rounded-lg bg-surface-secondary p-3">
             <HardDrive className="h-6 w-6 text-primary" />
-            <span className="text-xs text-gray-600 dark:text-gray-300">本地存储</span>
+            <span className="text-xs text-gray-600 dark:text-content-secondary">本地存储</span>
           </div>
-          <div className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-700 p-3">
+          <div className="flex items-center gap-2 rounded-lg bg-surface-secondary p-3">
             <FolderOpen className="h-6 w-6 text-primary" />
-            <span className="text-xs text-gray-600 dark:text-gray-300">文件夹管理</span>
+            <span className="text-xs text-gray-600 dark:text-content-secondary">文件夹管理</span>
           </div>
-          <div className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-700 p-3">
+          <div className="flex items-center gap-2 rounded-lg bg-surface-secondary p-3">
             <CloudOff className="h-6 w-6 text-primary" />
-            <span className="text-xs text-gray-600 dark:text-gray-300">离线可用</span>
+            <span className="text-xs text-gray-600 dark:text-content-secondary">离线可用</span>
           </div>
         </div>
 
@@ -61,7 +61,7 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading
           )}
         </button>
 
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-content-tertiary">
           您可以随时更改对话存储位置
         </p>
       </div>

@@ -29,7 +29,7 @@ const Toast: React.FC = () => {
       case 'info':
         return 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200';
       default:
-        return 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+        return 'bg-surface border-content';
     }
   };
 
@@ -60,7 +60,7 @@ const Toast: React.FC = () => {
       case 'info':
         return 'bg-blue-600 dark:bg-blue-400';
       default:
-        return 'bg-gray-600 dark:bg-gray-400';
+        return 'bg-menu-hover';
     }
   };
 

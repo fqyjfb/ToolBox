@@ -76,8 +76,8 @@ const SortableCategoryItem: React.FC<{
         onContextMenu={onContextMenu}
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
           isActive
-            ? 'bg-gray-800 text-white dark:bg-gray-600 shadow-sm'
-            : 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'
+            ? 'bg-gray-800 text-white dark:bg-menu-hover shadow-sm'
+            : 'text-gray-600 hover:bg-menu-hover dark:text-content-tertiary dark:hover:bg-surface'
         }`}
       >
         <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(category.name).dot}`}></div>
@@ -558,7 +558,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
   }, [contextMenu.type, contextMenu.targetId, accounts, categories, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyPassword, handleCopyText, handleQuickLogin, handleDeleteCategory, handleDeleteItem, openItemModal, openCategoryModal, handleRowClick]);
 
   const renderAccountItem = (account: WebsiteAccount) => (
-    <div key={account.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleRowClick(account)} onContextMenu={(e) => handleContextMenu(e, 'item', account.id)}>
+    <div key={account.id} className="bg-surface-secondary dark:bg-content-primary rounded-lg p-3 cursor-pointer hover:bg-menu-hover transition-colors" onClick={() => handleRowClick(account)} onContextMenu={(e) => handleContextMenu(e, 'item', account.id)}>
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 flex flex-col items-center">
           <svg className="w-5 h-5" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
@@ -572,7 +572,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+            <h3 className="text-sm font-semibold text-content-primary dark:text-white truncate">
               {account.url ? (
                 <button 
                   onClick={(e) => { e.stopPropagation(); openUrl(account.url); }}
@@ -588,21 +588,21 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
               {account.status === 'active' ? '活跃' : account.status === 'inactive' ? '非活跃' : '已过期'}
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {account.username && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">账号:</span><span className="text-gray-900 dark:text-white truncate max-w-[100px]">{account.username}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.username, '用户名已复制'); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制用户名"><Copy className="w-3 h-3" /></button></div>}
-            {account.email && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">邮箱:</span><span className="text-gray-900 dark:text-white truncate max-w-[120px]">{account.email}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.email, '邮箱已复制'); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制邮箱"><Copy className="w-3 h-3" /></button></div>}
-            {account.phone && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">手机:</span><span className="text-gray-900 dark:text-white">{account.phone}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.phone, '手机号已复制'); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制手机号"><Copy className="w-3 h-3" /></button></div>}
-            {account.notes && <div className="flex items-center gap-1.5"><span className="font-medium text-gray-600 dark:text-gray-400">备注:</span><span className="text-gray-900 dark:text-white truncate max-w-[120px]">{account.notes}</span></div>}
+          <div className="flex flex-wrap items-center gap-3 text-xs text-content-secondary mt-1">
+            {account.username && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">账号:</span><span className="text-content-primary dark:text-white truncate max-w-[100px]">{account.username}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.username, '用户名已复制'); }} className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary p-0.5 rounded hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制用户名"><Copy className="w-3 h-3" /></button></div>}
+            {account.email && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">邮箱:</span><span className="text-content-primary dark:text-white truncate max-w-[120px]">{account.email}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.email, '邮箱已复制'); }} className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary p-0.5 rounded hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制邮箱"><Copy className="w-3 h-3" /></button></div>}
+            {account.phone && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">手机:</span><span className="text-content-primary dark:text-white">{account.phone}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.phone, '手机号已复制'); }} className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary p-0.5 rounded hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制手机号"><Copy className="w-3 h-3" /></button></div>}
+            {account.notes && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">备注:</span><span className="text-content-primary dark:text-white truncate max-w-[120px]">{account.notes}</span></div>}
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button onClick={(e) => { e.stopPropagation(); handleCopyPassword(account.password); }} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="复制密码">
+          <button onClick={(e) => { e.stopPropagation(); handleCopyPassword(account.password); }} className="p-1.5 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded-md hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制密码">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
               <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-          <button onClick={(e) => { e.stopPropagation(); handleSharePassword(account); }} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="分享账号">
+          <button onClick={(e) => { e.stopPropagation(); handleSharePassword(account); }} className="p-1.5 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded-md hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="分享账号">
             <Share2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -616,13 +616,13 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex-1 category-dropdown-container relative">
-              <div className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2">
+              <div className="rounded-lg px-3 py-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button onClick={() => handleCategorySelect(null)} className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 ${selectedCategory === null ? 'bg-gray-800 text-white dark:bg-gray-600' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
+                  <button onClick={() => handleCategorySelect(null)} className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 ${selectedCategory === null ? 'bg-gray-800 text-white dark:bg-menu-hover' : 'bg-gray-200 dark:bg-surface text-content-secondary hover:bg-gray-300 dark:hover:bg-menu-hover'}`}>
                     全部
                   </button>
                   {categories.length === 0 ? (
-                    <div className="text-xs text-gray-400">暂无分类</div>
+                    <div className="text-xs text-content-tertiary">暂无分类</div>
                   ) : (
                     <DndContext
                       sensors={sensors}
@@ -653,7 +653,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
                                 getCategoryColor={getCategoryColor}
                               />
                               {category.children && category.children.length > 0 && expandedCategories.has(category.id) && (
-                                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 min-w-[120px] py-1">
+                                <div className="absolute top-full left-0 mt-1 bg-surface rounded-lg shadow-lg border border-content z-10 min-w-[120px] py-1">
                                   {category.children.map(child => (
                                     <button
                                       key={child.id}
@@ -664,8 +664,8 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
                                       onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
                                       className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
                                         selectedCategory === child.id
-                                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                          ? 'bg-surface-secondary text-content-primary dark:text-white'
+                                          : 'text-gray-600 dark:text-content-secondary hover:bg-surface-secondary dark:hover:bg-surface'
                                       }`}
                                     >
                                       <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(child.name).dot}`}></div>
@@ -685,7 +685,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => openCategoryModal()} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-full transition-colors">
+            <button onClick={() => openCategoryModal()} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-gray-200 dark:bg-surface dark:hover:bg-menu-hover rounded-full transition-colors">
               <Tag size={14} />
               添加分类
             </button>
@@ -700,13 +700,13 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
           </div>
         ) : accounts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="w-12 h-12 rounded-full bg-surface-secondary flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-content-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                 <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">暂无网站账号</p>
+            <p className="text-content-secondary text-sm">暂无网站账号</p>
           </div>
         ) : (
           accounts.map(renderAccountItem)
@@ -773,7 +773,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
               extraButton={
                 <button
                   onClick={generatePassword}
-                  className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                  className="text-content-tertiary hover:text-gray-600 dark:text-content-tertiary dark:hover:text-content-secondary transition-colors"
                   title="生成密码"
                 >
                   <RefreshCw className="w-4 h-4" />

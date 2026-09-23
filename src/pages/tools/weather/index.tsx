@@ -111,8 +111,8 @@ const WeatherPage: React.FC = () => {
     if (lowerCondition.includes('多云')) return <CloudSun className="w-4 h-4 text-yellow-500" />;
     if (lowerCondition.includes('雨')) return <CloudRain className="w-4 h-4 text-blue-500" />;
     if (lowerCondition.includes('雪')) return <CloudSnow className="w-4 h-4 text-blue-300" />;
-    if (lowerCondition.includes('阴')) return <Cloud className="w-4 h-4 text-gray-500" />;
-    return <Cloud className="w-4 h-4 text-gray-500" />;
+    if (lowerCondition.includes('阴')) return <Cloud className="w-4 h-4 text-content-tertiary" />;
+    return <Cloud className="w-4 h-4 text-content-tertiary" />;
   };
 
   const getLargeWeatherIcon = (condition: string) => {
@@ -121,8 +121,8 @@ const WeatherPage: React.FC = () => {
     if (lowerCondition.includes('多云')) return <CloudSun className="w-16 h-16 text-yellow-400" />;
     if (lowerCondition.includes('雨')) return <CloudRain className="w-16 h-16 text-blue-400" />;
     if (lowerCondition.includes('雪')) return <CloudSnow className="w-16 h-16 text-blue-200" />;
-    if (lowerCondition.includes('阴')) return <Cloud className="w-16 h-16 text-gray-400" />;
-    return <Cloud className="w-16 h-16 text-gray-400" />;
+    if (lowerCondition.includes('阴')) return <Cloud className="w-16 h-16 text-content-tertiary" />;
+    return <Cloud className="w-16 h-16 text-content-tertiary" />;
   };
 
   const getAQIColor = (level: number) => {
@@ -132,7 +132,7 @@ const WeatherPage: React.FC = () => {
       case 3: return 'text-orange-600 dark:text-orange-400';
       case 4: return 'text-red-600 dark:text-red-400';
       case 5: return 'text-purple-600 dark:text-purple-400';
-      default: return 'text-gray-600 dark:text-gray-400';
+      default: return 'text-content-secondary';
     }
   };
 
@@ -143,7 +143,7 @@ const WeatherPage: React.FC = () => {
       case 3: return 'bg-orange-100 dark:bg-orange-900/30';
       case 4: return 'bg-red-100 dark:bg-red-900/30';
       case 5: return 'bg-purple-100 dark:bg-purple-900/30';
-      default: return 'bg-gray-100 dark:bg-gray-700';
+      default: return 'bg-surface-secondary';
     }
   };
 
@@ -176,7 +176,7 @@ const WeatherPage: React.FC = () => {
       '最弱': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
       '防脱水': 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
     };
-    return levelMap[level] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400';
+    return levelMap[level] || 'bg-surface-secondary text-content-secondary';
   };
 
   const getAlertLevelStyle = (level: string) => {
@@ -186,7 +186,7 @@ const WeatherPage: React.FC = () => {
       '橙色': 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 text-orange-700 dark:text-orange-400',
       '红色': 'bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-400',
     };
-    return levelMap[level] || 'bg-gray-50 dark:bg-gray-700/50 border-gray-500 text-gray-700 dark:text-gray-400';
+    return levelMap[level] || 'bg-surface-secondary/50 border-gray-500 text-gray-700 dark:text-content-tertiary';
   };
 
   const getLifeIndexBadgeColor = (level: string) => {
@@ -207,7 +207,7 @@ const WeatherPage: React.FC = () => {
       '最弱': 'bg-green-500 dark:bg-green-600 text-white',
       '防脱水': 'bg-blue-500 dark:bg-blue-600 text-white',
     };
-    return levelMap[level] || 'bg-gray-500 dark:bg-gray-600 text-white';
+    return levelMap[level] || 'bg-gray-500 dark:bg-menu-hover text-white';
   };
 
   const getLifeIndexBadgeText = (level: string) => {
@@ -242,8 +242,8 @@ const WeatherPage: React.FC = () => {
   if (error || !weatherData) {
     return (
       <div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+        <div className="bg-surface rounded-lg shadow-md p-6">
+          <div className="flex flex-col items-center justify-center text-content-secondary">
             <Cloud className="w-12 h-12 mb-3 opacity-50" />
             <p className="text-sm">{error || '无法获取天气数据'}</p>
             <button
@@ -261,7 +261,7 @@ const WeatherPage: React.FC = () => {
 
   return (
     <div className="overflow-y-auto max-h-[calc(100vh-80px)] scrollbar-hide">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div className="bg-surface rounded-lg shadow-md overflow-hidden">
         <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-4 text-white">
           <div className="flex items-center justify-between mb-3">
             <button
@@ -348,36 +348,36 @@ const WeatherPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+            <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
               <Droplets className="w-5 h-5 text-blue-500 mx-auto mb-1.5" />
-              <p className="text-xs text-gray-500 dark:text-gray-400">湿度</p>
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{weatherData.weather?.humidity ?? '--'}%</p>
+              <p className="text-xs text-content-secondary">湿度</p>
+              <p className="text-sm font-semibold text-content-primary">{weatherData.weather?.humidity ?? '--'}%</p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-              <Wind className="w-5 h-5 text-gray-500 mx-auto mb-1.5" />
-              <p className="text-xs text-gray-500 dark:text-gray-400">风速</p>
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{weatherData.weather?.wind_power ?? '--'}级</p>
+            <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
+              <Wind className="w-5 h-5 text-content-tertiary mx-auto mb-1.5" />
+              <p className="text-xs text-content-secondary">风速</p>
+              <p className="text-sm font-semibold text-content-primary">{weatherData.weather?.wind_power ?? '--'}级</p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-              <Gauge className="w-5 h-5 text-gray-500 mx-auto mb-1.5" />
-              <p className="text-xs text-gray-500 dark:text-gray-400">气压</p>
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{weatherData.weather?.pressure ?? '--'}hPa</p>
+            <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
+              <Gauge className="w-5 h-5 text-content-tertiary mx-auto mb-1.5" />
+              <p className="text-xs text-content-secondary">气压</p>
+              <p className="text-sm font-semibold text-content-primary">{weatherData.weather?.pressure ?? '--'}hPa</p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+            <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
               <CloudRain className="w-5 h-5 text-blue-500 mx-auto mb-1.5" />
-              <p className="text-xs text-gray-500 dark:text-gray-400">降水</p>
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{weatherData.weather?.precipitation ?? '--'}mm</p>
+              <p className="text-xs text-content-secondary">降水</p>
+              <p className="text-sm font-semibold text-content-primary">{weatherData.weather?.precipitation ?? '--'}mm</p>
             </div>
             {weatherData.sunrise && (
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
                 <div className="flex items-center justify-center gap-1 mb-1.5">
                   <Sun className="w-5 h-5 text-orange-500" />
                   <Clock className="w-5 h-5 text-indigo-500" />
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">日出/日落</p>
-                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <p className="text-xs text-content-secondary">日出/日落</p>
+                <p className="text-sm font-semibold text-content-primary">
                   {weatherData.sunrise.sunrise_desc}/{weatherData.sunrise.sunset_desc}
                 </p>
               </div>
@@ -386,19 +386,19 @@ const WeatherPage: React.FC = () => {
         </div>
 
         {hourlyForecast.length > 0 && (
-          <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-3">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">24小时预报</h3>
-              <span className="text-xs text-gray-500 dark:text-gray-400">每小时更新</span>
+              <h3 className="text-sm font-semibold text-content-primary">24小时预报</h3>
+              <span className="text-xs text-content-secondary">每小时更新</span>
             </div>
             <div className="overflow-x-auto hourly-scroll-container scrollbar-visible">
               <div className="flex gap-1.5" style={{ width: 'fit-content' }}>
                 {hourlyForecast.map((hour, index) => (
-                  <div key={index} className="flex-shrink-0 w-14 flex flex-col items-center py-2 px-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">{formatHour(hour.datetime)}</span>
+                  <div key={index} className="flex-shrink-0 w-14 flex flex-col items-center py-2 px-2 bg-surface-secondary/50 rounded-lg">
+                    <span className="text-xs text-content-secondary mb-1">{formatHour(hour.datetime)}</span>
                     <div className="mb-1.5">{getWeatherIcon(hour.condition || '')}</div>
-                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{hour.temperature}°</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{hour.wind_direction} {hour.wind_power}级</span>
+                    <span className="text-xs font-semibold text-content-primary">{hour.temperature}°</span>
+                    <span className="text-xs text-content-tertiary mt-0.5">{hour.wind_direction} {hour.wind_power}级</span>
                   </div>
                 ))}
               </div>
@@ -409,24 +409,24 @@ const WeatherPage: React.FC = () => {
         {dailyForecast.length > 0 && (
           <div className="p-3">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">7天预报</h3>
-              <span className="text-xs text-gray-500 dark:text-gray-400">每日更新</span>
+              <h3 className="text-sm font-semibold text-content-primary">7天预报</h3>
+              <span className="text-xs text-content-secondary">每日更新</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
               {dailyForecast.map((day, index) => (
-                <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-0.5">{getDayName(day.date, { includeAfterTomorrow: false })}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{formatDate(day.date)}</p>
+                <div key={index} className="bg-surface-secondary/50 rounded-lg p-3 text-center">
+                  <p className="text-sm font-semibold text-content-primary mb-0.5">{getDayName(day.date, { includeAfterTomorrow: false })}</p>
+                  <p className="text-xs text-content-secondary mb-2">{formatDate(day.date)}</p>
                   <div className="flex items-center justify-center gap-1 mb-2">
                     {getWeatherIcon(day.day_condition || '')}
-                    <span className="text-xs text-gray-600 dark:text-gray-300">{day.day_condition}</span>
+                    <span className="text-xs text-gray-600 dark:text-content-secondary">{day.day_condition}</span>
                   </div>
                   <div className="flex items-center justify-center gap-1 mb-2">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{day.max_temperature}°</span>
-                    <span className="text-gray-300 dark:text-gray-600">/</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{day.min_temperature}°</span>
+                    <span className="text-sm font-semibold text-content-primary">{day.max_temperature}°</span>
+                    <span className="text-content-secondary dark:text-content-secondary">/</span>
+                    <span className="text-sm text-content-secondary">{day.min_temperature}°</span>
                   </div>
-                  <div className="text-xs text-gray-400 dark:text-gray-500">
+                  <div className="text-xs text-content-tertiary">
                     {day.day_wind_direction} {day.day_wind_power}级
                   </div>
                 </div>
@@ -436,9 +436,9 @@ const WeatherPage: React.FC = () => {
         )}
 
         {weatherData.alerts && weatherData.alerts.length > 0 && (
-          <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="p-3">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">天气预警</h3>
+              <h3 className="text-sm font-semibold text-content-primary">天气预警</h3>
             </div>
             {weatherData.alerts.map((alert, idx) => (
               <div key={idx} className={`p-3 rounded-lg border-l-4 ${getAlertLevelStyle(alert.level)}`}>
@@ -449,8 +449,8 @@ const WeatherPage: React.FC = () => {
                     <span className="text-xs ml-2">{alert.level}预警</span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{alert.detail}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{alert.updated}</p>
+                <p className="text-xs text-content-secondary leading-relaxed">{alert.detail}</p>
+                <p className="text-xs text-content-tertiary mt-2">{alert.updated}</p>
               </div>
             ))}
           </div>

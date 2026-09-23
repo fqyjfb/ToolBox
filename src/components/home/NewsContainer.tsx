@@ -197,7 +197,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
   return (
     <div className="card flex-1 h-full flex flex-col" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)', boxShadow: 'var(--shadow-sm)' }}>
       <div className="card__content flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className="news-tabs flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-600 mb-2 items-center">
+        <div className="news-tabs flex flex-wrap gap-1 mb-2 items-center">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -205,7 +205,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 activeTab === tab.id
                   ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:dark:text-gray-200'
+                  : 'text-content-secondary hover:text-content-primary'
               }`}
             >
               {tab.label}
@@ -214,7 +214,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
           <div className="ml-auto">
             <button
               onClick={handleRefresh}
-              className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-1"
+              className="flex items-center gap-1 text-xs font-medium text-content-secondary hover:text-primary transition-colors p-1"
               title="刷新"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -228,9 +228,9 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
           </div>
         ) : error ? (
           <div className="info-error flex items-center gap-2 py-2">
-            <p className="text-xs text-gray-500">{error}</p>
+            <p className="text-xs text-content-secondary">{error}</p>
             <button
-              className="text-gray-400 hover:text-blue-500 transition-colors p-1"
+              className="text-content-secondary hover:text-primary transition-colors p-1"
               onClick={onRetry}
               title="重新加载"
             >
@@ -249,7 +249,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
                   {index + 1}. {item.title}
                 </span>
                 {item.source && (
-                  <span className="news-source ml-2 text-xs text-gray-400">
+                  <span className="news-source ml-2 text-xs text-content-secondary">
                     ({item.source})
                   </span>
                 )}

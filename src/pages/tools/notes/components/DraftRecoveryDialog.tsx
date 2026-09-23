@@ -47,41 +47,41 @@ const DraftRecoveryDialog: React.FC<DraftRecoveryDialogProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-[520px] max-w-[92vw] rounded-lg bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div className="w-[520px] max-w-[92vw] rounded-lg bg-white dark:bg-content-primary shadow-xl">
+        <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-warning" />
-            <h3 className="text-base font-medium text-gray-900 dark:text-white">
+            <h3 className="text-base font-medium text-content-primary dark:text-white">
               检测到未提交的草稿
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            className="text-content-tertiary hover:text-content-secondary dark:hover:text-gray-200"
             title="关闭"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="px-4 py-3 max-h-72 overflow-y-auto">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          <p className="text-sm text-content-secondary mb-3">
             上次退出时存在 {drafts.length} 个未保存的草稿，请选择恢复或丢弃：
           </p>
           <ul className="space-y-2">
             {drafts.map((d) => (
               <li
                 key={d.hash}
-                className="flex items-center justify-between text-sm rounded border border-gray-200 dark:border-gray-700 px-3 py-2"
+                className="flex items-center justify-between text-sm rounded px-3 py-2 bg-surface-secondary"
               >
                 <div className="flex-1 min-w-0">
                   <div
-                    className="text-sm text-gray-800 dark:text-gray-100 truncate"
+                    className="text-sm text-content-primary truncate"
                     title={`草稿 hash: ${d.hash}`}
                   >
                     {basenameOf(d.absolutePath)}
                   </div>
                   <div
-                    className="text-xs text-gray-400 mt-0.5 truncate"
+                    className="text-xs text-content-tertiary mt-0.5 truncate"
                     title={d.absolutePath}
                   >
                     {d.absolutePath} · {d.size} 字节 · {new Date(d.mtime).toLocaleString()}
@@ -123,11 +123,11 @@ const DraftRecoveryDialog: React.FC<DraftRecoveryDialogProps> = ({
             ))}
           </ul>
         </div>
-        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-end gap-2 px-4 py-3">
           <button
             onClick={handleDiscardAll}
             disabled={busy !== null}
-            className="px-3 py-1.5 text-sm rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm rounded text-gray-600 dark:text-content-secondary hover:bg-surface-secondary dark:hover:bg-content-primary disabled:opacity-50"
           >
             全部丢弃
           </button>

@@ -1,5 +1,5 @@
 .icon-toggle-container {
-  --color: #a5a5b0;
+  --color: var(--color-text-secondary);
   --size: 16px;
   display: flex;
   justify-content: center;
@@ -28,19 +28,11 @@
   color: var(--color);
 }
 
-.dark .icon-toggle-container .expand-icon {
-  color: #d1d5db;
-}
-
 .icon-toggle-container .compress-icon {
   position: absolute;
   display: none;
   animation: keyframes-fill-icon 0.5s;
   color: var(--color);
-}
-
-.dark .icon-toggle-container .compress-icon {
-  color: #d1d5db;
 }
 
 .icon-toggle-container input:checked ~ .expand-icon {
@@ -109,14 +101,10 @@
   position: relative;
   height: 16px;
   width: 16px;
-  background-color: #d1d5db;
+  background-color: var(--color-text-tertiary);
   border-bottom-left-radius: 9px;
   border-top-right-radius: 9px;
   transition: background-color 0.2s, box-shadow 0.2s;
-}
-
-.dark .launch-mode-toggle .checkmark {
-  background-color: #4b5563;
 }
 
 .launch-mode-toggle input:checked ~ .checkmark {
@@ -136,13 +124,9 @@
   top: 3px;
   width: 4px;
   height: 8px;
-  border: solid #ffffff;
+  border: solid var(--color-bg-primary);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
-}
-
-.dark .launch-mode-toggle .checkmark:after {
-  border-color: #18181B;
 }
 
 .launch-mode-toggle input:checked ~ .checkmark:after {

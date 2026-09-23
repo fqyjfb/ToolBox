@@ -332,17 +332,17 @@ const NotesPage: React.FC = () => {
             <div className="flex items-center justify-between px-3 py-2">
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded p-1 text-gray-400 hover:bg-gray-100/40 dark:hover:bg-gray-800/30"
+                  className="rounded p-1 text-content-tertiary hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1"
                   onClick={handleToggleSidebar}
                   title={sidebarVisible ? '隐藏列表' : '显示列表'}
                 >
                   <PanelLeft className="h-3.5 w-3.5" />
                 </button>
-                <h2 className="text-xs font-medium text-gray-600 dark:text-gray-300">快速记录想法，稍后整理</h2>
+                <h2 className="text-xs font-medium text-gray-600 dark:text-content-secondary">快速记录想法，稍后整理</h2>
               </div>
               {selectedMessages.length > 0 && (
                 <button
-                  className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="text-xs text-content-tertiary hover:text-content-primary dark:hover:text-content-secondary"
                   onClick={clearSelection}
                 >
                   清除选择 ({selectedMessages.length})

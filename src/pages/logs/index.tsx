@@ -127,7 +127,7 @@ const LogsPage: React.FC = () => {
       case 'info':
         return <Info className="text-blue-500" size={16} />;
       case 'debug':
-        return <Bug className="text-gray-500" size={16} />;
+        return <Bug className="text-content-secondary" size={16} />;
     }
   };
 
@@ -153,13 +153,13 @@ const LogsPage: React.FC = () => {
       case 'info':
         return 'bg-blue-50 border-blue-200';
       case 'debug':
-        return 'bg-gray-50 border-gray-200';
+        return 'bg-surface-secondary border-content';
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
       </div>
     );
@@ -174,9 +174,9 @@ const LogsPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-surface flex flex-col overflow-hidden">
       <div 
-        className="bg-gray-800 dark:bg-gray-900 border-b border-gray-700 px-3 py-2 flex items-center justify-between flex-shrink-0"
+        className="bg-surface-secondary px-3 py-2 flex items-center justify-between flex-shrink-0"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         <div className="flex items-center gap-2">
@@ -187,33 +187,33 @@ const LogsPage: React.FC = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={handleMinimize}
-              className="p-1.5 rounded hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded hover:bg-surface transition-colors"
               title="最小化"
             >
-              <Minus className="w-4 h-4 text-gray-400 hover:text-white" />
+              <Minus className="w-4 h-4 text-content-tertiary hover:text-white" />
             </button>
             <button
               onClick={handleClose}
               className="p-1.5 rounded hover:bg-red-600 transition-colors"
               title="关闭"
             >
-              <X className="w-4 h-4 text-gray-400 hover:text-white" />
+              <X className="w-4 h-4 text-content-tertiary hover:text-white" />
             </button>
           </div>
         </div>
       </div>
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex-shrink-0">
+      <div className="bg-surface px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">日志监控</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <h1 className="text-base font-semibold text-content-primary">日志监控</h1>
+            <p className="text-xs text-content-secondary mt-0.5">
               共 {stats.total} 条日志
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleRefresh}
-              className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs font-medium text-content-primary bg-surface-secondary hover:bg-menu-hover transition-colors flex items-center gap-1.5"
             >
               <RefreshCw size={14} />
               刷新
@@ -236,14 +236,14 @@ const LogsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 mt-3">
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">筛选:</span>
+          <span className="text-xs font-medium text-content-primary">筛选:</span>
           <div className="flex gap-1.5">
             <button
               onClick={() => setFilterLevel('all')}
               className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                 filterLevel === 'all'
-                  ? 'bg-gray-800 text-white dark:bg-gray-600'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-surface text-content-primary'
+                  : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
               }`}
             >
               全部 ({stats.total})
@@ -286,7 +286,7 @@ const LogsPage: React.FC = () => {
               className={`px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
                 filterLevel === 'debug'
                   ? 'bg-gray-500 text-white'
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  : 'bg-surface-secondary text-content-secondary hover:bg-surface-secondary'
               }`}
             >
               <Bug size={10} />
@@ -297,20 +297,20 @@ const LogsPage: React.FC = () => {
       </div>
 
       <div className="flex-1 p-4 overflow-hidden">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+        <div className="bg-surface rounded-lg border border-content h-full flex flex-col">
           {filteredLogs.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <div className="text-gray-400 mb-2">
+              <div className="text-content-tertiary mb-2">
                 <Info size={40} />
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">暂无日志记录</p>
+              <p className="text-sm text-content-secondary">暂无日志记录</p>
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto">
               {filteredLogs.map((log) => (
                 <div
                   key={log.id}
-                  className={`border-b border-gray-100 dark:border-gray-700 last:border-b-0 p-3 ${getLevelBgClass(log.level)}`}
+                  className={`last:border-b-0 p-3 ${getLevelBgClass(log.level)}`}
                 >
                   <div className="flex items-start gap-2">
                     <div className="flex-shrink-0 mt-0.5">
@@ -322,24 +322,24 @@ const LogsPage: React.FC = () => {
                           log.level === 'error' ? 'bg-red-200 text-red-800' :
                           log.level === 'warn' ? 'bg-yellow-200 text-yellow-800' :
                           log.level === 'info' ? 'bg-blue-200 text-blue-800' :
-                          'bg-gray-200 text-gray-800'
+                          'bg-gray-200 text-content-primary'
                         }`}>
                           {getLevelLabel(log.level)}
                         </span>
                         {log.context && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <span className="text-xs text-content-secondary">
                             [{log.context}]
                           </span>
                         )}
-                        <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
+                        <span className="text-xs text-content-secondary ml-auto">
                           {formatTimestamp(log.timestamp)}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-800 dark:text-gray-200 mt-1.5 break-all leading-relaxed">
+                      <p className="text-xs text-content-primary mt-1.5 break-all leading-relaxed">
                         {log.message}
                       </p>
                       {log.stack && (
-                        <pre className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 p-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 overflow-x-auto">
+                        <pre className="text-xs text-content-secondary bg-surface-secondary rounded border border-content overflow-x-auto">
                           {log.stack}
                         </pre>
                       )}

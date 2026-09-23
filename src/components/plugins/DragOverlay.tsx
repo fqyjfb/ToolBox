@@ -69,14 +69,14 @@ const DragOverlay: React.FC<DragOverlayProps> = ({ onFileDrop }) => {
           w-80 h-64 rounded-xl border-2 border-dashed
           transition-all duration-200
           ${isDragOver
-            ? 'bg-white/95 dark:bg-gray-800/95 border-primary shadow-xl scale-105'
-            : 'bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 opacity-0 hover:opacity-100'
+            ? 'bg-surface border-primary shadow-xl scale-105'
+            : 'bg-surface-40 border-content opacity-0 hover:opacity-100'
           }
         `}
       >
         <div
           className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
-            isDragOver ? 'bg-primary/10' : 'bg-gray-100 dark:bg-gray-700'
+            isDragOver ? 'bg-primary/10' : 'bg-surface-secondary'
           }`}
         >
           <Upload
@@ -88,7 +88,7 @@ const DragOverlay: React.FC<DragOverlayProps> = ({ onFileDrop }) => {
         
         <div className="text-center">
           <p className={`text-sm font-medium transition-colors ${
-            isDragOver ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500'
+            isDragOver ? 'text-content-primary' : 'text-gray-500'
           }`}>
             {isDragOver ? '松开鼠标以安装插件' : '拖拽插件包到此处'}
           </p>

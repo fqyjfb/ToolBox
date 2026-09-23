@@ -546,8 +546,8 @@ console.log(theme);
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <FileCode className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Markdown 转公众号排版</h2>
+          <FileCode className="w-6 h-6 text-content-secondary" />
+          <h2 className="text-lg font-semibold text-content-primary">Markdown 转公众号排版</h2>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -557,23 +557,23 @@ console.log(theme);
             className="hidden"
             id="file-upload"
           />
-          <label htmlFor="file-upload" className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition-colors" title="打开文件">
-            <Upload className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <label htmlFor="file-upload" className="p-2 rounded-lg hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors" title="打开文件">
+            <Upload className="w-5 h-5 text-content-secondary" />
           </label>
-          <button onClick={handleSave} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="保存">
-            <Save className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <button onClick={handleSave} className="p-2 rounded-lg hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="保存">
+            <Save className="w-5 h-5 text-content-secondary" />
           </button>
-          <button onClick={handleFileDownload} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="导出 Markdown">
-            <Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <button onClick={handleFileDownload} className="p-2 rounded-lg hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="导出 Markdown">
+            <Download className="w-5 h-5 text-content-secondary" />
           </button>
-          <button onClick={handleInsertTemplate} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="插入模板">
-            <LayoutTemplate className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <button onClick={handleInsertTemplate} className="p-2 rounded-lg hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="插入模板">
+            <LayoutTemplate className="w-5 h-5 text-content-secondary" />
           </button>
           <button onClick={copyWechatHtml} className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover transition-colors text-sm">
             <Copy className="w-4 h-4" />
             复制公众号内容
           </button>
-          <button onClick={copyPreviewHtml} className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm">
+          <button onClick={copyPreviewHtml} className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm">
             <FileText className="w-4 h-4" />
             复制 HTML
           </button>
@@ -584,21 +584,21 @@ console.log(theme);
       </div>
 
       <div className="flex gap-2 mb-4">
-        <button onClick={() => setActiveTab('edit')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'edit' ? 'bg-primary text-button-text' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
+        <button onClick={() => setActiveTab('edit')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'edit' ? 'bg-primary text-button-text' : 'bg-gray-200 dark:bg-surface text-content-primary hover:bg-gray-300 dark:hover:bg-menu-hover'}`}>
           <Edit3 className="w-4 h-4" />
           编辑
         </button>
-        <button onClick={() => setActiveTab('preview')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'preview' ? 'bg-primary text-button-text' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
+        <button onClick={() => setActiveTab('preview')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'preview' ? 'bg-primary text-button-text' : 'bg-gray-200 dark:bg-surface text-content-primary hover:bg-gray-300 dark:hover:bg-menu-hover'}`}>
           <Eye className="w-4 h-4" />
           预览
         </button>
-        <button onClick={() => setActiveTab('split')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'split' ? 'bg-primary text-button-text' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
+        <button onClick={() => setActiveTab('split')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'split' ? 'bg-primary text-button-text' : 'bg-gray-200 dark:bg-surface text-content-primary hover:bg-gray-300 dark:hover:bg-menu-hover'}`}>
           <Eye className="w-4 h-4" />
           分屏查看
         </button>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden flex">
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-hidden flex">
         {activeTab === 'edit' && (
           <div className="w-full flex flex-col">
             <textarea
@@ -606,7 +606,7 @@ console.log(theme);
               value={markdown}
               onChange={(e) => setMarkdown(e.target.value)}
               onContextMenu={handleContextMenu}
-              className="flex-1 w-full p-4 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-mono text-sm resize-none outline-none"
+              className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
               placeholder="在此输入你的 Markdown 内容..."
             />
           </div>
@@ -614,40 +614,40 @@ console.log(theme);
 
         {activeTab === 'preview' && (
           <div className="w-full overflow-auto">
-            <div ref={previewRef} className="p-6 bg-white dark:bg-gray-900">
-              <div className="wx-article" dangerouslySetInnerHTML={{ __html: markdown ? parseMarkdown(markdown) : '<p class="text-gray-400">输入 Markdown 内容预览效果...</p>' }} />
+            <div ref={previewRef} className="p-6 bg-white dark:bg-content-primary">
+              <div className="wx-article" dangerouslySetInnerHTML={{ __html: markdown ? parseMarkdown(markdown) : '<p class="text-content-tertiary">输入 Markdown 内容预览效果...</p>' }} />
             </div>
           </div>
         )}
 
         {activeTab === 'split' && (
           <>
-            <div className="w-1/2 flex flex-col border-r border-gray-200 dark:border-gray-700">
-              <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Markdown 输入</span>
+            <div className="w-1/2 flex flex-col border-r border-content">
+              <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+                <span className="text-sm font-medium text-content-secondary">Markdown 输入</span>
               </div>
               <textarea
                 ref={textareaRef}
                 value={markdown}
                 onChange={(e) => setMarkdown(e.target.value)}
                 onContextMenu={handleContextMenu}
-                className="flex-1 w-full p-4 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-mono text-sm resize-none outline-none"
+                className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
                 placeholder="在此输入你的 Markdown 内容..."
               />
             </div>
             <div className="w-1/2 overflow-auto">
-              <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">公众号排版预览</span>
+              <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+                <span className="text-sm font-medium text-content-secondary">公众号排版预览</span>
               </div>
-              <div ref={previewRef} className="p-4 bg-white dark:bg-gray-900">
-                <div className="wx-article" dangerouslySetInnerHTML={{ __html: markdown ? parseMarkdown(markdown) : '<p class="text-gray-400">输入 Markdown 内容预览效果...</p>' }} />
+              <div ref={previewRef} className="p-4 bg-white dark:bg-content-primary">
+                <div className="wx-article" dangerouslySetInnerHTML={{ __html: markdown ? parseMarkdown(markdown) : '<p class="text-content-tertiary">输入 Markdown 内容预览效果...</p>' }} />
               </div>
             </div>
           </>
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+      <div className="mt-4 flex items-center justify-between text-sm text-content-secondary">
         <span>{fileName}</span>
         <span>{markdown.split('\n').length} 行 | {markdown.length} 字符</span>
       </div>

@@ -62,12 +62,12 @@ const UrlEncodePage: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <AtSign className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">URL 编码解码</h2>
+          <AtSign className="w-6 h-6 text-content-secondary" />
+          <h2 className="text-lg font-semibold text-content-primary">URL 编码解码</h2>
         </div>
         <button 
           onClick={loadSample}
-          className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+          className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
         >
           <FileText className="w-4 h-4" />
           示例
@@ -75,21 +75,21 @@ const UrlEncodePage: React.FC = () => {
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">输入文本</label>
+        <label className="block text-sm text-content-secondary mb-2">输入文本</label>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-mono text-sm resize-none outline-none focus:border-blue-500"
+          className="w-full px-4 py-3 border border-content rounded-lg bg-surface text-content-primary font-mono text-sm resize-none outline-none focus:border-blue-500"
           rows={3}
           placeholder="输入要编码或解码的 URL..."
         />
       </div>
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-auto">
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-auto">
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div className="bg-surface-secondary rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">URL 编码 (Encode)</span>
+              <span className="text-sm font-medium text-content-primary">URL 编码 (Encode)</span>
               <button
                 onClick={() => handleCopy(encoded)}
                 disabled={!encoded}
@@ -105,15 +105,15 @@ const UrlEncodePage: React.FC = () => {
               <textarea
                 value={encoded}
                 readOnly
-                className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-mono text-sm resize-none outline-none"
+                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-white dark:bg-menu-hover text-content-primary font-mono text-sm resize-none outline-none"
                 placeholder="编码结果..."
               />
             )}
           </div>
           
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div className="bg-surface-secondary rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">URL 解码 (Decode)</span>
+              <span className="text-sm font-medium text-content-primary">URL 解码 (Decode)</span>
               <button
                 onClick={() => handleCopy(decoded)}
                 disabled={!decoded}
@@ -129,7 +129,7 @@ const UrlEncodePage: React.FC = () => {
               <textarea
                 value={decoded}
                 readOnly
-                className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-mono text-sm resize-none outline-none"
+                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-white dark:bg-menu-hover text-content-primary font-mono text-sm resize-none outline-none"
                 placeholder="解码结果..."
               />
             )}

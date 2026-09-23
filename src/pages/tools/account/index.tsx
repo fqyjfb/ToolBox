@@ -342,8 +342,8 @@ const AccountManagerPage: React.FC = () => {
           onClick={onClick}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
             isActive
-              ? 'bg-gray-800 text-white dark:bg-gray-600'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              ? 'bg-gray-800 text-white dark:bg-menu-hover'
+              : 'text-content-secondary hover:bg-menu-hover'
           }`}
         >
           <Icon className="w-4 h-4" />
@@ -387,7 +387,7 @@ const AccountManagerPage: React.FC = () => {
   return (
     <>
       <div className="h-full flex flex-col overflow-hidden">
-          <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-4">
+          <div className="flex-shrink-0 px-4">
             <div className="flex items-center justify-between">
               <DndContext
                 sensors={sensors}
@@ -419,7 +419,7 @@ const AccountManagerPage: React.FC = () => {
                 {currentPlatform?.showAddButton && (
                   <button
                     onClick={handleAddClick}
-                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                    className="p-2 text-content-secondary hover:text-content-primary dark:hover:text-white hover:bg-menu-hover rounded-full transition-colors"
                     title={currentPlatform.addLabel}
                   >
                     <Plus size={16} />

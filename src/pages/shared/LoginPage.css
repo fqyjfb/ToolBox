@@ -1,15 +1,10 @@
 .login-container {
   height: 100%;
   overflow: hidden;
-  background-color: var(--color-bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-3);
-}
-
-.dark .login-container {
-  background-color: var(--color-bg-primary);
 }
 
 .login-card {
@@ -20,7 +15,6 @@
   background-color: var(--color-bg-primary);
   border-radius: var(--radius-xl);
   padding: var(--space-5) var(--space-5);
-  border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
   position: relative;
 }
@@ -162,7 +156,6 @@
 
 .dark .login-card {
   background-color: var(--color-bg-secondary);
-  border-color: var(--color-border);
 }
 
 .dark .login-input {

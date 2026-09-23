@@ -467,7 +467,7 @@ const AdminWebsitesPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 flex items-center justify-between flex-shrink-0">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">网址管理</h1>
+        <h1 className="text-lg font-semibold text-content-primary">网址管理</h1>
         {activeTab === 'bookmarks' && (
           <button
             onClick={handleAddBookmark}
@@ -484,8 +484,8 @@ const AdminWebsitesPage: React.FC = () => {
             onClick={() => setActiveTab('bookmarks')}
             className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
               activeTab === 'bookmarks'
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'bg-surface-secondary text-content-primary'
+                : 'text-content-secondary hover:text-content-primary'
             }`}
           >
             网址列表
@@ -494,8 +494,8 @@ const AdminWebsitesPage: React.FC = () => {
             onClick={() => setActiveTab('categories')}
             className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
               activeTab === 'categories'
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'bg-surface-secondary text-content-primary'
+                : 'text-content-secondary hover:text-content-primary'
             }`}
           >
             分类管理
@@ -509,7 +509,7 @@ const AdminWebsitesPage: React.FC = () => {
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
               placeholder="搜索网址..."
-              className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-900/40 dark:text-white text-xs"
+              className="w-full px-2 py-1 pr-20 rounded-md focus:outline-none bg-surface-50 text-content-primary placeholder-text-content-tertiary text-xs"
             />
             {searchQuery && (
               <button
@@ -517,7 +517,7 @@ const AdminWebsitesPage: React.FC = () => {
                   setSearchQuery('')
                   setPage(1)
                 }}
-                className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-8 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary"
                 title="清空搜索"
               >
                 <X size={12} />
@@ -526,7 +526,7 @@ const AdminWebsitesPage: React.FC = () => {
             <button
               type="button"
               onClick={handleSearchSubmit}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-content-secondary hover:text-content-primary"
               title="搜索"
             >
               <Search size={14} />
@@ -542,7 +542,7 @@ const AdminWebsitesPage: React.FC = () => {
             className={`px-2 py-1 text-xs rounded-full transition-colors ${
               !selectedCategoryId
                 ? 'bg-primary text-button-text'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
             }`}
           >
             全部
@@ -554,7 +554,7 @@ const AdminWebsitesPage: React.FC = () => {
               className={`px-2 py-1 text-xs rounded-full transition-colors ${
                 selectedCategoryId === mainCategory.id
                   ? 'bg-primary text-button-text'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
               }`}
             >
               {mainCategory.name}
@@ -571,28 +571,28 @@ const AdminWebsitesPage: React.FC = () => {
                 <LoadingSpinner size="lg" />
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+              <table className="min-w-full">
+              <thead className="bg-surface-60 sticky top-0 z-10">
                 <tr>
-                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">
                     标题
                   </th>
-                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">
                     网址
                   </th>
-                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">
                     分类
                   </th>
-                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">
                     公开
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
+              <tbody className="" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
                 {filteredBookmarks.map((bookmark) => (
                   <tr 
                     key={bookmark.id} 
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                    className="hover:bg-menu-hover transition-colors cursor-pointer"
                     onContextMenu={(e) => handleBookmarkContextMenu(e, bookmark)}
                   >
                     <td className="px-4 py-3 sm:px-6">
@@ -600,7 +600,7 @@ const AdminWebsitesPage: React.FC = () => {
                         {bookmark.title}
                         <ExternalLink size={14} />
                       </div>
-                      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                      <div className="text-xs sm:text-sm text-content-secondary mt-1 line-clamp-1">
                         {bookmark.description}
                       </div>
                     </td>
@@ -615,7 +615,7 @@ const AdminWebsitesPage: React.FC = () => {
                       </button>
                     </td>
                     <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-content-secondary">
                         {getCategoryName(bookmark.category_id)}
                       </div>
                     </td>
@@ -630,8 +630,8 @@ const AdminWebsitesPage: React.FC = () => {
                 {!isLoading && filteredBookmarks.length === 0 && (
                   <tr>
                     <td colSpan={4} className="py-8 text-center">
-                      <List className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                      <span className="text-gray-600 dark:text-gray-400">暂无数据</span>
+                      <List className="w-10 h-10 text-content-secondary mx-auto mb-3" />
+                      <span className="text-content-secondary">暂无数据</span>
                     </td>
                   </tr>
                 )}
@@ -658,7 +658,7 @@ const AdminWebsitesPage: React.FC = () => {
       </div>
 
       {activeTab === 'bookmarks' && (
-        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="flex-shrink-0 px-4 py-3">
           <Pagination
             currentPage={page}
             total={total}
@@ -690,7 +690,7 @@ const AdminWebsitesPage: React.FC = () => {
               label="公开"
             />
             <div className="flex items-center gap-2">
-              <label htmlFor="order" className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              <label htmlFor="order" className="text-xs font-medium text-content-secondary">
                 排序
               </label>
               <input
@@ -699,12 +699,12 @@ const AdminWebsitesPage: React.FC = () => {
                 name="order"
                 value={bookmarkFormData.order}
                 onChange={handleBookmarkInputChange}
-                className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+                className="w-20 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs"
               />
             </div>
           </div>
           <div>
-            <label htmlFor="url" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="url" className="block text-xs font-medium text-content-secondary mb-1">
               网址
             </label>
             <div className="flex gap-2">
@@ -714,26 +714,26 @@ const AdminWebsitesPage: React.FC = () => {
                 name="url"
                 value={bookmarkFormData.url}
                 onChange={handleBookmarkInputChange}
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
                 required
               />
               <button
                 type="button"
                 onClick={fetchWebsiteInfo}
                 disabled={isFetchingWebsiteInfo}
-                className="px-3 py-1 border border-gray-200 dark:border-gray-500 rounded-md bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border border-content rounded-md bg-surface-secondary hover:bg-menu-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title="获取网站信息"
               >
                 {isFetchingWebsiteInfo ? (
                   <LoadingSpinner size="sm" />
                 ) : (
-                  <Download className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <Download className="w-4 h-4 text-content-secondary" />
                 )}
               </button>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-medium text-content-secondary mb-1">
               分类
             </label>
             <div className="flex gap-3">
@@ -741,19 +741,19 @@ const AdminWebsitesPage: React.FC = () => {
                 value={selectedMainCategory}
                 onChange={handleMainCategoryChange}
                 options={getMainCategories().map((category) => ({ value: category.id, label: category.name }))}
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
               />
               <Select
                 value={selectedSubCategory}
                 onChange={handleSubCategoryChange}
                 options={getSubCategories(selectedMainCategory).map((subCategory) => ({ value: subCategory.id, label: subCategory.name }))}
                 disabled={!selectedMainCategory}
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
               />
             </div>
           </div>
           <div>
-            <label htmlFor="title" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="title" className="block text-xs font-medium text-content-secondary mb-1">
               标题
             </label>
             <input
@@ -762,12 +762,12 @@ const AdminWebsitesPage: React.FC = () => {
               name="title"
               value={bookmarkFormData.title}
               onChange={handleBookmarkInputChange}
-              className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+              className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
               required
             />
           </div>
           <div>
-            <label htmlFor="description" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="description" className="block text-xs font-medium text-content-secondary mb-1">
               描述
             </label>
             <textarea
@@ -776,11 +776,11 @@ const AdminWebsitesPage: React.FC = () => {
               value={bookmarkFormData.description}
               onChange={handleBookmarkInputChange}
               rows={3}
-              className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm resize-none"
+              className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm resize-none"
             />
           </div>
           <div>
-            <label htmlFor="ico_url" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="ico_url" className="block text-xs font-medium text-content-secondary mb-1">
               图标 URL
             </label>
             <div className="flex items-center gap-3">
@@ -791,13 +791,13 @@ const AdminWebsitesPage: React.FC = () => {
                 value={bookmarkFormData.ico_url}
                 onChange={handleBookmarkInputChange}
                 placeholder="可选，网站图标 URL"
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
               />
               <CachedIcon
                 src={bookmarkFormData.ico_url || null}
                 alt="图标预览"
-                className="w-10 h-10 rounded-md object-cover border border-gray-200 dark:border-gray-500 bg-white dark:bg-gray-800 flex-shrink-0"
-                defaultIcon={<div className="w-10 h-10 flex items-center justify-center text-gray-500"><Globe className="w-5 h-5" /></div>}
+                className="w-10 h-10 rounded-md object-cover border border-content bg-surface flex-shrink-0"
+                defaultIcon={<div className="w-10 h-10 flex items-center justify-center text-content-secondary"><Globe className="w-5 h-5" /></div>}
               />
             </div>
           </div>
@@ -825,7 +825,7 @@ const AdminWebsitesPage: React.FC = () => {
               label="公开"
             />
             <div className="flex items-center gap-2">
-              <label htmlFor="edit-order" className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              <label htmlFor="edit-order" className="text-xs font-medium text-content-secondary">
                 排序
               </label>
               <input
@@ -834,12 +834,12 @@ const AdminWebsitesPage: React.FC = () => {
                 name="order"
                 value={bookmarkFormData.order}
                 onChange={handleBookmarkInputChange}
-                className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+                className="w-20 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs"
               />
             </div>
           </div>
           <div>
-            <label htmlFor="edit-url" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="edit-url" className="block text-xs font-medium text-content-secondary mb-1">
               网址
             </label>
             <div className="flex gap-2">
@@ -849,26 +849,26 @@ const AdminWebsitesPage: React.FC = () => {
                 name="url"
                 value={bookmarkFormData.url}
                 onChange={handleBookmarkInputChange}
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
                 required
               />
               <button
                 type="button"
                 onClick={fetchWebsiteInfo}
                 disabled={isFetchingWebsiteInfo}
-                className="px-3 py-1 border border-gray-200 dark:border-gray-500 rounded-md bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border border-content rounded-md bg-surface-secondary hover:bg-menu-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title="获取网站信息"
               >
                 {isFetchingWebsiteInfo ? (
                   <LoadingSpinner size="sm" />
                 ) : (
-                  <Download className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <Download className="w-4 h-4 text-content-secondary" />
                 )}
               </button>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-medium text-content-secondary mb-1">
               分类
             </label>
             <div className="flex gap-3">
@@ -876,19 +876,19 @@ const AdminWebsitesPage: React.FC = () => {
                 value={selectedMainCategory}
                 onChange={handleMainCategoryChange}
                 options={getMainCategories().map((category) => ({ value: category.id, label: category.name }))}
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
               />
               <Select
                 value={selectedSubCategory}
                 onChange={handleSubCategoryChange}
                 options={getSubCategories(selectedMainCategory).map((subCategory) => ({ value: subCategory.id, label: subCategory.name }))}
                 disabled={!selectedMainCategory}
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
               />
             </div>
           </div>
           <div>
-            <label htmlFor="edit-title" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="edit-title" className="block text-xs font-medium text-content-secondary mb-1">
               标题
             </label>
             <input
@@ -897,12 +897,12 @@ const AdminWebsitesPage: React.FC = () => {
               name="title"
               value={bookmarkFormData.title}
               onChange={handleBookmarkInputChange}
-              className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+              className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
               required
             />
           </div>
           <div>
-            <label htmlFor="edit-description" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="edit-description" className="block text-xs font-medium text-content-secondary mb-1">
               描述
             </label>
             <textarea
@@ -911,11 +911,11 @@ const AdminWebsitesPage: React.FC = () => {
               value={bookmarkFormData.description}
               onChange={handleBookmarkInputChange}
               rows={3}
-              className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm resize-none"
+              className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm resize-none"
             />
           </div>
           <div>
-            <label htmlFor="edit-ico_url" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="edit-ico_url" className="block text-xs font-medium text-content-secondary mb-1">
               图标 URL
             </label>
             <div className="flex items-center gap-3">
@@ -926,13 +926,13 @@ const AdminWebsitesPage: React.FC = () => {
                 value={bookmarkFormData.ico_url}
                 onChange={handleBookmarkInputChange}
                 placeholder="可选，网站图标 URL"
-                className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
               />
               <CachedIcon
                 src={bookmarkFormData.ico_url || null}
                 alt="图标预览"
-                className="w-10 h-10 rounded-md object-cover border border-gray-200 dark:border-gray-500 bg-white dark:bg-gray-800 flex-shrink-0"
-                defaultIcon={<div className="w-10 h-10 flex items-center justify-center text-gray-500"><Globe className="w-5 h-5" /></div>}
+                className="w-10 h-10 rounded-md object-cover border border-content bg-surface flex-shrink-0"
+                defaultIcon={<div className="w-10 h-10 flex items-center justify-center text-content-secondary"><Globe className="w-5 h-5" /></div>}
               />
             </div>
           </div>
@@ -949,15 +949,15 @@ const AdminWebsitesPage: React.FC = () => {
         size="sm"
       >
         {deleteType === 'bookmark' ? (
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-content-secondary">
             确定要删除网址 <span className="text-red-600 dark:text-red-400 font-medium">{deleteTargetName}</span> 吗？
           </p>
         ) : (
           <div className="space-y-2">
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-content-secondary">
               确定要删除分类 <span className="text-red-600 dark:text-red-400 font-medium">{deleteTargetName}</span> 吗？
             </p>
-            <p className="text-gray-500 dark:text-gray-400 text-xs">
+            <p className="text-content-secondary text-xs">
               删除后该分类下的网址将被移动到默认分类。
             </p>
           </div>

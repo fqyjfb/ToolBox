@@ -205,7 +205,7 @@ const TranslatePage: React.FC = () => {
           value={sourceLang}
           onChange={setSourceLang}
           options={languageOptions}
-          className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+          className="px-3 py-2 bg-surface border border-content rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
         />
 
         <button
@@ -213,8 +213,8 @@ const TranslatePage: React.FC = () => {
           disabled={sourceLang === 'auto' && targetLang === 'auto'}
           className={`p-2 rounded-lg transition-colors ${
             sourceLang === 'auto' && targetLang === 'auto'
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-              : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
+              ? 'bg-surface-secondary text-content-tertiary cursor-not-allowed dark:bg-surface dark:text-content-tertiary'
+              : 'bg-surface-secondary hover:bg-gray-200 text-gray-600 hover:text-gray-800 dark:bg-surface dark:hover:bg-menu-hover dark:text-content-secondary'
           }`}
           title="交换语言"
         >
@@ -225,7 +225,7 @@ const TranslatePage: React.FC = () => {
           value={targetLang}
           onChange={setTargetLang}
           options={targetLangOptions}
-          className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+          className="px-3 py-2 bg-surface border border-content rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
         />
 
         <button
@@ -245,13 +245,13 @@ const TranslatePage: React.FC = () => {
       </div>
 
       <div className="flex-1 flex gap-4 min-h-0">
-        <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 min-h-0">
-          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex-1 flex flex-col bg-surface rounded-lg shadow-sm min-h-0">
+          <div className="px-3 py-2 flex items-center justify-between">
+            <span className="text-xs text-content-secondary">
               {sourceInfo ? `${sourceInfo.type_desc} (${sourceInfo.type})` : '请输入文本'}
             </span>
             {sourceInfo?.pronounce && (
-              <span className="text-xs text-gray-400 dark:text-gray-500">{sourceInfo.pronounce}</span>
+              <span className="text-xs text-content-tertiary">{sourceInfo.pronounce}</span>
             )}
           </div>
           <textarea
@@ -261,18 +261,18 @@ const TranslatePage: React.FC = () => {
             placeholder="请输入要翻译的文本..."
             className="flex-1 p-3 resize-none focus:outline-none text-sm bg-transparent"
           />
-          <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-400 dark:text-gray-500">Ctrl+Enter 快捷翻译</p>
+          <div className="px-3 py-2">
+            <p className="text-xs text-content-tertiary">Ctrl+Enter 快捷翻译</p>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 min-h-0">
-          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex-1 flex flex-col bg-surface rounded-lg shadow-sm min-h-0">
+          <div className="px-3 py-2 flex items-center justify-between">
+            <span className="text-xs text-content-secondary">
               {targetInfo ? `${targetInfo.type_desc} (${targetInfo.type})` : '翻译结果'}
             </span>
             {targetInfo?.pronounce && (
-              <span className="text-xs text-gray-400 dark:text-gray-500">{targetInfo.pronounce}</span>
+              <span className="text-xs text-content-tertiary">{targetInfo.pronounce}</span>
             )}
           </div>
           <div className="flex-1 p-3 overflow-y-auto">
@@ -285,14 +285,14 @@ const TranslatePage: React.FC = () => {
             ) : outputText ? (
               <p className="text-sm whitespace-pre-wrap">{outputText}</p>
             ) : (
-              <p className="text-sm text-gray-400 dark:text-gray-500">翻译结果将显示在这里</p>
+              <p className="text-sm text-content-tertiary">翻译结果将显示在这里</p>
             )}
           </div>
           {outputText && (
-            <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-3 py-2">
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-content-secondary hover:bg-menu-hover rounded transition-colors"
               >
                 {copied ? (
                   <>

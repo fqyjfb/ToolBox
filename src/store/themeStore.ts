@@ -1,19 +1,41 @@
 import { create } from 'zustand';
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
+import {
+  CUSTOM_THEME_STORAGE_FULL,
+  CustomTheme,
+  clampPercent,
+  getDefaultTheme,
+  withThemeDefaults,
+} from '../types/theme';
+import { CUSTOM_THEME_EFFECT_VARS, CUSTOM_THEME_VARS } from '../constants/theme';
 
 interface ThemeStore {
+  /** 明暗基色（true = dark），自定义模式下仍然有效：主进程 / 托盘 / 悬浮球只感知它 */
   isDark: boolean;
+  /** 当前是否处于自定义主题模式 */
+  isCustomTheme: boolean;
+  /** 最近一次保存的自定义主题配置；退出自定义模式时保留，便于再次启用 */
+  customTheme: CustomTheme | null;
+  /** 主题变更计数器，每次主题状态变更时递增；用于强制订阅组件重渲染 */
+  themeKey: number;
   toggleTheme: () => void;
+  /** 切换到明暗预设（会退出自定义模式，但保留 customTheme 配置） */
   setTheme: (dark: boolean | 'light' | 'dark') => void;
+  /** 仅切换明暗基色，不改变自定义模式的激活状态（预设模板跨基色时使用） */
+  setBaseTheme: (dark: boolean | 'light' | 'dark') => void;
+  /** 保存并立即激活自定义主题 */
+  setCustomTheme: (theme: CustomTheme) => void;
+  /** 删除自定义主题配置并切回当前明暗预设 */
+  deleteCustomTheme: () => void;
 }
 
+const toIsDark = (dark: boolean | 'light' | 'dark'): boolean =>
+  typeof dark === 'boolean' ? dark : dark === 'dark';
+
 const getInitialTheme = (): boolean => {
-  const storedTheme = localStorageService.getString(STORAGE_KEYS.THEME);
-  if (storedTheme === 'dark') {
-    return true;
-  }
-  const legacyTheme = localStorageService.getString('theme-isDark');
-  return legacyTheme ? JSON.parse(legacyTheme) : false;
+  if (localStorageService.getString(STORAGE_KEYS.THEME) === 'dark') return true;
+  // 兼容旧版本写入的 theme-isDark
+  return localStorageService.getString('theme-isDark') === 'true';
 };
 
 // 已同步给主进程的主题值（null = 尚未同步过）
@@ -30,28 +52,121 @@ const syncThemeToMain = (isDark: boolean) => {
   }
 };
 
-const applyTheme = (isDark: boolean) => {
-  localStorageService.setString(STORAGE_KEYS.THEME, isDark ? 'dark' : 'light');
-  if (isDark) {
-    document.documentElement.classList.add('dark');
-    document.body.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-    document.body.classList.remove('dark');
+const applyBaseClass = (isDark: boolean) => {
+  document.documentElement.classList.toggle('dark', isDark);
+  document.body.classList.toggle('dark', isDark);
+};
+
+const persistMode = (isCustomTheme: boolean, isDark: boolean) => {
+  localStorageService.setString(
+    STORAGE_KEYS.THEME,
+    isCustomTheme ? 'custom' : isDark ? 'dark' : 'light',
+  );
+};
+
+const clearCustomThemeStyles = () => {
+  const root = document.documentElement;
+  for (const prop of Array.from(root.style)) {
+    if (prop.startsWith('--ct-')) root.style.removeProperty(prop);
   }
+  root.removeAttribute('data-custom-theme');
+  document.body.removeAttribute('data-custom-bg');
+};
+
+/** 向 :root 注入全部 --ct-* 变量并激活覆盖层；未配置的可选字段回退到当前基色默认值 */
+const applyCustomTheme = (theme: CustomTheme, isDark: boolean) => {
+  const base = getDefaultTheme(isDark);
+  const root = document.documentElement;
+
+  (Object.keys(CUSTOM_THEME_VARS) as (keyof typeof CUSTOM_THEME_VARS)[]).forEach((key) => {
+    // 绝不注入空字符串：空值会让对应的 var() 解析失败，整条声明失效
+    root.style.setProperty(CUSTOM_THEME_VARS[key], theme[key]?.trim() || base[key] || '');
+  });
+
+  root.style.setProperty(
+    CUSTOM_THEME_EFFECT_VARS.bgImage,
+    theme.bgImage ? `url("${theme.bgImage}")` : 'none',
+  );
+  root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgOpacity, String(clampPercent(theme.bgOpacity, 100) / 100));
+  root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgSize, theme.bgSize);
+  root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgPosition, theme.bgPosition);
+  root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgRepeat, theme.bgRepeat);
+  // color-mix() 的百分比必须带 %
+  root.style.setProperty(
+    CUSTOM_THEME_EFFECT_VARS.surfaceOpacity,
+    `${clampPercent(theme.surfaceOpacity, 100)}%`,
+  );
+
+  root.setAttribute('data-custom-theme', 'active');
+  document.body.setAttribute('data-custom-bg', 'true');
+};
+
+/** 切回明暗预设：清理自定义注入，但保留已保存的配置，允许用户再次启用 */
+const switchToPreset = (isDark: boolean) => {
+  clearCustomThemeStyles();
+  applyBaseClass(isDark);
+  persistMode(false, isDark);
   syncThemeToMain(isDark);
 };
 
-export const useThemeStore = create<ThemeStore>((set) => ({
-  isDark: getInitialTheme(),
+// ── 模块级初始化（先于 React 首帧执行，避免主题闪烁）──
+const initialIsDark = getInitialTheme();
+applyBaseClass(initialIsDark);
+
+const storedCustomTheme = localStorageService.get<CustomTheme | null>(STORAGE_KEYS.CUSTOM_THEME, null);
+const initialCustomTheme = storedCustomTheme ? withThemeDefaults(storedCustomTheme, initialIsDark) : null;
+const initialIsCustom =
+  initialCustomTheme !== null && localStorageService.getString(STORAGE_KEYS.THEME) === 'custom';
+
+if (initialIsCustom && initialCustomTheme) {
+  applyCustomTheme(initialCustomTheme, initialIsDark);
+}
+
+export const useThemeStore = create<ThemeStore>((set, get) => ({
+  isDark: initialIsDark,
+  isCustomTheme: initialIsCustom,
+  customTheme: initialCustomTheme,
+  // 初始 themeKey：自定义模式启用时为 1（让订阅组件能感知到初始自定义状态），否则为 0
+  themeKey: initialIsCustom ? 1 : 0,
+
   toggleTheme: () => set((state) => {
-    const newTheme = !state.isDark;
-    applyTheme(newTheme);
-    return { isDark: newTheme };
+    const isDark = !state.isDark;
+    switchToPreset(isDark);
+    return { isDark, isCustomTheme: false, themeKey: state.themeKey + 1 };
   }),
+
   setTheme: (dark) => {
-    const isDark = typeof dark === 'boolean' ? dark : dark === 'dark';
-    applyTheme(isDark);
-    set({ isDark });
+    const isDark = toIsDark(dark);
+    switchToPreset(isDark);
+    set({ isDark, isCustomTheme: false, themeKey: get().themeKey + 1 });
+  },
+
+  setBaseTheme: (dark) => {
+    const isDark = toIsDark(dark);
+    const { isDark: currentIsDark, isCustomTheme, customTheme } = get();
+    if (isDark === currentIsDark) return;
+
+    applyBaseClass(isDark);
+    syncThemeToMain(isDark);
+    // 未配置的可选字段按新基色重新兜底
+    if (isCustomTheme && customTheme) applyCustomTheme(customTheme, isDark);
+    persistMode(isCustomTheme, isDark);
+    set({ isDark, themeKey: get().themeKey + 1 });
+  },
+
+  setCustomTheme: (theme) => {
+    if (!localStorageService.set(STORAGE_KEYS.CUSTOM_THEME, theme)) {
+      throw new Error(CUSTOM_THEME_STORAGE_FULL);
+    }
+    const isDark = get().isDark;
+    applyCustomTheme(theme, isDark);
+    persistMode(true, isDark);
+    set({ customTheme: theme, isCustomTheme: true, themeKey: get().themeKey + 1 });
+  },
+
+  deleteCustomTheme: () => {
+    localStorageService.remove(STORAGE_KEYS.CUSTOM_THEME);
+    switchToPreset(get().isDark);
+    set({ customTheme: null, isCustomTheme: false, themeKey: get().themeKey + 1 });
   },
 }));

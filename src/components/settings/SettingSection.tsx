@@ -9,8 +9,8 @@ interface SettingSectionProps {
 
 const SettingSection: React.FC<SettingSectionProps> = ({ title, subtitle, icon, children }) => {
   return (
-    <div className="border-b border-border">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 settings-section-header">
+    <div className="">
+      <div className="flex items-center justify-between px-4 py-3 settings-section-header">
         <div className="flex items-center gap-2">
           {icon && <span className="text-primary flex-shrink-0">{icon}</span>}
           <div>
@@ -21,7 +21,7 @@ const SettingSection: React.FC<SettingSectionProps> = ({ title, subtitle, icon, 
           </div>
         </div>
       </div>
-      <div className="divide-y divide-border">
+      <div className="">
         {children}
       </div>
     </div>

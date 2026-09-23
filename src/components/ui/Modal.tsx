@@ -90,21 +90,20 @@ const Modal: React.FC<ModalProps> = ({
         ref={modalRef}
         className={`
           relative w-full ${sizeClasses[size]} mx-4
-          bg-white dark:bg-gray-800 rounded-lg shadow-lg
-          border border-gray-200 dark:border-gray-700
+          bg-surface rounded-lg shadow-lg
           overflow-hidden
           animate-[slideIn_0.25s_cubic-bezier(0.175,0.885,0.32,1.275)]
           ${className}
         `}
       >
         {title && (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+          <div className="flex items-center justify-between px-4 py-3 bg-surface-60">
+            <h2 className="text-sm font-semibold text-content-primary">
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-md text-content-secondary hover:text-content-primary hover:bg-menu-hover transition-colors"
             >
               <X size={16} />
             </button>
@@ -114,11 +113,11 @@ const Modal: React.FC<ModalProps> = ({
           {children}
         </div>
         {(showCancel || showConfirm) && (
-          <div className="flex items-center justify-center gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <div className="flex items-center justify-center gap-3 px-4 py-3 bg-surface-40">
             {showCancel && (
               <button
                 onClick={onClose}
-                className="px-4 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="px-4 py-1.5 text-sm font-medium text-content-secondary bg-surface-secondary rounded-md hover:bg-menu-hover transition-colors"
               >
                 {cancelText}
               </button>

@@ -72,7 +72,7 @@ const Select: React.FC<SelectProps> = ({
   const dropdown = isOpen ? (
     <div
       ref={dropdownRef}
-      className="fixed bg-white dark:bg-gray-800 rounded-md shadow-lg z-[1000]"
+      className="fixed bg-surface rounded-md shadow-lg z-[1000]"
       style={{
         left: triggerRef.current ? triggerRef.current.getBoundingClientRect().left + dropdownLeft : 0,
         top: triggerRef.current ? triggerRef.current.getBoundingClientRect().bottom + dropdownOffset : 0,
@@ -90,8 +90,8 @@ const Select: React.FC<SelectProps> = ({
             }}
             className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${
               option.value === value
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                ? 'bg-surface-secondary text-content-primary'
+                : 'text-content-primary hover:bg-menu-hover'
             }`}
           >
             {option.label}
@@ -109,12 +109,12 @@ const Select: React.FC<SelectProps> = ({
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
-          className={`w-full flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none whitespace-nowrap border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white ${dense ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'} ${className}`}
+          className={`w-full flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none whitespace-nowrap rounded-lg ${dense ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'} ${className}`}
         >
-          <span className={`truncate text-left ${selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+          <span className={`truncate text-left ${selectedOption ? 'text-content-primary' : 'text-content-secondary'}`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
-          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 ml-1 ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3.5 h-3.5 text-content-secondary transition-transform flex-shrink-0 ml-1 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
       </div>
       {createPortal(dropdown, document.body)}

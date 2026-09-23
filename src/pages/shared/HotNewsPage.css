@@ -1,7 +1,9 @@
 /* loader / dot 动画样式已在 theme.css 中定义，此处不再重复 */
 
 .hot-news-content {
-  min-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .refresh-btn {
@@ -60,13 +62,11 @@
   margin-bottom: var(--space-2);
 }
 
-.hot-list-container {
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-}
-
 .hot-list {
-  max-height: calc(100vh - 200px);
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
   overflow-y: auto;
   padding-right: 0.25rem;
 }
@@ -112,7 +112,7 @@
 
 .hot-masonry-grid .hot-card {
   break-inside: avoid;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .hot-list-view {
@@ -334,7 +334,7 @@
   justify-content: space-between;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-lg);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
   gap: var(--space-3);
 }
 

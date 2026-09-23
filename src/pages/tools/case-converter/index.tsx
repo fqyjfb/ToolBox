@@ -79,27 +79,27 @@ const CaseConverterPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 mb-4">
-        <ArrowUpDown className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">大小写转换工具</h2>
+        <ArrowUpDown className="w-6 h-6 text-content-secondary" />
+        <h2 className="text-lg font-semibold text-content-primary">大小写转换工具</h2>
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">输入文本</label>
+        <label className="block text-sm text-content-secondary mb-2">输入文本</label>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 resize-none outline-none focus:border-blue-500"
+          className="w-full px-4 py-3 border border-content rounded-lg bg-surface text-content-primary resize-none outline-none focus:border-blue-500"
           rows={3}
           placeholder="输入要转换的文本..."
         />
       </div>
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-auto">
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-auto">
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {caseTypes.map((caseType) => (
-            <div key={caseType.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-              <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">{caseType.name}</div>
-              <div className="bg-white dark:bg-gray-600 rounded-lg px-3 py-2 mb-2 font-mono text-sm text-gray-800 dark:text-gray-200 break-all">
+            <div key={caseType.id} className="bg-surface-secondary rounded-lg p-3">
+              <div className="text-sm text-content-secondary mb-2">{caseType.name}</div>
+              <div className="bg-white dark:bg-menu-hover rounded-lg px-3 py-2 mb-2 font-mono text-sm text-content-primary break-all">
                 {results[caseType.id] || ''}
               </div>
               <button

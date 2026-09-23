@@ -429,7 +429,7 @@ const TodoManagerPage: React.FC = () => {
             <button
               type="button"
               onClick={openCreateCategoryModal}
-              className="border border-border text-text-secondary px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-bg-tertiary flex items-center gap-1.5"
+              className="bg-surface-secondary text-text-secondary dark:bg-surface dark:text-content-secondary px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-menu-hover flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               新建分类
@@ -437,7 +437,7 @@ const TodoManagerPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex gap-4 border-b border-border mb-4">
+        <div className="flex gap-4 mb-4">
           {TODO_TABS.map(tab => (
             <button
               key={tab.key}

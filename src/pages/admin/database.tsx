@@ -96,25 +96,25 @@ const DatabasePage: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">数据管理</h1>
+        <h1 className="text-lg font-semibold text-content-primary">数据管理</h1>
       </div>
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-content-secondary">
             备份整个数据库的数据，支持导出为SQL或JSON格式。恢复功能将从备份文件中恢复所有数据。
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">数据备份</h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            <div className="rounded-lg p-4">
+              <h4 className="text-sm font-medium text-content-primary mb-3">数据备份</h4>
+              <p className="text-xs text-content-secondary mb-4">
                 导出所有表的数据到本地文件
               </p>
               <div className="space-y-2">
                 <button
                   onClick={handleExportSQL}
                   disabled={state.isLoading}
-                  className="w-full px-2 py-1 bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
+                  className="px-2 py-1 bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
                 >
                   <Download size={14} />
                   <span>导出为SQL文件</span>
@@ -122,7 +122,7 @@ const DatabasePage: React.FC = () => {
                 <button
                   onClick={handleExportJSON}
                   disabled={state.isLoading}
-                  className="w-full px-2 py-1 bg-gray-600 dark:bg-gray-700 text-white rounded-md hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
+                  className="px-2 py-1 border border-content text-content-primary bg-surface rounded-md hover:bg-menu-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
                 >
                   <Download size={14} />
                   <span>导出为JSON文件</span>
@@ -130,9 +130,9 @@ const DatabasePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">数据恢复</h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            <div className="rounded-lg p-4">
+              <h4 className="text-sm font-medium text-content-primary mb-3">数据恢复</h4>
+              <p className="text-xs text-content-secondary mb-4">
                 从备份文件恢复数据，将覆盖现有数据
               </p>
               <div className="space-y-2">
@@ -146,12 +146,12 @@ const DatabasePage: React.FC = () => {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={state.isLoading}
-                  className="w-full px-2 py-1 bg-amber-600 dark:bg-amber-700 text-white rounded-md hover:bg-amber-700 dark:hover:bg-amber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
+                  className="px-2 py-1 border border-warning text-warning bg-surface rounded-md hover:bg-warning hover:text-button-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
                 >
                   <Upload size={14} />
                   <span>选择备份文件</span>
                 </button>
-                <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                <p className="text-xs text-content-secondary text-center">
                   支持 .json 和 .sql 格式
                 </p>
               </div>
@@ -174,7 +174,7 @@ const DatabasePage: React.FC = () => {
           onConfirm={handleRestore}
           confirmDisabled={state.isLoading}
         >
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-content-secondary">
             恢复数据将覆盖当前数据库中的所有现有数据，此操作不可撤销。是否继续？
           </p>
         </Modal>

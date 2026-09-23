@@ -48,8 +48,8 @@ const SortableCategoryButton: React.FC<{
         onContextMenu={onContextMenu}
         className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex items-center gap-1 ${
           isSelected
-            ? 'bg-gray-800 text-white'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            ? 'bg-primary text-button-text'
+            : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
         }`}
       >
         <Tag size={12} />
@@ -505,9 +505,9 @@ const QuickReplyPage: React.FC = () => {
               <button
                 onClick={() => setSelectedCategory(null)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                  selectedCategory === null 
-                    ? 'bg-gray-800 text-white' 
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  selectedCategory === null
+                    ? 'bg-primary text-button-text'
+                    : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
                 }`}
               >
                 全部
@@ -533,7 +533,7 @@ const QuickReplyPage: React.FC = () => {
               </DndContext>
               <button
                 onClick={() => setShowAddCategoryModal(true)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="p-1.5 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary transition-colors"
                 title="添加分类"
               >
                 <Plus size={16} />
@@ -542,13 +542,13 @@ const QuickReplyPage: React.FC = () => {
             <div className="flex gap-2">
               <button 
                 onClick={handleQuickPaste}
-                className="p-1.5 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md transition-colors"
+                className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
               >
                 <ClipboardPaste className="w-3.5 h-3.5" />
               </button>
               <button 
                 onClick={() => setShowAddQuickReplyModal(true)}
-                className="p-1.5 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md transition-colors"
+                className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -563,14 +563,14 @@ const QuickReplyPage: React.FC = () => {
             </div>
           ) : quickReplies.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Clipboard className="w-10 h-10 text-gray-400 mb-3" />
-              <p className="text-gray-500 dark:text-gray-400 text-sm">暂无快捷回复</p>
+              <Clipboard className="w-10 h-10 text-content-tertiary mb-3" />
+              <p className="text-content-secondary text-sm">暂无快捷回复</p>
             </div>
           ) : (
             quickReplies.map((quickReply) => (
               <div 
                 key={quickReply.id} 
-                className="rounded-md p-3 border border-gray-200 dark:border-gray-600"
+                className="rounded-md p-3"
                 style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
                 onContextMenu={(e) => handleContextMenu(e, 'item', quickReply.id)}
               >
@@ -581,7 +581,7 @@ const QuickReplyPage: React.FC = () => {
                   >
                     <Clipboard className="w-4 h-4" />
                   </button>
-                  <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words text-sm flex-1">
+                  <p className="text-content-secondary whitespace-pre-wrap break-words text-sm flex-1">
                     {quickReply.content.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
                       if (part.match(/^https?:\/\/[^\s]+$/)) {
                         return (
@@ -606,7 +606,7 @@ const QuickReplyPage: React.FC = () => {
                       {categories.find(c => c.id === quickReply.category_id)?.name}
                     </span>
                   )}
-                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                  <span className="text-xs text-content-secondary ml-auto">
                     {new Date(quickReply.created_at).toLocaleDateString()}
                   </span>
                 </div>
@@ -615,7 +615,7 @@ const QuickReplyPage: React.FC = () => {
           )}
         </div>
         
-        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex-shrink-0">
           <Pagination
             currentPage={currentPage}
             total={totalItems}
@@ -646,7 +646,7 @@ const QuickReplyPage: React.FC = () => {
             />
             <button
               onClick={handlePasteFromClipboard}
-              className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md"
+              className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 dark:text-content-tertiary dark:hover:text-gray-200 rounded-md"
             >
               <ClipboardPaste className="w-4 h-4" />
             </button>

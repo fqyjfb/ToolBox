@@ -94,7 +94,7 @@ const TodoCard: React.FC<TodoCardProps> = ({ board, handlers, activeTab }) => {
 
   return (
     <div
-      className="rounded-xl p-4 flex flex-col h-fit bg-card border border-border shadow-sm"
+      className="rounded-xl p-4 flex flex-col h-fit bg-card-50"
       onContextMenu={(e) => !board.isUncategorized && handlers.onContextMenu(e, 'category', board.id)}
     >
       <div className="flex items-center justify-between mb-3">

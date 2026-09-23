@@ -311,8 +311,8 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
           </div>
         ) : credentials.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="w-12 h-12 rounded-full bg-surface-secondary flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-content-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <polyline points="14 2 14 8 20 8"/>
                 <line x1="16" y1="13" x2="8" y2="13"/>
@@ -320,46 +320,45 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
                 <polyline points="10 9 9 9 8 9"/>
               </svg>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">暂无证件信息</p>
+            <p className="text-content-secondary text-sm">暂无证件信息</p>
           </div>
         ) : (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <div className="rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800">
+              <thead className="bg-surface-secondary dark:bg-content-primary">
                 <tr>
-                  {visibleColumns.includes('certificate_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">证件名称</th>}
-                  {visibleColumns.includes('id_card_number') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">证件号码</th>}
-                  {visibleColumns.includes('gender') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">性别</th>}
-                  {visibleColumns.includes('birth_date') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">出生日期</th>}
-                  {visibleColumns.includes('id_card_address') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">身份证地址</th>}
-                  {visibleColumns.includes('bank_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">开户行</th>}
-                  {visibleColumns.includes('bank_account') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">银行账号</th>}
-                  {visibleColumns.includes('phone') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">手机号</th>}
-                  {visibleColumns.includes('certificate_status') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">状态</th>}
-                  {visibleColumns.includes('certificate_remark') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">备注</th>}
+                  {visibleColumns.includes('certificate_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">证件名称</th>}
+                  {visibleColumns.includes('id_card_number') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">证件号码</th>}
+                  {visibleColumns.includes('gender') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">性别</th>}
+                  {visibleColumns.includes('birth_date') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">出生日期</th>}
+                  {visibleColumns.includes('id_card_address') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">身份证地址</th>}
+                  {visibleColumns.includes('bank_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">开户行</th>}
+                  {visibleColumns.includes('bank_account') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">银行账号</th>}
+                  {visibleColumns.includes('phone') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">手机号</th>}
+                  {visibleColumns.includes('certificate_status') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">状态</th>}
+                  {visibleColumns.includes('certificate_remark') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">备注</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody>
                 {credentials.map((credential) => (
                   <tr
                     key={credential.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
+                    className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                     onClick={() => handleRowClick(credential)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', credential.id)}
                   >
                     {visibleColumns.includes('certificate_name') && (
                       <td className="px-4 py-3">
-                        <span className="font-medium text-sm text-gray-900 dark:text-white">{credential.certificate_name}</span>
+                        <span className="font-medium text-sm text-content-primary dark:text-white">{credential.certificate_name}</span>
                       </td>
                     )}
                     {visibleColumns.includes('id_card_number') && (
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{credential.id_card_number || '-'}</span>
+                          <span className="text-sm text-content-secondary truncate max-w-[150px]">{credential.id_card_number || '-'}</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleCopyText(credential.id_card_number || '', '身份证号已复制'); }}
-                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
                             title="复制身份证号"
                           >
                             <Copy className="w-3 h-3" />
@@ -369,32 +368,32 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
                     )}
                     {visibleColumns.includes('gender') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{credential.gender || '-'}</span>
+                        <span className="text-sm text-content-secondary">{credential.gender || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('birth_date') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{credential.birth_date || '-'}</span>
+                        <span className="text-sm text-content-secondary">{credential.birth_date || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('id_card_address') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{credential.id_card_address || '-'}</span>
+                        <span className="text-sm text-content-secondary truncate max-w-[150px]">{credential.id_card_address || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('bank_name') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{credential.bank_name || '-'}</span>
+                        <span className="text-sm text-content-secondary">{credential.bank_name || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('bank_account') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{credential.bank_account || '-'}</span>
+                        <span className="text-sm text-content-secondary truncate max-w-[150px]">{credential.bank_account || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('phone') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{credential.phone || '-'}</span>
+                        <span className="text-sm text-content-secondary">{credential.phone || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('certificate_status') && (
@@ -410,7 +409,7 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
                     )}
                     {visibleColumns.includes('certificate_remark') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-w-[200px]">{credential.certificate_remark || '-'}</span>
+                        <span className="text-sm text-content-secondary whitespace-pre-wrap break-words max-w-[200px]">{credential.certificate_remark || '-'}</span>
                       </td>
                     )}
                   </tr>

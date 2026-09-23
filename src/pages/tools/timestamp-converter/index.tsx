@@ -117,8 +117,8 @@ const TimestampConverterPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 mb-4">
-        <Clock className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Unix 时间戳转换</h2>
+        <Clock className="w-6 h-6 text-content-secondary" />
+        <h2 className="text-lg font-semibold text-content-primary">Unix 时间戳转换</h2>
       </div>
 
       <div className="bg-gradient-to-r from-pink-500 to-red-500 rounded-lg p-4 mb-4 text-white">
@@ -128,10 +128,10 @@ const TimestampConverterPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-auto">
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-auto">
         <div className="p-4">
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">时间戳转日期时间</h3>
+            <h3 className="text-sm font-semibold text-content-primary mb-3">时间戳转日期时间</h3>
             <div className="flex gap-2 mb-4">
               <input
                 type="number"
@@ -139,7 +139,7 @@ const TimestampConverterPage: React.FC = () => {
                 onChange={(e) => setTimestampInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && convertToDate()}
                 placeholder="输入 Unix 时间戳 (秒或毫秒)"
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500"
+                className="flex-1 px-4 py-2 border border-content rounded-lg bg-surface text-content-primary focus:outline-none focus:border-blue-500"
               />
               <button
                 onClick={convertToDate}
@@ -153,60 +153,60 @@ const TimestampConverterPage: React.FC = () => {
             <div className="flex flex-wrap gap-2 mb-4">
               <button
                 onClick={() => setTimestamp(Math.floor(Date.now() / 1000))}
-                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                className="px-3 py-1.5 bg-surface-secondary text-content-primary rounded-lg hover:bg-menu-hover transition-colors text-sm"
               >
                 当前时间
               </button>
               <button
                 onClick={() => setTimestamp(0)}
-                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                className="px-3 py-1.5 bg-surface-secondary text-content-primary rounded-lg hover:bg-menu-hover transition-colors text-sm"
               >
                 Unix 纪元
               </button>
               <button
                 onClick={() => setTimestamp(Math.floor(Date.now() / 1000) + 86400)}
-                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                className="px-3 py-1.5 bg-surface-secondary text-content-primary rounded-lg hover:bg-menu-hover transition-colors text-sm"
               >
                 明天
               </button>
               <button
                 onClick={() => setTimestamp(Math.floor(Date.now() / 1000) - 86400)}
-                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                className="px-3 py-1.5 bg-surface-secondary text-content-primary rounded-lg hover:bg-menu-hover transition-colors text-sm"
               >
                 昨天
               </button>
             </div>
 
             {dateResult.length > 0 ? (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+              <div className="bg-surface-secondary rounded-lg p-3">
                 {dateResult.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600 last:border-0">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{item.label}</span>
+                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-content last:border-0">
+                    <span className="text-sm text-content-secondary">{item.label}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-gray-800 dark:text-gray-200">{item.value}</span>
+                      <span className="text-sm font-mono text-content-primary">{item.value}</span>
                       <button
                         onClick={() => handleCopy(item.value)}
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                        className="p-1 hover:bg-menu-hover rounded transition-colors"
                       >
-                        <Copy className="w-3 h-3 text-gray-500" />
+                        <Copy className="w-3 h-3 text-content-tertiary" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center text-gray-400 py-4">输入时间戳查看转换结果</div>
+              <div className="text-center text-content-tertiary py-4">输入时间戳查看转换结果</div>
             )}
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">日期时间转时间戳</h3>
+            <h3 className="text-sm font-semibold text-content-primary mb-3">日期时间转时间戳</h3>
             <div className="flex gap-2 mb-4">
               <input
                 type="datetime-local"
                 value={datetimeInput}
                 onChange={(e) => setDatetimeInput(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500"
+                className="flex-1 px-4 py-2 border border-content rounded-lg bg-surface text-content-primary focus:outline-none focus:border-blue-500"
               />
               <button
                 onClick={convertToTimestamp}
@@ -217,7 +217,7 @@ const TimestampConverterPage: React.FC = () => {
               </button>
               <button
                 onClick={setCurrentDatetime}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
                 当前
@@ -225,24 +225,24 @@ const TimestampConverterPage: React.FC = () => {
             </div>
 
             {timestampResult.length > 0 ? (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+              <div className="bg-surface-secondary rounded-lg p-3">
                 {timestampResult.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600 last:border-0">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{item.label}</span>
+                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-content last:border-0">
+                    <span className="text-sm text-content-secondary">{item.label}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-gray-800 dark:text-gray-200">{item.value}</span>
+                      <span className="text-sm font-mono text-content-primary">{item.value}</span>
                       <button
                         onClick={() => handleCopy(item.value)}
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                        className="p-1 hover:bg-menu-hover rounded transition-colors"
                       >
-                        <Copy className="w-3 h-3 text-gray-500" />
+                        <Copy className="w-3 h-3 text-content-tertiary" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center text-gray-400 py-4">选择日期时间查看转换结果</div>
+              <div className="text-center text-content-tertiary py-4">选择日期时间查看转换结果</div>
             )}
           </div>
         </div>

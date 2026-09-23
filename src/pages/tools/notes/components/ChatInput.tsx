@@ -47,11 +47,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
 
   return (
     <div className="flex justify-center px-3 py-2">
-      <div className="w-full max-w-[720px] rounded border border-gray-300 bg-gray-50 transition-colors focus-within:border-primary dark:border-gray-600 dark:bg-gray-800">
+      <div className="w-full max-w-[720px] rounded border border-gray-300 bg-surface-secondary transition-colors focus-within:border-primary dark:border-content dark:bg-content-primary">
         <textarea
           ref={textareaRef}
           rows={1}
-          className="block w-full resize-none overflow-y-auto bg-transparent px-2 pt-1.5 text-xs leading-relaxed text-gray-900 placeholder-gray-400 scrollbar-thin focus:outline-none dark:text-white"
+          className="block w-full resize-none overflow-y-auto bg-transparent px-2 pt-1.5 text-xs leading-relaxed text-content-primary placeholder-gray-400 scrollbar-thin focus:outline-none dark:text-white"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}

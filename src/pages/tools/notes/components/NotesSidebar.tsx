@@ -57,7 +57,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
 
   return (
     <aside
-      className="flex h-full w-48 flex-shrink-0 flex-col bg-white/60 dark:bg-gray-900/40"
+      className="flex h-full w-48 flex-shrink-0 flex-col bg-surface-secondary dark:bg-content-primary"
       onDragOver={ix.handleAsideDragOver}
       onDrop={ix.handleAsideDrop}
     >
@@ -121,7 +121,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
       />
       <div
         ref={containerRef}
-        className={`flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide border-t border-gray-100 dark:border-gray-800 transition-colors ${
+        className={`flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide transition-colors ${
           ix.treeAreaDragOver ? 'bg-blue-50 ring-2 ring-inset ring-blue-500/60 dark:bg-blue-500/10' : ''
         }`}
         onContextMenu={(e) => {
@@ -133,7 +133,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
         onDrop={ix.handleTreeAreaDrop}
       >
         {filteredTree.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-8 text-content-tertiary">
             <FolderOpen className="mb-2 h-12 w-12" />
             <span className="text-sm">暂无笔记</span>
             <span className="text-xs">

@@ -303,34 +303,33 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
           </div>
         ) : emails.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="w-12 h-12 rounded-full bg-surface-secondary flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-content-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                 <polyline points="22,6 12,13 2,6"/>
               </svg>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">暂无邮箱账号</p>
+            <p className="text-content-secondary text-sm">暂无邮箱账号</p>
           </div>
         ) : (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <div className="rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800">
+              <thead className="bg-surface-secondary dark:bg-content-primary">
                 <tr>
-                  {visibleColumns.includes('platform') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台</th>}
-                  {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>}
-                  {visibleColumns.includes('phone') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">手机号</th>}
-                  {visibleColumns.includes('remark') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">备注</th>}
-                  {visibleColumns.includes('password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">密码</th>}
-                  {visibleColumns.includes('verification_info') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">验证信息</th>}
+                  {visibleColumns.includes('platform') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">平台</th>}
+                  {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">邮箱</th>}
+                  {visibleColumns.includes('phone') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">手机号</th>}
+                  {visibleColumns.includes('remark') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">备注</th>}
+                  {visibleColumns.includes('password') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">密码</th>}
+                  {visibleColumns.includes('verification_info') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">验证信息</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody>
                 {emails.map((email) => {
                   const platform = getEmailPlatform(email.email);
                   return (<tr
                       key={email.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                      style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
+                      className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                       onClick={() => handleRowClick(email)}
                       onContextMenu={(e) => handleContextMenu(e, 'item', email.id)}
                     >
@@ -345,10 +344,10 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
                       {visibleColumns.includes('email') && (
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm text-gray-900 dark:text-white">{email.email}</span>
+                            <span className="font-medium text-sm text-content-primary dark:text-white">{email.email}</span>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleCopyText(email.email, '邮箱已复制'); }}
-                              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
                               title="复制邮箱"
                             >
                               <Copy className="w-3 h-3" />
@@ -358,21 +357,21 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
                       )}
                       {visibleColumns.includes('phone') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-900 dark:text-white">{email.phone || '-'}</span>
+                          <span className="text-sm text-content-primary dark:text-white">{email.phone || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('remark') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-w-[200px]" title={email.remark}>{email.remark || '-'}</span>
+                          <span className="text-sm text-content-secondary whitespace-pre-wrap break-words max-w-[200px]" title={email.remark}>{email.remark || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('password') && (
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">******</span>
+                            <span className="text-sm text-content-secondary">******</span>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleCopyText(email.password, '密码已复制'); }}
-                              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
                               title="复制密码"
                             >
                               <Copy className="w-3 h-3" />
@@ -382,7 +381,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
                       )}
                       {visibleColumns.includes('verification_info') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{email.verification_info || '-'}</span>
+                          <span className="text-sm text-content-secondary truncate max-w-[150px]">{email.verification_info || '-'}</span>
                         </td>
                       )}
                     </tr>);

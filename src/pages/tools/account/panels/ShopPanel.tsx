@@ -317,44 +317,43 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
           </div>
         ) : shops.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="w-12 h-12 rounded-full bg-surface-secondary flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-content-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
               </svg>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">暂无店铺信息</p>
+            <p className="text-content-secondary text-sm">暂无店铺信息</p>
           </div>
         ) : (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <div className="rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800">
+              <thead className="bg-surface-secondary dark:bg-content-primary">
                 <tr>
-                  {visibleColumns.includes('platform') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">平台</th>}
-                  {visibleColumns.includes('shop_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">店铺名称</th>}
-                  {visibleColumns.includes('account') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">账号</th>}
-                  {visibleColumns.includes('contact_person') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">联系人</th>}
-                  {visibleColumns.includes('phone') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">手机</th>}
-                  {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">邮箱</th>}
-                  {visibleColumns.includes('password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">密码</th>}
-                  {visibleColumns.includes('payment_password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">支付密码</th>}
-                  {visibleColumns.includes('shop_type') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">店铺类型</th>}
-                  {visibleColumns.includes('corporation') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">公司名称</th>}
-                  {visibleColumns.includes('alipay_account') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">支付宝账号</th>}
-                  {visibleColumns.includes('alipay_password') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">支付宝密码</th>}
-                  {visibleColumns.includes('address') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">地址</th>}
-                  {visibleColumns.includes('base_deposit') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">基础保证金</th>}
-                  {visibleColumns.includes('risk_deposit') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">风险保证金</th>}
-                  {visibleColumns.includes('remark') && <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">备注</th>}
+                  {visibleColumns.includes('platform') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">平台</th>}
+                  {visibleColumns.includes('shop_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">店铺名称</th>}
+                  {visibleColumns.includes('account') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">账号</th>}
+                  {visibleColumns.includes('contact_person') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">联系人</th>}
+                  {visibleColumns.includes('phone') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">手机</th>}
+                  {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">邮箱</th>}
+                  {visibleColumns.includes('password') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">密码</th>}
+                  {visibleColumns.includes('payment_password') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">支付密码</th>}
+                  {visibleColumns.includes('shop_type') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">店铺类型</th>}
+                  {visibleColumns.includes('corporation') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">公司名称</th>}
+                  {visibleColumns.includes('alipay_account') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">支付宝账号</th>}
+                  {visibleColumns.includes('alipay_password') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">支付宝密码</th>}
+                  {visibleColumns.includes('address') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">地址</th>}
+                  {visibleColumns.includes('base_deposit') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">基础保证金</th>}
+                  {visibleColumns.includes('risk_deposit') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">风险保证金</th>}
+                  {visibleColumns.includes('remark') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">备注</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody>
                 {shops.map((shop) => {
                   const platformIcon = platformIconMap[shop.platform];
                   return (
                     <tr
                       key={shop.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                      style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
+                      className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                       onClick={() => handleRowClick(shop)}
                       onContextMenu={(e) => handleContextMenu(e, 'item', shop.id)}
                     >
@@ -368,16 +367,16 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
                       )}
                       {visibleColumns.includes('shop_name') && (
                         <td className="px-4 py-3">
-                          <div className="font-medium text-sm text-gray-900 dark:text-white">{shop.shop_name}</div>
+                          <div className="font-medium text-sm text-content-primary dark:text-white">{shop.shop_name}</div>
                         </td>
                       )}
                       {visibleColumns.includes('account') && (
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-900 dark:text-white">{shop.account}</span>
+                            <span className="text-sm text-content-primary dark:text-white">{shop.account}</span>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleCopyText(shop.account || '', '账号已复制'); }}
-                              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
                               title="复制账号"
                             >
                               <Copy className="w-3 h-3" />
@@ -387,67 +386,67 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
                       )}
                       {visibleColumns.includes('contact_person') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-900 dark:text-white">{shop.contact_person || '-'}</span>
+                          <span className="text-sm text-content-primary dark:text-white">{shop.contact_person || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('phone') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-900 dark:text-white">{shop.phone || '-'}</span>
+                          <span className="text-sm text-content-primary dark:text-white">{shop.phone || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('email') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{shop.email || '-'}</span>
+                          <span className="text-sm text-content-secondary truncate max-w-[150px]">{shop.email || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('password') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{shop.password || '-'}</span>
+                          <span className="text-sm text-content-secondary truncate max-w-[100px]">{shop.password || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('payment_password') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{shop.payment_password || '-'}</span>
+                          <span className="text-sm text-content-secondary truncate max-w-[100px]">{shop.payment_password || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('shop_type') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-900 dark:text-white">{shop.shop_type || '-'}</span>
+                          <span className="text-sm text-content-primary dark:text-white">{shop.shop_type || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('corporation') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-900 dark:text-white truncate max-w-[150px]">{shop.corporation || '-'}</span>
+                          <span className="text-sm text-content-primary dark:text-white truncate max-w-[150px]">{shop.corporation || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('alipay_account') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{shop.alipay_account || '-'}</span>
+                          <span className="text-sm text-content-secondary truncate max-w-[150px]">{shop.alipay_account || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('alipay_password') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{shop.alipay_password || '-'}</span>
+                          <span className="text-sm text-content-secondary truncate max-w-[100px]">{shop.alipay_password || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('address') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{shop.address || '-'}</span>
+                          <span className="text-sm text-content-secondary truncate max-w-[150px]">{shop.address || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('base_deposit') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">{shop.base_deposit || '-'}</span>
+                          <span className="text-sm text-content-secondary">{shop.base_deposit || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('risk_deposit') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">{shop.risk_deposit || '-'}</span>
+                          <span className="text-sm text-content-secondary">{shop.risk_deposit || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('remark') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-w-[200px]">{shop.remark || '-'}</span>
+                          <span className="text-sm text-content-secondary whitespace-pre-wrap break-words max-w-[200px]">{shop.remark || '-'}</span>
                         </td>
                       )}
                     </tr>

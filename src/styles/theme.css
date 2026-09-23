@@ -107,7 +107,9 @@
   --color-tooltip: rgba(255, 255, 255, 0.95);
   --color-tooltip-text: #111827;
   --color-tooltip-border: rgba(255, 255, 255, 0.95);
-  --color-tooltip-bg: dodgerblue;
+  /* 通用 Tooltip 气泡（components/ui/Tooltip.tsx）底色跟随次要色，
+     自定义主题下自动跟随 --ct-secondary，不再写死 dodgerblue */
+  --color-tooltip-bg: var(--color-secondary);
   
   --color-google-blue: #4285f4;
   --color-google-green: #34a853;
@@ -251,7 +253,7 @@
   --color-tooltip: rgba(31, 41, 55, 0.95);
   --color-tooltip-text: #f9fafb;
   --color-tooltip-border: rgba(31, 41, 55, 0.95);
-  --color-tooltip-bg: #3b82f6;
+  --color-tooltip-bg: var(--color-secondary);
   
   --color-favorites: rgba(0, 159, 155, 0.3);
   --color-favorites-hover: rgba(0, 159, 155, 0.4);
@@ -714,7 +716,7 @@ body.dark {
   justify-content: center;
   padding: 16px;
   border-radius: 12px;
-  color: var(--color-bg-primary);
+  color: #ffffff;
   cursor: pointer;
   transition: all 300ms ease;
   box-shadow: var(--shadow-sm);
@@ -733,16 +735,22 @@ body.dark {
   margin-bottom: 8px;
 }
 
+.admin-card svg {
+  color: #ffffff;
+}
+
 .admin-card .card-title {
   font-size: 1em;
   font-weight: 700;
   margin-bottom: 2px;
+  color: #ffffff;
 }
 
 .admin-card .card-description {
   font-size: 0.7em;
   opacity: 0.9;
   text-align: center;
+  color: #ffffff;
 }
 
 .admin-card:hover {
@@ -982,7 +990,6 @@ body.dark {
 
 .update-button-wrapper .update-button {
   font-family: inherit;
-  color: var(--color-bg-primary);
   font-size: 14px;
   border: none;
   border-radius: 6px;
@@ -1001,10 +1008,12 @@ body.dark {
 
 .update-button.default {
   background-color: var(--color-button-primary);
+  color: #FFFFFF;
 }
 
 .update-button.default:hover:not(:disabled) {
   background-color: var(--color-button-primary-hover);
+  color: #FFFFFF;
 }
 
 .update-button.success {
@@ -1033,6 +1042,7 @@ body.dark {
 
 .update-button.disabled {
   background-color: var(--color-text-tertiary);
+  color: var(--color-bg-primary);
   cursor: not-allowed;
 }
 
@@ -1060,11 +1070,11 @@ body.dark {
   height: 14px;
 }
 
-.update-button.default .update-icon svg { color: var(--color-button-primary); }
+.update-button.default .update-icon svg { color: #FFFFFF; }
 .update-button.success .update-icon svg { color: var(--color-success); }
 .update-button.primary .update-icon svg { color: var(--color-primary); }
 .update-button.error .update-icon svg { color: var(--color-error); }
-.update-button.disabled .update-icon svg { color: var(--color-text-tertiary); }
+.update-button.disabled .update-icon svg { color: var(--color-text-secondary); }
 
 .update-button:hover:not(:disabled) .update-icon svg {
   transform: rotate(360deg);
@@ -1108,4 +1118,120 @@ body.dark {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── 语义化颜色工具类（自定义主题全覆盖） ── */
+
+/* 文字颜色 */
+.text-content-primary  { color: var(--color-text-primary); }
+.text-content-secondary { color: var(--color-text-secondary); }
+.text-content-tertiary { color: var(--color-text-tertiary); }
+
+/* 纯色背景 */
+.bg-surface      { background-color: var(--color-bg-primary); }
+.bg-surface-secondary { background-color: var(--color-bg-secondary); }
+.bg-card         { background-color: var(--color-card); }
+.bg-menu-hover   { background-color: var(--color-menu-hover); }
+.bg-border       { background-color: var(--color-border); }
+
+/* 边框颜色 */
+.border-content     { border-color: var(--color-border); }
+.border-content-light { border-color: var(--color-border-light); }
+
+/* 滑动开关圆点颜色 */
+/* 关闭态：次要文字色，在中性灰背景上足够对比 */
+.switch-thumb-inactive { background-color: var(--color-text-secondary); }
+/* 开启态：difference 混合模式使圆点自动反转为背景互补色，
+   确保无论激活背景是深是浅都始终清晰可见 */
+.switch-thumb-active {
+  background-color: #FFFFFF;
+  mix-blend-mode: difference;
+}
+
+/* 半透明表面（与 Sidebar.css / Settings.css 现有 color-mix 模式一致） */
+.bg-surface-40       { background-color: color-mix(in srgb, var(--color-bg-primary)    40%, transparent); }
+.bg-surface-50       { background-color: color-mix(in srgb, var(--color-bg-primary)    50%, transparent); }
+.bg-surface-60       { background-color: color-mix(in srgb, var(--color-bg-primary)    60%, transparent); }
+.bg-surface-secondary-50 { background-color: color-mix(in srgb, var(--color-bg-secondary) 50%, transparent); }
+.bg-surface-secondary-60 { background-color: color-mix(in srgb, var(--color-bg-secondary) 60%, transparent); }
+
+/* 半透明卡片（用于看板/分类卡片背景） */
+.bg-card-50       { background-color: color-mix(in srgb, var(--color-card) 50%, transparent); }
+.bg-card-60       { background-color: color-mix(in srgb, var(--color-card) 60%, transparent); }
+
+/* ── 自定义主题 ──
+   由 src/store/themeStore.ts 负责：向 :root 全量注入 --ct-* 变量、
+   打上 data-custom-theme / data-custom-bg 标记。
+   1) 底色放在 html 上（会传播到画布），body 设为透明，
+      背景图用 body::before 承载 —— 负 z-index 在根层叠上下文中稳定绘制在内容之下，
+      且 background-image 无法被 CSS 变量覆盖，只能走独立图层。
+   2) 变量覆盖层特异性 (0,2,0) 高于 .dark (0,1,0)：
+      自定义模式下 dark class 仍然保留（主进程 / 托盘只感知明暗基色），本层覆盖生效。
+   3) 覆盖层一律裸 var(--ct-*)，禁止写 var(--ct-x, var(--color-x)) 这类自引用 fallback：
+      同一元素上的自引用会形成循环引用，导致变量 guaranteed-invalid。 */
+
+:root[data-custom-theme="active"] {
+  background-color: var(--ct-bg-color);
+}
+
+body[data-custom-bg] {
+  background-color: transparent;
+  background-image: none;
+}
+
+body[data-custom-bg]::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--ct-bg-image);
+  background-size: var(--ct-bg-size);
+  background-position: var(--ct-bg-position);
+  background-repeat: var(--ct-bg-repeat);
+  opacity: var(--ct-bg-opacity);
+  pointer-events: none;
+}
+
+:root[data-custom-theme="active"] {
+  --color-text-primary: var(--ct-text-primary);
+  --color-text-secondary: var(--ct-text-secondary);
+  --color-text-tertiary: var(--ct-text-tertiary);
+
+  --color-bg-primary: color-mix(in srgb, var(--ct-bg-primary) var(--ct-surface-opacity), transparent);
+  --color-bg-secondary: color-mix(in srgb, var(--ct-bg-secondary) var(--ct-surface-opacity), transparent);
+  --color-bg-tertiary: color-mix(in srgb, var(--ct-bg-tertiary) var(--ct-surface-opacity), transparent);
+  --color-card: color-mix(in srgb, var(--ct-card) var(--ct-surface-opacity), transparent);
+  --color-card-hover: color-mix(in srgb, var(--ct-card-hover) var(--ct-surface-opacity), transparent);
+  --color-sidebar: color-mix(in srgb, var(--ct-sidebar) var(--ct-surface-opacity), transparent);
+  --color-sidebar-item: color-mix(in srgb, var(--ct-sidebar-item) var(--ct-surface-opacity), transparent);
+  --color-sidebar-item-active: color-mix(in srgb, var(--ct-sidebar-item-active) var(--ct-surface-opacity), transparent);
+  --color-menu-hover: color-mix(in srgb, var(--ct-menu-hover) var(--ct-surface-opacity), transparent);
+
+  --color-border: var(--ct-border);
+  --color-border-light: var(--ct-border-light);
+
+  --color-primary: var(--ct-primary);
+  --color-primary-hover: var(--ct-primary-hover);
+  --color-secondary: var(--ct-secondary);
+  --color-accent: var(--ct-accent);
+  --color-success: var(--ct-success);
+  --color-warning: var(--ct-warning);
+  --color-error: var(--ct-error);
+  --color-info: var(--ct-info);
+
+  --color-toast-success-bg: var(--ct-toast-success-bg);
+  --color-toast-warning-bg: var(--ct-toast-warning-bg);
+  --color-toast-error-bg: var(--ct-toast-error-bg);
+  --color-toast-info-bg: var(--ct-toast-info-bg);
+
+  --color-switch-bg: var(--ct-switch-bg);
+  --color-switch-active-bg: var(--ct-switch-active-bg);
+
+  --color-favorites: var(--ct-favorites);
+  --color-favorites-hover: var(--ct-favorites-hover);
+  --color-favorites-active: var(--ct-favorites-active);
+
+  --color-tooltip: var(--ct-tooltip);
+  --color-tooltip-text: var(--ct-tooltip-text);
+  --color-tooltip-border: var(--ct-tooltip-border);
 }

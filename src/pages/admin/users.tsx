@@ -194,7 +194,7 @@ const UserListPage: React.FC = () => {
   }
 
   const renderSortIcon = (field: string) => {
-    if (sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-gray-400" />
+    if (sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-content-secondary" />
     return sortOrder === 'asc' ? (
       <ArrowUpDown className="w-3 h-3 text-blue-400 transform rotate-180" />
     ) : (
@@ -205,13 +205,13 @@ const UserListPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 flex items-center justify-between flex-shrink-0">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">用户管理</h1>
+        <h1 className="text-lg font-semibold text-content-primary">用户管理</h1>
         <button
           onClick={handleResetFilters}
-          className="flex items-center gap-1 px-2 py-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-medium transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-content-secondary hover:bg-menu-hover text-xs font-medium transition-colors"
         >
           <RefreshCw className="w-3 h-3" />
-          重置筛选
+          重置
         </button>
       </div>
       <div className="px-4 py-3 flex-shrink-0 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
@@ -228,7 +228,7 @@ const UserListPage: React.FC = () => {
                 { value: 'VIP', label: 'VIP' },
                 { value: 'SVIP', label: 'SVIP' }
               ]}
-              className="px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+              className="px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs"
             />
             <Select
               value={statusFilter}
@@ -241,7 +241,7 @@ const UserListPage: React.FC = () => {
                 { value: 'active', label: '正常' },
                 { value: 'banned', label: '已封禁' }
               ]}
-              className="px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+              className="px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs"
             />
           </div>
           <div className="relative max-w-[200px] w-full">
@@ -251,12 +251,12 @@ const UserListPage: React.FC = () => {
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
               placeholder="搜索用户..."
-              className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-900/40 dark:text-white text-xs"
+              className="w-full px-2 py-1 pr-20 rounded-md focus:outline-none bg-surface text-content-primary placeholder-text-content-tertiary text-xs"
             />
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
-                className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-8 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary"
                 title="清空搜索"
               >
                 <X size={12} />
@@ -265,7 +265,7 @@ const UserListPage: React.FC = () => {
             <button
               type="button"
               onClick={handleSearchSubmit}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-content-secondary hover:text-content-primary"
               title="搜索"
             >
               <Search size={14} />
@@ -280,12 +280,12 @@ const UserListPage: React.FC = () => {
               <LoadingSpinner size="lg" />
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+            <table className="min-w-full">
+            <thead className="bg-surface-60 sticky top-0 z-10">
               <tr>
                 <th 
                   scope="col" 
-                  className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-400/50 dark:hover:bg-gray-600/50"
+                  className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider cursor-pointer hover:bg-menu-hover"
                   onClick={() => handleSort('username')}
                 >
                   <div className="flex items-center gap-1">
@@ -295,7 +295,7 @@ const UserListPage: React.FC = () => {
                 </th>
                 <th 
                   scope="col" 
-                  className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-400/50 dark:hover:bg-gray-600/50"
+                  className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider cursor-pointer hover:bg-menu-hover"
                   onClick={() => handleSort('name')}
                 >
                   <div className="flex items-center gap-1">
@@ -303,24 +303,24 @@ const UserListPage: React.FC = () => {
                     {renderSortIcon('name')}
                   </div>
                 </th>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">
                   邮箱
                 </th>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">
                   手机号
                 </th>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">
                   会员等级
                 </th>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">
+                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider hidden md:table-cell">
                   VIP到期时间
                 </th>
-                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">
                   状态
                 </th>
                 <th 
                   scope="col" 
-                  className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-400/50 dark:hover:bg-gray-600/50"
+                  className="px-4 py-3 sm:px-6 text-left text-xs font-medium text-content-secondary uppercase tracking-wider cursor-pointer hover:bg-menu-hover"
                   onClick={() => handleSort('created_at')}
                 >
                   <div className="flex items-center gap-1">
@@ -330,30 +330,30 @@ const UserListPage: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
+            <tbody className="" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
               {users.map((user) => (
-                <tr 
-                  key={user.id} 
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                <tr
+                  key={user.id}
+                  className="hover:bg-menu-hover transition-colors cursor-pointer"
                   onContextMenu={(e) => handleContextMenu(e, user, menuItems)}
                 >
                   <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    <div className="text-sm font-medium text-content-primary">
                       {user.username}
                     </div>
                   </td>
                   <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-content-secondary">
                       {user.name}
                     </div>
                   </td>
                   <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-content-secondary">
                       {user.email}
                     </div>
                   </td>
                   <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-content-secondary">
                       {user.phone}
                     </div>
                   </td>
@@ -361,13 +361,13 @@ const UserListPage: React.FC = () => {
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       user.memberLevel === 'VIP' ? 'bg-purple-100 dark:bg-purple-500/30 text-purple-800 dark:text-purple-300' : 
                       user.memberLevel === 'SVIP' ? 'bg-yellow-100 dark:bg-yellow-500/30 text-yellow-800 dark:text-yellow-300' : 
-                      'bg-gray-100 dark:bg-gray-500/30 text-gray-800 dark:text-gray-300'
+                      'bg-surface-secondary text-content-primary'
                     }`}>
                       {user.memberLevel}
                     </span>
                   </td>
                   <td className="px-4 py-3 sm:px-6 whitespace-nowrap hidden md:table-cell">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-content-secondary">
                       {user.vipExpireAt ? new Date(user.vipExpireAt).toLocaleDateString() : '永久'}
                     </div>
                   </td>
@@ -380,7 +380,7 @@ const UserListPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 sm:px-6 whitespace-nowrap">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-content-secondary">
                       {new Date(user.createdAt).toLocaleString()}
                     </div>
                   </td>
@@ -389,7 +389,7 @@ const UserListPage: React.FC = () => {
               {users.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-8 text-center">
-                    <div className="text-gray-600 dark:text-gray-400">暂无数据</div>
+                    <div className="text-content-secondary">暂无数据</div>
                   </td>
                 </tr>
               )}
@@ -399,7 +399,7 @@ const UserListPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+      <div className="flex-shrink-0 px-4 py-3">
         <Pagination
           currentPage={currentPage}
           total={total}
@@ -444,18 +444,18 @@ const UserListPage: React.FC = () => {
           <form className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-content-secondary mb-1">
                   用户名
                 </label>
                 <input
                   type="text"
                   value={currentUser.username}
                   disabled
-                  className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white bg-gray-100 text-sm"
+                  className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-gray-100 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-content-secondary mb-1">
                   姓名
                 </label>
                 <input
@@ -463,11 +463,11 @@ const UserListPage: React.FC = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                  className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-content-secondary mb-1">
                   邮箱
                 </label>
                 <input
@@ -475,11 +475,11 @@ const UserListPage: React.FC = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                  className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-content-secondary mb-1">
                   手机号
                 </label>
                 <input
@@ -487,11 +487,11 @@ const UserListPage: React.FC = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                  className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-content-secondary mb-1">
                   会员等级
                 </label>
                 <Select
@@ -502,11 +502,11 @@ const UserListPage: React.FC = () => {
                     { value: 'VIP', label: 'VIP' },
                     { value: 'SVIP', label: 'SVIP' }
                   ]}
-                  className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                  className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-content-secondary mb-1">
                   VIP到期时间
                 </label>
                 <input
@@ -514,12 +514,12 @@ const UserListPage: React.FC = () => {
                   name="vipExpireAt"
                   value={formData.vipExpireAt ? formData.vipExpireAt.split('T')[0] : ''}
                   onChange={handleInputChange}
-                  className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                  className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
                   disabled={formData.memberLevel === '普通'}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-content-secondary mb-1">
                   生日
                 </label>
                 <input
@@ -527,7 +527,7 @@ const UserListPage: React.FC = () => {
                   name="birthday"
                   value={formData.birthday ? formData.birthday.split('T')[0] : ''}
                   onChange={handleInputChange}
-                  className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm"
+                  className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
                 />
               </div>
               <div className="flex items-center justify-center">
@@ -539,14 +539,14 @@ const UserListPage: React.FC = () => {
                     onChange={handleCheckboxChange}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <label className="text-sm text-gray-600 dark:text-gray-400">
+                  <label className="text-sm text-content-secondary">
                     封禁用户
                   </label>
                 </div>
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+              <label className="block text-xs font-medium text-content-secondary mb-1">
                 地址
               </label>
               <textarea
@@ -554,7 +554,7 @@ const UserListPage: React.FC = () => {
                 value={formData.address}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-sm resize-none"
+                className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm resize-none"
               />
             </div>
           </form>

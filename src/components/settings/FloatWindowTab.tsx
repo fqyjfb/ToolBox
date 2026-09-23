@@ -51,7 +51,7 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
             <circle cx="512" cy="512" r="200" />
           </svg>
         </div>
-        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">悬浮窗设置</h2>
+        <h2 className="text-sm font-semibold text-content-primary">悬浮窗设置</h2>
       </div>
 
       <div className="p-4">
@@ -92,7 +92,7 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
             })}
 
             <div
-              className="absolute flex items-center justify-center rounded-full bg-white dark:bg-gray-700"
+              className="absolute flex items-center justify-center rounded-full bg-surface"
               style={{
                 width: 48,
                 height: 48,
@@ -103,7 +103,7 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
               }}
             >
               {floatConfig[safeActiveIndex] && (
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">
+                <span className="text-xs font-medium text-content-primary text-center leading-tight">
                   {floatConfig[safeActiveIndex].name.length > 4
                     ? floatConfig[safeActiveIndex].name.slice(0, 4)
                     : floatConfig[safeActiveIndex].name}
@@ -114,7 +114,7 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
         </div>
 
         {floatConfig.length === 0 ? (
-          <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="py-4 text-center text-sm text-content-secondary">
             暂无悬浮窗配置项
           </div>
         ) : (

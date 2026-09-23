@@ -123,7 +123,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           className={`group flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors ${
             selectedCategory === category.id
               ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+              : 'hover:bg-menu-hover text-content-primary'
           }`}
           style={{ paddingLeft: `${level * 16 + 12}px` }}
           onClick={() => {
@@ -131,7 +131,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             onSelectCategory(category.id);
           }}
         >
-          <span className="text-gray-400">
+          <span className="text-content-secondary">
             {isExpanded ? (
               <ChevronDown size={14} />
             ) : (
@@ -144,7 +144,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               type="text"
               value={editingName}
               onChange={(e) => setEditingName(e.target.value)}
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700"
+              className="flex-1 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSaveEdit();
@@ -168,7 +168,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   <Edit2 size={14} />
                 </button>
                 <button
-                  className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  className="p-1 text-content-secondary hover:text-content-primary"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleCancelEdit();
@@ -180,7 +180,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             ) : (
               <>
                 <button
-                  className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  className="p-1 text-content-secondary hover:text-content-primary"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStartEdit(category);
@@ -189,7 +189,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   <Edit2 size={14} />
                 </button>
                 <button
-                  className="p-1 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                  className="p-1 text-content-secondary hover:text-error"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(category);
@@ -213,7 +213,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   placeholder="输入子分类名称"
                   value={subcategoryInputValue}
                   onChange={(e) => setSubcategoryInputValue(e.target.value)}
-                  className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700"
+                  className="flex-1 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -232,7 +232,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
             {addingSubcategoryParentId !== category.id && (
               <button
-                className="flex items-center gap-1 px-3 py-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                className="flex items-center gap-1 px-3 py-1 text-xs text-content-secondary hover:text-content-primary transition-colors"
                 style={{ paddingLeft: `${(level + 1) * 16 + 12}px` }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -251,14 +251,14 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 p-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-md">
-        <span className="text-gray-500 dark:text-gray-400 text-sm">+ 添加主分类</span>
+      <div className="flex items-center gap-2 p-2 border border-dashed border-content rounded-md">
+        <span className="text-content-secondary text-sm">+ 添加主分类</span>
         <input
           type="text"
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
           placeholder="输入分类名称"
-          className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+          className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-sm"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               handleAddMainCategory();
@@ -267,7 +267,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         />
         <button
           disabled={!newCategoryName.trim()}
-          className="p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 disabled:text-gray-400 disabled:cursor-not-allowed"
+          className="p-1 text-green-600 hover:text-green-800 disabled:text-content-secondary disabled:cursor-not-allowed"
           title="保存"
           onClick={handleAddMainCategory}
         >
@@ -275,9 +275,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         </button>
       </div>
 
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      <div className="rounded-lg overflow-hidden">
         {categories.length === 0 ? (
-          <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+          <div className="px-4 py-8 text-center text-content-secondary">
             暂无分类
           </div>
         ) : (

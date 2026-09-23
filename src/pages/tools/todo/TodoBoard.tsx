@@ -20,7 +20,7 @@ const BOARD_GRID_CLASS = 'grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3';
 const BoardSkeleton: React.FC = () => (
   <div className={BOARD_GRID_CLASS}>
     {[0, 1, 2].map((key) => (
-      <div key={key} className="rounded-xl p-4 bg-card border border-border shadow-sm animate-pulse">
+      <div key={key} className="rounded-xl p-4 bg-card-50 animate-pulse">
         <div className="flex items-center gap-2.5 mb-3">
           <div className="w-8 h-8 rounded-lg bg-bg-tertiary" />
           <div className="h-4 w-24 rounded bg-bg-tertiary" />
@@ -82,7 +82,7 @@ const TodoBoard: React.FC<TodoBoardProps> = ({
           <button
             type="button"
             onClick={onCreateCategory}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border border-border hover:bg-bg-tertiary transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm bg-surface-secondary text-text-secondary dark:bg-surface dark:text-content-secondary hover:bg-menu-hover transition-colors"
           >
             <Plus className="w-4 h-4" />
             创建第一个分类

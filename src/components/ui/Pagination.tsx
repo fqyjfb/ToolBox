@@ -62,7 +62,7 @@ const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <div className={`flex items-center justify-center gap-2 mt-2 ${className}`}>
-      <span className="text-gray-600 dark:text-gray-400 text-sm">
+      <span className="text-content-secondary text-sm">
         {`共${total}条`}
       </span>
       
@@ -70,7 +70,7 @@ const Pagination: React.FC<PaginationProps> = ({
         onClick={() => onPageChange(1)}
         disabled={currentPage === 1}
         title="首页"
-        className="p-2 text-sm rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+        className="p-2 text-sm rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-surface-secondary text-content-primary hover:bg-menu-hover"
       >
         <ChevronsLeft size={16} />
       </button>
@@ -79,7 +79,7 @@ const Pagination: React.FC<PaginationProps> = ({
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         title="上一页"
-        className="p-2 text-sm rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+        className="p-2 text-sm rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-surface-secondary text-content-primary hover:bg-menu-hover"
       >
         <ChevronLeft size={16} />
       </button>
@@ -93,13 +93,13 @@ const Pagination: React.FC<PaginationProps> = ({
                 className={`w-8 h-8 text-sm rounded-md transition-colors ${
                   currentPage === page 
                     ? 'bg-gray-800 dark:bg-yellow-500 text-white' 
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
                 }`}
               >
                 {page}
               </button>
             ) : (
-              <span className="px-2 text-gray-500 dark:text-gray-400 text-sm">...</span>
+              <span className="px-2 text-content-secondary text-sm">...</span>
             )}
           </React.Fragment>
         ))}
@@ -109,7 +109,7 @@ const Pagination: React.FC<PaginationProps> = ({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         title="下一页"
-        className="p-2 text-sm rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+        className="p-2 text-sm rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-surface-secondary text-content-primary hover:bg-menu-hover"
       >
         <ChevronRight size={16} />
       </button>
@@ -118,7 +118,7 @@ const Pagination: React.FC<PaginationProps> = ({
         onClick={() => onPageChange(totalPages)}
         disabled={currentPage === totalPages}
         title="尾页"
-        className="p-2 text-sm rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+        className="p-2 text-sm rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-surface-secondary text-content-primary hover:bg-menu-hover"
       >
         <ChevronsRight size={16} />
       </button>
@@ -127,7 +127,7 @@ const Pagination: React.FC<PaginationProps> = ({
         value={String(pageSize)}
         onChange={(v) => onPageSizeChange(Number(v))}
         options={pageSizeOptions.map((size) => ({ value: String(size), label: String(size) }))}
-        className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 dark:bg-gray-700 dark:text-white"
+        className="px-2 py-1 text-sm border-content rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 bg-surface-secondary text-content-primary"
         size="sm"
       />
     </div>

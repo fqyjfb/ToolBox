@@ -24,7 +24,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = memo(({
       <div className={`dot dot-4 ${sizeClasses[size]}`}></div>
       <div className={`dot dot-5 ${sizeClasses[size]}`}></div>
       {text && (
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{text}</p>
+        <p className="mt-2 text-sm text-content-secondary">{text}</p>
       )}
     </div>
   );

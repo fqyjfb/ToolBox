@@ -128,7 +128,7 @@ const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
 
   // 内层负责裁剪（min-w-0 让 truncate 生效）；外层不设 overflow-hidden，否则「更多」面板会被裁掉。
   return (
-    <div className="flex flex-shrink-0 items-center gap-1 border-b border-gray-200 dark:border-gray-700 px-2 py-1">
+    <div className="flex flex-shrink-0 items-center gap-1 px-2 py-1">
       <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
         {tabs.map((path, index) => {
           const isActive = path === activePath;
@@ -146,8 +146,8 @@ const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
               title={path}
               className={`group flex min-w-0 max-w-[180px] cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
                 isActive
-                  ? 'bg-white/60 dark:bg-gray-900/40 text-primary shadow-sm dark:text-primary'
-                  : 'text-gray-600 hover:bg-gray-100/40 dark:text-gray-400 dark:hover:bg-gray-800/30'
+                  ? 'bg-white/60 dark:bg-content-primary/$1 text-primary shadow-sm dark:text-primary'
+                  : 'text-gray-600 hover:bg-surface-secondary/$1 dark:text-content-tertiary dark:hover:bg-content-primary/$1'
               }`}
             >
               <span className="truncate">{basenameOf(path)}</span>
@@ -159,7 +159,7 @@ const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
               )}
               <button
                 type="button"
-                className="flex-shrink-0 rounded p-0.5 text-gray-400 opacity-0 transition-opacity hover:bg-gray-200 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-gray-600"
+                className="flex-shrink-0 rounded p-0.5 text-content-tertiary opacity-0 transition-opacity hover:bg-gray-200 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-menu-hover"
                 onClick={(e) => {
                   e.stopPropagation();
                   requestClose(path);
@@ -177,7 +177,7 @@ const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
       <div className="relative ml-auto flex-shrink-0">
         <button
           type="button"
-          className="flex items-center rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-600 dark:hover:text-gray-200"
+          className="flex items-center rounded p-0.5 text-content-tertiary hover:bg-gray-200 hover:text-content-secondary dark:hover:bg-menu-hover dark:hover:text-gray-200"
           onClick={() => setMenuOpen((v) => !v)}
           title="更多操作"
           aria-haspopup="menu"

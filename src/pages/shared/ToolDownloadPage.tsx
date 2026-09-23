@@ -55,26 +55,26 @@ const ToolDownloadPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">工具下载</h1>
+        <h1 className="text-lg font-semibold text-content-primary dark:text-white">工具下载</h1>
         <div className="relative w-[200px]">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="搜索工具..."
-            className="w-full px-2 py-1 pr-7 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+            className="w-full px-2 py-1 pr-7 border border-gray-200 dark:border-content rounded-md focus:outline-none focus:border-content dark:focus:border-content dark:bg-menu-hover dark:text-white text-xs"
           />
           <span className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
             {searchTerm ? (
               <button
                 onClick={() => setSearchTerm('')}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary"
                 title="清空搜索"
               >
                 <X size={12} />
               </button>
             ) : (
-              <Search size={12} className="text-gray-400" />
+              <Search size={12} className="text-content-tertiary" />
             )}
           </span>
         </div>
@@ -105,8 +105,8 @@ const ToolDownloadPage: React.FC = () => {
           </div>
         ) : tools.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2">
-            <PackageOpen className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">暂无可下载的工具</p>
+            <PackageOpen className="w-10 h-10 text-content-secondary dark:text-content-secondary" />
+            <p className="text-sm text-content-secondary">暂无可下载的工具</p>
           </div>
         ) : (
           <div className="tool-download-grid">
@@ -117,7 +117,7 @@ const ToolDownloadPage: React.FC = () => {
                   alt={tool.title}
                   name={tool.title}
                   className="tool-download-icon"
-                  defaultIcon={<PackageOpen className="w-5 h-5 text-gray-400" />}
+                  defaultIcon={<PackageOpen className="w-5 h-5 text-content-tertiary" />}
                 />
                 <div className="tool-download-info">
                   <div className="flex items-center gap-2 min-w-0">

@@ -49,12 +49,12 @@ export const ChatOrganizeSection: React.FC<ChatOrganizeSectionProps> = ({
   dragSourcePath,
 }) => {
   return (
-    <div className="flex-shrink-0 border-b border-gray-100 dark:border-gray-800 px-2 py-2 space-y-0.5">
+    <div className="flex-shrink-0 px-2 py-2 space-y-0.5">
       <div
         className={`flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
           isChatMode
             ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/40 dark:hover:bg-gray-800/30'
+            : 'text-content-primary hover:bg-surface-secondary dark:hover:bg-content-primary'
         }`}
         onClick={onToggleChatMode}
       >
@@ -68,7 +68,7 @@ export const ChatOrganizeSection: React.FC<ChatOrganizeSectionProps> = ({
         return (
           <div>
             <button
-              className="flex w-full items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-400 px-1 py-1 hover:text-primary transition-colors"
+              className="flex w-full items-center justify-between text-xs font-medium text-content-secondary px-1 py-1 hover:text-primary transition-colors"
               onClick={() => {
                 onToggleOrganize();
                 if (!isOrganizeExpanded) onSelectOrganizeFolder?.();

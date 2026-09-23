@@ -64,12 +64,12 @@ const HashGeneratorPage: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Hash className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">哈希生成器</h2>
+          <Hash className="w-6 h-6 text-content-secondary" />
+          <h2 className="text-lg font-semibold text-content-primary">哈希生成器</h2>
         </div>
         <button 
           onClick={loadSample}
-          className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+          className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
         >
           <FileText className="w-4 h-4" />
           示例
@@ -77,27 +77,27 @@ const HashGeneratorPage: React.FC = () => {
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">输入文本</label>
+        <label className="block text-sm text-content-secondary mb-2">输入文本</label>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 resize-none outline-none focus:border-blue-500"
+          className="w-full px-4 py-3 border border-content rounded-lg bg-surface text-content-primary resize-none outline-none focus:border-blue-500"
           rows={3}
           placeholder="输入要计算哈希值的文本..."
         />
       </div>
 
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-auto">
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-auto">
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {hashAlgorithms.map((algo) => (
-            <div key={algo.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+            <div key={algo.id} className="bg-surface-secondary rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{algo.name}</span>
+                <span className="text-sm font-medium text-content-primary">{algo.name}</span>
                 <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full">
                   {algo.bits}
                 </span>
               </div>
-              <div className="bg-white dark:bg-gray-600 rounded-lg px-3 py-2 mb-2 font-mono text-xs text-gray-800 dark:text-gray-200 break-all min-h-[40px]">
+              <div className="bg-white dark:bg-menu-hover rounded-lg px-3 py-2 mb-2 font-mono text-xs text-content-primary break-all min-h-[40px]">
                 {results[algo.id] || ''}
               </div>
               <button

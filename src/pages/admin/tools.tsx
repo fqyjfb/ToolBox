@@ -403,11 +403,11 @@ const ToolsPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 flex items-center justify-between flex-shrink-0">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">工具管理</h1>
+        <h1 className="text-lg font-semibold text-content-primary">工具管理</h1>
         {activeTab === 'tools' && (
           <button
             onClick={handleAddTool}
-            className="flex items-center gap-1 px-2 py-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 text-xs font-medium transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-content-secondary hover:text-content-primary hover:bg-menu-hover text-xs font-medium transition-colors rounded"
           >
             <Plus className="w-3 h-3" />
             添加工具
@@ -420,8 +420,8 @@ const ToolsPage: React.FC = () => {
               onClick={() => setActiveTab('tools')}
               className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
                 activeTab === 'tools'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  ? 'bg-surface-secondary text-content-primary'
+                  : 'text-content-secondary hover:text-content-primary'
               }`}
             >
               工具列表
@@ -430,8 +430,8 @@ const ToolsPage: React.FC = () => {
               onClick={() => setActiveTab('categories')}
               className={`px-3 py-1.5 rounded-t-md text-xs font-medium transition-colors ${
                 activeTab === 'categories'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  ? 'bg-surface-secondary text-content-primary'
+                  : 'text-content-secondary hover:text-content-primary'
               }`}
             >
               分类管理
@@ -445,7 +445,7 @@ const ToolsPage: React.FC = () => {
                 onChange={handleSearchChange}
                 onKeyDown={handleKeyDown}
                 placeholder="搜索工具..."
-                className="w-full px-2 py-1 pr-20 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-900/40 dark:text-white text-xs"
+                className="w-full px-2 py-1 pr-20 rounded-md focus:outline-none bg-surface-50 text-content-primary placeholder-text-content-tertiary text-xs"
               />
               {searchTerm && (
                 <button
@@ -453,7 +453,7 @@ const ToolsPage: React.FC = () => {
                     setSearchTerm('')
                     setCurrentPage(1)
                   }}
-                  className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="absolute right-8 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary"
                   title="清空搜索"
                 >
                   <X size={12} />
@@ -461,7 +461,7 @@ const ToolsPage: React.FC = () => {
               )}
               <button
                 onClick={handleSearchSubmit}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-content-secondary hover:text-content-primary"
                 title="搜索"
               >
                 <Search size={14} />
@@ -477,7 +477,7 @@ const ToolsPage: React.FC = () => {
             className={`px-2 py-1 text-xs rounded-full transition-colors ${
               !filterCategory
                 ? 'bg-primary text-button-text'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
             }`}
           >
             全部
@@ -489,7 +489,7 @@ const ToolsPage: React.FC = () => {
               className={`px-2 py-1 text-xs rounded-full transition-colors ${
                 filterCategory === mainCategory.id
                   ? 'bg-primary text-button-text'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
               }`}
             >
               {mainCategory.name}
@@ -505,20 +505,20 @@ const ToolsPage: React.FC = () => {
           </div>
         ) : activeTab === 'tools' ? (
           <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+              <table className="min-w-full">
+                <thead className="bg-surface-60 sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">图标</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">名称</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">分类</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">网盘类型</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">状态</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">图标</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">名称</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">分类</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">网盘类型</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">状态</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
+                <tbody className="" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
                   {tools.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={5} className="px-4 py-8 text-center text-content-secondary">
                         暂无工具数据
                       </td>
                     </tr>
@@ -526,7 +526,7 @@ const ToolsPage: React.FC = () => {
                     tools.map(tool => (
                       <tr 
                         key={tool.id} 
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                        className="hover:bg-menu-hover transition-colors cursor-pointer"
                         onContextMenu={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
@@ -548,13 +548,13 @@ const ToolsPage: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">{tool.category_name || '-'}</span>
+                          <span className="text-sm text-content-secondary">{tool.category_name || '-'}</span>
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
                           <span className={`px-2 py-0.5 text-xs rounded-full ${
                             tool.网盘类型 === '夸克' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                             tool.网盘类型 === '百度' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                            'bg-surface-secondary text-content-primary'
                           }`}>
                             {tool.网盘类型}
                           </span>
@@ -584,7 +584,7 @@ const ToolsPage: React.FC = () => {
       </div>
 
       {activeTab === 'tools' && (
-        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="flex-shrink-0 px-4 py-3">
           <Pagination
             currentPage={currentPage}
             total={totalItems}
@@ -608,7 +608,7 @@ const ToolsPage: React.FC = () => {
         >
           <form className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">分类</label>
+              <label className="block text-xs font-medium text-content-secondary mb-1">分类</label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <Select
                   value={selectedMainCategory}
@@ -617,7 +617,7 @@ const ToolsPage: React.FC = () => {
                     { value: '', label: '选择主分类' },
                     ...getMainCategories().map(category => ({ value: category.id, label: category.name }))
                   ]}
-                  className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+                  className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs"
                 />
                 <Select
                   value={selectedSubCategory}
@@ -626,20 +626,20 @@ const ToolsPage: React.FC = () => {
                     { value: '', label: '选择子分类' },
                     ...getSubCategories(selectedMainCategory).map(category => ({ value: category.id, label: category.name }))
                   ]}
-                  className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+                  className="flex-1 px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">工具名称</label>
+              <label className="block text-xs font-medium text-content-secondary mb-1">工具名称</label>
               <input
                 type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                className={`w-full px-2 py-1 border rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs ${
-                  errors.title ? 'border-red-400 focus:border-red-400' : 'border-gray-200 dark:border-gray-500'
+                className={`w-full px-2 py-1 border rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs ${
+                  errors.title ? 'border-red-400 focus:border-red-400' : 'border-content'
                 }`}
                 placeholder="请输入工具名称"
               />
@@ -647,26 +647,26 @@ const ToolsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">描述</label>
+              <label className="block text-xs font-medium text-content-secondary mb-1">描述</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs resize-none"
+                className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs resize-none"
                 rows={3}
                 placeholder="请输入工具描述"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">下载地址</label>
+              <label className="block text-xs font-medium text-content-secondary mb-1">下载地址</label>
               <input
                 type="text"
                 name="download_url"
                 value={formData.download_url}
                 onChange={handleChange}
-                className={`w-full px-2 py-1 border rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs ${
-                  errors.download_url ? 'border-red-400 focus:border-red-400' : 'border-gray-200 dark:border-gray-500'
+                className={`w-full px-2 py-1 border rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs ${
+                  errors.download_url ? 'border-red-400 focus:border-red-400' : 'border-content'
                 }`}
                 placeholder="请输入下载链接"
               />
@@ -674,7 +674,7 @@ const ToolsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">网盘类型</label>
+              <label className="block text-xs font-medium text-content-secondary mb-1">网盘类型</label>
               <Select
                 value={formData.网盘类型}
                 onChange={(v) => setFormData(prev => ({ ...prev, '网盘类型': v as '夸克' | '百度' | '其他' }))}
@@ -683,18 +683,18 @@ const ToolsPage: React.FC = () => {
                   { value: '百度', label: '百度网盘' },
                   { value: '其他', label: '其他' }
                 ]}
-                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+                className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">图标链接</label>
+              <label className="block text-xs font-medium text-content-secondary mb-1">图标链接</label>
               <input
                 type="text"
                 name="icon_url"
                 value={formData.icon_url}
                 onChange={handleChange}
-                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 rounded-md focus:outline-none focus:border-gray-300 dark:focus:border-gray-400 dark:bg-gray-600 dark:text-white text-xs"
+                className="w-full px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs"
                 placeholder="请输入图标URL"
               />
             </div>
@@ -707,7 +707,7 @@ const ToolsPage: React.FC = () => {
                 onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <label className="ml-2 text-sm text-gray-600 dark:text-gray-400">启用</label>
+              <label className="ml-2 text-sm text-content-secondary">启用</label>
             </div>
           </form>
         </Modal>

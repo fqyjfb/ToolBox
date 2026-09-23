@@ -79,6 +79,8 @@ module.exports = {
         'border-light': 'var(--color-border-light)',
         card: 'var(--color-card)',
         'card-hover': 'var(--color-card-hover)',
+        // 供 hover:bg-menu-hover 这类变体生成（theme.css 里的同名为纯类名，无法生成 variant）
+        'menu-hover': 'var(--color-menu-hover)',
         sidebar: 'var(--color-sidebar)',
         'sidebar-item': 'var(--color-sidebar-item)',
         'sidebar-item-active': 'var(--color-sidebar-item-active)',

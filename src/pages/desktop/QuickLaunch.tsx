@@ -55,7 +55,7 @@ const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'med
             }`}
           />
         ) : (
-          <Rocket className={`text-gray-500 dark:text-gray-400 ${showText ? 'mb-1' : ''} ${
+          <Rocket className={`text-content-secondary ${showText ? 'mb-1' : ''} ${
             iconSize === 'small' ? 'w-8 h-8' : 'w-12 h-12'
           }`} />
         )}
@@ -64,7 +64,7 @@ const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'med
         )}
       </div>
       {showText && (
-        <span className={`font-medium text-gray-700 dark:text-gray-200 truncate w-full text-center ${
+        <span className={`font-medium text-content-primary truncate w-full text-center ${
           iconSize === 'small' ? 'text-4xs' : 'text-2xs'
         }`}>
           {app.name}
@@ -96,7 +96,7 @@ const SortableCategoryItem: React.FC<{ category: QuickLaunchCategory; isActive: 
         className={`px-3 py-1 text-sm font-medium rounded-full transition-colors flex items-center gap-1 ${
           isActive
             ? 'text-white'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
         }`}
         style={isActive ? { backgroundColor: category.color } : {}}
         onClick={onClick}
@@ -966,7 +966,7 @@ const QuickLaunch: React.FC = () => {
             className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
               activeCategoryId === 'all'
                 ? 'bg-primary text-button-text'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
             }`}
             onClick={() => setActiveCategoryId('all')}
           >
@@ -977,7 +977,7 @@ const QuickLaunch: React.FC = () => {
             className={`flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full transition-colors ${
               activeCategoryId === 'frequent'
                 ? 'bg-primary text-button-text'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
             }`}
             onClick={() => setActiveCategoryId('frequent')}
             title="按启动次数排序，取前 8"
@@ -989,7 +989,7 @@ const QuickLaunch: React.FC = () => {
             className={`flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full transition-colors ${
               activeCategoryId === 'recent'
                 ? 'bg-primary text-button-text'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
             }`}
             onClick={() => setActiveCategoryId('recent')}
             title="按最近启动时间排序，取前 8"
@@ -1047,7 +1047,7 @@ const QuickLaunch: React.FC = () => {
             }`}
             title={isScanningDesktop ? '正在扫描...' : '扫描桌面应用'}
           >
-            <Monitor size={16} className={isScanningDesktop ? 'text-gray-400' : 'text-green-600 dark:text-green-500'} />
+            <Monitor size={16} className={isScanningDesktop ? 'text-gray-400' : 'text-content-secondary'} />
           </button>
           <button
             onClick={scanInstalled}
@@ -1057,7 +1057,7 @@ const QuickLaunch: React.FC = () => {
             }`}
             title={isScanningInstalled ? '正在扫描...' : '扫描已安装应用'}
           >
-            <AppWindow size={16} className={isScanningInstalled ? 'text-gray-400' : 'text-blue-600 dark:text-blue-400'} />
+            <AppWindow size={16} className={isScanningInstalled ? 'text-gray-400' : 'text-content-secondary'} />
           </button>
           <label className="icon-toggle-container" title={iconSize === 'small' ? '当前：小图标' : '当前：中图标'}>
             <input
@@ -1074,7 +1074,7 @@ const QuickLaunch: React.FC = () => {
           </label>
           <button
             type="button"
-            className="icon-toggle-container text-gray-400 dark:text-gray-400"
+            className="icon-toggle-container text-content-secondary"
             title={showText ? '当前：图标+文字' : '当前：仅图标'}
             onClick={() => setShowText(prev => !prev)}
           >
@@ -1167,7 +1167,7 @@ const QuickLaunch: React.FC = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-content-primary mb-2">
               应用路径
             </label>
             <div className="flex gap-2">
@@ -1176,11 +1176,11 @@ const QuickLaunch: React.FC = () => {
                 value={customPath}
                 onChange={(e) => setCustomPath(e.target.value)}
                 placeholder="输入应用程序路径..."
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="flex-1 px-4 py-2 border-content rounded-lg bg-surface text-content-primary placeholder-text-content-secondary focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               <button
                 onClick={handleSelectFile}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg transition-colors"
+                className="px-4 py-2 bg-menu-hover hover:bg-menu-hover rounded-lg transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>
@@ -1190,14 +1190,14 @@ const QuickLaunch: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-content-primary mb-2">
               分类
             </label>
             <Select
               value={activeCategoryId === 'all' ? (categories[0]?.id || '') : activeCategoryId}
               onChange={() => {}}
               options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-2 border border-content rounded-lg bg-surface-secondary text-content-primary focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
         </div>
@@ -1214,18 +1214,18 @@ const QuickLaunch: React.FC = () => {
         {editingApp && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-content-primary mb-2">
                 应用名称
               </label>
               <input
                 type="text"
                 value={editingApp.name}
                 onChange={(e) => setEditingApp({ ...editingApp, name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border border-content rounded-lg bg-surface-secondary text-content-primary focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-content-primary mb-2">
                 别名（可选，用于搜索）
               </label>
               <input
@@ -1233,11 +1233,11 @@ const QuickLaunch: React.FC = () => {
                 value={editingApp.alias ?? ''}
                 onChange={(e) => setEditingApp({ ...editingApp, alias: e.target.value })}
                 placeholder="如：PS、Photoshop"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border-content rounded-lg bg-surface-secondary text-content-primary placeholder-text-content-secondary focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-content-primary mb-2">
                 关键词（可选，空格分隔）
               </label>
               <input
@@ -1245,16 +1245,16 @@ const QuickLaunch: React.FC = () => {
                 value={editingApp.keywords ?? ''}
                 onChange={(e) => setEditingApp({ ...editingApp, keywords: e.target.value })}
                 placeholder="如：图像 编辑 设计"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border-content rounded-lg bg-surface-secondary text-content-primary placeholder-text-content-secondary focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
 
-            {/* P1: 启动选项 */}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">启动选项（可选）</p>
+            {/* 启动选项 */}
+            <div className="pt-4">
+              <p className="text-xs text-content-secondary mb-3">启动选项（可选）</p>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-content-primary mb-2">
                     启动参数
                   </label>
                   <input
@@ -1262,11 +1262,11 @@ const QuickLaunch: React.FC = () => {
                     value={editingApp.args ?? ''}
                     onChange={(e) => setEditingApp({ ...editingApp, args: e.target.value })}
                     placeholder="如：--profile=Default"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-4 py-2 border-content rounded-lg bg-surface-secondary text-content-primary placeholder-text-content-secondary focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-content-primary mb-2">
                     工作目录
                   </label>
                   <div className="flex gap-2">
@@ -1275,14 +1275,14 @@ const QuickLaunch: React.FC = () => {
                       value={editingApp.workingDir ?? ''}
                       onChange={(e) => setEditingApp({ ...editingApp, workingDir: e.target.value })}
                       placeholder="应用启动时的工作目录"
-                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="flex-1 px-4 py-2 border-content rounded-lg bg-surface-secondary text-content-primary placeholder-text-content-secondary focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                     <button
                       onClick={handleSelectWorkingDir}
-                      className="px-3 py-2 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-lg transition-colors"
+                      className="px-3 py-2 bg-menu-hover hover:bg-menu-hover rounded-lg transition-colors"
                       title="选择目录"
                     >
-                      <Folder size={18} className="text-gray-600 dark:text-gray-300" />
+                      <Folder size={18} className="text-content-primary" />
                     </button>
                   </div>
                 </div>
@@ -1294,11 +1294,11 @@ const QuickLaunch: React.FC = () => {
                       onChange={(e) => setEditingApp({ ...editingApp, runAsAdmin: e.target.checked })}
                       className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">以管理员身份运行</span>
+                    <span className="text-sm text-content-primary">以管理员身份运行</span>
                   </label>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-content-primary mb-2">
                     窗口模式
                   </label>
                   <Select
@@ -1309,7 +1309,7 @@ const QuickLaunch: React.FC = () => {
                       { value: 'minimized', label: '最小化' },
                       { value: 'maximized', label: '最大化' },
                     ]}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-4 py-2 border-content rounded-lg bg-surface-secondary text-content-primary focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
               </div>
@@ -1328,7 +1328,7 @@ const QuickLaunch: React.FC = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-content-primary mb-2">
               分类名称
             </label>
             <input
@@ -1336,13 +1336,13 @@ const QuickLaunch: React.FC = () => {
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="输入分类名称..."
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-2 border-content rounded-lg bg-surface-secondary text-content-primary placeholder-text-content-secondary focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
         </div>
       </Modal>
 
-      {/* P2: 热键设置 Modal */}
+      {/* 热键设置 */}
       <Modal
         isOpen={showHotkeyDialog}
         onClose={() => {
@@ -1356,7 +1356,7 @@ const QuickLaunch: React.FC = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-content-primary mb-2">
               快捷键
             </label>
             <div className="relative">
@@ -1367,7 +1367,7 @@ const QuickLaunch: React.FC = () => {
                 onChange={() => {}}
                 placeholder="按下组合键（如 Ctrl+Alt+1），Esc 清除"
                 readOnly
-                className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-[var(--color-primary)]"
+                className="w-full px-4 py-2 border-content rounded-lg bg-surface-secondary text-content-primary placeholder-text-content-secondary focus:outline-none focus:border-[var(--color-primary)]"
                 style={{ borderWidth: '1px', borderColor: 'var(--color-border)' }}
               />
               {hotkeyInput && (
@@ -1381,12 +1381,12 @@ const QuickLaunch: React.FC = () => {
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <p className="text-xs text-content-secondary mt-2">
               支持修饰键: Ctrl / Alt / Shift / Win + 字母或数字。按 Esc 清除当前输入，留空保存则取消绑定。
             </p>
           </div>
           {hotkeyTargetApp?.hotkey && (
-            <div className="text-sm text-gray-600 dark:text-gray-300">
+            <div className="text-sm text-content-primary">
               当前热键: <span className="font-mono font-semibold">{hotkeyTargetApp.hotkey}</span>
             </div>
           )}
@@ -1404,7 +1404,7 @@ const QuickLaunch: React.FC = () => {
         cancelText="取消"
       />
 
-      {/* P2: 失效应用修复 Modal */}
+      {/* 失效应用修复 */}
       <Modal
         isOpen={showInvalidDialog}
         onClose={() => {
@@ -1420,10 +1420,10 @@ const QuickLaunch: React.FC = () => {
       >
         <div className="space-y-2 max-h-96 overflow-auto">
           {invalidApps.map(app => (
-            <div key={app.id} className="flex items-center justify-between gap-2 p-2 rounded border border-gray-200 dark:border-gray-700">
+            <div key={app.id} className="flex items-center justify-between gap-2 p-2 rounded border border-content">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{app.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{app.path}</p>
+                <p className="text-sm font-medium text-content-primary truncate">{app.name}</p>
+                <p className="text-xs text-content-secondary truncate">{app.path}</p>
               </div>
               <div className="flex items-center gap-1">
                 <button

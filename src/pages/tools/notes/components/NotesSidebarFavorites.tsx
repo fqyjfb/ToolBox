@@ -41,9 +41,9 @@ const NotesSidebarFavorites: React.FC<NotesSidebarFavoritesProps> = ({
   if (favoriteItems.length === 0) return null;
 
   return (
-    <div className="flex-shrink-0 border-b border-gray-100 dark:border-gray-800 px-2 py-2">
+    <div className="flex-shrink-0 px-2 py-2">
       <button
-        className="flex w-full items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-400 px-1 py-1 hover:text-primary transition-colors"
+        className="flex w-full items-center justify-between text-xs font-medium text-content-secondary px-1 py-1 hover:text-primary transition-colors"
         onClick={() => toggleSection('favorites')}
       >
         <span className="flex items-center gap-1">
@@ -62,7 +62,7 @@ const NotesSidebarFavorites: React.FC<NotesSidebarFavoritesProps> = ({
                 className={`group flex items-center gap-1 rounded px-2 py-1 text-xs cursor-pointer transition-colors ${
                   isActive
                     ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/40 dark:hover:bg-gray-800/30'
+                    : 'text-content-primary hover:bg-surface-secondary dark:hover:bg-content-primary'
                 } ${!item.found ? 'opacity-60' : ''}`}
                 onClick={() => {
                   const node = findInTree(fileTree, item.path);
@@ -73,7 +73,7 @@ const NotesSidebarFavorites: React.FC<NotesSidebarFavoritesProps> = ({
                 <Star className="h-3 w-3 flex-shrink-0 fill-yellow-400 text-yellow-500" />
                 <span className="flex-1 truncate">{item.name}</span>
                 <button
-                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-yellow-500 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 text-content-tertiary hover:text-yellow-500 transition-opacity"
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleFavorite(item.path);

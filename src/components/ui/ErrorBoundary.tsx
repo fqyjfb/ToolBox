@@ -50,11 +50,11 @@ class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 max-w-md w-full text-center">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+          <div className="bg-surface rounded-lg shadow-sm border border-content p-6 max-w-md w-full text-center">
+            <h2 className="text-xl font-semibold text-content-primary mb-2">
               页面出现错误
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+            <p className="text-content-secondary mb-4 text-sm">
               {this.state.error?.message || '抱歉，页面加载时发生了错误。请尝试刷新页面。'}
             </p>
             <div className="flex items-center justify-center gap-3">
@@ -66,15 +66,15 @@ class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="px-4 py-2 bg-surface-secondary text-content-primary hover:bg-menu-hover transition-colors"
               >
                 刷新页面
               </button>
             </div>
             {this.state.errorInfo && (
-              <details className="mt-4 text-left text-sm text-gray-500 dark:text-gray-400">
+              <details className="mt-4 text-left text-sm text-content-secondary">
                 <summary className="cursor-pointer">查看详情</summary>
-                <pre className="mt-2 p-3 bg-gray-100 dark:bg-gray-900 rounded-lg overflow-x-auto text-xs">
+                <pre className="mt-2 p-3 bg-surface-secondary rounded-lg overflow-x-auto text-xs">
                   {this.state.errorInfo.componentStack}
                 </pre>
               </details>

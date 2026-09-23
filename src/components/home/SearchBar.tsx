@@ -33,7 +33,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ searchTypes }) => {
               onClick={() => {
                 setActiveSearchType(type.id);
               }}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${activeSearchType === type.id ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${activeSearchType === type.id ? 'bg-surface-secondary text-content-primary shadow-md' : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'}`}
             >
               {type.name}
             </button>
@@ -47,13 +47,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ searchTypes }) => {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && performSearch()}
             placeholder={searchTypes.find(type => type.id === activeSearchType)?.placeholder || '搜索...'}
-            className="w-full px-4 py-1.5 pl-10 border border-gray-300/50 dark:border-gray-600/50 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/80 bg-white/50 dark:bg-gray-800/50 dark:text-white backdrop-blur-sm transition-all duration-300 ease-in-out focus:border-blue-400/50 text-sm"
+            className="w-full px-4 py-1.5 pl-10 rounded-full focus:outline-none bg-surface-50 text-content-primary backdrop-blur-sm transition-all duration-300 ease-in-out text-sm"
           />
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 transition-all duration-300 ease-in-out" size={18} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-content-secondary transition-all duration-300 ease-in-out" size={18} />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-all duration-300 ease-in-out"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary transition-all duration-300 ease-in-out"
             >
               <X size={18} />
             </button>

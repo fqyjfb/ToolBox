@@ -380,7 +380,7 @@ const NavPage: React.FC = () => {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">加载中...</p>
+          <p className="text-content-tertiary">加载中...</p>
         </div>
       </div>
     )
@@ -525,8 +525,8 @@ const NavPage: React.FC = () => {
                   onClick={() => switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
                     getActiveSubCategoryId(activeMainCategoryId) === subCategory.id
-                      ? 'bg-gray-800/60 text-white dark:bg-white/60 dark:text-gray-800 shadow-sm backdrop-blur-sm'
-                      : 'bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm'
+                      ? 'bg-primary text-button-text shadow-sm'
+                      : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
                   }`}
                 >
                   {subCategory.name}
@@ -541,7 +541,7 @@ const NavPage: React.FC = () => {
                     e.stopPropagation()
                     setShowMoreSubCategories(!showMoreSubCategories)
                   }}
-                  className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 hover:shadow-sm backdrop-blur-sm transition-all duration-300 flex items-center gap-1"
+                  className="px-3 py-1 rounded-full text-xs font-medium text-content-secondary dark:text-content-secondary hover:bg-menu-hover dark:hover:bg-menu-hover hover:shadow-sm transition-all duration-300 flex items-center gap-1"
                 >
                   <span>更多</span>
                   <ChevronDown className="w-3 h-3" />
@@ -554,7 +554,7 @@ const NavPage: React.FC = () => {
           {favoritesView && (
             <div className="subcategory-nav flex flex-wrap gap-2">
               <button
-                className="px-3 py-1 rounded-full text-xs font-medium bg-gray-800/60 text-white dark:bg-white/60 dark:text-gray-800 shadow-sm backdrop-blur-sm"
+                className="px-3 py-1 rounded-full text-xs font-medium bg-primary text-button-text shadow-sm"
               >
                 全部收藏
               </button>
@@ -570,13 +570,13 @@ const NavPage: React.FC = () => {
             onClick={() => setShowMoreCategories(false)}
           />
           <div 
-            className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown-lg"
+            className="absolute bg-surface shadow-lg rounded-lg py-1 z-50 min-w-dropdown-lg"
             style={{ left: `${categoryDropdownPosition.left}px`, top: `${categoryDropdownPosition.top + 4}px` }}
           >
             {overflowCategories.map((category) => (
               <button
                 key={category.id}
-                className={`block w-full text-left px-4 py-2 text-sm ${!favoritesView && activeMainCategoryId === category.id ? 'bg-gray-100 dark:bg-gray-700 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`block w-full text-left px-4 py-2 text-sm ${!favoritesView && activeMainCategoryId === category.id ? 'bg-surface-secondary font-medium' : 'hover:bg-menu-hover'}`}
                 onClick={(e) => {
                   e.stopPropagation()
                   switchMainCategory(category.id)
@@ -598,13 +598,13 @@ const NavPage: React.FC = () => {
             onClick={() => setShowMoreSubCategories(false)}
           />
           <div 
-            className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-50 min-w-dropdown"
+            className="absolute bg-surface shadow-lg rounded-lg py-1 z-50 min-w-dropdown"
             style={{ left: `${subCategoryDropdownPosition.left}px`, top: `${subCategoryDropdownPosition.top + 4}px` }}
           >
             {overflowSubCategories.map((subCategory) => (
               <button
                 key={subCategory.id}
-                className={`block w-full text-left px-4 py-2 text-sm ${getActiveSubCategoryId(activeMainCategoryId) === subCategory.id ? 'bg-gray-100 dark:bg-gray-700 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`block w-full text-left px-4 py-2 text-sm ${getActiveSubCategoryId(activeMainCategoryId) === subCategory.id ? 'bg-surface-secondary font-medium' : 'hover:bg-menu-hover'}`}
                 onClick={(e) => {
                   e.stopPropagation()
                   switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)
@@ -631,8 +631,8 @@ const NavPage: React.FC = () => {
                     <Search className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">搜索结果</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">找到了 {searchResults.length} 个与 "{searchQuery}" 相关的网址</p>
+                    <h2 className="text-xl font-bold text-content-primary">搜索结果</h2>
+                    <p className="text-sm text-content-secondary">找到了 {searchResults.length} 个与 "{searchQuery}" 相关的网址</p>
                   </div>
                 </div>
 
@@ -645,10 +645,10 @@ const NavPage: React.FC = () => {
           ) : searchResults.length === 0 && isSearchActive && bookmarksData !== undefined ? (
             <div className="search-empty-state">
               <div className="empty-icon">
-                <Search className="w-12 h-12 text-gray-300 dark:text-gray-600" />
+                <Search className="w-12 h-12 text-content-secondary dark:text-content-secondary" />
               </div>
-              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">未找到相关结果</h3>
-              <p className="text-gray-500 dark:text-gray-400 mt-2">试试其他关键词或浏览分类发现更多网址</p>
+              <h3 className="text-lg font-medium text-content-primary mt-4">未找到相关结果</h3>
+              <p className="text-content-secondary mt-2">试试其他关键词或浏览分类发现更多网址</p>
             </div>
           ) : (
             <>
@@ -660,8 +660,8 @@ const NavPage: React.FC = () => {
                       {favorites.map((bookmark) => renderBookmarkCard(bookmark))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg">
-                      <p className="text-gray-500 dark:text-gray-400">暂无收藏</p>
+                    <div className="text-center py-8 bg-white/70 dark:bg-content-primary/$1 backdrop-blur-sm rounded-lg">
+                      <p className="text-content-secondary">暂无收藏</p>
                       <button
                         onClick={() => setFavoritesView(false)}
                         className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
@@ -681,8 +681,8 @@ const NavPage: React.FC = () => {
                       {visibleBookmarks.map((bookmark) => renderBookmarkCard(bookmark))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 bg-gray-50/80 dark:bg-gray-700/50 backdrop-blur-sm rounded-lg">
-                      <p className="text-gray-500">该分类下暂无网址</p>
+                    <div className="text-center py-8 bg-surface-secondary dark:bg-surface rounded-lg">
+                      <p className="text-content-tertiary">该分类下暂无网址</p>
                     </div>
                   )}
                 </div>
@@ -693,10 +693,10 @@ const NavPage: React.FC = () => {
       </div>
       
       {/* 移动端分类导航按钮 */}
-      <div className="md:hidden p-4 border-b border-gray-200/50 dark:border-gray-700/50">
+      <div className="md:hidden p-4">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="flex items-center justify-between w-full px-4 py-2 bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm rounded-lg"
+          className="flex items-center justify-between w-full px-4 py-2 bg-surface-secondary dark:bg-surface rounded-lg"
         >
           <span>{activeMainCategoryId ? categoriesTree.find(c => c.id === activeMainCategoryId)?.name || '网站分类' : '网站分类'}</span>
           <Menu className="w-5 h-5" />
@@ -704,7 +704,7 @@ const NavPage: React.FC = () => {
         
         {/* 移动端分类菜单 */}
         {isMobileMenuOpen && (
-          <div className="mt-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-lg shadow-lg">
+          <div className="mt-2 bg-white/80 dark:bg-content-primary/$1 backdrop-blur-sm border border-content/$1 dark:border-content/$1 rounded-lg shadow-lg">
             <nav className="p-2 space-y-1">
               <button
                 onClick={() => {
@@ -730,8 +730,8 @@ const NavPage: React.FC = () => {
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors font-medium ${
                     activeMainCategoryId === category.id
-                      ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-800'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-content-primary text-white dark:bg-white dark:text-content-primary'
+                      : 'text-content-primary hover:bg-menu-hover'
                   }`}
                 >
                   <span>{category.name}</span>

@@ -180,18 +180,18 @@ const About: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4">
           <div className="flex items-center">
             <img loading="lazy" src="./favicon.svg" alt="ToolBox Logo" className="w-12 h-12 mr-4" />
             <div>
               <h2 className="text-sm font-semibold">ToolBox</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">一站式工具平台</p>
+              <p className="text-xs text-content-secondary mt-0.5">一站式工具平台</p>
             </div>
           </div>
         </div>
         <div className="p-4 space-y-4">
           <div className="flex justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400">版本</span>
+            <span className="text-xs text-content-secondary">版本</span>
             <div className="flex items-center gap-2">
               <span className="text-sm">{webVersion}</span>
               {updateStatus === 'available' && (
@@ -202,112 +202,112 @@ const About: React.FC = () => {
             </div>
           </div>
           <div className="flex justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400">Electron 版本</span>
+            <span className="text-xs text-content-secondary">Electron 版本</span>
             <span className="text-sm">{electronVersion || '41.2.0'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400">Chrome 版本</span>
+            <span className="text-xs text-content-secondary">Chrome 版本</span>
             <span className="text-sm">{chromeVersion || '127.0.6533.120'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400">React 版本</span>
+            <span className="text-xs text-content-secondary">React 版本</span>
             <span className="text-sm">19.2.5</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400">TypeScript 版本</span>
+            <span className="text-xs text-content-secondary">TypeScript 版本</span>
             <span className="text-sm">6.0.2</span>
           </div>
           {!isElectron && (
             <div className="flex justify-between">
-              <span className="text-xs text-gray-500 dark:text-gray-400">运行环境</span>
+              <span className="text-xs text-content-secondary">运行环境</span>
               <span className="text-sm text-green-600 dark:text-green-400">网页版</span>
             </div>
           )}
         </div>
         {isElectron && (
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <div className="p-4">
+            <h3 className="text-xs font-semibold text-content-secondary uppercase tracking-wider mb-3 flex items-center gap-2">
               <Monitor className="w-3.5 h-3.5" />
               系统信息
             </h3>
             {loadingSystemInfo ? (
               <div className="flex items-center justify-center py-4">
                 <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" />
-                <span className="ml-2 text-sm text-gray-500">正在获取系统信息...</span>
+                <span className="ml-2 text-sm text-content-tertiary">正在获取系统信息...</span>
               </div>
             ) : systemInfo ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Monitor className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">操作系统</span>
+                    <Monitor className="w-4 h-4 text-content-tertiary" />
+                    <span className="text-xs text-content-secondary">操作系统</span>
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-gray-100 truncate max-w-[200px]" title={systemInfo.os_version}>
+                  <span className="text-sm text-content-primary truncate max-w-[200px]" title={systemInfo.os_version}>
                     {systemInfo.os_version}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <HardDrive className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">系统架构</span>
+                    <HardDrive className="w-4 h-4 text-content-tertiary" />
+                    <span className="text-xs text-content-secondary">系统架构</span>
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">{systemInfo.os_arch}</span>
+                  <span className="text-sm text-content-primary">{systemInfo.os_arch}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Cpu className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">处理器</span>
+                    <Cpu className="w-4 h-4 text-content-tertiary" />
+                    <span className="text-xs text-content-secondary">处理器</span>
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-gray-100 truncate max-w-[200px]" title={systemInfo.cpu_info}>
+                  <span className="text-sm text-content-primary truncate max-w-[200px]" title={systemInfo.cpu_info}>
                     {systemInfo.cpu_info}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Cpu className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">CPU 核心数</span>
+                    <Cpu className="w-4 h-4 text-content-tertiary" />
+                    <span className="text-xs text-content-secondary">CPU 核心数</span>
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">{systemInfo.cpu_cores} 核</span>
+                  <span className="text-sm text-content-primary">{systemInfo.cpu_cores} 核</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <HardDrive className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">内存</span>
+                    <HardDrive className="w-4 h-4 text-content-tertiary" />
+                    <span className="text-xs text-content-secondary">内存</span>
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">
+                  <span className="text-sm text-content-primary">
                     {formatBytes(systemInfo.available_memory)} 可用 / {formatBytes(systemInfo.total_memory)} 总计
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">计算机名</span>
+                    <User className="w-4 h-4 text-content-tertiary" />
+                    <span className="text-xs text-content-secondary">计算机名</span>
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">{systemInfo.computer_name}</span>
+                  <span className="text-sm text-content-primary">{systemInfo.computer_name}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">当前用户</span>
+                    <User className="w-4 h-4 text-content-tertiary" />
+                    <span className="text-xs text-content-secondary">当前用户</span>
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">{systemInfo.user_name}</span>
+                  <span className="text-sm text-content-primary">{systemInfo.user_name}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">系统运行时间</span>
+                    <Clock className="w-4 h-4 text-content-tertiary" />
+                    <span className="text-xs text-content-secondary">系统运行时间</span>
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">
+                  <span className="text-sm text-content-primary">
                     {Math.floor(systemInfo.uptime_seconds / 86400)} 天 {Math.floor((systemInfo.uptime_seconds % 86400) / 3600)} 小时 {Math.floor((systemInfo.uptime_seconds % 3600) / 60)} 分钟
                   </span>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-gray-500 text-center py-4">无法获取系统信息</p>
+              <p className="text-sm text-content-tertiary text-center py-4">无法获取系统信息</p>
             )}
           </div>
         )}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4">
           <div className="flex items-center justify-center gap-3">
             <UpdateButton
               status={updateStatus}

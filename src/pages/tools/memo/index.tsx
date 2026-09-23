@@ -35,10 +35,10 @@ const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = (
           e.stopPropagation();
           onCopy(url);
         }}
-        className="p-0.5 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        className="p-0.5 bg-surface-secondary rounded hover:bg-menu-hover transition-colors"
         title="复制链接"
       >
-        <Copy size={10} className="text-gray-600 dark:text-gray-400" />
+        <Copy size={10} className="text-content-secondary" />
       </button>
       <button
         onClick={() => openUrl(url)}
@@ -58,7 +58,7 @@ const getPriorityStyle = (priority: string) => {
       return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300';
     case 'low':
     default:
-      return 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400';
+      return 'bg-surface-secondary text-content-secondary';
   }
 };
 
@@ -103,8 +103,8 @@ const SortableCategoryButton: React.FC<{
         onContextMenu={onContextMenu}
         className={`w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors text-left flex items-center gap-2 ${
           isSelected
-            ? 'bg-gray-800 text-white'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            ? 'bg-primary text-button-text'
+            : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
         }`}
         style={{ borderLeft: `3px solid ${category.color}` }}
       >
@@ -648,9 +648,9 @@ const MemoPage: React.FC = () => {
             <button
               onClick={() => setSelectedCategory(null)}
               className={`w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors text-left flex items-center gap-2 ${
-                selectedCategory === null 
-                  ? 'bg-gray-800 text-white' 
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                selectedCategory === null
+                  ? 'bg-primary text-button-text'
+                  : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
               }`}
             >
               <Tag size={14} />
@@ -688,11 +688,11 @@ const MemoPage: React.FC = () => {
               </div>
             ) : memos.length === 0 ? (
               <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <StickyNote className="w-12 h-12 text-gray-400 mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">暂无备忘录</p>
+                <StickyNote className="w-12 h-12 text-content-tertiary mb-4" />
+                <p className="text-content-secondary text-sm mb-4">暂无备忘录</p>
                 <button
                   onClick={() => setShowAddMemoModal(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-primary text-button-text rounded-lg hover:bg-surface transition-colors text-sm"
                 >
                   <Plus size={14} />
                   创建一条
@@ -712,7 +712,7 @@ const MemoPage: React.FC = () => {
                         <div 
                           key={memo.id}
                           ref={colIndex === columnCount - 1 && index === colMemos.length - 1 ? lastMemoRef : null}
-                          className="rounded-md p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600/30 transition-colors"
+                          className="rounded-md p-3 cursor-pointer hover:bg-surface-secondary dark:hover:bg-surface/$1 transition-colors"
                           style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
                           onClick={() => handleOpenPreview(memo)}
                           onContextMenu={(e) => handleContextMenu(e, 'memo', memo.id)}
@@ -724,12 +724,12 @@ const MemoPage: React.FC = () => {
                                   <AlertCircle size={8} />
                                   {getPriorityLabel(memo.priority)}
                                 </span>
-                                <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                <h3 className="text-sm font-medium text-content-primary truncate">
                                   {memo.title}
                                 </h3>
                               </div>
                               {memo.content && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words max-h-32 overflow-hidden">
+                                <p className="text-xs text-content-secondary whitespace-pre-wrap break-words max-h-32 overflow-hidden">
                                   {memo.content.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
                                     if (part.match(/^https?:\/\/[^\s]+$/)) {
                                       return <LinkWithCopy key={index} url={part} onCopy={handleCopyUrl} />;
@@ -746,7 +746,7 @@ const MemoPage: React.FC = () => {
                                 e.stopPropagation();
                                 handleCopyMemoContent(memo);
                               }}
-                              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                              className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary transition-colors"
                               title="复制内容"
                             >
                               <Copy size={12} />
@@ -759,7 +759,7 @@ const MemoPage: React.FC = () => {
                                 {memo.category_name}
                               </span>
                             )}
-                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                            <span className="text-xs text-content-secondary ml-auto">
                               {new Date(memo.created_at).toLocaleDateString()}
                             </span>
                           </div>
@@ -807,7 +807,7 @@ const MemoPage: React.FC = () => {
                     { value: '', label: '全部' },
                     ...categories.map((category) => ({ value: category.id, label: category.name }))
                   ]}
-                  className="text-xs font-medium px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                  className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface text-content-secondary dark:text-content-secondary"
                 />
               </div>
             </div>
@@ -824,7 +824,7 @@ const MemoPage: React.FC = () => {
                 onChange={(e) => setNewMemoContent(e.target.value)}
                 placeholder="内容"
                 rows={4}
-                className="w-full bg-transparent resize-none focus:outline-none text-sm text-gray-600 dark:text-gray-300 placeholder-gray-400"
+                className="w-full bg-transparent resize-none focus:outline-none text-sm text-gray-600 dark:text-content-secondary placeholder-gray-400"
               />
             </div>
           </div>
@@ -859,7 +859,7 @@ const MemoPage: React.FC = () => {
                       { value: '', label: '全部' },
                       ...categories.map((category) => ({ value: category.id, label: category.name }))
                     ]}
-                    className="text-xs font-medium px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                    className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface text-content-secondary dark:text-content-secondary"
                   />
                 </div>
               </div>
@@ -876,7 +876,7 @@ const MemoPage: React.FC = () => {
                   onChange={(e) => setEditingMemo({ ...editingMemo, content: e.target.value })}
                   placeholder="内容"
                   rows={4}
-                  className="w-full bg-transparent resize-none focus:outline-none text-sm text-gray-600 dark:text-gray-300 placeholder-gray-400"
+                  className="w-full bg-transparent resize-none focus:outline-none text-sm text-gray-600 dark:text-content-secondary placeholder-gray-400"
                 />
               </div>
             </div>
@@ -901,14 +901,14 @@ const MemoPage: React.FC = () => {
               className={modalControlClass}
             />
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-600 dark:text-gray-400">颜色</label>
+              <label className="text-sm text-content-secondary">颜色</label>
               <input
                 type="color"
                 value={newCategoryColor}
                 onChange={(e) => setNewCategoryColor(e.target.value)}
-                className="w-10 h-10 rounded cursor-pointer border border-gray-300 dark:border-gray-600"
+                className="w-10 h-10 rounded cursor-pointer border border-content"
               />
-              <span className="text-sm text-gray-500 dark:text-gray-400">{newCategoryColor}</span>
+              <span className="text-sm text-content-secondary">{newCategoryColor}</span>
             </div>
           </div>
         </Modal>
@@ -931,14 +931,14 @@ const MemoPage: React.FC = () => {
                 className={modalControlClass}
               />
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600 dark:text-gray-400">颜色</label>
+                <label className="text-sm text-content-secondary">颜色</label>
                 <input
                   type="color"
                   value={editingCategory.color}
                   onChange={(e) => setEditingCategory({ ...editingCategory, color: e.target.value })}
-                  className="w-10 h-10 rounded cursor-pointer border border-gray-300 dark:border-gray-600"
+                  className="w-10 h-10 rounded cursor-pointer border border-content"
                 />
-                <span className="text-sm text-gray-500 dark:text-gray-400">{editingCategory.color}</span>
+                <span className="text-sm text-content-secondary">{editingCategory.color}</span>
               </div>
             </div>
           )}
@@ -969,7 +969,7 @@ const MemoPage: React.FC = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs text-content-secondary">
                     {new Date(previewMemo.created_at).toLocaleString()}
                   </span>
                   <button
@@ -980,7 +980,7 @@ const MemoPage: React.FC = () => {
                       setShowEditMemoModal(true);
                       handleClosePreview();
                     }}
-                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary transition-colors"
                     title="编辑"
                   >
                     <Edit size={14} />
@@ -990,12 +990,12 @@ const MemoPage: React.FC = () => {
               <div className="rounded-lg p-4 min-h-[120px] max-h-64 overflow-auto relative group scrollbar-hide" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
                 <button
                   onClick={() => handleCopyMemoContent(previewMemo)}
-                  className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                  className="absolute top-2 right-2 p-1.5 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary opacity-0 group-hover:opacity-100 transition-opacity rounded hover:bg-menu-hover dark:hover:bg-surface"
                   title="复制内容"
                 >
                   <Copy size={14} />
                 </button>
-                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words">
+                <p className="text-sm text-gray-600 dark:text-content-secondary whitespace-pre-wrap break-words">
                   {(previewMemo.content || '暂无内容').split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
                     if (part.match(/^https?:\/\/[^\s]+$/)) {
                       return <LinkWithCopy key={index} url={part} onCopy={handleCopyUrl} />;

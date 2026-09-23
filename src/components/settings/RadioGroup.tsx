@@ -21,7 +21,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({ value, options, onChange }) => 
           className={`px-3 py-1 text-xs rounded-md transition-colors ${
             value === option.value
               ? 'bg-primary text-button-text'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
           }`}
         >
           {option.label}
