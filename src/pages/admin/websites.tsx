@@ -599,7 +599,7 @@ const AdminWebsitesPage: React.FC = () => {
                     onContextMenu={(e) => handleBookmarkContextMenu(e, bookmark)}
                   >
                     <td className="px-4 py-3 sm:px-6">
-                      <div className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1" onClick={() => openBookmarkUrl(bookmark.url)}>
+                      <div className="text-sm font-medium text-primary hover:text-primary-hover transition-colors flex items-center gap-1 cursor-pointer" onClick={() => openBookmarkUrl(bookmark.url)}>
                         {bookmark.title}
                         <ExternalLink size={14} />
                       </div>
@@ -610,7 +610,7 @@ const AdminWebsitesPage: React.FC = () => {
                     <td className="px-4 py-3 sm:px-6">
                       <button
                         onClick={(e) => { e.stopPropagation(); openBookmarkUrl(bookmark.url) }}
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline flex items-center gap-1 truncate max-w-truncate-xl"
+                        className="text-sm text-primary hover:text-primary-hover transition-colors flex items-center gap-1 truncate max-w-truncate-xl"
                         title="点击打开网站"
                       >
                         <span className="truncate">{bookmark.url}</span>

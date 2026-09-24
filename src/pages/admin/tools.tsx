@@ -545,7 +545,7 @@ const ToolsPage: React.FC = () => {
                           />
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
-                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer" onClick={() => openUrl(tool.download_url)}>
+                          <span className="text-sm font-medium text-primary hover:text-primary-hover transition-colors flex items-center gap-1 cursor-pointer" onClick={() => openUrl(tool.download_url)}>
                             {tool.title}
                             <ExternalLink size={14} />
                           </span>

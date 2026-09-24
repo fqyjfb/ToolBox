@@ -242,7 +242,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
             {data.map((item, index) => (
               <li
                 key={index}
-                className={`news-item text-xs ${item.link ? 'cursor-pointer hover:text-blue-500' : ''}`}
+                className={`news-item text-xs ${item.link ? 'cursor-pointer hover:text-primary-hover' : ''}`}
                 onClick={() => item.link && openUrl(item.link)}
               >
                 <span className="news-title" title={item.description}>

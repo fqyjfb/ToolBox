@@ -577,7 +577,7 @@ const QuickReplyPage: React.FC = () => {
                 <div className="flex items-start gap-3">
                   <button 
                     onClick={() => handleCopyQuickReply(quickReply.content)}
-                    className="p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded transition-colors flex-shrink-0"
+                    className="p-2 text-content-secondary hover:text-primary rounded transition-colors flex-shrink-0"
                   >
                     <Clipboard className="w-4 h-4" />
                   </button>
@@ -590,7 +590,7 @@ const QuickReplyPage: React.FC = () => {
                             href={part} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="text-blue-600 dark:text-blue-400 hover:underline"
+                            className="text-primary hover:text-primary-hover transition-colors"
                           >
                             {part}
                           </a>

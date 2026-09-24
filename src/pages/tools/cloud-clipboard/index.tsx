@@ -36,7 +36,7 @@ const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = (
       </button>
       <button
         onClick={() => openUrl(url)}
-        className="text-blue-600 dark:text-blue-400 hover:underline text-sm bg-transparent border-none p-0 cursor-pointer"
+        className="text-primary hover:text-primary-hover transition-colors text-sm bg-transparent border-none p-0 cursor-pointer"
       >
         {url}
       </button>
@@ -622,7 +622,7 @@ const CloudClipboardPage: React.FC = () => {
                 <div className="flex items-start gap-3">
                   <button 
                     onClick={() => handleCopyItem(item.content)}
-                    className="p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded transition-colors flex-shrink-0"
+                    className="p-2 text-content-secondary hover:text-primary rounded transition-colors flex-shrink-0"
                   >
                     <Clipboard className="w-4 h-4" />
                   </button>

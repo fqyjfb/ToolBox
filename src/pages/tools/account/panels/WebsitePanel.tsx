@@ -576,7 +576,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
               {account.url ? (
                 <button 
                   onClick={(e) => { e.stopPropagation(); openUrl(account.url); }}
-                  className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate"
+                  className="flex items-center gap-1 text-primary hover:text-primary-hover transition-colors truncate"
                   title="点击打开网站"
                 >
                   <span className="truncate">{account.name}</span>

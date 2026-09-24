@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { X, Copy, Share2, ExternalLink } from 'lucide-react';
 import { Shop, SocialAccount, Email, Phone, Company, Credential, GeneralAccount } from '../../types/account';
 import { WebsiteAccount } from '../../types/websiteAccount';
@@ -168,7 +168,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
         <span className="text-sm text-content-secondary font-medium">{label}</span>
         <button
           onClick={() => openUrl(url)}
-          className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate max-w-[200px]"
+          className="flex items-center gap-1 text-primary hover:text-primary-hover transition-colors truncate max-w-[200px]"
           title="点击打开网站"
         >
           <span className="truncate">{url}</span>

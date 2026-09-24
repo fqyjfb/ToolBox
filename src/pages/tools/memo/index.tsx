@@ -42,7 +42,7 @@ const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = (
       </button>
       <button
         onClick={() => openUrl(url)}
-        className="text-blue-600 dark:text-blue-400 hover:underline text-xs bg-transparent border-none p-0 cursor-pointer"
+        className="text-primary hover:text-primary-hover transition-colors text-xs bg-transparent border-none p-0 cursor-pointer"
       >
         {url}
       </button>

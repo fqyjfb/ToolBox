@@ -349,7 +349,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
                         {general.website ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); openUrl(general.website); }}
-                            className="font-medium text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                            className="font-medium text-sm text-primary hover:text-primary-hover transition-colors"
                             title={`点击打开: ${general.website}`}
                           >
                             {general.platform_name}

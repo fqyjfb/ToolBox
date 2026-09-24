@@ -328,7 +328,7 @@ const About: React.FC = () => {
               </p>
               <button
                 onClick={openDownloadPage}
-                className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                className="mt-2 text-xs text-primary hover:text-primary-hover transition-colors inline-flex items-center gap-1"
               >
                 下载最新版本 <ExternalLink size={12} />
               </button>
