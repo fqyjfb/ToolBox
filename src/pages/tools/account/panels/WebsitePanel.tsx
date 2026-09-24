@@ -76,8 +76,8 @@ const SortableCategoryItem: React.FC<{
         onContextMenu={onContextMenu}
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
           isActive
-            ? 'bg-gray-800 text-white dark:bg-menu-hover shadow-sm'
-            : 'text-gray-600 hover:bg-menu-hover dark:text-content-tertiary dark:hover:bg-surface'
+            ? 'bg-primary text-button-text shadow-sm'
+            : 'text-content-secondary hover:bg-menu-hover'
         }`}
       >
         <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(category.name).dot}`}></div>
@@ -618,7 +618,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
             <div className="flex-1 category-dropdown-container relative">
               <div className="rounded-lg px-3 py-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button onClick={() => handleCategorySelect(null)} className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 ${selectedCategory === null ? 'bg-gray-800 text-white dark:bg-menu-hover' : 'bg-gray-200 dark:bg-surface text-content-secondary hover:bg-gray-300 dark:hover:bg-menu-hover'}`}>
+                  <button onClick={() => handleCategorySelect(null)} className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 ${selectedCategory === null ? 'bg-primary text-button-text shadow-sm' : 'text-content-secondary hover:bg-menu-hover'}`}>
                     全部
                   </button>
                   {categories.length === 0 ? (
@@ -653,7 +653,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
                                 getCategoryColor={getCategoryColor}
                               />
                               {category.children && category.children.length > 0 && expandedCategories.has(category.id) && (
-                                <div className="absolute top-full left-0 mt-1 bg-surface rounded-lg shadow-lg border border-content z-10 min-w-[120px] py-1">
+                                <div className="absolute top-full left-0 mt-1 bg-bg-primary rounded-lg shadow-lg border border-border z-10 min-w-[120px] py-1">
                                   {category.children.map(child => (
                                     <button
                                       key={child.id}
@@ -664,8 +664,8 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
                                       onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
                                       className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
                                         selectedCategory === child.id
-                                          ? 'bg-surface-secondary text-content-primary dark:text-white'
-                                          : 'text-gray-600 dark:text-content-secondary hover:bg-surface-secondary dark:hover:bg-surface'
+                                          ? 'bg-surface-secondary text-content-primary'
+                                          : 'text-text-primary hover:bg-bg-secondary'
                                       }`}
                                     >
                                       <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(child.name).dot}`}></div>
@@ -685,7 +685,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => openCategoryModal()} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-gray-200 dark:bg-surface dark:hover:bg-menu-hover rounded-full transition-colors">
+            <button onClick={() => openCategoryModal()} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-content-secondary hover:text-content-primary hover:bg-menu-hover bg-surface-secondary rounded-full transition-colors">
               <Tag size={14} />
               添加分类
             </button>

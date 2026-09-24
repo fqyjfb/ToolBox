@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Database, Trash2, Loader2, HardDrive, Download, Upload, AlertTriangle, BarChart3, Package, FolderOpen } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useStorageStore } from '../../store/storageStore';
@@ -307,7 +307,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
 
       <div className="flex items-center justify-between px-4 py-3 settings-section-header">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+          <div className="w-5 h-5 flex items-center justify-center text-primary">
             <HardDrive size={16} />
           </div>
           <h2 className="text-sm font-semibold text-content-primary">存储使用情况</h2>
@@ -353,20 +353,20 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             导入
           </button>
           <button
-            onClick={() => { 
-              refreshStorageInfo(); 
-              if (user?.id) refreshStorageStats(user.id); 
-            }}
-            disabled={isLoading || isStatsLoading}
-            className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            title="刷新统计"
-          >
-            {isLoading || isStatsLoading ? (
-              <Loader2 className="w-3 h-3 text-gray-500 animate-spin" />
-            ) : (
-              <Database className="w-3 h-3 text-gray-500" />
-            )}
-          </button>
+              onClick={() => {
+                refreshStorageInfo();
+                if (user?.id) refreshStorageStats(user.id);
+              }}
+              disabled={isLoading || isStatsLoading}
+              className="p-1 rounded-md hover:bg-menu-hover transition-colors"
+              title="刷新统计"
+            >
+              {isLoading || isStatsLoading ? (
+                <Loader2 className="w-3 h-3 text-muted animate-spin" />
+              ) : (
+                <Database className="w-3 h-3 text-muted" />
+              )}
+            </button>
         </div>
       </div>
       <div className="p-4">
@@ -425,7 +425,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       <div className="">
         <div className="flex items-center justify-between px-4 py-3 settings-section-header">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+            <div className="w-5 h-5 flex items-center justify-center text-primary">
               <HardDrive size={16} />
             </div>
             <h2 className="text-sm font-semibold text-content-primary">数据存储路径</h2>
@@ -466,31 +466,31 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       <div className="">
         <div className="flex items-center justify-between px-4 py-3 settings-section-header">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 flex items-center justify-center text-blue-600">
+            <div className="w-5 h-5 flex items-center justify-center text-primary">
               <BarChart3 size={16} />
             </div>
             <h2 className="text-sm font-semibold text-content-primary">图标缓存管理</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={refreshIconCacheStats}
-              disabled={isRefreshingIconCache}
-              className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              title="刷新统计"
-            >
-              {isRefreshingIconCache ? (
-                <Loader2 className="w-3 h-3 text-gray-500 animate-spin" />
-              ) : (
-                <Database className="w-3 h-3 text-gray-500" />
-              )}
-            </button>
+            onClick={refreshIconCacheStats}
+            disabled={isRefreshingIconCache}
+            className="p-1 rounded-md hover:bg-menu-hover transition-colors"
+            title="刷新统计"
+          >
+            {isRefreshingIconCache ? (
+              <Loader2 className="w-3 h-3 text-muted animate-spin" />
+            ) : (
+              <Database className="w-3 h-3 text-muted" />
+            )}
+          </button>
           </div>
         </div>
         <div className="p-4">
           <div className="grid grid-cols-5 gap-3 mb-4">
             <div className="bg-surface-secondary rounded-lg p-3">
               <div className="text-xs text-content-secondary mb-1">缓存图标数量</div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+              <div className="text-lg font-bold text-card-value">
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
@@ -500,7 +500,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </div>
             <div className="bg-surface-secondary rounded-lg p-3">
               <div className="text-xs text-content-secondary mb-1">缓存总大小</div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+              <div className="text-lg font-bold text-card-value">
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
@@ -510,7 +510,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </div>
             <div className="bg-surface-secondary rounded-lg p-3">
               <div className="text-xs text-content-secondary mb-1">通用图标缓存</div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+              <div className="text-lg font-bold text-card-value">
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
@@ -520,7 +520,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </div>
             <div className="bg-surface-secondary rounded-lg p-3">
               <div className="text-xs text-content-secondary mb-1">插件图标缓存</div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+              <div className="text-lg font-bold text-card-value">
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
@@ -530,7 +530,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </div>
             <div className="bg-surface-secondary rounded-lg p-3">
               <div className="text-xs text-content-secondary mb-1">应用图标缓存</div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+              <div className="text-lg font-bold text-card-value">
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
@@ -568,7 +568,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             <button
               onClick={() => clearIconCache('app')}
               disabled={clearingCacheTarget !== null || appCacheStats.count === 0}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-surface-secondary text-content-primary hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-surface-secondary text-content-primary hover:bg-menu-hover disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {clearingCacheTarget === 'app' ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -598,14 +598,14 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       </div>
 
       <div className="">
-        <div className="flex items-center gap-2 px-4 py-3 settings-section-header">
-          <div className="w-5 h-5 flex items-center justify-center text-orange-600">
-            <Trash2 size={16} />
-          </div>
-          <h2 className="text-sm font-semibold text-content-primary">应用缓存管理</h2>
+        <div className="flex items-center gap-2 px-4 py-3 settings-section-header hover:bg-menu-hover">
+            <div className="w-5 h-5 flex items-center justify-center text-orange-600">
+              <Trash2 size={16} />
+            </div>
+            <h2 className="text-sm font-semibold text-content-primary">应用缓存管理</h2>
         </div>
         <div className="">
-          <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <div className="flex items-center justify-between px-4 py-2">
             <div>
               <span className="text-sm text-content-primary">清除缓存</span>
               <p className="text-xs text-content-secondary mt-0.5">
@@ -617,7 +617,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
               disabled={btnLoading}
               className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-md transition-colors ${
                 btnLoading
-                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  ? 'bg-menu-hover cursor-not-allowed opacity-50 text-content-primary'
                   : 'bg-orange-500 hover:bg-orange-600 text-white'
               }`}
             >

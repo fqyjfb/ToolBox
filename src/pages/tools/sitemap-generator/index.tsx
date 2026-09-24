@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import { Map, Copy, Download, FileText } from 'lucide-react';
 import { useToolPage } from '../../../hooks/useToolPage';
 import Select from '../../../components/ui/Select';
@@ -110,27 +110,27 @@ const SitemapGeneratorPage: React.FC = () => {
           <h2 className="text-lg font-semibold text-content-primary">Sitemap 生成器</h2>
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={generateSitemap}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover transition-colors"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors"
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-3.5 h-3.5" />
             生成 XML
           </button>
-          <button 
+          <button
             onClick={() => handleCopy(output)}
             disabled={!output}
-            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Copy className="w-4 h-4" />
+            <Copy className="w-3.5 h-3.5" />
             复制
           </button>
-          <button 
+          <button
             onClick={handleDownload}
             disabled={!output}
-            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
             下载
           </button>
         </div>
@@ -159,28 +159,28 @@ const SitemapGeneratorPage: React.FC = () => {
                     value={entry.url}
                     onChange={(e) => updateEntry(index, 'url', e.target.value)}
                     placeholder="https://example.com/path"
-                    className="px-3 py-2 border border-content rounded-lg bg-white dark:bg-menu-hover text-content-primary text-sm"
+                    className="px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary text-sm"
                   />
                   
                   <Select
                     value={entry.priority}
                     onChange={(v) => updateEntry(index, 'priority', v)}
                     options={priorityOptions.map(opt => ({ value: opt, label: opt }))}
-                    className="px-3 py-2 border border-content rounded-lg bg-white dark:bg-menu-hover text-content-primary text-sm"
+                    className="px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary text-sm"
                   />
                   
                   <Select
                     value={entry.changefreq}
                     onChange={(v) => updateEntry(index, 'changefreq', v)}
                     options={changefreqOptions}
-                    className="px-3 py-2 border border-content rounded-lg bg-white dark:bg-menu-hover text-content-primary text-sm"
+                    className="px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary text-sm"
                   />
                   
                   <input
                     type="date"
                     value={entry.lastmod}
                     onChange={(e) => updateEntry(index, 'lastmod', e.target.value)}
-                    className="px-3 py-2 border border-content rounded-lg bg-white dark:bg-menu-hover text-content-primary text-sm"
+                    className="px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary text-sm"
                   />
                 </div>
               </div>

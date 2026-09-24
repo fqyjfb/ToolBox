@@ -65,11 +65,11 @@ const UrlEncodePage: React.FC = () => {
           <AtSign className="w-6 h-6 text-content-secondary" />
           <h2 className="text-lg font-semibold text-content-primary">URL 编码解码</h2>
         </div>
-        <button 
+        <button
           onClick={loadSample}
-          className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
+          className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
         >
-          <FileText className="w-4 h-4" />
+          <FileText className="w-3.5 h-3.5" />
           示例
         </button>
       </div>
@@ -93,9 +93,9 @@ const UrlEncodePage: React.FC = () => {
               <button
                 onClick={() => handleCopy(encoded)}
                 disabled={!encoded}
-                className="flex items-center gap-1 px-2 py-1 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs"
+                className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <Copy className="w-3 h-3" />
+                <Copy className="w-3.5 h-3.5" />
                 复制
               </button>
             </div>
@@ -105,7 +105,7 @@ const UrlEncodePage: React.FC = () => {
               <textarea
                 value={encoded}
                 readOnly
-                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-white dark:bg-menu-hover text-content-primary font-mono text-sm resize-none outline-none"
+                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
                 placeholder="编码结果..."
               />
             )}
@@ -117,9 +117,9 @@ const UrlEncodePage: React.FC = () => {
               <button
                 onClick={() => handleCopy(decoded)}
                 disabled={!decoded}
-                className="flex items-center gap-1 px-2 py-1 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs"
+                className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <Copy className="w-3 h-3" />
+                <Copy className="w-3.5 h-3.5" />
                 复制
               </button>
             </div>
@@ -129,7 +129,7 @@ const UrlEncodePage: React.FC = () => {
               <textarea
                 value={decoded}
                 readOnly
-                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-white dark:bg-menu-hover text-content-primary font-mono text-sm resize-none outline-none"
+                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
                 placeholder="解码结果..."
               />
             )}

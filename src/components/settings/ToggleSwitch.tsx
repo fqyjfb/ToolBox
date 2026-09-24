@@ -26,7 +26,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
         type="button"
         onClick={() => onChange(!isChecked)}
         className={`relative inline-flex items-center h-5 rounded-full w-9 transition-colors focus:outline-none focus:ring-1.5 focus:ring-offset-1.5 focus:ring-primary ${
-          isChecked ? 'bg-primary' : 'bg-surface-secondary'
+          isChecked ? 'bg-switch-active-bg' : 'bg-switch-bg'
         }`}
       >
         <span
@@ -36,7 +36,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
         />
       </button>
       {text && (
-        <span className="text-xs text-gray-500 whitespace-nowrap">{text}</span>
+        <span className="text-xs text-content-secondary whitespace-nowrap">{text}</span>
       )}
     </div>
   );

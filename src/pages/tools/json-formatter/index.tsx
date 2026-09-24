@@ -149,32 +149,32 @@ const JsonFormatterPage: React.FC = () => {
           <h2 className="text-lg font-semibold text-content-primary">JSON 格式化工具</h2>
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-3.5 h-3.5" />
             示例
           </button>
-          <button 
+          <button
             onClick={() => handleCopy(output)}
             disabled={!output}
-            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Copy className="w-4 h-4" />
+            <Copy className="w-3.5 h-3.5" />
             复制
           </button>
-          <button 
+          <button
             onClick={handleDownload}
             disabled={!output}
-            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
             下载
           </button>
-          <button 
+          <button
             onClick={handleClear}
-            className="p-2 text-content-secondary hover:bg-menu-hover dark:hover:bg-surface rounded-lg transition-colors"
+            className="p-1.5 text-content-secondary hover:bg-menu-hover dark:hover:bg-surface rounded-md transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -185,13 +185,13 @@ const JsonFormatterPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleFormat}
-            className="px-4 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover transition-colors text-sm font-medium"
+            className="px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors"
           >
             格式化
           </button>
           <button
             onClick={handleMinify}
-            className="px-4 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover transition-colors text-sm font-medium"
+            className="px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors"
           >
             压缩
           </button>
@@ -204,7 +204,8 @@ const JsonFormatterPage: React.FC = () => {
               value={indentStyle}
               onChange={(v) => setIndentStyle(v as '2' | '4' | 'tab')}
               options={[{ value: '2', label: '2 空格' }, { value: '4', label: '4 空格' }, { value: 'tab', label: 'Tab' }]}
-              className="px-3 py-1 border border-content rounded-lg bg-surface text-content-primary"
+              size="sm" dense
+              className="bg-surface text-content-primary"
             />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">

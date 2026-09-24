@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShortcutItem } from '../../types/settings';
+import { useThemeStore } from '../../store/themeStore';
 
 interface ShortcutRowProps {
   shortcut: ShortcutItem;
@@ -13,6 +14,8 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, allShortcuts, onUpd
   const [conflict, setConflict] = useState<ShortcutItem | null>(null);
 
   const displayKey = currentKey || shortcut.cmd.replace(/CommandOrControl/gi, 'Ctrl');
+  // 订阅 themeKey，确保自定义主题保存后快捷键行强制重渲染
+  useThemeStore((s) => s.themeKey);
 
   const capitalize = (str: string) => {
     if (!str) return str;
@@ -107,12 +110,12 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, allShortcuts, onUpd
         onClick={handleToggle}
         disabled={!!conflict}
         className={`relative inline-flex items-center h-5 rounded-full w-9 transition-colors focus:outline-none focus:ring-1.5 focus:ring-offset-1.5 focus:ring-primary ${
-          shortcut.isOpen === 1 ? 'bg-primary' : 'bg-surface-secondary'
+          shortcut.isOpen === 1 ? 'bg-switch-active-bg' : 'bg-switch-bg'
         } ${conflict ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <span
-          className={`inline-block w-3 h-3 transform rounded-full transition-transform bg-white dark:bg-white ${
-            shortcut.isOpen === 1 ? 'translate-x-5' : 'translate-x-1'
+          className={`inline-block w-3 h-3 transform rounded-full transition-all ${
+            shortcut.isOpen === 1 ? 'translate-x-5 switch-thumb-active' : 'translate-x-1 switch-thumb-inactive'
           }`}
         />
       </button>

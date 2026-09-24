@@ -146,8 +146,8 @@ const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
               title={path}
               className={`group flex min-w-0 max-w-[180px] cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
                 isActive
-                  ? 'bg-white/60 dark:bg-content-primary/$1 text-primary shadow-sm dark:text-primary'
-                  : 'text-gray-600 hover:bg-surface-secondary/$1 dark:text-content-tertiary dark:hover:bg-content-primary/$1'
+                  ? 'bg-menu-hover dark:bg-menu-hover text-primary shadow-sm'
+                  : 'bg-tab-inactive dark:bg-tab-inactive-dark text-content-secondary hover:bg-surface-secondary dark:hover:bg-menu-hover'
               }`}
             >
               <span className="truncate">{basenameOf(path)}</span>

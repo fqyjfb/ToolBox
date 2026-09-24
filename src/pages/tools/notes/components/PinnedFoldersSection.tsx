@@ -136,8 +136,8 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
               draggable
               className={`group flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
                 currentViewPath === pinned.path
-                  ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
-                  : 'text-content-primary hover:bg-surface-secondary dark:hover:bg-content-primary'
+                  ? 'bg-menu-hover dark:bg-menu-hover text-primary font-medium'
+                  : 'text-content-primary hover:bg-menu-hover dark:hover:bg-menu-hover'
               } ${pinnedDragOverIndex === index && pinnedDragIndex !== index ? 'ring-2 ring-accent' : ''} ${pinnedDragIndex === index ? 'opacity-50' : ''}`}
               onClick={() => onSwitchToFolder(pinned.path)}
               onDragStart={(e) => {

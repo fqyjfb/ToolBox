@@ -14,11 +14,14 @@ import ToggleSwitch from '../../components/settings/ToggleSwitch'
 import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager'
 import CachedIcon from '../../components/ui/CachedIcon'
 import Select from '../../components/ui/Select'
+import { useThemeStore } from '../../store/themeStore'
 
 const AdminWebsitesPage: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const getCurrentUser = useAuthStore((s) => s.getCurrentUser)
   const addToast = useToastStore((state) => state.addToast)
+  // 订阅 themeKey，确保自定义主题保存后强制重渲染
+  useThemeStore((s) => s.themeKey);
   const queryClient = useQueryClient()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -471,7 +474,7 @@ const AdminWebsitesPage: React.FC = () => {
         {activeTab === 'bookmarks' && (
           <button
             onClick={handleAddBookmark}
-            className="flex items-center gap-1 px-2 py-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-content-secondary bg-surface-secondary rounded-md hover:bg-menu-hover transition-colors"
           >
             <Plus className="w-3 h-3" />
             添加网址

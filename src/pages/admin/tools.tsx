@@ -12,6 +12,7 @@ import ToggleSwitch from '../../components/settings/ToggleSwitch'
 import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager';
 import Select from '../../components/ui/Select'
 import { openUrl } from '../../services/browserService'
+import { useThemeStore } from '../../store/themeStore'
 
 const isForeignDomain = (url: string): boolean => {
   try {
@@ -130,6 +131,8 @@ const ToolsPage: React.FC = () => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tool: Tool } | null>(null)
 
   const addToast = useToastStore((s) => s.addToast)
+  // 订阅 themeKey，确保自定义主题保存后强制重渲染
+  useThemeStore((s) => s.themeKey);
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['toolCategories'],
@@ -407,7 +410,7 @@ const ToolsPage: React.FC = () => {
         {activeTab === 'tools' && (
           <button
             onClick={handleAddTool}
-            className="flex items-center gap-1 px-2 py-1 text-content-secondary hover:text-content-primary hover:bg-menu-hover text-xs font-medium transition-colors rounded"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-content-secondary bg-surface-secondary rounded-md hover:bg-menu-hover transition-colors"
           >
             <Plus className="w-3 h-3" />
             添加工具

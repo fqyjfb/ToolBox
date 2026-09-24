@@ -19,7 +19,7 @@ const ToolGrid: React.FC<ToolGridProps> = ({ tools, onToolClick }) => {
         onClick={() => onToolClick(tool.path)}
       >
         <IconComponent className="w-10 h-10" />
-        <span className="tools-name" style={{ color: tool.textColor }}>{tool.name}</span>
+        <span className="tools-name" style={{ color: '#FFFFFF' }}>{tool.name}</span>
       </div>
     );
   };
@@ -56,7 +56,7 @@ const ToolGrid: React.FC<ToolGridProps> = ({ tools, onToolClick }) => {
             onClick={() => onToolClick(tools[4].path)}
           >
             {React.createElement(iconMap[tools[4].iconName] || iconMap.Clipboard, { className: 'w-10 h-10' })}
-            <span className="tools-name" style={{ color: tools[4].textColor }}>{tools[4].name}</span>
+            <span className="tools-name" style={{ color: '#FFFFFF' }}>{tools[4].name}</span>
           </div>
         )}
         

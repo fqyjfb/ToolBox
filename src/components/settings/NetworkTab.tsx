@@ -103,7 +103,7 @@ const TestButton: React.FC<{ keyName: string; url: string }> = ({ keyName, url }
 const DefaultButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <button
     onClick={onClick}
-    className="px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+    className="px-2 py-1 text-xs font-medium text-content-secondary rounded-md hover:bg-menu-hover transition-colors"
     title="清空（使用默认值）"
   >
     默认
@@ -341,7 +341,7 @@ const NetworkTab: React.FC = () => {
           <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-button-text bg-primary rounded-md hover:bg-primary-hover transition-colors disabled:opacity-50">
             {isSaving && <Loader2 size={14} className="animate-spin" />}
             <Save size={14} />
-            保存配置
+            保存
           </button>
         </div>
       </SettingCard>

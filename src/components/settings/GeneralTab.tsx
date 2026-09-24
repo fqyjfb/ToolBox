@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, MapPin, Loader2 } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
@@ -190,7 +190,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               onChange={(e) => onWindowSizeChange('height', e.target.value)}
               className="w-20 px-2 py-1 text-xs border border-content bg-surface text-content-primary"
             />
-            <span className="text-xs text-gray-500 ml-1">px</span>
+            <span className="text-xs text-content-secondary dark:text-content-tertiary ml-1">px</span>
           </div>
         </SettingRow>
         <SettingRow label="开机启动">

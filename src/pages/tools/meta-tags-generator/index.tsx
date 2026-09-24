@@ -65,18 +65,18 @@ const MetaTagsGeneratorPage: React.FC = () => {
           <h2 className="text-lg font-semibold text-content-primary">Meta 标签生成器</h2>
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => handleCopy(generateMetaTags())}
-            className="flex items-center gap-2 px-3 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors"
           >
-            <Copy className="w-4 h-4" />
+            <Copy className="w-3.5 h-3.5" />
             复制
           </button>
-          <button 
+          <button
             onClick={handleDownload}
-            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
             下载
           </button>
         </div>

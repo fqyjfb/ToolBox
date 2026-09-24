@@ -3,6 +3,7 @@ import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, Refresh
 import { useShallow } from 'zustand/shallow';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
+import { useThemeStore } from '../../store/themeStore';
 import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
 import {
   ShortcutItem,
@@ -35,6 +36,8 @@ const Settings: React.FC = () => {
     setVisible: s.setVisible,
     setPosition: s.setPosition,
   })));
+  // 订阅 themeKey，确保自定义主题保存后 Settings 强制重渲染
+  useThemeStore((s) => s.themeKey);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -256,6 +259,7 @@ const Settings: React.FC = () => {
         localStorageService.clearAllExcept([
           STORAGE_KEYS.THEME,
           STORAGE_KEYS.CUSTOM_THEME,
+          STORAGE_KEYS.CUSTOM_BG_IMAGES,
           STORAGE_KEYS.BROWSER_MODE,
           STORAGE_KEYS.WEATHER_CITY,
           STORAGE_KEYS.SIDEBAR,
@@ -432,8 +436,8 @@ const Settings: React.FC = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center justify-start gap-2 px-3 py-2 text-sm font-medium transition-colors mx-1 mb-1 rounded-lg ${
                 activeTab === tab.id
-                  ? 'text-primary bg-blue-50/60 dark:bg-blue-900/30'
-                  : 'text-content-secondary hover:text-content-primary hover:bg-menu-hover'
+                  ? 'sidebar-nav-item--active'
+                  : 'text-content-primary hover:bg-menu-hover dark:hover:bg-menu-hover'
               }`}
               title={tab.label}
             >
@@ -444,7 +448,7 @@ const Settings: React.FC = () => {
         </div>
         <div className="p-2">
           <button
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg text-content-secondary hover:text-content-primary hover:bg-menu-hover"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg text-content-primary hover:bg-menu-hover dark:hover:bg-content-hover"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
           >

@@ -223,7 +223,7 @@ const ExchangePage: React.FC = () => {
             <LoadingSpinner size="lg" />
           </div>
         ) : (
-          <div className="bg-surface-secondary rounded-lg p-3 mb-3 border border-gray-200 dark:border-content">
+          <div className="bg-surface-secondary rounded-lg p-3 mb-3">
             <div className="flex justify-between items-center mb-1.5">
               <h2 className="text-sm font-semibold text-content-primary dark:text-white">汇率计算器</h2>
               <div className="text-xs text-content-secondary font-medium">
@@ -287,11 +287,11 @@ const ExchangePage: React.FC = () => {
         )}
 
         {!loading && exchangeData && (
-          <div className="bg-surface-secondary rounded-lg p-3 mb-3 border border-gray-200 dark:border-content">
+          <div className="bg-surface-secondary rounded-lg p-3 mb-3">
           <h2 className="text-sm font-semibold text-content-primary dark:text-white mb-1.5">常用汇率 (基于 {fromCurrency})</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
             {Object.entries(commonRates).map(([code, rate]) => (
-              <div key={code} className="bg-surface p-1.5 rounded-md border border-gray-200 dark:border-content hover:shadow-md transition-all duration-200">
+              <div key={code} className="bg-surface p-1.5 rounded-md hover:shadow-md transition-all duration-200">
                 <div className="flex flex-col gap-0.25">
                   <div className="font-semibold text-content-primary dark:text-white text-xs">{code}</div>
                   <div className="text-xs text-content-secondary truncate">{getCurrencyName(code)}</div>
@@ -306,7 +306,7 @@ const ExchangePage: React.FC = () => {
         )}
 
         {!loading && exchangeData && (
-          <div className="bg-surface-secondary rounded-lg p-3 border border-gray-200 dark:border-content max-h-[300px] flex flex-col">
+          <div className="bg-surface-secondary rounded-lg p-3 max-h-[300px] flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-1.5 gap-1.5 flex-shrink-0">
               <h2 className="text-sm font-semibold text-content-primary dark:text-white">完整汇率数据 (1 {fromCurrency} =)</h2>
               <div className="w-full sm:w-56">
@@ -326,20 +326,20 @@ const ExchangePage: React.FC = () => {
               <table className="w-full border-collapse">
                 <thead className="sticky top-0 bg-menu-hover">
                   <tr>
-                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-content-primary dark:text-white border-b border-gray-200 dark:border-content w-16">货币</th>
-                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-content-primary dark:text-white border-b border-gray-200 dark:border-content">名称</th>
-                    <th className="px-2 py-1.5 text-right text-xs font-semibold text-content-primary dark:text-white border-b border-gray-200 dark:border-content w-24">汇率</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-content-primary dark:text-white w-16">货币</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-content-primary dark:text-white">名称</th>
+                    <th className="px-2 py-1.5 text-right text-xs font-semibold text-content-primary dark:text-white w-24">汇率</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.entries(filteredRates).map(([code, rate]) => (
-                    <tr 
-                      key={code} 
-                      className={`${(code === fromCurrency || code === toCurrency) ? 'bg-blue-50 dark:bg-blue-900/30' : ''} hover:bg-surface-secondary dark:hover:bg-surface/$1 transition-colors`}
+                    <tr
+                      key={code}
+                      className={`${(code === fromCurrency || code === toCurrency) ? 'bg-primary/10 dark:bg-primary/20' : ''} hover:bg-surface-secondary dark:hover:bg-content-primary transition-colors`}
                     >
-                      <td className="px-2 py-1.5 text-xs font-semibold text-content-primary dark:text-white border-b border-gray-200 dark:border-content">{code}</td>
-                      <td className="px-2 py-1.5 text-xs text-content-secondary border-b border-gray-200 dark:border-content">{getCurrencyName(code)}</td>
-                      <td className="px-2 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-content text-right font-mono">
+                      <td className="px-2 py-1.5 text-xs font-semibold text-content-primary">{code}</td>
+                      <td className="px-2 py-1.5 text-xs text-content-secondary">{getCurrencyName(code)}</td>
+                      <td className="px-2 py-1.5 text-xs font-medium text-primary text-right font-mono">
                         {formatRate(rate)}
                       </td>
                     </tr>

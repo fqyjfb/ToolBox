@@ -62,6 +62,8 @@ const ThemeTab: React.FC = () => {
       setCustomTheme: s.setCustomTheme,
     }))
   );
+  // 订阅 themeKey 强制重渲染，确保自定义主题保存后更新
+  useThemeStore((s) => s.themeKey);
 
   // 启用自定义：优先用上次保存的配置（切回预设不会清除它），否则以当前明暗基色默认值起步
   const handleCustomClick = () => {

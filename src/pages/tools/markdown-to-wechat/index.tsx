@@ -569,12 +569,12 @@ console.log(theme);
           <button onClick={handleInsertTemplate} className="p-2 rounded-lg hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="插入模板">
             <LayoutTemplate className="w-5 h-5 text-content-secondary" />
           </button>
-          <button onClick={copyWechatHtml} className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover transition-colors text-sm">
-            <Copy className="w-4 h-4" />
+          <button onClick={copyWechatHtml} className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors">
+            <Copy className="w-3.5 h-3.5" />
             复制公众号内容
           </button>
-          <button onClick={copyPreviewHtml} className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm">
-            <FileText className="w-4 h-4" />
+          <button onClick={copyPreviewHtml} className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors">
+            <FileText className="w-3.5 h-3.5" />
             复制 HTML
           </button>
           <button onClick={handleClear} className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900 transition-colors" title="清空">
@@ -584,16 +584,16 @@ console.log(theme);
       </div>
 
       <div className="flex gap-2 mb-4">
-        <button onClick={() => setActiveTab('edit')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'edit' ? 'bg-primary text-button-text' : 'bg-gray-200 dark:bg-surface text-content-primary hover:bg-gray-300 dark:hover:bg-menu-hover'}`}>
-          <Edit3 className="w-4 h-4" />
+        <button onClick={() => setActiveTab('edit')} className={`flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab === 'edit' ? 'bg-primary text-button-text' : 'bg-surface-secondary dark:bg-content-primary text-content-primary hover:bg-menu-hover dark:hover:bg-content-hover'}`}>
+          <Edit3 className="w-3.5 h-3.5" />
           编辑
         </button>
-        <button onClick={() => setActiveTab('preview')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'preview' ? 'bg-primary text-button-text' : 'bg-gray-200 dark:bg-surface text-content-primary hover:bg-gray-300 dark:hover:bg-menu-hover'}`}>
-          <Eye className="w-4 h-4" />
+        <button onClick={() => setActiveTab('preview')} className={`flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab === 'preview' ? 'bg-primary text-button-text' : 'bg-surface-secondary dark:bg-content-primary text-content-primary hover:bg-menu-hover dark:hover:bg-content-hover'}`}>
+          <Eye className="w-3.5 h-3.5" />
           预览
         </button>
-        <button onClick={() => setActiveTab('split')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'split' ? 'bg-primary text-button-text' : 'bg-gray-200 dark:bg-surface text-content-primary hover:bg-gray-300 dark:hover:bg-menu-hover'}`}>
-          <Eye className="w-4 h-4" />
+        <button onClick={() => setActiveTab('split')} className={`flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab === 'split' ? 'bg-primary text-button-text' : 'bg-surface-secondary dark:bg-content-primary text-content-primary hover:bg-menu-hover dark:hover:bg-content-hover'}`}>
+          <Eye className="w-3.5 h-3.5" />
           分屏查看
         </button>
       </div>

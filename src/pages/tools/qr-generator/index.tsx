@@ -68,20 +68,20 @@ const QrGeneratorPage: React.FC = () => {
           <h2 className="text-lg font-semibold text-content-primary">二维码生成器</h2>
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => handleCopy(qrDataUrl)}
             disabled={!qrDataUrl}
-            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Copy className="w-4 h-4" />
+            <Copy className="w-3.5 h-3.5" />
             复制链接
           </button>
-          <button 
+          <button
             onClick={handleDownload}
             disabled={!qrDataUrl}
-            className="flex items-center gap-2 px-3 py-2 bg-primary text-button-text rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
             下载
           </button>
         </div>
@@ -168,9 +168,9 @@ const QrGeneratorPage: React.FC = () => {
             
             <button
               onClick={generateQR}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-3 py-1 text-xs font-medium bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3.5 h-3.5" />
               生成二维码
             </button>
           </div>

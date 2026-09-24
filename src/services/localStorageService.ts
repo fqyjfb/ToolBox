@@ -48,6 +48,8 @@ export const STORAGE_KEYS = {
   PLUGINS: 'toolbox_plugins',
   // 自定义主题配置（含背景图 data URI）；与 THEME='custom' 联用，缓存清理时需保留
   CUSTOM_THEME: 'toolbox_custom_theme',
+  // 自定义主题背景图片库（多图管理）；缓存清理时需保留
+  CUSTOM_BG_IMAGES: 'toolbox_custom_bg_images',
 };
 
 export const localStorageService = {

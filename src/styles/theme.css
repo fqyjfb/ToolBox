@@ -34,6 +34,9 @@
   --color-bg-secondary: #F4F4F5;
   --color-bg-tertiary: #F4F4F5;
   --color-menu-hover: #E4E4E7;
+  --color-tab-inactive: rgba(0, 0, 0, 0.06);
+  --color-muted: #9ca3af;
+  --color-card-value: #111827;
   
   --color-border: #E4E4E7;
   --color-border-light: #E4E4E7;
@@ -43,7 +46,10 @@
   
   --color-sidebar: #FFFFFF;
   --color-sidebar-item: #F4F4F5;
-  --color-sidebar-item-active: #3B82F6;
+  --color-sidebar-item-active: #e9f5ff;
+  --color-sidebar-item-active-text: #0f766e;
+  --color-sidebar-item-text: #18181B;
+  --color-button-text: #FFFFFF;
   
   --color-toast-success-bg: #edfbd8;
   --color-toast-success-border: #84d65a;
@@ -215,6 +221,9 @@
   --color-bg-secondary: #1A1D23;
   --color-bg-tertiary: #262A33;
   --color-menu-hover: #2D3139;
+  --color-tab-inactive-dark: rgba(148, 163, 184, 0.10);
+  --color-muted: #6b7280;
+  --color-card-value: #E5E7EB;
   
   --color-border: #2D3139;
   --color-border-light: #2D3139;
@@ -224,7 +233,10 @@
   
   --color-sidebar: #1A1D23;
   --color-sidebar-item: #262A33;
-  --color-sidebar-item-active: #EAF1F8;
+  --color-sidebar-item-active: #1e3a5f;
+  --color-sidebar-item-active-text: #FFFFFF;
+  --color-sidebar-item-text: #94A3B8;
+  --color-button-text: #FFFFFF;
   
   --color-toast-success-bg: #166534;
   --color-toast-success-border: #22c55e;
@@ -261,7 +273,9 @@
   --color-favorites-text: #a8f0ed;
   
   --color-switch-bg: #2D3139;
+  --color-switch-thumb: #FFFFFF;
   --color-switch-active-bg: #EAF1F8;
+  --color-switch-active-thumb: #2D3139;
   
   --tools-grid-item-size: 88px;
   --tools-grid-gap: 8px;
@@ -1007,52 +1021,53 @@ body.dark {
 }
 
 .update-button.default {
-  background-color: var(--color-button-primary);
+  background-color: #111827;
   color: #FFFFFF;
 }
 
 .update-button.default:hover:not(:disabled) {
-  background-color: var(--color-button-primary-hover);
+  background-color: #0a0f18;
   color: #FFFFFF;
 }
 
 .update-button.success {
-  background-color: var(--color-success);
+  background-color: #111827;
 }
 
 .update-button.success:hover:not(:disabled) {
-  filter: brightness(0.9);
+  background-color: #0a0f18;
 }
 
 .update-button.primary {
-  background-color: var(--color-primary);
+  background-color: #111827;
 }
 
 .update-button.primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  background-color: #0a0f18;
 }
 
 .update-button.error {
-  background-color: var(--color-error);
+  background-color: #111827;
 }
 
 .update-button.error:hover:not(:disabled) {
-  filter: brightness(0.9);
+  background-color: #0a0f18;
 }
 
 .update-button.disabled {
-  background-color: var(--color-text-tertiary);
-  color: var(--color-bg-primary);
+  background-color: #111827;
+  color: #FFFFFF;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .update-button:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(39, 93, 126, 0.5);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
 }
 
 .update-icon {
-  background: var(--color-bg-primary);
+  background: rgba(255, 255, 255, 0.15);
   height: 20px;
   width: 20px;
   border-radius: 50%;
@@ -1068,13 +1083,14 @@ body.dark {
   transition: all 0.5s;
   width: 14px;
   height: 14px;
+  color: #FFFFFF;
 }
 
 .update-button.default .update-icon svg { color: #FFFFFF; }
-.update-button.success .update-icon svg { color: var(--color-success); }
-.update-button.primary .update-icon svg { color: var(--color-primary); }
-.update-button.error .update-icon svg { color: var(--color-error); }
-.update-button.disabled .update-icon svg { color: var(--color-text-secondary); }
+.update-button.success .update-icon svg { color: #FFFFFF; }
+.update-button.primary .update-icon svg { color: #FFFFFF; }
+.update-button.error .update-icon svg { color: #FFFFFF; }
+.update-button.disabled .update-icon svg { color: #FFFFFF; }
 
 .update-button:hover:not(:disabled) .update-icon svg {
   transform: rotate(360deg);
@@ -1097,7 +1113,7 @@ body.dark {
 
 .update-progress-fill {
   height: 100%;
-  background: var(--color-bg-primary);
+  background: #FFFFFF;
   border-radius: 1px;
   transition: width 0.3s ease;
 }
@@ -1126,6 +1142,8 @@ body.dark {
 .text-content-primary  { color: var(--color-text-primary); }
 .text-content-secondary { color: var(--color-text-secondary); }
 .text-content-tertiary { color: var(--color-text-tertiary); }
+.text-muted            { color: var(--color-muted); }
+.text-card-value       { color: var(--color-card-value); }
 
 /* 纯色背景 */
 .bg-surface      { background-color: var(--color-bg-primary); }
@@ -1133,20 +1151,18 @@ body.dark {
 .bg-card         { background-color: var(--color-card); }
 .bg-menu-hover   { background-color: var(--color-menu-hover); }
 .bg-border       { background-color: var(--color-border); }
+.bg-tab-inactive { background-color: var(--color-tab-inactive); }
+.bg-tab-inactive-dark { background-color: var(--color-tab-inactive-dark); }
 
 /* 边框颜色 */
 .border-content     { border-color: var(--color-border); }
 .border-content-light { border-color: var(--color-border-light); }
 
 /* 滑动开关圆点颜色 */
-/* 关闭态：次要文字色，在中性灰背景上足够对比 */
-.switch-thumb-inactive { background-color: var(--color-text-secondary); }
-/* 开启态：difference 混合模式使圆点自动反转为背景互补色，
-   确保无论激活背景是深是浅都始终清晰可见 */
-.switch-thumb-active {
-  background-color: #FFFFFF;
-  mix-blend-mode: difference;
-}
+/* 关闭态：默认白色，在灰色背景上足够对比；自定义主题可通过 --color-switch-thumb 覆盖 */
+.switch-thumb-inactive { background-color: var(--color-switch-thumb); }
+/* 开启态：默认白色，跟随激活背景色；自定义主题可通过 --color-switch-active-thumb 覆盖 */
+.switch-thumb-active { background-color: var(--color-switch-active-thumb); }
 
 /* 半透明表面（与 Sidebar.css / Settings.css 现有 color-mix 模式一致） */
 .bg-surface-40       { background-color: color-mix(in srgb, var(--color-bg-primary)    40%, transparent); }
@@ -1205,7 +1221,13 @@ body[data-custom-bg]::before {
   --color-sidebar: color-mix(in srgb, var(--ct-sidebar) var(--ct-surface-opacity), transparent);
   --color-sidebar-item: color-mix(in srgb, var(--ct-sidebar-item) var(--ct-surface-opacity), transparent);
   --color-sidebar-item-active: color-mix(in srgb, var(--ct-sidebar-item-active) var(--ct-surface-opacity), transparent);
+  --color-sidebar-item-active-text: var(--ct-sidebar-item-active-text);
+  --color-sidebar-item-text: var(--ct-sidebar-item-text);
   --color-menu-hover: color-mix(in srgb, var(--ct-menu-hover) var(--ct-surface-opacity), transparent);
+  --color-tab-inactive: color-mix(in srgb, var(--ct-menu-hover) 40%, transparent);
+  --color-tab-inactive-dark: color-mix(in srgb, var(--ct-menu-hover) 25%, transparent);
+  --color-muted: var(--ct-muted);
+  --color-card-value: var(--ct-card-value);
 
   --color-border: var(--ct-border);
   --color-border-light: var(--ct-border-light);
@@ -1226,6 +1248,8 @@ body[data-custom-bg]::before {
 
   --color-switch-bg: var(--ct-switch-bg);
   --color-switch-active-bg: var(--ct-switch-active-bg);
+  --color-switch-thumb: var(--ct-switch-thumb);
+  --color-switch-active-thumb: var(--ct-switch-active-thumb);
 
   --color-favorites: var(--ct-favorites);
   --color-favorites-hover: var(--ct-favorites-hover);
@@ -1234,4 +1258,13 @@ body[data-custom-bg]::before {
   --color-tooltip: var(--ct-tooltip);
   --color-tooltip-text: var(--ct-tooltip-text);
   --color-tooltip-border: var(--ct-tooltip-border);
+
+  --color-admin-button: #dda36c;
+  --color-admin-button-hover: #c4935a;
+  --color-admin-1: #dda36c;
+  --color-admin-2: #67aaf7;
+  --color-admin-3: #bc8acf;
+  --color-admin-4: #f5a623;
+  --color-admin-5: #00bcd4;
+  --color-admin-6: #e91e63;
 }

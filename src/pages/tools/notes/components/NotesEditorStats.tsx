@@ -10,7 +10,7 @@ interface NotesEditorStatsProps {
 }
 
 const chipBase =
-  'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-surface-secondary text-gray-600 dark:text-content-secondary';
+  'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-surface-secondary text-content-secondary dark:text-content-tertiary';
 
 const NotesEditorStats: React.FC<NotesEditorStatsProps> = ({ stats, visible }) => {
   if (!visible) return null;

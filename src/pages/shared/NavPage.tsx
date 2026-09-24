@@ -9,6 +9,7 @@ import { useNavSearch } from '../../contexts/NavSearchContext'
 import { openUrl } from '../../services/browserService'
 import { useNavStore } from '../../store/navStore'
 import { useAuthStore } from '../../store/AuthStore'
+import { useThemeStore } from '../../store/themeStore'
 import type { Bookmark, Category } from '../../types/website'
 import './NavPage.css'
 
@@ -34,6 +35,8 @@ const NavPage: React.FC = () => {
   } = useNavStore()
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  // 订阅 themeKey，确保自定义主题保存后 NavPage 强制重渲染，CSS 变量同步生效
+  useThemeStore((s) => s.themeKey);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [hoveredBookmark, setHoveredBookmark] = useState<{ id: string; cx: number; top: number; bottom: number } | null>(null)

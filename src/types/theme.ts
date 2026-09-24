@@ -37,6 +37,8 @@ export interface CustomTheme {
   colorSidebar: string;
   colorSidebarItem: string;
   colorSidebarItemActive: string;
+  colorSidebarItemActiveText: string;
+  colorSidebarItemText: string;
   colorMenuHover: string;
 
   colorBorder: string;
@@ -66,6 +68,8 @@ export interface CustomTheme {
   toastInfoBg?: string;
   switchBg?: string;
   switchActiveBg?: string;
+  switchThumb?: string;
+  switchActiveThumb?: string;
   favorites?: string;
   favoritesHover?: string;
   favoritesActive?: string;
@@ -74,6 +78,11 @@ export interface CustomTheme {
   tooltipBg?: string;
   tooltipText?: string;
   tooltipBorder?: string;
+
+  /** 弱次要文字色：禁用态图标、次要统计数字 */
+  colorMuted?: string;
+  /** 卡片数值主色：统计面板大数字、重要状态值 */
+  colorCardValue?: string;
 }
 
 /**
@@ -104,6 +113,15 @@ export interface ThemeColorGroup {
   fields: ThemeColorField[];
 }
 
+/** 背景图片库条目（独立于 CustomTheme，用于多图管理） */
+export interface BgImageItem {
+  id: string;
+  /** data URI（上传）或网络地址 */
+  url: string;
+  source: 'upload' | 'network';
+  name: string;
+}
+
 /** localStorage 写入失败（配额不足）时 setCustomTheme 抛出的错误码 */
 export const CUSTOM_THEME_STORAGE_FULL = 'CUSTOM_THEME_STORAGE_FULL';
 
@@ -132,7 +150,9 @@ export const getDefaultLightTheme = (): CustomTheme => ({
   colorCardHover: '#F9FAFB',
   colorSidebar: '#FFFFFF',
   colorSidebarItem: '#F4F4F5',
-  colorSidebarItemActive: '#3B82F6',
+  colorSidebarItemActive: '#e5fbff',
+  colorSidebarItemActiveText: '#0f766e',
+  colorSidebarItemText: '#18181B',
   colorMenuHover: '#E4E4E7',
 
   colorBorder: '#E4E4E7',
@@ -155,6 +175,8 @@ export const getDefaultLightTheme = (): CustomTheme => ({
   toastInfoBg: '#EFF6FF',
   switchBg: '#E4E4E7',
   switchActiveBg: '#18181B',
+  switchThumb: '#FFFFFF',
+  switchActiveThumb: '#FFFFFF',
   favorites: '#009F9B',
   favoritesHover: '#008A86',
   favoritesActive: '#156479',
@@ -163,6 +185,9 @@ export const getDefaultLightTheme = (): CustomTheme => ({
   tooltipBg: '#FFFFFF',
   tooltipText: '#111827',
   tooltipBorder: '#FFFFFF',
+
+  colorMuted: '#9ca3af',
+  colorCardValue: '#111827',
 });
 
 export const getDefaultDarkTheme = (): CustomTheme => ({
@@ -184,7 +209,9 @@ export const getDefaultDarkTheme = (): CustomTheme => ({
   colorCardHover: '#262A33',
   colorSidebar: '#1A1D23',
   colorSidebarItem: '#262A33',
-  colorSidebarItemActive: '#EAF1F8',
+  colorSidebarItemActive: '#1e3a5f',
+  colorSidebarItemActiveText: '#FFFFFF',
+  colorSidebarItemText: '#94A3B8',
   colorMenuHover: '#2D3139',
 
   colorBorder: '#2D3139',
@@ -207,6 +234,8 @@ export const getDefaultDarkTheme = (): CustomTheme => ({
   toastInfoBg: '#1E40AF',
   switchBg: '#2D3139',
   switchActiveBg: '#EAF1F8',
+  switchThumb: '#FFFFFF',
+  switchActiveThumb: '#FFFFFF',
   // 深色预设里的 favorites 是 rgba 半透明，取色器无法显示；
   // 自定义主题统一用等效 hex 表达，保证取色器可用。
   favorites: '#0E7A76',
@@ -215,6 +244,9 @@ export const getDefaultDarkTheme = (): CustomTheme => ({
   tooltipBg: '#1F2937',
   tooltipText: '#F9FAFB',
   tooltipBorder: '#1F2937',
+
+  colorMuted: '#6b7280',
+  colorCardValue: '#E5E7EB',
 });
 
 export const getDefaultTheme = (isDark: boolean): CustomTheme =>

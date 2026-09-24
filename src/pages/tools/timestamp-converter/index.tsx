@@ -128,7 +128,7 @@ const TimestampConverterPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-auto">
+      <div className="flex-1 bg-surface rounded-lg shadow-md overflow-auto scrollbar-hide">
         <div className="p-4">
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-content-primary mb-3">时间戳转日期时间</h3>
@@ -153,25 +153,25 @@ const TimestampConverterPage: React.FC = () => {
             <div className="flex flex-wrap gap-2 mb-4">
               <button
                 onClick={() => setTimestamp(Math.floor(Date.now() / 1000))}
-                className="px-3 py-1.5 bg-surface-secondary text-content-primary rounded-lg hover:bg-menu-hover transition-colors text-sm"
+                className="px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
               >
                 当前时间
               </button>
               <button
                 onClick={() => setTimestamp(0)}
-                className="px-3 py-1.5 bg-surface-secondary text-content-primary rounded-lg hover:bg-menu-hover transition-colors text-sm"
+                className="px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
               >
                 Unix 纪元
               </button>
               <button
                 onClick={() => setTimestamp(Math.floor(Date.now() / 1000) + 86400)}
-                className="px-3 py-1.5 bg-surface-secondary text-content-primary rounded-lg hover:bg-menu-hover transition-colors text-sm"
+                className="px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
               >
                 明天
               </button>
               <button
                 onClick={() => setTimestamp(Math.floor(Date.now() / 1000) - 86400)}
-                className="px-3 py-1.5 bg-surface-secondary text-content-primary rounded-lg hover:bg-menu-hover transition-colors text-sm"
+                className="px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
               >
                 昨天
               </button>
@@ -217,9 +217,9 @@ const TimestampConverterPage: React.FC = () => {
               </button>
               <button
                 onClick={setCurrentDatetime}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors"
+                className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3.5 h-3.5" />
                 当前
               </button>
             </div>

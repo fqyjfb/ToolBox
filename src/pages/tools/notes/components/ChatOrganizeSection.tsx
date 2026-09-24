@@ -53,8 +53,8 @@ export const ChatOrganizeSection: React.FC<ChatOrganizeSectionProps> = ({
       <div
         className={`flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
           isChatMode
-            ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-500/25 dark:text-blue-200'
-            : 'text-content-primary hover:bg-surface-secondary dark:hover:bg-content-primary'
+            ? 'bg-menu-hover dark:bg-menu-hover text-primary font-medium'
+            : 'text-content-primary hover:bg-menu-hover dark:hover:bg-menu-hover'
         }`}
         onClick={onToggleChatMode}
       >

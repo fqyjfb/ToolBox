@@ -12,8 +12,35 @@ function logFatal(tag, err) {
   }
 }
 
+// app 尚未 ready 就抛出的异常，说明是 main.cjs 模块加载阶段就炸了：
+// 此时 app.whenReady() 里的所有逻辑都不会执行，主进程会静默空转（任务管理器有进程、桌面无窗口）。
+// 这里给出可见提示并退出，避免留下「幽灵进程」。
+function isDuringModuleLoad() {
+  try {
+    return !require('electron').app.isReady();
+  } catch {
+    return false;
+  }
+}
+
+function showFatalDialog(detail) {
+  try {
+    require('electron').dialog.showErrorBox('ToolBox 启动失败', detail);
+  } catch {
+    /* 对话框都弹不出来时只保留日志，绝不能二次抛出 */
+  }
+}
+
 process.on('uncaughtException', (err) => {
   logFatal('[Main] Uncaught Exception:', err);
+  if (isDuringModuleLoad()) {
+    showFatalDialog(`主进程加载失败，应用即将退出：\n${err && err.message ? err.message : err}`);
+    try {
+      require('electron').app.exit(1);
+    } catch {
+      process.exit(1);
+    }
+  }
 });
 process.on('unhandledRejection', (reason) => {
   logFatal('[Main] Unhandled Rejection:', reason);
@@ -37,7 +64,10 @@ const { sqliteService } = require('./services/sqliteService.cjs');
 const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow.cjs');
 const { registerQuickLoginIpcHandlers } = require('./window/quickLoginWindow.cjs');
 const { registerOfflineToolsIpc } = require('./ipc/offlineToolsIpc.cjs');
-const { registerEmailIpc } = require('./ipc/emailIpc.cjs');
+// 邮箱模块（emailIpc → emailService → nodemailer / imapflow / mailparser）不在顶层 require：
+// 这三个依赖体积大、文件多，一旦打包后有文件缺失（磁盘坏块导致 npm 包文件损坏时就会发生），
+// 顶层 require 会直接中断整个 main.cjs 的加载，导致进程存活但永远创建不出窗口。
+// 改为在启动流程里延迟 require + 失败可跳过，最坏情况只是邮箱功能不可用。
 
 const DELAY_CREATE_TRAY = 500;
 const DELAY_CREATE_FLOAT_WINDOW = 1000;
@@ -135,27 +165,50 @@ function onWindowReady() {
   }, DELAY_CREATE_FLOAT_WINDOW);
 }
 
+// 逐步注册：任何一步出错都只记日志并跳过，绝不能连带中断后面的主窗口创建。
+function safeRegister(label, fn) {
+  try {
+    fn();
+  } catch (err) {
+    logFatal(`[Main] ${label} 失败，已跳过:`, err);
+  }
+}
+
 app.whenReady().then(async () => {
-  protocol.handle('local-media', handleLocalMediaRequest);
+  safeRegister('local-media 协议注册', () => protocol.handle('local-media', handleLocalMediaRequest));
 
-  initLogger();
-  registerLockIpcHandlers();
-  registerSqliteIpc();
-  registerOcrIpc();
-  registerFileManagerIpc();
-  registerFloatIpcHandlers();
-  registerLogIpcHandlers();
-  registerQuickLoginIpcHandlers();
-  registerOfflineToolsIpc();
-  registerEmailIpc();
-  registerIpcHandlers();
+  safeRegister('日志初始化', initLogger);
+  safeRegister('registerLockIpcHandlers', registerLockIpcHandlers);
+  safeRegister('registerSqliteIpc', registerSqliteIpc);
+  safeRegister('registerOcrIpc', registerOcrIpc);
+  safeRegister('registerFileManagerIpc', registerFileManagerIpc);
+  safeRegister('registerFloatIpcHandlers', registerFloatIpcHandlers);
+  safeRegister('registerLogIpcHandlers', registerLogIpcHandlers);
+  safeRegister('registerQuickLoginIpcHandlers', registerQuickLoginIpcHandlers);
+  safeRegister('registerOfflineToolsIpc', registerOfflineToolsIpc);
+  safeRegister('registerEmailIpc', () => require('./ipc/emailIpc.cjs').registerEmailIpc());
+  safeRegister('registerIpcHandlers', registerIpcHandlers);
 
-  const isLocked = checkLockOnStartup();
+  let isLocked = false;
+  try {
+    isLocked = checkLockOnStartup();
+  } catch (err) {
+    logFatal('[Main] 锁定窗口创建失败，改为直接打开主窗口:', err);
+  }
+
   if (!isLocked) {
-    createWindow(onWindowReady, true);
+    try {
+      createWindow(onWindowReady, true);
+    } catch (err) {
+      logFatal('[Main] 主窗口创建失败:', err);
+      showFatalDialog(`主窗口创建失败，应用即将退出：\n${err && err.message ? err.message : err}`);
+      app.quit();
+    }
   }
 }).catch((err) => {
   logFatal('[Main] 初始化失败，窗口未创建:', err);
+  showFatalDialog(`初始化失败，应用即将退出：\n${err && err.message ? err.message : err}`);
+  app.quit();
 });
 
 app.on('activate', () => {

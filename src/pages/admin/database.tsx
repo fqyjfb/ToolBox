@@ -3,6 +3,7 @@ import { Download, Upload, AlertTriangle } from 'lucide-react'
 import { databaseBackupService } from '../../services/DatabaseBackupService'
 import Modal from '../../components/ui/Modal'
 import { useToastStore } from '../../store/toastStore'
+import { useThemeStore } from '../../store/themeStore'
 
 interface SettingsState {
   isLoading: boolean
@@ -12,6 +13,8 @@ interface SettingsState {
 
 const DatabasePage: React.FC = () => {
   const addToast = useToastStore((s) => s.addToast)
+  // 订阅 themeKey，确保自定义主题保存后强制重渲染
+  useThemeStore((s) => s.themeKey);
   const [state, setState] = useState<SettingsState>({
     isLoading: false,
     showRestoreDialog: false,

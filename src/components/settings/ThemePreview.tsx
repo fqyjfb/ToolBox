@@ -80,6 +80,42 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ theme }) => {
         >
           菜单悬停项示意
         </div>
+
+        {/* 开关预览 */}
+        <div className="flex items-center gap-3 pt-1">
+          {/* 关闭态 */}
+          <div className="flex items-center gap-1.5">
+            <div
+              className="inline-flex items-center h-5 rounded-full w-9 transition-colors overflow-hidden"
+              style={{ background: theme.switchBg ?? '#E4E4E7' }}
+            >
+              <div
+                className="inline-block w-3 h-3 rounded-full transition-all"
+                style={{
+                  background: theme.switchThumb ?? '#FFFFFF',
+                  transform: 'translateX(4px)',
+                }}
+              />
+            </div>
+            <span className="text-2xs" style={{ color: theme.textColorSecondary }}>关闭</span>
+          </div>
+          {/* 开启态 */}
+          <div className="flex items-center gap-1.5">
+            <div
+              className="inline-flex items-center h-5 rounded-full w-9 transition-colors overflow-hidden"
+              style={{ background: theme.switchActiveBg ?? '#18181B' }}
+            >
+              <div
+                className="inline-block w-3 h-3 rounded-full transition-all"
+                style={{
+                  background: theme.switchActiveThumb ?? '#FFFFFF',
+                  transform: 'translateX(20px)',
+                }}
+              />
+            </div>
+            <span className="text-2xs" style={{ color: theme.textColorSecondary }}>开启</span>
+          </div>
+        </div>
       </div>
     </div>
   );

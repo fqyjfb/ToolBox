@@ -64,11 +64,11 @@ const UrlParserPage: React.FC = () => {
           <h2 className="text-lg font-semibold text-content-primary">URL 解析器</h2>
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-3.5 h-3.5" />
             示例
           </button>
         </div>
@@ -87,7 +87,7 @@ const UrlParserPage: React.FC = () => {
           />
           <button
             onClick={handleReset}
-            className="px-4 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors"
+            className="px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
           >
             重置
           </button>

@@ -82,6 +82,8 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   onCreateFolder,
 }) => {
   const isDark = useThemeStore((s) => s.isDark);
+  // 订阅 themeKey，确保自定义主题保存后 NotesEditor 强制重渲染
+  useThemeStore((s) => s.themeKey);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [htmlViewMode, setHtmlViewMode] = useState<'preview' | 'source'>('preview');
@@ -643,7 +645,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
               </span>
             )}
             {getFileTypeLabel() && (
-              <span className="px-2 py-0.5 text-xs text-content-tertiary bg-gray-200 dark:bg-surface rounded">
+              <span className="px-2 py-0.5 text-xs bg-menu-hover text-content-primary rounded">
                 {getFileTypeLabel()}
               </span>
             )}

@@ -78,6 +78,7 @@
    这里统一走语义变量，预设模式与自定义主题都能生效。 */
 .sidebar-nav-item {
   transition: background-color 0.2s ease, color 0.2s ease;
+  color: var(--color-sidebar-item-text);
 }
 
 .sidebar-nav-item:hover:not(.sidebar-nav-item--active) {
@@ -86,6 +87,7 @@
 
 .sidebar-nav-item--active {
   background-color: var(--color-sidebar-item-active);
+  color: var(--color-sidebar-item-active-text);
 }
 
 /* 自定义主题接管侧边栏容器：让「表面颜色 → 侧边栏」设置生效。

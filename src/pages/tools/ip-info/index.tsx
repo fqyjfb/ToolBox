@@ -119,9 +119,19 @@ const IPInfoPage: React.FC = () => {
 
       <div className="bg-surface rounded-lg shadow-md p-4 mb-4">
         <div className="mb-4">
-          <label className="block text-sm text-content-secondary mb-2">
-            查询 IP 地址（留空查询本机 IP）：
-          </label>
+          <div className="mb-4 flex items-center justify-between">
+            <label className="text-sm text-content-secondary">
+              查询 IP 地址（留空查询本机 IP）：
+            </label>
+            <button
+              onClick={handleGetMyIP}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              查询本机 IP
+            </button>
+          </div>
           <div className="flex gap-2">
             <input
               type="text"
@@ -141,15 +151,6 @@ const IPInfoPage: React.FC = () => {
             </button>
           </div>
         </div>
-        
-        <button
-          onClick={handleGetMyIP}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          查询本机 IP
-        </button>
 
         {error && (
           <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">

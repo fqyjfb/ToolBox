@@ -67,38 +67,39 @@ const TextDeduplicatorPage: React.FC = () => {
           <h2 className="text-lg font-semibold text-content-primary">文本去重工具</h2>
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-surface text-content-primary rounded-lg hover:bg-gray-300 dark:hover:bg-menu-hover transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-3.5 h-3.5" />
             示例
           </button>
-          <button 
+          <button
             onClick={() => handleCopy(output)}
             disabled={!output}
-            className="flex items-center gap-2 px-3 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-pink-500 text-white rounded-md hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Copy className="w-4 h-4" />
+            <Copy className="w-3.5 h-3.5" />
             复制
           </button>
-          <button 
+          <button
             onClick={handleClear}
-            className="p-2 text-content-secondary hover:bg-menu-hover dark:hover:bg-surface rounded-lg transition-colors"
+            className="p-1.5 text-content-secondary hover:bg-menu-hover dark:hover:bg-surface rounded-md transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-2 mb-4">
         <div className="flex items-center gap-2">
           <span className="text-sm text-content-secondary">分隔符:</span>
           <Select
             value={separator}
             onChange={setSeparator}
             options={separatorOptions}
-            className="px-3 py-1 border border-content rounded-lg bg-surface text-content-primary text-sm"
+            size="sm" dense
+            className="bg-surface text-content-primary"
           />
         </div>
         

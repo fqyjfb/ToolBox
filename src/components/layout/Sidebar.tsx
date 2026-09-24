@@ -9,6 +9,7 @@ import { useDndSensors } from '../../hooks/useDndSensors';
 import { useAuthStore } from '../../store/AuthStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
+import { useThemeStore } from '../../store/themeStore';
 import { ALL_TOOLS, ToolInfo } from '../../constants/tools';
 import CachedIcon from '../ui/CachedIcon';
 import { isElectron } from '../../utils/environment';
@@ -31,6 +32,8 @@ const Sidebar: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isAdmin = useAuthStore((s) => s.isAdmin);
   const installedPlugins = usePluginStore((s) => s.installedPlugins);
+  // 订阅 themeKey，确保切换/保存自定义主题后 Sidebar 强制重渲染，CSS 变量同步生效
+  useThemeStore((s) => s.themeKey);
   const [pluginButtons, setPluginButtons] = useState<{ id: string; icon: React.ReactNode; label: string; onClick: () => void }[]>([]);
 
   const isActive = (path: string) => location.pathname === path;

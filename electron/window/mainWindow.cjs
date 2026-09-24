@@ -446,6 +446,16 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     }, 100);
   });
 
+  // 主页面加载失败（打包后 index.html 缺失 / 损坏等）时兜底把窗口显示出来：
+  // 否则 did-finish-load 永远不会触发，窗口一直 show=false，变成「进程在、界面不出来」。
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (!isMainFrame) return;
+    console.error('[Main] 主页面加载失败:', errorCode, errorDescription, validatedURL);
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  });
+
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();

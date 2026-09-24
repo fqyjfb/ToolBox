@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Download, RotateCcw, Save, Trash2, Upload } from 'lucide-react';
+import { Download, ImageOff, Plus, RotateCcw, Save, Trash2, Upload, X } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import ColorPicker from './ColorPicker';
 import SettingCard from './SettingCard';
@@ -16,6 +16,7 @@ import {
   buildPresetTheme,
 } from '../../constants/theme';
 import {
+  BgImageItem,
   CUSTOM_THEME_STORAGE_FULL,
   CustomTheme,
   getDefaultTheme,
@@ -26,6 +27,7 @@ import {
   compressImageToDataUrl,
   formatBytesToMB,
 } from '../../utils/imageCompress';
+import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 
 const SELECT_CLASS =
   'text-xs px-1.5 py-0.5 rounded border border-content bg-surface text-content-primary focus:outline-none focus:border-primary';
@@ -85,10 +87,17 @@ const ThemeCustomEditor: React.FC = () => {
       deleteCustomTheme: s.deleteCustomTheme,
     }))
   );
+  // 订阅 themeKey 强制重渲染，确保自定义主题保存后更新
+  useThemeStore((s) => s.themeKey);
   const addToast = useToastStore((s) => s.addToast);
 
   const [draft, setDraft] = useState<CustomTheme>(() => customTheme ?? getDefaultTheme(isDark));
   const [isCompressing, setIsCompressing] = useState(false);
+  const [bgImages, setBgImages] = useState<BgImageItem[]>(() =>
+    localStorageService.get<BgImageItem[]>(STORAGE_KEYS.CUSTOM_BG_IMAGES, []),
+  );
+  const [networkUrl, setNetworkUrl] = useState('');
+  const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
   const imageInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -120,6 +129,9 @@ const ThemeCustomEditor: React.FC = () => {
 
   const handleDelete = () => {
     deleteCustomTheme();
+    localStorageService.remove(STORAGE_KEYS.CUSTOM_BG_IMAGES);
+    setBgImages([]);
+    setBrokenIds(new Set());
     addToast({ type: 'info', message: '已删除自定义主题，已切回明暗预设' });
   };
 
@@ -155,6 +167,20 @@ const ThemeCustomEditor: React.FC = () => {
       const result = await compressImageToDataUrl(file);
       if (result.dataUrl) {
         update('bgImage', result.dataUrl);
+        // 同步入库（去重）
+        if (!bgImages.some(item => item.url === result.dataUrl)) {
+          const next = [...bgImages, {
+            id: `bg-${Date.now()}`,
+            url: result.dataUrl,
+            source: 'upload' as const,
+            name: file.name,
+          }];
+          if (persistBgImages(next)) {
+            setBgImages(next);
+          } else {
+            addToast({ type: 'warning', message: '图片库存储空间不足，已应用但无法加入图库' });
+          }
+        }
         addToast({
           type: 'success',
           message: `背景图已就绪（${formatBytesToMB(result.compressedSize)}），点击保存后生效`,
@@ -170,6 +196,55 @@ const ThemeCustomEditor: React.FC = () => {
       });
     } finally {
       setIsCompressing(false);
+    }
+  };
+
+  const persistBgImages = (items: BgImageItem[]): boolean => {
+    if (!localStorageService.set(STORAGE_KEYS.CUSTOM_BG_IMAGES, items)) {
+      addToast({ type: 'warning', message: '图片库存储空间不足，部分操作可能未持久化' });
+      return false;
+    }
+    return true;
+  };
+
+  const handleAddNetworkUrl = () => {
+    const url = networkUrl.trim();
+    if (!url) return;
+    if (!/^https?:\/\/.+/.test(url)) {
+      addToast({ type: 'warning', message: '请输入有效的图片地址（以 http:// 或 https:// 开头）' });
+      return;
+    }
+    if (bgImages.some(item => item.url === url)) {
+      addToast({ type: 'info', message: '该图片地址已在库中' });
+      return;
+    }
+    const next = [...bgImages, {
+      id: `bg-${Date.now()}`,
+      url,
+      source: 'network' as const,
+      name: url.length > 40 ? url.slice(0, 40) + '…' : url,
+    }];
+    if (persistBgImages(next)) {
+      setBgImages(next);
+      update('bgImage', url);
+      setNetworkUrl('');
+      addToast({ type: 'success', message: '图片地址已添加并应用，点击保存后生效' });
+    }
+  };
+
+  const handleSelectBgImage = (item: BgImageItem) => {
+    update('bgImage', item.url);
+    addToast({ type: 'info', message: '已切换背景图，点击保存后生效' });
+  };
+
+  const handleDeleteBgImage = (id: string) => {
+    const item = bgImages.find(i => i.id === id);
+    if (!item) return;
+    const next = bgImages.filter(i => i.id !== id);
+    if (persistBgImages(next)) {
+      setBgImages(next);
+      if (draft.bgImage === item.url) update('bgImage', '');
+      setBrokenIds(prev => { const s = new Set(prev); s.delete(id); return s; });
     }
   };
 
@@ -281,6 +356,72 @@ const ThemeCustomEditor: React.FC = () => {
             <span className="text-2xs text-content-tertiary">未设置，将使用纯色背景</span>
           )}
         </FieldRow>
+        <FieldRow label="网络地址">
+          <input
+            type="text"
+            value={networkUrl}
+            onChange={(e) => setNetworkUrl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAddNetworkUrl(); }}
+            placeholder="https://example.com/bg.jpg"
+            className="flex-1 min-w-0 text-xs px-2 py-1 rounded border border-content bg-surface text-content-primary focus:outline-none focus:border-primary"
+          />
+          <button
+            type="button"
+            onClick={handleAddNetworkUrl}
+            className={ACTION_CLASS}
+          >
+            <Plus size={12} /> 添加
+          </button>
+        </FieldRow>
+        {bgImages.length > 0 && (
+          <div className="py-1">
+            <span className="text-xs text-content-secondary">图片库（点击切换，悬停删除）</span>
+            <div className="grid grid-cols-4 gap-1.5 mt-1">
+              {bgImages.map(item => {
+                const isBroken = brokenIds.has(item.id);
+                const isActive = draft.bgImage === item.url;
+                return (
+                  <div
+                    key={item.id}
+                    className="group relative cursor-pointer rounded"
+                    onClick={() => !isBroken && handleSelectBgImage(item)}
+                    title={item.name}
+                  >
+                    <div
+                      className={`w-full h-12 rounded overflow-hidden flex items-center justify-center ${
+                        isActive ? 'ring-1 ring-primary' : ''
+                      } ${isBroken ? 'opacity-40' : ''}`}
+                    >
+                      {isBroken ? (
+                        <ImageOff size={16} className="text-content-tertiary" />
+                      ) : (
+                        <img
+                          src={item.url}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={() => setBrokenIds(prev => { const s = new Set(prev); s.add(item.id); return s; })}
+                        />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteBgImage(item.id); }}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 flex items-center justify-center rounded bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="删除"
+                    >
+                      <X size={10} />
+                    </button>
+                    {item.source === 'network' && (
+                      <span className="absolute bottom-0 left-0 right-0 text-[9px] text-center text-white bg-black/40 truncate px-0.5 leading-tight py-0.5">
+                        网络
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <PercentRow
           label="图片透明度"
           value={draft.bgOpacity}
@@ -330,7 +471,7 @@ const ThemeCustomEditor: React.FC = () => {
       {THEME_COLOR_GROUPS.map((group) => (
         <div key={group.title}>
           <GroupTitle title={group.title} hint={group.hint} />
-          <SettingCard className="px-3 py-2 border-0">
+          <SettingCard className={`px-3 py-2 border-0 ${group.title === '侧边栏' ? 'ring-1 ring-primary/20 shadow-sm' : ''}`}>
             {group.fields.map((field) => (
               <ColorPicker
                 key={field.key}
