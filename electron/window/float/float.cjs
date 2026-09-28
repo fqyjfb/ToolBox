@@ -5,6 +5,7 @@ let isDragging = false;
 let moved = false;
 let floatConfig = [];
 let collapseTimer = null;
+let dragPendingFrame = false;
 
 function getTooltipContainer() {
   return document.getElementById('tooltipContainer');
@@ -174,35 +175,38 @@ function handleFloatBallMouseDown(e) {
   moved = false;
   floatBall.classList.add('dragging');
   window.FloatPet.setDragging(true);
-  
   window.electronAPI.dragStart();
-  
-  const startX = e.clientX;
-  const startY = e.clientY;
-  const startLeft = parseFloat(floatBall.style.left) || 0;
-  const startTop = parseFloat(floatBall.style.top) || 0;
+}
 
-  const onMouseMove = function(e) {
-    if (!isDragging) return;
-    const deltaX = e.clientX - startX;
-    const deltaY = e.clientY - startY;
-    floatBall.style.left = (startLeft + deltaX) + 'px';
-    floatBall.style.top = (startTop + deltaY) + 'px';
-    window.electronAPI.dragMove();
-    moved = true;
-  };
+// 窗口位置由主进程跟随系统光标更新（保证 DPI 换算正确），这里只做节流调度：
+// 高频鼠标（可达上千事件/秒）若每个事件都发一次 IPC，主进程消息队列会被灌满导致窗口无响应
+function scheduleDragMove() {
+  if (dragPendingFrame) return;
+  dragPendingFrame = true;
+  requestAnimationFrame(function () {
+    dragPendingFrame = false;
+    if (isDragging) window.electronAPI.dragMove();
+  });
+}
 
-  const onMouseUp = function() {
-    isDragging = false;
-    floatBall.classList.remove('dragging');
-    window.FloatPet.setDragging(false);
-    window.electronAPI.dragEnd();
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-  };
+function handleDocumentMouseMove(e) {
+  if (!isDragging) return;
+  // 快速甩动时 mouseup 可能落在窗口外丢失，按按键状态兜底结束拖拽
+  if (e.buttons === 0) {
+    stopDrag();
+    return;
+  }
+  moved = true;
+  scheduleDragMove();
+}
 
-  document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup', onMouseUp);
+// 统一收口拖拽结束，供 mouseup 与窗口失焦两条路径复用
+function stopDrag() {
+  if (!isDragging) return;
+  isDragging = false;
+  floatBall.classList.remove('dragging');
+  window.FloatPet.setDragging(false);
+  window.electronAPI.dragEnd();
 }
 
 function handleDocumentClick(e) {
@@ -240,7 +244,12 @@ function initFloatBall() {
   floatBall.addEventListener('mouseenter', handleFloatBallMouseEnter);
   floatBall.addEventListener('mouseleave', handleFloatBallMouseLeave);
   floatBall.addEventListener('contextmenu', handleContextMenu);
+  // mousemove / mouseup 全局常驻，避免每次拖拽反复增删监听器
+  document.addEventListener('mousemove', handleDocumentMouseMove, { passive: true });
+  document.addEventListener('mouseup', stopDrag);
   document.addEventListener('click', handleDocumentClick);
+  // 兜底：失焦时 mouseup 可能收不到，防止一直卡在拖拽态
+  window.addEventListener('blur', stopDrag);
   
   async function loadData() {
     try {

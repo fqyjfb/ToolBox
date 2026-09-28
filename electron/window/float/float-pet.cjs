@@ -88,6 +88,9 @@
   }
 
   function updateEyes(mx, my) {
+    // 拖拽时窗口每帧移动，客户端坐标持续变化，此时跳过眼神计算（含 getBoundingClientRect
+    // 与 SVG 属性写入），避免和窗口移动叠加导致掉帧
+    if (dragging) return;
     var rect = pet.getBoundingClientRect();
     var dx = mx - (rect.left + rect.width / 2);
     var dy = my - (rect.top + rect.height / 2);

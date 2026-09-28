@@ -8,6 +8,7 @@ let floatWindow = null;
 let dragOffset = { x: 0, y: 0 };
 let pollIgnoring = true;
 let isExpanded = false;
+let isDragging = false;
 
 // ── 悬浮球形象（桌宠换装）──
 // name 与桌宠 .float-pet 的 data-fit 一一对应，空字符串表示无装饰
@@ -98,7 +99,9 @@ const createFloatWindow = () => {
         pollIgnoring = false;
         floatWindow.setIgnoreMouseEvents(false);
       }
-    } else if (!isExpanded) {
+    } else if (!isExpanded && !isDragging) {
+      // 拖拽过程中窗口跟着光标移动，命中判定会反复翻转；此时切换鼠标穿透
+      // 既会持续重建窗口输入处理，也会吞掉 mouseup 让悬浮球卡在拖拽态
       if (!pollIgnoring) {
         pollIgnoring = true;
         floatWindow.setIgnoreMouseEvents(true, { forward: true });
@@ -128,6 +131,9 @@ const createFloatWindow = () => {
   floatWindow.on('closed', () => {
     clearInterval(pollTimer);
     floatWindow = null;
+    // 窗口关闭时清掉拖拽态，避免下次打开时鼠标穿透判定被误跳过
+    isDragging = false;
+    isExpanded = false;
   });
 };
 
@@ -257,18 +263,24 @@ const registerFloatIpcHandlers = () => {
 
   ipcMain.on('float-drag-start', () => {
     if (!floatWindow) return;
+    isDragging = true;
     const cursor = screen.getCursorScreenPoint();
     const [wx, wy] = floatWindow.getPosition();
     dragOffset = { x: cursor.x - wx, y: cursor.y - wy };
   });
 
+  // 每次调用都按最新光标定位，因此渲染进程丢帧合并不会造成位置滞后
   ipcMain.on('float-drag-move', () => {
-    if (!floatWindow) return;
+    if (!floatWindow || !isDragging) return;
     const { x, y } = screen.getCursorScreenPoint();
-    floatWindow.setPosition(Math.round(x - dragOffset.x), Math.round(y - dragOffset.y));
+    const nextX = Math.round(x - dragOffset.x);
+    const nextY = Math.round(y - dragOffset.y);
+    const [curX, curY] = floatWindow.getPosition();
+    if (nextX !== curX || nextY !== curY) floatWindow.setPosition(nextX, nextY);
   });
 
   ipcMain.on('float-drag-end', () => {
+    isDragging = false;
     if (!floatWindow) return;
     const [bx, by] = floatWindow.getPosition();
     const settings = loadSettings();
