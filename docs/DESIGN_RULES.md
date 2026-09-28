@@ -653,6 +653,17 @@ interface Window {
 <div className="bg-white dark:bg-gray-900">
 ```
 
+### 独立插件的样式边界
+
+独立插件运行在单独的 BrowserWindow 中，窗口由 `pluginIpc` 在打开时动态生成，**不加载主应用 `theme.css`**，仅提供 Tailwind 默认色板、`darkMode: 'class'` 以及固定扩展色 `primary: #059669`。因此插件的配色规则与内置功能相反：
+
+| 场景 | 可用方案 | 禁用方案 |
+|------|----------|----------|
+| 内置功能（随主应用渲染） | 主题令牌类、CSS 变量，自动跟随自定义主题 | 硬编码颜色 |
+| 独立插件窗口 | Tailwind 默认色板工具类，成对书写浅色值与 `dark:` 变体（如 `bg-white dark:bg-gray-800`、`text-gray-800 dark:text-gray-200`、`focus:border-primary`、`accent-primary`） | 主应用语义类（`bg-surface`、`text-content-primary`、`text-button-text` 等）与 CSS 变量 |
+
+插件中禁止行内固定色值：固定浅色值不会随窗口的 `dark` class 切换，是深色/自定义主题下文字不可视的主要原因。浅色与深色两种模式下，主/次/辅三级文字都必须在其实际背景上清晰可辨。完整插件样式要求见 [插件开发指南](../../toolbox-plugins-registry/docs/plugin-development-guide.md)。
+
 ---
 
 ## ✅ 代码质量要求

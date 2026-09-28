@@ -7,7 +7,7 @@ const { getMimeType } = require('../services/fileTypeUtils.cjs');
 const { cachePluginIcon, resolveIconUrls } = require('../lib/config.cjs');
 
 let pluginIpcRegistered = false;
-const { app } = require('electron');
+const { app, nativeTheme } = require('electron');
 
 let preScreenshotBounds = null;
 let preScreenshotAlwaysOnTop = false;
@@ -297,12 +297,14 @@ async function openPluginWindow(pluginId, userId) {
 
     const entryUrl = pathToFileURL(entryPath).href;
     
-    const themeConfigPath = path.join(app.getPath('userData'), 'config.json');
+    const themeConfigPath = path.join(app.getPath('userData'), 'settings.json');
     let isDark = false;
     try {
       if (fs.existsSync(themeConfigPath)) {
-        const config = JSON.parse(fs.readFileSync(themeConfigPath, 'utf-8'));
-        isDark = config.theme === 'dark' || config.isDark === true;
+        const settings = JSON.parse(fs.readFileSync(themeConfigPath, 'utf-8'));
+        // systemTheme: 'dark' | 'light' | 'system'；自定义主题仍以其明暗基色写入该字段
+        const themeSource = settings.systemTheme || 'system';
+        isDark = themeSource === 'dark' || (themeSource !== 'light' && nativeTheme.shouldUseDarkColors);
       }
     } catch { /* ignore */ }
 
@@ -314,6 +316,7 @@ async function openPluginWindow(pluginId, userId) {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>${escapedName}</title>
+          <script src="https://cdn.tailwindcss.com"></script>
           <script>
             tailwind.config = {
               darkMode: 'class',
@@ -327,7 +330,6 @@ async function openPluginWindow(pluginId, userId) {
               }
             }
           </script>
-          <script src="https://cdn.tailwindcss.com"></script>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; }

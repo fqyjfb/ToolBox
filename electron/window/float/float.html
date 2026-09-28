@@ -5,17 +5,172 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ToolBox Float</title>
   <link rel="stylesheet" href="float.css">
+  <link rel="stylesheet" href="float-pet.css">
 </head>
 <body>
   <div class="float-ball" id="floatBall">
-    <span class="main-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 16 16">
-        <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471z" />
+    <!-- 桌宠形象：结构与动画详见 float-pet.css / float-pet.cjs -->
+    <div class="float-pet" id="floatPet" data-fit="none">
+      <svg viewBox="-6 -26 74 100">
+        <defs>
+          <!-- 主体：奶油白 → 暖橘 → 赤陶，完全无蓝 -->
+          <linearGradient id="hatGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#e88a47"/>
+            <stop offset="60%" stop-color="#c0551f"/>
+            <stop offset="100%" stop-color="#8f3d10"/>
+          </linearGradient>
+          <radialGradient id="bodyGrad" cx="34%" cy="26%" r="84%">
+            <stop offset="0%" stop-color="#fff0dd"/>
+            <stop offset="42%" stop-color="#ffc28a"/>
+            <stop offset="100%" stop-color="#d96a2f"/>
+          </radialGradient>
+          <!-- 腮红：同色系桃粉 -->
+          <radialGradient id="cheekGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ff9aa8" stop-opacity=".85"/>
+            <stop offset="100%" stop-color="#ff9aa8" stop-opacity="0"/>
+          </radialGradient>
+          <!-- 围巾：莓果酒红 -->
+          <linearGradient id="scarfGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#e05a8a"/>
+            <stop offset="100%" stop-color="#a3285c"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 猫耳：圆润耳形（非尖三角），外耳赤陶深，内耳桃粉 -->
+        <g class="costume fit-ears">
+          <g class="ear-l">
+            <path d="M12.5,16 C7.5,6.5 9,0.5 15,1 C20.5,1.5 24,7.5 23,14.5 C22,17.5 17,18.5 12.5,16Z" fill="#c0551f"/>
+            <path d="M14.5,13 C11.8,7.2 13,3 16.5,3.2 C20,3.4 21.8,7.8 21,11.8 C20.5,14 17,14.8 14.5,13Z" fill="#ff9aa8" opacity=".95"/>
+          </g>
+          <g class="ear-r">
+            <path d="M47.5,16 C52.5,6.5 51,0.5 45,1 C39.5,1.5 36,7.5 37,14.5 C38,17.5 43,18.5 47.5,16Z" fill="#c0551f"/>
+            <path d="M45.5,13 C48.2,7.2 47,3 43.5,3.2 C40,3.4 38.2,7.8 39,11.8 C39.5,14 43,14.8 45.5,13Z" fill="#ff9aa8" opacity=".95"/>
+          </g>
+        </g>
+
+        <!-- 身体 -->
+        <g class="body-scale">
+          <!-- 尾巴：蓬松狐尾，三层毛色（外深 / 内浅 / 毛尖白），摇摆明显 -->
+          <g class="tail">
+            <path d="M46,39 Q60,40 62,28 Q64,15 54,11 Q44,7 44,17 Q44,26 50,28 Q45,33 43,32Z" fill="#c0551f"/>
+            <path d="M50,32 Q58,31 59,23 Q60,15 54,13 Q48,11 47.5,17 Q47,23 51,25 Q48,29 47.5,29Z" fill="#e88a47"/>
+            <path d="M53,14 Q56,10 54.5,8 Q52,10 52.5,13Z" fill="#fff4e6"/>
+            <path d="M57,19.5 Q60.5,17 60,15 Q58,17 57.5,19Z" fill="#fff4e6"/>
+          </g>
+
+          <!-- 小翅膀：奶油白，无蓝 -->
+          <g class="wing-l">
+            <path d="M16,28 Q6,20 8,33 Q10,40 17,36 Z" fill="#fff4e6" opacity=".95"/>
+          </g>
+          <g class="wing-r">
+            <path d="M49,28 Q59,20 57,33 Q55,40 48,36 Z" fill="#fff4e6" opacity=".95"/>
+          </g>
+
+          <!-- 双脚：放大外张，明显露出球体底部 -->
+          <g class="foot-l"><ellipse cx="17" cy="57.5" rx="5.6" ry="3.4" fill="#b94d18"/><ellipse cx="15.4" cy="56.6" rx="1.7" ry="1" fill="#8a4d38" opacity=".5"/></g>
+          <g class="foot-r"><ellipse cx="43" cy="57.5" rx="5.6" ry="3.4" fill="#b94d18"/><ellipse cx="44.6" cy="56.6" rx="1.7" ry="1" fill="#8a4d38" opacity=".5"/></g>
+
+          <circle cx="32.5" cy="31" r="26.5" fill="url(#bodyGrad)"/>
+
+          <!-- 脚下投影 -->
+          <ellipse cx="32.5" cy="63.5" rx="17" ry="2.8" fill="#000" opacity=".24"/>
+
+          <!-- 围巾：围在嘴巴正下方（y36-41），左端加厚围脖圈 + 斜条纹纹理 + 右侧飘带，绝不遮眼 -->
+          <g class="costume fit-scarf">
+            <g class="scarf-body">
+              <path d="M10.5,37 Q30,42 50,37 Q51,40.5 48,41.5 Q30,45 12.5,41.5 Q9.5,40.5 10.5,37Z" fill="url(#scarfGrad)"/>
+              <path d="M12.5,37.5 L18.5,41.5 M19.5,37.5 L25.5,41.7 M26.5,37.6 L32.5,42 M33.5,37.6 L39.5,41.8 M40.5,37.7 L46.5,41.3" stroke="#a3285c" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>
+              <path d="M14.5,38 L20,41.6 M21.5,38.1 L27,42 M28.5,38.1 L34,42.1 M35.5,38.2 L41,42.2 M42.5,38.2 L47.5,41.4" stroke="#ffd9e6" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
+              <path d="M13,38.5 Q30,43 47,38.5 Q48,40.5 46,41.5 Q30,44.5 14.5,41.5 Q12.5,40.5 13,38.5Z" fill="none" stroke="#c84578" stroke-width="1.2" opacity=".9"/>
+            </g>
+            <g class="scarf-tail">
+              <path d="M45.5,40 Q53,47 49,55 Q46.5,57.5 44,54 Q46.5,46 42.5,40.5Z" fill="#a3285c"/>
+              <path d="M46.5,42 L48.5,54 M43.5,41.5 L45,53" stroke="#c84578" stroke-width="1.2" stroke-linecap="round" opacity=".85"/>
+            </g>
+            <g class="scarf-tail2">
+              <path d="M39,41 Q46,50 44.5,58" fill="none" stroke="#c84578" stroke-width="2.4" stroke-linecap="round" opacity=".85"/>
+              <path d="M39.6,43 L44,57 M38.4,43 L43,56" stroke="#a3285c" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
+            </g>
+            <g class="scarf-wrap">
+              <path d="M12,37 Q6,39 6.5,44 Q7,47 11,45.5 Q8.5,42 11,39Z" fill="#a3285c"/>
+              <path d="M8.5,40 Q10,44 12,45" stroke="#c84578" stroke-width="1.2" fill="none" opacity=".8"/>
+            </g>
+          </g>
+
+          <!-- 高光 -->
+          <ellipse class="highlight" cx="24" cy="16.5" rx="11" ry="6.5" fill="#ffffff" opacity=".5"/>
+          <circle class="highlight" cx="19.5" cy="13.5" r="2.8" fill="#ffffff" opacity=".88"/>
+
+          <!-- 腮红 -->
+          <circle class="cheek" cx="16" cy="35.5" r="5.8" fill="url(#cheekGrad)"/>
+          <circle class="cheek" cx="49" cy="35.5" r="5.8" fill="url(#cheekGrad)"/>
+
+          <!-- 小手：放大、外移、下移，圆润明显 -->
+          <g class="arm-l"><circle cx="11.5" cy="40" r="5.6" fill="#e88a47"/><circle cx="10.4" cy="38.8" r="1.5" fill="#fff4e6" opacity=".55"/></g>
+          <g class="arm-r"><circle cx="53.5" cy="40" r="5.6" fill="#e88a47"/><circle cx="54.6" cy="38.8" r="1.5" fill="#fff4e6" opacity=".55"/></g>
+        </g>
+
+        <!-- 帽子：奶油橘贝雷帽（扁帽）。帽顶 y=4.2 落在头顶线以内，视觉上"戴在头上"而非"插在头顶" -->
+        <g class="costume fit-hat">
+          <g class="hat-crown">
+            <!-- 帽体：用椭圆做帽顶弧面，高度仅 5.4px，与头顶融为一体 -->
+            <path d="M14.5,6.6 C13.6,2.6 17.4,-0.2 22.2,0.2 C26.2,-1.2 33.8,-1.2 37.8,0.2 C42.6,-0.2 46.4,2.6 45.5,6.6 C46.2,8.2 45,9.5 43.6,9.4 C40.6,9.7 38,9.8 32.5,9.8 C27,9.8 24.4,9.7 21.4,9.4 C20,9.5 18.8,8.2 19.5,6.6 Z" fill="url(#hatGrad)"/>
+            <!-- 帽顶高光：让扁帽有鼓起的立体感 -->
+            <ellipse cx="26" cy="3.6" rx="6.4" ry="1.7" fill="#ffd9ba" opacity=".55"/>
+            <!-- 帽身缝线：沿帽顶弧面一道浅线 -->
+            <path d="M18.4,5.4 C22.6,3.5 28.2,3.2 32.5,3.2 C36.8,3.2 42.4,3.5 44.6,5.4" fill="none" stroke="#a8430f" stroke-width=".9" opacity=".45"/>
+            <!-- 帽顶小绒球：贝雷帽的标志性收口 -->
+            <g class="hat-pompom">
+              <circle cx="34.4" cy="1.5" r="2.3" fill="#ffd166"/>
+              <circle cx="33.7" cy="1.05" r=".8" fill="#fff3cf" opacity=".9"/>
+            </g>
+          </g>
+          <!-- 帽檐：紧贴头顶的扁弧，前缘在额头 y=9.4，不压眉毛 -->
+          <g class="hat-brim">
+            <path d="M12.6,8.6 C17.2,6.4 24,5.7 32.5,5.7 C41,5.7 47.8,6.4 52.4,8.6 C51,10.6 42.2,11.6 32.5,11.6 C22.8,11.6 14,10.6 12.6,8.6 Z" fill="#a8430f"/>
+            <path d="M14.2,8.8 C18.4,7.3 24.6,6.7 32.5,6.7 C40.4,6.7 46.6,7.3 50.8,8.8" fill="none" stroke="#7a3512" stroke-width=".8" opacity=".7"/>
+            <!-- 帽檐阴影：在额头投下一层暗部，加强"戴在头上"的贴合感 -->
+            <path d="M14.8,9.2 C20,11 26.4,11.9 32.5,11.9 C38.6,11.9 45,11 50.2,9.2" fill="none" stroke="#5c2808" stroke-width="1.1" opacity=".3"/>
+          </g>
+          <!-- 帽侧飘带：从帽体左侧垂下，独立飘动 -->
+          <g class="hat-ribbon-tail">
+            <path d="M16,9 Q11.5,14 12.6,20 Q13.4,24 16.6,23.6 Q14,18.5 17,12 Z" fill="#7a3512"/>
+            <path d="M14.6,13 Q12.8,18 13.8,22.6" fill="none" stroke="#a8430f" stroke-width=".9" opacity=".8"/>
+            <circle cx="14" cy="23.4" r="1.5" fill="#ffd166"/>
+          </g>
+        </g>
+
+        <!-- 眼睛：暖棕瞳，无蓝 -->
+        <g id="eyes">
+          <g class="eye-open">
+            <g>
+              <circle cx="24" cy="29" r="5.6" fill="#3a2a20"/>
+              <circle class="pupil" cx="24" cy="29" r="2.6" fill="#fff8f0"/>
+              <circle class="pupil shine" cx="25" cy="27.5" r="1" fill="#ffffff"/>
+              <rect class="eye-lid" x="18.4" y="23.4" width="11.2" height="11.2" rx="5.6" fill="url(#bodyGrad)"/>
+            </g>
+            <g>
+              <circle cx="41" cy="29" r="5.6" fill="#3a2a20"/>
+              <circle class="pupil" cx="41" cy="29" r="2.6" fill="#fff8f0"/>
+              <circle class="pupil shine" cx="42" cy="27.5" r="1" fill="#ffffff"/>
+              <rect class="eye-lid" x="35.4" y="23.4" width="11.2" height="11.2" rx="5.6" fill="url(#bodyGrad)"/>
+            </g>
+          </g>
+        </g>
+
+        <!-- 嘴 -->
+        <g class="mouth-group">
+          <path class="mouth-happy" d="M28.5,35 Q32.5,39 36.5,35" fill="none" stroke="#7a3512" stroke-width="2" stroke-linecap="round"/>
+          <path class="mouth-sad" d="M28.5,38 Q32.5,34.5 36.5,38" fill="none" stroke="#7a3512" stroke-width="2" stroke-linecap="round"/>
+          <ellipse class="mouth-ooo" cx="32.5" cy="36.2" rx="2.4" ry="2.9" fill="#7a3512"/>
+        </g>
       </svg>
-    </span>
+    </div>
+    <div class="pet-bubble" id="petBubble"></div>
     <div id="tooltipContainer"></div>
   </div>
   <script src="../../lib/icon-data.cjs"></script>
+  <script src="float-pet.cjs"></script>
   <script src="float.cjs"></script>
 </body>
 </html>

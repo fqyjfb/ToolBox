@@ -1,0 +1,330 @@
+/* 悬浮球形象「桌面伙伴小橘」
+   来源：doc/悬浮球.html，动画曲线与时长保持原样。
+   所有选择器挂在 .float-pet 之下，避免影响悬浮窗其它模块。 */
+
+.float-ball .float-pet {
+  position: relative;
+  width: 66px;
+  height: 90px;
+  touch-action: none;
+}
+
+.float-ball .float-pet svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* ── 身体动画 ── */
+.float-pet .body-scale {
+  transform-origin: 27px 31px;
+  animation: pet-breathe 3.6s ease-in-out infinite;
+}
+
+/* 入场弹出，动画结束后由 float-pet.cjs 移除 .entering，交还给呼吸动画 */
+.float-ball.entering .float-pet .body-scale {
+  animation: pet-enterPop .55s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+@keyframes pet-enterPop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pet-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+
+.float-pet .cheek {
+  animation: pet-cheekPulse 2.6s ease-in-out infinite;
+}
+
+@keyframes pet-cheekPulse {
+  0%, 100% { opacity: .7; }
+  50% { opacity: 1; }
+}
+
+.float-pet .highlight {
+  animation: pet-sheen 7s ease-in-out infinite;
+}
+
+@keyframes pet-sheen {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(2px, -2.5px); }
+}
+
+.float-pet .eye-lid {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: pet-blink 5s ease-in-out infinite;
+}
+
+@keyframes pet-blink {
+  0%, 45%, 55%, 100% { transform: scaleY(0); }
+  50% { transform: scaleY(1); }
+}
+
+.float-pet .tail {
+  transform-origin: 47px 39px;
+  animation: pet-tailWag 3s ease-in-out infinite;
+}
+
+@keyframes pet-tailWag {
+  0%, 100% { transform: rotate(-14deg); }
+  50% { transform: rotate(14deg); }
+}
+
+.float-pet .tail.talking {
+  animation: pet-tailTalk 1.4s ease-in-out infinite;
+}
+
+@keyframes pet-tailTalk {
+  0%, 100% { transform: rotate(-14deg); }
+  50% { transform: rotate(14deg); }
+}
+
+.float-pet .foot-l {
+  transform-origin: 14px 57px;
+  animation: pet-footL 3.6s ease-in-out infinite;
+}
+
+.float-pet .foot-r {
+  transform-origin: 46px 57px;
+  animation: pet-footR 3.6s ease-in-out infinite;
+}
+
+@keyframes pet-footL {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(2deg); }
+}
+
+@keyframes pet-footR {
+  0%, 100% { transform: rotate(3deg); }
+  50% { transform: rotate(-2deg); }
+}
+
+.float-pet .wing-l {
+  transform-origin: 12px 28px;
+  animation: pet-wingL 2.4s ease-in-out infinite;
+}
+
+.float-pet .wing-r {
+  transform-origin: 53px 28px;
+  animation: pet-wingR 2.4s ease-in-out infinite;
+}
+
+@keyframes pet-wingL {
+  0%, 100% { transform: rotate(-7deg) scaleY(1); }
+  50% { transform: rotate(13deg) scaleY(.75); }
+}
+
+@keyframes pet-wingR {
+  0%, 100% { transform: rotate(7deg) scaleY(1); }
+  50% { transform: rotate(-13deg) scaleY(.75); }
+}
+
+.float-pet .arm-l {
+  transform-origin: 11px 37px;
+  animation: pet-armL 3.6s ease-in-out infinite;
+}
+
+.float-pet .arm-r {
+  transform-origin: 54px 37px;
+  animation: pet-armR 3.6s ease-in-out infinite;
+}
+
+@keyframes pet-armL {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(4deg); }
+}
+
+@keyframes pet-armR {
+  0%, 100% { transform: rotate(6deg); }
+  50% { transform: rotate(-4deg); }
+}
+
+/* 拖拽时举起双手 */
+.float-ball.dragging .float-pet .arm-l {
+  animation: none;
+  transform: rotate(-46deg);
+}
+
+.float-ball.dragging .float-pet .arm-r {
+  animation: none;
+  transform: rotate(46deg);
+}
+
+.float-pet #eyes,
+.float-pet .mouth-group {
+  will-change: transform;
+}
+
+/* ── 表情 ── */
+.float-pet .mouth-happy { display: block; }
+.float-pet .mouth-sad,
+.float-pet .mouth-ooo { display: none; }
+
+.float-ball.dragging .float-pet .mouth-happy { display: none; }
+.float-ball.dragging .float-pet .mouth-ooo { display: block; }
+
+/* 拖久了会难过 */
+.float-ball.drag-sad .float-pet .mouth-ooo { display: none; }
+.float-ball.drag-sad .float-pet .mouth-sad { display: block; }
+.float-ball.drag-sad .float-pet .eye-open {
+  transform: translateY(1.4px) scaleY(.9);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ── 换装：默认全部隐藏，按 data-fit 显示 ── */
+.float-pet .costume { display: none; }
+
+.float-pet[data-fit="ears"] .fit-ears,
+.float-pet[data-fit="hat"] .fit-hat,
+.float-pet[data-fit="scarf"] .fit-scarf { display: inline; }
+
+.float-pet .scarf-body {
+  transform-origin: 30px 36px;
+  animation: pet-scarfBody 5s ease-in-out infinite;
+}
+
+@keyframes pet-scarfBody {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+}
+
+.float-pet .scarf-tail {
+  transform-origin: 45px 40px;
+  animation: pet-scarfTail 3.6s ease-in-out infinite;
+}
+
+@keyframes pet-scarfTail {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+.float-pet .scarf-tail2 {
+  transform-origin: 39px 41px;
+  animation: pet-scarfTail2 3s ease-in-out infinite;
+}
+
+@keyframes pet-scarfTail2 {
+  0%, 100% { transform: rotate(6deg); }
+  50% { transform: rotate(-5deg); }
+}
+
+.float-pet .scarf-wrap {
+  transform-origin: 12px 39px;
+  animation: pet-scarfWrap 4.4s ease-in-out infinite;
+}
+
+@keyframes pet-scarfWrap {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+.float-pet .ear-l {
+  transform-origin: 15px 8px;
+  animation: pet-earL 3.6s ease-in-out infinite;
+}
+
+.float-pet .ear-r {
+  transform-origin: 45px 8px;
+  animation: pet-earR 3.6s ease-in-out infinite;
+}
+
+@keyframes pet-earL {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes pet-earR {
+  0%, 100% { transform: rotate(5deg); }
+  50% { transform: rotate(-5deg); }
+}
+
+.float-pet .hat-crown {
+  transform-origin: 32.5px 6px;
+  animation: pet-hatTilt 4.2s ease-in-out infinite;
+}
+
+.float-pet .hat-brim {
+  transform-origin: 32.5px 9px;
+  animation: pet-hatBrim 4.2s ease-in-out infinite;
+}
+
+/* 贝雷帽是软帽，整顶一起小幅左右轻晃（±3°），不再是高帽的明显歪斜 */
+@keyframes pet-hatTilt {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes pet-hatBrim {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+}
+
+.float-pet .hat-pompom {
+  transform-origin: 34.4px 1.5px;
+  animation: pet-pompomWobble 2.4s ease-in-out infinite;
+}
+
+@keyframes pet-pompomWobble {
+  0%, 100% { transform: scale(1) rotate(-4deg); }
+  50% { transform: scale(1.08) rotate(4deg); }
+}
+
+.float-pet .hat-ribbon-tail {
+  transform-origin: 16px 9px;
+  animation: pet-ribbonWave 3.2s ease-in-out infinite;
+}
+
+@keyframes pet-ribbonWave {
+  0%, 100% { transform: rotate(-9deg) skewX(-3deg); }
+  50% { transform: rotate(7deg) skewX(3deg); }
+}
+
+/* ── 台词气泡 ── */
+.float-ball .pet-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  width: max-content;
+  max-width: 200px;
+  padding: 8px 12px;
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #3a2a20;
+  background: linear-gradient(180deg, #fff8f0, #ffe9d6);
+  border: 1px solid rgba(217, 106, 47, .35);
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(90, 40, 15, .28);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(-6px) scale(.96);
+  transition: opacity .22s ease, transform .22s cubic-bezier(.34, 1.56, .64, 1), visibility .22s;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.float-ball .pet-bubble.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.float-ball .pet-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  margin-left: -6px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #ffe9d6, #ffd9ba);
+  border-right: 1px solid rgba(217, 106, 47, .3);
+  border-bottom: 1px solid rgba(217, 106, 47, .3);
+  transform: rotate(45deg);
+}

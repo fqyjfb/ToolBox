@@ -9,35 +9,21 @@ let dragOffset = { x: 0, y: 0 };
 let pollIgnoring = true;
 let isExpanded = false;
 
-// ── 悬浮球形象辅助函数 ──
+// ── 悬浮球形象（桌宠换装）──
+// name 与桌宠 .float-pet 的 data-fit 一一对应，空字符串表示无装饰
+const FLOAT_APPEARANCE_LIST = [
+  { name: '', label: '无装饰' },
+  { name: 'ears', label: '🐱 猫耳' },
+  { name: 'hat', label: '🎩 帽子' },
+  { name: 'scarf', label: '🧣 围巾' }
+];
 
-// 使用 __dirname 解析路径，在 dev 和 asar 打包环境下均能正确工作
-const getFloatImgDir = () => path.join(__dirname, '../../public', 'float-img');
+// 兼容旧版本遗留的 PNG 形象名，命不中一律回落到默认形象
+const normalizeAppearance = (name) =>
+  FLOAT_APPEARANCE_LIST.some(item => item.name === name) ? name : '';
 
-const getFloatImgList = () => {
-  try {
-    const dir = getFloatImgDir();
-    if (!fs.existsSync(dir)) return [];
-    return fs.readdirSync(dir)
-      .filter(f => f.toLowerCase().endsWith('.png'))
-      .map(f => f.replace(/\.png$/i, ''))
-      .sort();
-  } catch {
-    return [];
-  }
-};
-
-const getFloatImgDataUrl = (name) => {
-  if (!name) return '';
-  try {
-    const filePath = path.join(getFloatImgDir(), name + '.png');
-    if (!fs.existsSync(filePath)) return '';
-    const buffer = fs.readFileSync(filePath);
-    return 'data:image/png;base64,' + buffer.toString('base64');
-  } catch {
-    return '';
-  }
-};
+// 桌宠形象尺寸，与 float/float.css 中 .float-ball 保持一致
+const PET_SIZE = { width: 66, height: 90 };
 
 const createFloatWindow = () => {
   if (floatWindow) {
@@ -98,16 +84,15 @@ const createFloatWindow = () => {
   floatWindow.setIgnoreMouseEvents(false);
 
   const POLL_INTERVAL = 150;
-  const BALL_SIZE = 44;
   const pollTimer = setInterval(() => {
     if (!floatWindow || floatWindow.isDestroyed()) return;
     const cursor = screen.getCursorScreenPoint();
     const bounds = floatWindow.getBounds();
     const ballCenterX = bounds.x + Math.round(bounds.width / 2);
     const ballCenterY = bounds.y + Math.round(bounds.height / 2);
-    const dx = cursor.x - ballCenterX;
-    const dy = cursor.y - ballCenterY;
-    const inBall = dx * dx + dy * dy <= (BALL_SIZE / 2 + 4) * (BALL_SIZE / 2 + 4);
+    const dx = Math.abs(cursor.x - ballCenterX);
+    const dy = Math.abs(cursor.y - ballCenterY);
+    const inBall = dx <= PET_SIZE.width / 2 + 4 && dy <= PET_SIZE.height / 2 + 4;
     if (inBall) {
       if (pollIgnoring) {
         pollIgnoring = false;
@@ -169,45 +154,24 @@ const toggleFloatWindow = () => {
   return settings.isFloatWindowEnabled;
 };
 
-// 构建"切换形象"子菜单
+// 构建「切换形象」子菜单，选中后同步给悬浮窗渲染进程的 .float-pet
 const buildAppearanceMenu = (settings) => {
-  const imgList = getFloatImgList();
-  if (imgList.length === 0) return [];
-  const current = settings.floatBallAppearance || '';
-  const items = imgList.map(name => ({
-    label: name,
-    type: 'radio',
-    radioGroupChecked: 'appearance',
-    checked: current === name,
-    click: () => {
-      const s = loadSettings();
-      s.floatBallAppearance = name;
-      saveSettings(s);
-      const dataUrl = getFloatImgDataUrl(name);
-      if (floatWindow && !floatWindow.isDestroyed()) {
-        floatWindow.webContents.send('appearance-changed', { name, dataUrl });
-      }
-    }
-  }));
+  const current = normalizeAppearance(settings.floatBallAppearance || '');
   return [{
     label: '切换形象',
-    submenu: [
-      {
-        label: '默认',
-        type: 'radio',
-        radioGroupChecked: 'default',
-        checked: current === '',
-        click: () => {
-          const s = loadSettings();
-          s.floatBallAppearance = '';
-          saveSettings(s);
-          if (floatWindow && !floatWindow.isDestroyed()) {
-            floatWindow.webContents.send('appearance-changed', { name: '', dataUrl: '' });
-          }
+    submenu: FLOAT_APPEARANCE_LIST.map(({ name, label }) => ({
+      label,
+      type: 'radio',
+      checked: current === name,
+      click: () => {
+        const s = loadSettings();
+        s.floatBallAppearance = name;
+        saveSettings(s);
+        if (floatWindow && !floatWindow.isDestroyed()) {
+          floatWindow.webContents.send('appearance-changed', { name });
         }
-      },
-      ...items
-    ]
+      }
+    }))
   }];
 };
 
@@ -409,12 +373,9 @@ const registerFloatIpcHandlers = () => {
     }
   });
 
-  ipcMain.handle('float-get-appearance', () => {
-    const settings = loadSettings();
-    const name = settings.floatBallAppearance || '';
-    const dataUrl = name ? getFloatImgDataUrl(name) : '';
-    return { name, dataUrl };
-  });
+  ipcMain.handle('float-get-appearance', () => ({
+    name: normalizeAppearance(loadSettings().floatBallAppearance || '')
+  }));
 
   ipcMain.handle('float-get-theme', () => ({ isDark: nativeTheme.shouldUseDarkColors }));
 };

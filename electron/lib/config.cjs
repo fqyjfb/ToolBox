@@ -118,7 +118,7 @@ const defaultSettings = {
   supabaseConfig: { url: '', anonKey: '' },
   // 加密密钥桌面端用户自定义配置（空字符串表示使用打包时的环境变量值）
   encryptionKey: '',
-  // 悬浮球形象（float-img 中的图标名，空字符串表示使用默认 SVG 图标）
+  // 悬浮球形象（'' 无装饰 / ears 猫耳 / hat 帽子 / scarf 围巾）
   floatBallAppearance: '',
 };
 

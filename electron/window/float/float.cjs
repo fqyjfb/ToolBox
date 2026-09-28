@@ -5,7 +5,6 @@ let isDragging = false;
 let moved = false;
 let floatConfig = [];
 let collapseTimer = null;
-let currentAppearance = null;
 
 function getTooltipContainer() {
   return document.getElementById('tooltipContainer');
@@ -28,8 +27,6 @@ function initIcons() {
     };
   }
 }
-
-const defaultFloatIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 16 16"><path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471z" /></svg>';
 
 function getIconByName(name, item) {
   if (!name) return '';
@@ -59,13 +56,9 @@ function getIconByName(name, item) {
 
 function renderFloatBall() {
   if (!isExpanded) {
-    const hasAppearance = currentAppearance && currentAppearance.dataUrl;
-    const iconHTML = hasAppearance
-      ? '<img class="appearance-img" src="' + currentAppearance.dataUrl + '" alt="" draggable="false" />'
-      : '<span class="main-icon">' + defaultFloatIcon + '</span>';
-    floatBall.innerHTML = iconHTML + '<div id="tooltipContainer"></div>';
+    // 桌宠形象是常驻 DOM，不能重建，否则持续动画会被打断
+    getTooltipContainer().innerHTML = '';
     floatBall.classList.remove('expanded');
-    floatBall.classList.toggle('has-appearance', !!hasAppearance);
   } else {
     const tooltipContainer = getTooltipContainer();
     if (floatConfig.length === 0) {
@@ -92,7 +85,8 @@ function positionTooltipItems() {
   const items = tooltipContainer.querySelectorAll('.tooltip-item');
   items.forEach((item, index) => {
     const angle = (index * 360 / items.length) - 90;
-    const radius = 60;
+    // 半径需让菜单项完全避开中间的桌宠形象（66x90）
+    const radius = 78;
     const x = Math.cos((angle * Math.PI) / 180) * radius;
     const y = Math.sin((angle * Math.PI) / 180) * radius;
     // 存储偏移到 data 属性，下一帧通过 CSS 变量生效以触发动画
@@ -158,6 +152,8 @@ function handleItemClick(e) {
 function toggleExpand() {
   isExpanded = !isExpanded;
   window.electronAPI.setExpanded(isExpanded);
+  // 展开时让桌宠闭嘴，避免台词气泡和菜单项叠在一起
+  if (isExpanded) window.FloatPet.clearBubble();
   renderFloatBall();
 }
 
@@ -171,10 +167,13 @@ function handleFloatBallClick(e) {
 }
 
 function handleFloatBallMouseDown(e) {
+  // 只响应左键，右键留给原生菜单（否则 mouseup 被菜单吞掉会卡在拖拽态）
+  if (e.button !== 0) return;
   e.preventDefault();
   isDragging = true;
   moved = false;
   floatBall.classList.add('dragging');
+  window.FloatPet.setDragging(true);
   
   window.electronAPI.dragStart();
   
@@ -196,6 +195,7 @@ function handleFloatBallMouseDown(e) {
   const onMouseUp = function() {
     isDragging = false;
     floatBall.classList.remove('dragging');
+    window.FloatPet.setDragging(false);
     window.electronAPI.dragEnd();
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
@@ -273,26 +273,6 @@ function initFloatBall() {
   }
   
   loadData();
-
-  // 加载持久化的悬浮球形象
-  if (window.electronAPI.getAppearance) {
-    window.electronAPI.getAppearance().then(function(data) {
-      currentAppearance = (data && data.dataUrl) ? data : null;
-      if (!isExpanded) {
-        renderFloatBall();
-      }
-    }).catch(function() {});
-  }
-
-  // 监听形象切换
-  if (window.electronAPI.onAppearanceChanged) {
-    window.electronAPI.onAppearanceChanged(function(data) {
-      currentAppearance = data;
-      if (!isExpanded) {
-        renderFloatBall();
-      }
-    });
-  }
 
   // 主题跟随主窗口：只切 <html class="dark">，配色全部由 float.css 的 CSS 变量承担，
   // 因此不需要重渲染（否则会打断展开动画/位置状态）

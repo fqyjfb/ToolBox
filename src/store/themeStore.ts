@@ -161,6 +161,8 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     const isDark = get().isDark;
     applyCustomTheme(theme, isDark);
     persistMode(true, isDark);
+    // 同步明暗基色：保证 systemTheme 原为 'system' 时，插件窗口/原生 UI 也能正确跟随
+    syncThemeToMain(isDark);
     set({ customTheme: theme, isCustomTheme: true, themeKey: get().themeKey + 1 });
   },
 
