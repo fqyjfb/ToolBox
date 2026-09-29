@@ -111,6 +111,7 @@ const Settings: React.FC = () => {
   const loadFloatConfig = useCallback(async () => {
     try {
       if (window.electron) {
+        // 图标解析（含旧配置迁移）统一由主进程 loadFloatConfig 完成
         const config = await window.electron.getFloatConfig();
         setFloatConfig(config);
       }

@@ -249,6 +249,7 @@ declare interface Window {
     setAutostartStatus: (enable: boolean) => Promise<boolean>;
     getSettings: () => Promise<SettingItem[]>;
     updateSetting: (setting: { name: string; value: string | number | boolean | object }) => Promise<UpdateResult>;
+    setThemeSnapshot: (colors: Record<string, string> | null) => Promise<UpdateResult>;
     clearCache: () => Promise<UpdateResult>;
     clearIconCache: (type: 'all' | 'expired') => Promise<{ code: number; msg: string }>;
     resolveIcons: (urls: string[]) => Promise<Record<string, string | null>>;

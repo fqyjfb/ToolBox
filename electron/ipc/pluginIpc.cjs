@@ -4,10 +4,10 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 const { getMimeType } = require('../services/fileTypeUtils.cjs');
 // 安装成功后把插件图标落盘到本地缓存，保证已安装插件的图标展示不再依赖网络
-const { cachePluginIcon, resolveIconUrls } = require('../lib/config.cjs');
+const { cachePluginIcon, resolveIconUrls, isDarkTheme } = require('../lib/config.cjs');
 
 let pluginIpcRegistered = false;
-const { app, nativeTheme } = require('electron');
+const { app } = require('electron');
 
 let preScreenshotBounds = null;
 let preScreenshotAlwaysOnTop = false;
@@ -297,16 +297,8 @@ async function openPluginWindow(pluginId, userId) {
 
     const entryUrl = pathToFileURL(entryPath).href;
     
-    const themeConfigPath = path.join(app.getPath('userData'), 'settings.json');
-    let isDark = false;
-    try {
-      if (fs.existsSync(themeConfigPath)) {
-        const settings = JSON.parse(fs.readFileSync(themeConfigPath, 'utf-8'));
-        // systemTheme: 'dark' | 'light' | 'system'；自定义主题仍以其明暗基色写入该字段
-        const themeSource = settings.systemTheme || 'system';
-        isDark = themeSource === 'dark' || (themeSource !== 'light' && nativeTheme.shouldUseDarkColors);
-      }
-    } catch { /* ignore */ }
+    // systemTheme: 'dark' | 'light' | 'system'；自定义主题仍以其明暗基色写入该字段
+    const isDark = isDarkTheme();
 
     const escapedName = escapeHtml(manifest.name);
     const htmlContent = `

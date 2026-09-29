@@ -18,6 +18,13 @@ interface SelectProps {
   dense?: boolean;
 }
 
+// 下拉列表与触发器的间距
+const DROPDOWN_GAP = 2;
+// 下拉列表距视口边缘的安全距离
+const VIEWPORT_MARGIN = 8;
+// 下拉列表最大高度（原 Tailwind max-h-60）
+const DROPDOWN_MAX_HEIGHT = 240;
+
 const Select: React.FC<SelectProps> = ({
   value,
   onChange,
@@ -29,7 +36,8 @@ const Select: React.FC<SelectProps> = ({
   dense = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownOffset, setDropdownOffset] = useState(2);
+  const [openUp, setOpenUp] = useState(false);
+  const [dropdownMaxHeight, setDropdownMaxHeight] = useState(DROPDOWN_MAX_HEIGHT);
   const [dropdownLeft, setDropdownLeft] = useState(0);
   const [dropdownMaxWidth, setDropdownMaxWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,15 +60,19 @@ const Select: React.FC<SelectProps> = ({
   useLayoutEffect(() => {
     if (!isOpen || !triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    setDropdownOffset(spaceBelow < 160 ? -164 : 2);
+    // 依据触发器上/下方真实可用空间决定展开方向，列表高度同步收敛到可用空间内
+    const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_MARGIN;
+    const spaceAbove = rect.top - VIEWPORT_MARGIN;
+    const shouldOpenUp = spaceBelow < DROPDOWN_MAX_HEIGHT && spaceAbove > spaceBelow;
+    const availableHeight = (shouldOpenUp ? spaceAbove : spaceBelow) - DROPDOWN_GAP;
+    setOpenUp(shouldOpenUp);
+    setDropdownMaxHeight(Math.min(DROPDOWN_MAX_HEIGHT, Math.max(availableHeight, 0)));
     const left = rect.left;
     const width = rect.width;
-    const margin = 8;
     const viewportWidth = window.innerWidth;
-    if (left + width > viewportWidth - margin) {
-      setDropdownLeft(left + width - viewportWidth + margin);
-      setDropdownMaxWidth(viewportWidth - left - margin);
+    if (left + width > viewportWidth - VIEWPORT_MARGIN) {
+      setDropdownLeft(left + width - viewportWidth + VIEWPORT_MARGIN);
+      setDropdownMaxWidth(viewportWidth - left - VIEWPORT_MARGIN);
     } else {
       setDropdownLeft(0);
       setDropdownMaxWidth(0);
@@ -68,19 +80,27 @@ const Select: React.FC<SelectProps> = ({
   }, [isOpen]);
 
   const selectedOption = options.find(opt => opt.value === value);
+  const triggerRect = triggerRef.current?.getBoundingClientRect();
+  // 向上展开时以 bottom 锚定触发器上沿，保证实际内容高度不一时仍贴合触发器
+  const verticalPositionStyle: React.CSSProperties = openUp && triggerRect
+    ? { bottom: window.innerHeight - triggerRect.top + DROPDOWN_GAP }
+    : { top: triggerRect ? triggerRect.bottom + DROPDOWN_GAP : 0 };
 
   const dropdown = isOpen ? (
     <div
       ref={dropdownRef}
       className="fixed bg-surface rounded-md shadow-lg z-[1000]"
       style={{
-        left: triggerRef.current ? triggerRef.current.getBoundingClientRect().left + dropdownLeft : 0,
-        top: triggerRef.current ? triggerRef.current.getBoundingClientRect().bottom + dropdownOffset : 0,
+        left: triggerRect ? triggerRect.left + dropdownLeft : 0,
         width: triggerRef.current ? triggerRef.current.offsetWidth : 0,
         maxWidth: dropdownMaxWidth > 0 ? dropdownMaxWidth : undefined,
+        ...verticalPositionStyle,
       }}
     >
-      <div className="max-h-60 overflow-y-auto py-1">
+      <div
+        className="scrollbar-thin overflow-y-auto py-1"
+        style={{ maxHeight: dropdownMaxHeight }}
+      >
         {options.map((option) => (
           <button
             key={option.value}

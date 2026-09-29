@@ -70,6 +70,7 @@ class IconCacheService {
 
       await this.enforceCacheLimits(cache);
     } catch {
+      // 图标缓存写入为尽力而为，失败不影响主流程
     }
   }
 
@@ -95,6 +96,7 @@ class IconCacheService {
 
       await this.enforceCacheLimits(cache);
     } catch {
+      // 图标缓存写入为尽力而为，失败不影响主流程
     }
   }
 

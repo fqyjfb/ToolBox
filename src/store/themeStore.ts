@@ -3,6 +3,7 @@ import localStorageService, { STORAGE_KEYS } from '../services/localStorageServi
 import {
   CUSTOM_THEME_STORAGE_FULL,
   CustomTheme,
+  CustomThemeColorSnapshot,
   clampPercent,
   getDefaultTheme,
   withThemeDefaults,
@@ -50,6 +51,33 @@ const syncThemeToMain = (isDark: boolean) => {
   if (window.electron) {
     void window.electron.updateSetting({ name: 'systemTheme', value: isDark ? 'dark' : 'light' });
   }
+};
+
+/** 补全默认值后取出全部颜色字段（体积最大的背景图不进快照） */
+const buildSnapshot = (theme: CustomTheme, isDark: boolean): CustomThemeColorSnapshot => {
+  const full = withThemeDefaults(theme, isDark);
+  const snapshot = {} as CustomThemeColorSnapshot;
+  (Object.keys(CUSTOM_THEME_VARS) as (keyof typeof CUSTOM_THEME_VARS)[]).forEach((key) => {
+    snapshot[key] = full[key] ?? '';
+  });
+  return snapshot;
+};
+
+// 已同步给主进程的快照指纹（'' = 已同步「无自定义主题」）
+let syncedSnapshotKey: string | null = null;
+
+/**
+ * 自定义主题同步主进程的唯一出口：主进程用它给锁屏等独立窗口上色（这些窗口读不到 localStorage）。
+ * 刻意与 systemTheme 通道分开 —— 走 updateSetting 会被主进程回广播 setting-changed，
+ * App 收到后会调用 setTheme 退出自定义模式。
+ */
+const syncThemeSnapshot = (theme: CustomTheme | null, isDark: boolean) => {
+  if (!window.electron?.setThemeSnapshot) return;
+  const snapshot = theme ? buildSnapshot(theme, isDark) : null;
+  const key = snapshot ? JSON.stringify(snapshot) : '';
+  if (syncedSnapshotKey === key) return;
+  syncedSnapshotKey = key;
+  void window.electron.setThemeSnapshot(snapshot);
 };
 
 const applyBaseClass = (isDark: boolean) => {
@@ -107,6 +135,7 @@ const switchToPreset = (isDark: boolean) => {
   applyBaseClass(isDark);
   persistMode(false, isDark);
   syncThemeToMain(isDark);
+  syncThemeSnapshot(null, isDark);
 };
 
 // ── 模块级初始化（先于 React 首帧执行，避免主题闪烁）──
@@ -121,6 +150,8 @@ const initialIsCustom =
 if (initialIsCustom && initialCustomTheme) {
   applyCustomTheme(initialCustomTheme, initialIsDark);
 }
+
+syncThemeSnapshot(initialIsCustom ? initialCustomTheme : null, initialIsDark);
 
 export const useThemeStore = create<ThemeStore>((set, get) => ({
   isDark: initialIsDark,
@@ -151,6 +182,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     // 未配置的可选字段按新基色重新兜底
     if (isCustomTheme && customTheme) applyCustomTheme(customTheme, isDark);
     persistMode(isCustomTheme, isDark);
+    syncThemeSnapshot(isCustomTheme ? customTheme : null, isDark);
     set({ isDark, themeKey: get().themeKey + 1 });
   },
 
@@ -163,6 +195,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     persistMode(true, isDark);
     // 同步明暗基色：保证 systemTheme 原为 'system' 时，插件窗口/原生 UI 也能正确跟随
     syncThemeToMain(isDark);
+    syncThemeSnapshot(theme, isDark);
     set({ customTheme: theme, isCustomTheme: true, themeKey: get().themeKey + 1 });
   },
 

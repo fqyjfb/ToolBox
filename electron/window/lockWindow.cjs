@@ -2,7 +2,7 @@ const { BrowserWindow, ipcMain, dialog, screen, app } = require('electron');
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
-const { loadSettings, saveSettings } = require('../lib/config.cjs');
+const { loadSettings, saveSettings, isDarkTheme, loadThemeSnapshot, saveThemeSnapshot } = require('../lib/config.cjs');
 
 let lockWindow = null;
 let dragOffset = { x: 0, y: 0 };
@@ -48,6 +48,9 @@ const createLockWindow = () => {
   const x = Math.floor((width - windowWidth) / 2);
   const y = Math.floor((height - windowHeight) / 2);
 
+  // 窗口底色跟随应用主题（含自定义），避免窗口出现早于页面首帧时闪白
+  const themeSnapshot = loadThemeSnapshot();
+
   lockWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
@@ -56,6 +59,9 @@ const createLockWindow = () => {
     frame: false,
     resizable: false,
     show: false,
+    backgroundColor: themeSnapshot && themeSnapshot.colorBgPrimary
+      ? themeSnapshot.colorBgPrimary
+      : (isDarkTheme() ? '#16181D' : '#FFFFFF'),
     alwaysOnTop: true,
     skipTaskbar: true,
     titleBarStyle: 'hidden',
@@ -257,6 +263,17 @@ const registerLockIpcHandlers = () => {
 
   ipcMain.handle('lock:getStatus', () => {
     return getLockStatus();
+  });
+
+  // 主题：锁屏是独立窗口，读不到渲染层的 localStorage，由渲染层把自定义配色同步到主进程
+  ipcMain.handle('theme:set-snapshot', (event, colors) => {
+    saveThemeSnapshot(colors || null);
+    return { code: 0 };
+  });
+
+  // 同步返回，保证锁屏首帧之前就能上色（避免明暗/自定义主题闪一下）
+  ipcMain.on('lock:get-theme-sync', (event) => {
+    event.returnValue = { isDark: isDarkTheme(), colors: loadThemeSnapshot() };
   });
 
   ipcMain.handle('lock:unlock', () => {

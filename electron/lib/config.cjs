@@ -1,9 +1,12 @@
-const { app } = require('electron');
+const { app, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { https, http } = require('follow-redirects');
+const { getTargetIconData, getLegacyIconData } = require('./icon-data.cjs');
 
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+// 自定义主题配色快照：锁屏等独立窗口读不到渲染层的 localStorage，靠这份快照上色
+const themeSnapshotPath = path.join(app.getPath('userData'), 'theme.json');
 const shortcutsPath = path.join(app.getPath('userData'), 'shortcuts.json');
 const floatConfigPath = path.join(app.getPath('userData'), 'floatConfig.json');
 const lockPasswordPath = path.join(app.getPath('userData'), 'lockPassword.json');
@@ -122,16 +125,35 @@ const defaultSettings = {
   floatBallAppearance: '',
 };
 
+// 默认项与 NAV_ACTIONS 的有效目标保持一致；图标字段留空，加载时按类型+目标自动解析。
+// id 保持稳定：旧版 id 6 指向已下线的 search 目标，不再作为默认项。
 const defaultFloatConfig = [
-  { id: 1, type: 'nav', action: 'home', name: '主页', icon: 'Home', color: '#03a9f4' },
-  { id: 2, type: 'nav', action: 'tools', name: '工具', icon: 'Tool', color: '#0462df' },
-  { id: 3, type: 'nav', action: 'quick', name: '快捷启动', icon: 'Zap', color: '#1db954' },
-  { id: 4, type: 'nav', action: 'bookmark', name: '收藏', icon: 'Star', color: '#8c9eff' },
-  { id: 5, type: 'nav', action: 'todo', name: '待办', icon: 'Check', color: '#bd081c' },
-  { id: 6, type: 'nav', action: 'search', name: '搜索', icon: 'Search', color: '#ea4c89' },
-  { id: 7, type: 'nav', action: 'news', name: '热点', icon: 'Flame', color: '#333' },
-  { id: 8, type: 'nav', action: 'settings', name: '设置', icon: 'Edit', color: '#ff4500' }
+  { id: 1, type: 'nav', action: 'home', name: '主页', color: '#03a9f4' },
+  { id: 2, type: 'nav', action: 'tools', name: '工具中心', color: '#0462df' },
+  { id: 3, type: 'nav', action: 'quick', name: '快捷启动', color: '#1db954' },
+  { id: 4, type: 'nav', action: 'bookmark', name: '收藏', color: '#8c9eff' },
+  { id: 5, type: 'nav', action: 'todo', name: '待办', color: '#bd081c' },
+  { id: 7, type: 'nav', action: 'news', name: '热点', color: '#333333' },
+  { id: 8, type: 'nav', action: 'settings', name: '设置', color: '#ff4500' }
 ];
+
+// 将图标字段统一解析为可直接渲染的 data URI：
+// nav/tool/system 按类型+目标复用功能原有图标；旧版自定义图标名走兼容映射；
+// 应用的原始 base64 与插件的 plugin: 标识保持原样
+const resolveFloatIcon = (item) => {
+  const icon = item.icon;
+  if (typeof icon !== 'string' || icon.length === 0) {
+    return getTargetIconData(item.type, item.action);
+  }
+  if (icon.startsWith('data:image/') || icon.startsWith('plugin:')) return icon;
+  if (icon.length > 100 && !icon.includes(' ')) return icon;
+  return getTargetIconData(item.type, item.action) || getLegacyIconData(icon) || icon;
+};
+
+const withResolvedIcon = (item) => ({ ...item, icon: resolveFloatIcon(item) });
+
+// 重置场景使用：返回图标已解析、可直接渲染与落盘的默认配置
+const getDefaultFloatConfig = () => defaultFloatConfig.map(withResolvedIcon);
 
 const defaultShortcuts = [
   { id: 1, tag: '退出软件', cmd: 'CommandOrControl+Q', isOpen: 1, isGlobal: 1, name: 'softwareExit' },
@@ -167,6 +189,40 @@ const saveSettings = (settings) => {
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
   } catch (error) {
     console.error('Failed to save settings:', error);
+  }
+};
+
+/**
+ * 应用当前明暗：`systemTheme` 为 'system' 或未读写过设置时跟随系统。
+ * 独立窗口（锁屏）与实际显示冲突时以这里为准，避免各自重复解析。
+ */
+const isDarkTheme = () => {
+  const themeSource = loadSettings().systemTheme || 'system';
+  return themeSource === 'dark' || (themeSource !== 'light' && nativeTheme.shouldUseDarkColors);
+};
+
+/** 读取渲染层同步下来的自定义主题配色；未使用自定义主题时为 null */
+const loadThemeSnapshot = () => {
+  try {
+    if (fs.existsSync(themeSnapshotPath)) {
+      return JSON.parse(fs.readFileSync(themeSnapshotPath, 'utf-8'));
+    }
+  } catch (error) {
+    console.error('Failed to load theme snapshot:', error);
+  }
+  return null;
+};
+
+/** 写入 / 清除自定义主题配色快照（传 null 即删除文件） */
+const saveThemeSnapshot = (snapshot) => {
+  try {
+    if (snapshot && typeof snapshot === 'object') {
+      fs.writeFileSync(themeSnapshotPath, JSON.stringify(snapshot));
+    } else if (fs.existsSync(themeSnapshotPath)) {
+      fs.unlinkSync(themeSnapshotPath);
+    }
+  } catch (error) {
+    console.error('Failed to save theme snapshot:', error);
   }
 };
 
@@ -207,7 +263,7 @@ const loadFloatConfig = () => {
       const data = fs.readFileSync(floatConfigPath, 'utf-8');
       const config = JSON.parse(data);
       if (!Array.isArray(config)) {
-        floatConfigCache = [...defaultFloatConfig];
+        floatConfigCache = defaultFloatConfig.map(withResolvedIcon);
         return floatConfigCache;
       }
       // 合并默认配置和用户自定义配置：先处理默认项，再追加用户自定义项
@@ -215,12 +271,12 @@ const loadFloatConfig = () => {
       const mergedConfig = defaultFloatConfig.map((defaultItem) => {
         const savedItem = config.find(c => c.id === defaultItem.id);
         usedIds.add(defaultItem.id);
-        return savedItem ? { ...defaultItem, ...savedItem } : defaultItem;
+        return withResolvedIcon(savedItem ? { ...defaultItem, ...savedItem } : defaultItem);
       });
       // 追加用户自定义项（不在默认配置中的）
       config.forEach((item) => {
         if (item && !usedIds.has(item.id)) {
-          mergedConfig.push(item);
+          mergedConfig.push(withResolvedIcon(item));
         }
       });
       floatConfigCache = mergedConfig;
@@ -229,14 +285,16 @@ const loadFloatConfig = () => {
   } catch (error) {
     console.error('Failed to load float config:', error);
   }
-  floatConfigCache = [...defaultFloatConfig];
+  floatConfigCache = defaultFloatConfig.map(withResolvedIcon);
   return floatConfigCache;
 };
 
 const saveFloatConfig = (config) => {
   try {
-    // 防御性检查：如果传入的不是非空数组，使用默认配置
-    const configToSave = (Array.isArray(config) && config.length > 0) ? config : [...defaultFloatConfig];
+    // 防御性检查：如果传入的不是非空数组，落盘已解析图标的默认配置
+    const configToSave = (Array.isArray(config) && config.length > 0)
+      ? config
+      : defaultFloatConfig.map(withResolvedIcon);
     floatConfigCache = configToSave;
     fs.writeFileSync(floatConfigPath, JSON.stringify(configToSave, null, 2));
   } catch (error) {
@@ -585,6 +643,9 @@ const clearAllIconCache = () => {
 module.exports = {
   loadSettings,
   saveSettings,
+  isDarkTheme,
+  loadThemeSnapshot,
+  saveThemeSnapshot,
   loadShortcuts,
   saveShortcuts,
   loadFloatConfig,
@@ -595,7 +656,7 @@ module.exports = {
   resolveIconUrls,
   cachePluginIcon,
   defaultShortcuts,
-  defaultFloatConfig,
+  getDefaultFloatConfig,
   getNetworkConfig,
   invalidateNetworkConfigCache,
 };

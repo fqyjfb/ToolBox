@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, RotateCcw } from 'lucide-react';
 import { FloatConfigItem } from '../../types/settings';
 import { QuickLaunchItem } from '../../utils/quickLaunch';
@@ -6,10 +6,9 @@ import {
   NAV_ACTIONS,
   SYSTEM_ACTIONS,
   FLOAT_TYPE_OPTIONS,
-  AVAILABLE_ICONS
 } from '../../constants/settings';
 import { ALL_TOOLS } from '../../constants/tools';
-import { isPredefinedIcon, formatIconSrc } from '../../utils/floatIconRenderer';
+import { lucideIconToDataUrl, getTargetIcon } from '../../utils/floatIconRenderer';
 import { usePluginStore } from '../../store/pluginStore';
 import CachedIcon from '../ui/CachedIcon';
 import FloatIconView from '../ui/FloatIconView';
@@ -23,6 +22,15 @@ interface FloatConfigEditorProps {
   onReset: () => void;
   quickLaunchApps: QuickLaunchItem[];
 }
+
+// 图标随所选功能自动确定，图标设置项仅作说明，不再提供手动选择列表
+const AUTO_ICON_LABELS: Record<FloatConfigItem['type'], string> = {
+  nav: '使用导航图标',
+  tool: '使用工具图标',
+  app: '使用应用图标',
+  system: '使用系统图标',
+  plugin: '使用插件图标',
+};
 
 const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
   config,
@@ -39,32 +47,29 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
   }, [config]);
 
   const handleTypeChange = (type: FloatConfigItem['type']) => {
-    const isPredefined = isPredefinedIcon(localConfig.icon);
+    // 切换类型后目标重置，图标同步收敛为新类型对应（首个）功能的原有图标
     const newConfig: FloatConfigItem = {
       ...localConfig,
       type,
       action: '',
       path: undefined,
-      icon: type !== 'app' && !isPredefined ? 'HelpCircle' : localConfig.icon
+      icon: getTargetIcon(type, '')
     };
     setLocalConfig(newConfig);
     onUpdate(newConfig);
   };
 
   const handleActionChange = (action: string) => {
-    let newConfig: FloatConfigItem = { ...localConfig, action };
+    const actionList = localConfig.type === 'system' ? SYSTEM_ACTIONS : NAV_ACTIONS;
+    const target = actionList.find(item => item.action === action);
+    if (!target) return;
 
-    if (localConfig.type === 'system') {
-      const systemAction = SYSTEM_ACTIONS.find(a => a.action === action);
-      if (systemAction) {
-        newConfig = { ...newConfig, name: systemAction.label };
-      }
-    } else if (localConfig.type === 'nav') {
-      const navAction = NAV_ACTIONS.find(a => a.action === action);
-      if (navAction) {
-        newConfig = { ...newConfig, name: navAction.label };
-      }
-    }
+    const newConfig: FloatConfigItem = {
+      ...localConfig,
+      action,
+      name: target.label,
+      icon: lucideIconToDataUrl(target.icon)
+    };
 
     setLocalConfig(newConfig);
     onUpdate(newConfig);
@@ -86,13 +91,14 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
   const handleToolSelect = (toolId: string) => {
     const tool = ALL_TOOLS.find(t => t.id === toolId);
     if (tool) {
+      const Icon = iconMap[tool.iconName] || iconMap.Package;
       const newConfig: FloatConfigItem = {
         ...localConfig,
         type: 'tool',
         action: tool.id,
         name: tool.name,
         path: tool.path,
-        icon: tool.iconName || localConfig.icon,
+        icon: lucideIconToDataUrl(Icon),
         color: tool.color || localConfig.color
       };
       setLocalConfig(newConfig);
@@ -117,12 +123,6 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
     }
   };
 
-  const handleIconChange = (icon: string) => {
-    const newConfig: FloatConfigItem = { ...localConfig, icon };
-    setLocalConfig(newConfig);
-    onUpdate(newConfig);
-  };
-
   const handleNameChange = (name: string) => {
     const newConfig: FloatConfigItem = { ...localConfig, name };
     setLocalConfig(newConfig);
@@ -139,9 +139,6 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
       default: return '';
     }
   };
-
-  const isAppType = localConfig.type === 'app';
-  const hasIconImg = !isPredefinedIcon(localConfig.icon) && !!formatIconSrc(localConfig.icon);
 
   return (
     <div className="space-y-4">
@@ -329,20 +326,9 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                 className="text-content-secondary"
               />
             </div>
-
-            {!isAppType && !hasIconImg && localConfig.type !== 'plugin' ? (
-              <Select
-                value={localConfig.icon}
-                onChange={handleIconChange}
-                options={AVAILABLE_ICONS.map(({ name, label }) => ({ value: name, label }))}
-                dense
-                className="flex-1 border border-content bg-surface text-content-primary"
-              />
-            ) : (
-              <span className="flex-1 text-xs text-content-secondary">
-                {localConfig.type === 'plugin' ? '使用插件图标' : '使用应用图标'}
-              </span>
-            )}
+            <span className="flex-1 text-xs text-content-secondary">
+              {AUTO_ICON_LABELS[localConfig.type]}
+            </span>
           </div>
         </div>
       </div>

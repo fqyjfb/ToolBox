@@ -64,16 +64,32 @@ function showError(message) {
   errorMsg.classList.remove('hidden');
 }
 
-// 监听系统主题变化
-const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-if (prefersDark) {
-  document.body.classList.add('dark');
-}
+// 自定义主题字段 → 锁屏 CSS 变量（均为 lock.css 实际使用的变量）
+const LOCK_THEME_VARS = {
+  colorBgPrimary: '--color-bg-primary',
+  colorBgSecondary: '--color-bg-secondary',
+  colorBgTertiary: '--color-bg-tertiary',
+  textColorPrimary: '--color-text-primary',
+  textColorSecondary: '--color-text-secondary',
+  textColorTertiary: '--color-text-tertiary',
+  colorBorder: '--color-border',
+  colorError: '--color-error',
+};
 
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-  if (e.matches) {
-    document.body.classList.add('dark');
-  } else {
-    document.body.classList.remove('dark');
-  }
-});
+// 跟随应用层主题（明暗 + 自定义配色）：锁屏是独立窗口，主题只能从主进程取
+const applyAppTheme = () => {
+  const theme = window.lockElectron.getTheme();
+  if (!theme) return;
+
+  document.body.classList.toggle('dark', !!theme.isDark);
+  if (!theme.colors) return;
+
+  // 必须落在 body 上：`.dark` 也是 body 的自定义属性来源，写在 html 上会被它盖掉
+  const bodyStyle = document.body.style;
+  Object.keys(LOCK_THEME_VARS).forEach((key) => {
+    const value = theme.colors[key];
+    if (value) bodyStyle.setProperty(LOCK_THEME_VARS[key], value);
+  });
+};
+
+applyAppTheme();

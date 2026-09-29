@@ -43,7 +43,7 @@ export class SQLiteClient {
 
     // 切换用户：等待旧初始化完成
     if (this.initState === 'initializing' && this.initPromise) {
-      try { await this.initPromise; } catch {}
+      try { await this.initPromise; } catch { /* 旧初始化失败已在 promise 内部处理并重置状态 */ }
       this.reset();
     }
 
@@ -66,7 +66,7 @@ export class SQLiteClient {
       }
     })();
 
-    try { await this.initPromise; } catch {}
+    try { await this.initPromise; } catch { /* 失败已在 promise 内部记录为 idle，后续调用会重新初始化或抛错 */ }
   }
 
   private async ensureReady(): Promise<void> {

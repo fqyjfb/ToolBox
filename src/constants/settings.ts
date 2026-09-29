@@ -1,59 +1,33 @@
+import type { LucideIcon } from 'lucide-react';
+import {
+  Home, Grid3X3, Zap, Star, CheckSquare, Newspaper, Settings,
+  Trash2, Monitor, Power, RotateCcw, RotateCw,
+} from 'lucide-react';
 import { ShortcutItem } from '../types/settings';
 
-export const AVAILABLE_ICONS = [
-  { name: 'Date', label: '日期' },
-  { name: 'Delete', label: '删除' },
-  { name: 'Remind', label: '提醒' },
-  { name: 'Download', label: '下载' },
-  { name: 'Tool', label: '工具' },
-  { name: 'Member', label: '成员' },
-  { name: 'Info', label: '信息' },
-  { name: 'Edit', label: '编辑' },
-  { name: 'View', label: '查看' },
-  { name: 'Todo', label: '待办' },
-  { name: 'Upload', label: '上传' },
-  { name: 'Coin', label: '钱币' },
-  { name: 'Image', label: '图片' },
-  { name: 'List', label: '列表' },
-  { name: 'Chart', label: '图表' },
-  { name: 'Star', label: '收藏' },
-  { name: 'File', label: '文件' },
-  { name: 'Task', label: '任务' },
-  { name: 'Report', label: '报表' },
-  { name: 'Home', label: '主页' },
-  { name: 'User', label: '用户' },
-  { name: 'Client', label: '客户' },
-  { name: 'Location', label: '位置' },
-  { name: 'Architecture', label: '架构' },
-  { name: 'Check', label: '勾选' },
-  { name: 'Zap', label: '闪电' },
-  { name: 'Flame', label: '火焰' },
-  { name: 'Scan', label: '扫描' },
-  { name: 'Print', label: '打印' },
-  { name: 'Heart', label: '爱心' },
-  { name: 'Search', label: '搜索' },
-  { name: 'Clock', label: '时钟' },
-  { name: 'Mail', label: '邮件' },
-  { name: 'Phone', label: '电话' },
-  { name: 'Computer', label: '电脑' },
+export interface FloatActionOption {
+  action: string;
+  label: string;
+  /** 该功能在应用内的原有图标，悬浮窗配置直接复用 */
+  icon: LucideIcon;
+}
+
+export const NAV_ACTIONS: FloatActionOption[] = [
+  { action: 'home', label: '主页', icon: Home },
+  { action: 'tools', label: '工具中心', icon: Grid3X3 },
+  { action: 'quick', label: '快捷启动', icon: Zap },
+  { action: 'bookmark', label: '收藏', icon: Star },
+  { action: 'todo', label: '待办', icon: CheckSquare },
+  { action: 'news', label: '热点', icon: Newspaper },
+  { action: 'settings', label: '设置', icon: Settings },
 ];
 
-export const NAV_ACTIONS = [
-  { action: 'home', label: '主页' },
-  { action: 'tools', label: '工具中心' },
-  { action: 'quick', label: '快捷启动' },
-  { action: 'bookmark', label: '收藏' },
-  { action: 'todo', label: '待办' },
-  { action: 'news', label: '热点' },
-  { action: 'settings', label: '设置' },
-];
-
-export const SYSTEM_ACTIONS = [
-  { action: 'clear-recycle-bin', label: '清空回收站' },
-  { action: 'open-my-computer', label: '打开我的电脑' },
-  { action: 'shutdown', label: '关机' },
-  { action: 'restart', label: '重启' },
-  { action: 'restart-app', label: '重启程序' },
+export const SYSTEM_ACTIONS: FloatActionOption[] = [
+  { action: 'clear-recycle-bin', label: '清空回收站', icon: Trash2 },
+  { action: 'open-my-computer', label: '打开我的电脑', icon: Monitor },
+  { action: 'shutdown', label: '关机', icon: Power },
+  { action: 'restart', label: '重启', icon: RotateCcw },
+  { action: 'restart-app', label: '重启程序', icon: RotateCw },
 ];
 
 export const DEFAULT_SHORTCUTS: ShortcutItem[] = [

@@ -136,6 +136,7 @@ contextBridge.exposeInMainWorld('electron', {
   setAutostartStatus: (enable) => ipcRenderer.invoke('set-autostart-status', enable),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   updateSetting: (setting) => ipcRenderer.invoke('update-setting', setting),
+  setThemeSnapshot: (colors) => ipcRenderer.invoke('theme:set-snapshot', colors),
   clearCache: () => ipcRenderer.invoke('clear-cache'),
   clearIconCache: (type) => ipcRenderer.invoke('clear-icon-cache', { type }),
   resolveIcons: (urls) => ipcRenderer.invoke('icon:resolve', { urls }),

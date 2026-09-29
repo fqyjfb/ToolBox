@@ -3,7 +3,7 @@ const path = require('path');
 const url = require('url');
 const fs = require('fs');
 const { execFile } = require('child_process');
-const { loadSettings, saveSettings, getNetworkConfig, invalidateNetworkConfigCache } = require('../lib/config.cjs');
+const { loadSettings, saveSettings, getNetworkConfig, invalidateNetworkConfigCache, isDarkTheme } = require('../lib/config.cjs');
 const ShortcutManager = require('../lib/shortcutManager.cjs');
 const notesService = require('../services/notesService.cjs');
 const systemInfoService = require('../services/systemInfoService.cjs');
@@ -374,12 +374,9 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
 
   // 窗口底色取当前主题底色（与 src/styles/theme.css 的 --color-bg-primary 一致），
   // 避免窗口出现早于页面首帧时闪一下白屏
-  const appSettings = loadSettings();
-  const themePreference = appSettings.systemTheme;
   // 同步给原生 UI（托盘菜单、系统对话框等），否则它们只跟随系统、不跟随应用内主题设置
-  nativeTheme.themeSource = themePreference || 'system';
-  const useDarkBackground = themePreference === 'dark'
-    || (themePreference === 'system' && nativeTheme.shouldUseDarkColors);
+  nativeTheme.themeSource = loadSettings().systemTheme || 'system';
+  const useDarkBackground = isDarkTheme();
 
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -522,7 +519,7 @@ const registerIpcHandlers = () => {
   ipcHandlersRegistered = true;
   
   const { ipcMain } = require('electron');
-  const { loadShortcuts, saveShortcuts, loadFloatConfig, loadFloatConfigWithIcons, saveFloatConfig, defaultFloatConfig, clearExpiredIconCache, clearAllIconCache, resolveIconUrls } = require('../lib/config.cjs');
+  const { loadShortcuts, saveShortcuts, loadFloatConfig, loadFloatConfigWithIcons, saveFloatConfig, getDefaultFloatConfig, clearExpiredIconCache, clearAllIconCache, resolveIconUrls } = require('../lib/config.cjs');
   
   const { registerPluginIpc } = require('../ipc/pluginIpc.cjs');
   registerPluginIpc();
@@ -873,7 +870,7 @@ const registerIpcHandlers = () => {
   });
 
   ipcMain.handle('reset-float-config', () => {
-    saveFloatConfig([...defaultFloatConfig]);
+    saveFloatConfig(getDefaultFloatConfig());
     return { code: 0, msg: '悬浮球配置已重置' };
   });
 

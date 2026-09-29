@@ -11,24 +11,6 @@ function getTooltipContainer() {
   return document.getElementById('tooltipContainer');
 }
 
-// 从共享文件加载图标数据
-let customIcons = {};
-let getIconSvgByName = (name) => '';
-
-// 初始化图标数据
-function initIcons() {
-  if (window.IconData) {
-    customIcons = window.IconData.customIcons;
-    getIconSvgByName = window.IconData.getIconSvgByName;
-  } else {
-    console.warn('Failed to load icon data, using fallback icons');
-    // 备用图标
-    customIcons = {
-      Info: '<svg t="1778300057036" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M950.9 109.7H73.1C32.9 109.7 0 142.6 0 182.9v658.3c0 40.2 32.9 73.1 73.1 73.1h877.7c40.2 0 73.1-32.9 73.1-73.1V182.9c0.1-40.3-32.8-73.2-73-73.2zM329.1 548.6c0 20.1-16.5 36.6-36.6 36.6h-73.1c-20.1 0-36.6-16.5-36.6-36.6v-73.1c0-20.1 16.5-36.6 36.6-36.6h73.1c20.1 0 36.6 16.5 36.6 36.6v73.1z m256 0c0 20.1-16.5 36.6-36.6 36.6h-73.1c-20.1 0-36.6-16.5-36.6-36.6v-73.1c0-20.1 16.5-36.6 36.6-36.6h73.1c20.1 0 36.6 16.5 36.6 36.6v73.1z m256 0c0 20.1-16.5 36.6-36.6 36.6h-73.1c-20.1 0-36.6-16.5-36.6-36.6v-73.1c0-20.1 16.5-36.6 36.6-36.6h73.1c20.1 0 36.6 16.5 36.6 36.6v73.1z" fill="#00A2FF"></path></svg>'
-    };
-  }
-}
-
 function getIconByName(name, item) {
   if (!name) return '';
   
@@ -52,7 +34,8 @@ function getIconByName(name, item) {
     return '<img src="data:image/png;base64,' + name + '" class="app-icon" />';
   }
   
-  return customIcons[name] || customIcons.Info || '';
+  // 图标已由主进程统一解析为上述可识别形式，其余情况回退首字符兜底
+  return '';
 }
 
 function renderFloatBall() {
@@ -236,9 +219,6 @@ function handleContextMenu(e) {
 }
 
 function initFloatBall() {
-  // 初始化图标数据
-  initIcons();
-  
   floatBall.addEventListener('click', handleFloatBallClick);
   floatBall.addEventListener('mousedown', handleFloatBallMouseDown);
   floatBall.addEventListener('mouseenter', handleFloatBallMouseEnter);

@@ -100,6 +100,12 @@ export type CustomThemeLayoutKey = 'bgImage' | 'bgSize' | 'bgPosition' | 'bgRepe
 /** 绑定取色器的颜色字段 */
 export type CustomThemeColorFieldKey = Exclude<CustomThemeColorKey, CustomThemeLayoutKey>;
 
+/**
+ * 同步给主进程的主题快照：仅颜色字段。
+ * 背景图是可能达数 MB 的 data URI，而主进程侧（锁屏窗口）用不到，不进快照。
+ */
+export type CustomThemeColorSnapshot = Pick<CustomTheme, CustomThemeColorFieldKey>;
+
 export interface ThemeColorField {
   key: CustomThemeColorFieldKey;
   label: string;
