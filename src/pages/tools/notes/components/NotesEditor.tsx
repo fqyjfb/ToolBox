@@ -697,7 +697,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
             </button>
           ) : (
             <button
-              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-gray-600 dark:text-content-secondary transition-colors hover:bg-menu-hover"
+              className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs text-button-text transition-colors hover:bg-primary-hover"
               onClick={() => selectedFile && window.electron?.openFile(selectedFile.path)}
               title="在外部打开"
             >
