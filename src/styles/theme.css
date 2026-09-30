@@ -1234,6 +1234,8 @@ body[data-custom-bg]::before {
 
   --color-primary: var(--ct-primary);
   --color-primary-hover: var(--ct-primary-hover);
+  --color-button-primary: var(--ct-primary);
+  --color-button-primary-hover: var(--ct-primary-hover);
   --color-secondary: var(--ct-secondary);
   --color-accent: var(--ct-accent);
   --color-success: var(--ct-success);

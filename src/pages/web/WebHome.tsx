@@ -140,50 +140,29 @@ const WebHome: React.FC = () => {
     <div className="web-home p-4">
       <section className="web-home__hero">
         <div className="web-home__hero-content">
-          <RevealSection>
-            <div className="flex flex-col items-center justify-center gap-4">
-              <div className="flex-1 max-w-md w-full">
-                <div className="flex flex-wrap justify-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                  {searchTypes.map((type) => (
-                    <button
-                      key={type.id}
-                      onClick={() => setActiveSearchType(type.id)}
-                      className="font-medium transition-all rounded-full"
-                      style={{
-                        padding: 'var(--space-1-5) var(--space-4)',
-                        fontSize: 'var(--text-xs)',
-                        backgroundColor: activeSearchType === type.id ? 'var(--color-text-primary)' : 'transparent',
-                        color: activeSearchType === type.id ? 'var(--color-bg-primary)' : 'var(--color-text-secondary)',
-                        border: activeSearchType === type.id ? 'none' : '1px solid var(--color-border)',
-                      }}
-                    >
-                      {type.name}
-                    </button>
-                  ))}
-                </div>
+          <RevealSection className="web-home__search-section">
+            <div className="web-home__search-pills">
+              {searchTypes.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setActiveSearchType(type.id)}
+                  className={`web-home__pill ${activeSearchType === type.id ? 'web-home__pill--active' : ''}`}
+                >
+                  {type.name}
+                </button>
+              ))}
+            </div>
 
-                <div className="relative">
-                  <Search className="absolute top-1/2 -translate-y-1/2 w-5 h-5" style={{ left: 'var(--space-3)', color: 'var(--color-text-tertiary)' }} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && performSearch()}
-                    placeholder={searchTypes.find(t => t.id === activeSearchType)?.placeholder || '搜索...'}
-                    className="w-full outline-none border rounded-xl placeholder-gray-400"
-                    style={{
-                      paddingLeft: 'var(--space-9)',
-                      paddingRight: 'var(--space-3)',
-                      paddingTop: 'var(--space-2)',
-                      paddingBottom: 'var(--space-2)',
-                      backgroundColor: 'var(--color-bg-primary)',
-                      fontSize: 'var(--text-sm)',
-                      color: 'var(--color-text-primary)',
-                      borderColor: 'var(--color-border)',
-                    }}
-                  />
-                </div>
-              </div>
+            <div className="web-home__search-wrap">
+              <Search className="web-home__search-icon w-4 h-4" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && performSearch()}
+                placeholder={searchTypes.find(t => t.id === activeSearchType)?.placeholder || '搜索...'}
+                className="web-home__search-input"
+              />
             </div>
           </RevealSection>
 

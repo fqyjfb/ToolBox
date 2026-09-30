@@ -181,12 +181,22 @@ const WeatherPage: React.FC = () => {
 
   const getAlertLevelStyle = (level: string) => {
     const levelMap: Record<string, string> = {
-      '蓝色': 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-400',
-      '黄色': 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500 text-yellow-700 dark:text-yellow-400',
-      '橙色': 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 text-orange-700 dark:text-orange-400',
-      '红色': 'bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-400',
+      '蓝色': 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-200',
+      '黄色': 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-500 text-yellow-700 dark:text-yellow-200',
+      '橙色': 'bg-orange-50 dark:bg-orange-900/30 border-orange-500 text-orange-700 dark:text-orange-200',
+      '红色': 'bg-red-50 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-200',
     };
-    return levelMap[level] || 'bg-surface-secondary/50 border-gray-500 text-gray-700 dark:text-content-tertiary';
+    return levelMap[level] || 'bg-surface-secondary-50 border-gray-500 text-content-secondary';
+  };
+
+  const getAlertDetailColor = (level: string) => {
+    const levelMap: Record<string, string> = {
+      '蓝色': 'text-blue-600 dark:text-blue-300',
+      '黄色': 'text-yellow-700 dark:text-yellow-300',
+      '橙色': 'text-orange-700 dark:text-orange-300',
+      '红色': 'text-red-700 dark:text-red-300',
+    };
+    return levelMap[level] || 'text-content-secondary';
   };
 
   const getLifeIndexBadgeColor = (level: string) => {
@@ -350,28 +360,28 @@ const WeatherPage: React.FC = () => {
 
         <div className="p-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-            <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
+            <div className="bg-surface-secondary-50 rounded-lg p-3 text-center">
               <Droplets className="w-5 h-5 text-blue-500 mx-auto mb-1.5" />
               <p className="text-xs text-content-secondary">湿度</p>
               <p className="text-sm font-semibold text-content-primary">{weatherData.weather?.humidity ?? '--'}%</p>
             </div>
-            <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
-              <Wind className="w-5 h-5 text-content-tertiary mx-auto mb-1.5" />
+            <div className="bg-surface-secondary-50 rounded-lg p-3 text-center">
+              <Wind className="w-5 h-5 text-blue-500 mx-auto mb-1.5" />
               <p className="text-xs text-content-secondary">风速</p>
               <p className="text-sm font-semibold text-content-primary">{weatherData.weather?.wind_power ?? '--'}级</p>
             </div>
-            <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
-              <Gauge className="w-5 h-5 text-content-tertiary mx-auto mb-1.5" />
+            <div className="bg-surface-secondary-50 rounded-lg p-3 text-center">
+              <Gauge className="w-5 h-5 text-blue-500 mx-auto mb-1.5" />
               <p className="text-xs text-content-secondary">气压</p>
               <p className="text-sm font-semibold text-content-primary">{weatherData.weather?.pressure ?? '--'}hPa</p>
             </div>
-            <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
+            <div className="bg-surface-secondary-50 rounded-lg p-3 text-center">
               <CloudRain className="w-5 h-5 text-blue-500 mx-auto mb-1.5" />
               <p className="text-xs text-content-secondary">降水</p>
               <p className="text-sm font-semibold text-content-primary">{weatherData.weather?.precipitation ?? '--'}mm</p>
             </div>
             {weatherData.sunrise && (
-              <div className="bg-surface-secondary/50 rounded-lg p-3 text-center">
+              <div className="bg-surface-secondary-50 rounded-lg p-3 text-center">
                 <div className="flex items-center justify-center gap-1 mb-1.5">
                   <Sun className="w-5 h-5 text-orange-500" />
                   <Clock className="w-5 h-5 text-indigo-500" />
@@ -394,11 +404,11 @@ const WeatherPage: React.FC = () => {
             <div className="overflow-x-auto hourly-scroll-container scrollbar-visible">
               <div className="flex gap-1.5" style={{ width: 'fit-content' }}>
                 {hourlyForecast.map((hour, index) => (
-                  <div key={index} className="flex-shrink-0 w-14 flex flex-col items-center py-2 px-2 bg-surface-secondary/50 rounded-lg">
+                  <div key={index} className="flex-shrink-0 w-14 flex flex-col items-center py-2 px-2 bg-surface-secondary-50 rounded-lg">
                     <span className="text-xs text-content-secondary mb-1">{formatHour(hour.datetime)}</span>
                     <div className="mb-1.5">{getWeatherIcon(hour.condition || '')}</div>
                     <span className="text-xs font-semibold text-content-primary">{hour.temperature}°</span>
-                    <span className="text-xs text-content-tertiary mt-0.5">{hour.wind_direction} {hour.wind_power}级</span>
+                    <span className="text-xs text-content-secondary mt-0.5">{hour.wind_direction} {hour.wind_power}级</span>
                   </div>
                 ))}
               </div>
@@ -414,19 +424,19 @@ const WeatherPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
               {dailyForecast.map((day, index) => (
-                <div key={index} className="bg-surface-secondary/50 rounded-lg p-3 text-center">
+                <div key={index} className="bg-surface-secondary-50 rounded-lg p-3 text-center">
                   <p className="text-sm font-semibold text-content-primary mb-0.5">{getDayName(day.date, { includeAfterTomorrow: false })}</p>
                   <p className="text-xs text-content-secondary mb-2">{formatDate(day.date)}</p>
                   <div className="flex items-center justify-center gap-1 mb-2">
                     {getWeatherIcon(day.day_condition || '')}
-                    <span className="text-xs text-gray-600 dark:text-content-secondary">{day.day_condition}</span>
+                    <span className="text-xs text-content-secondary">{day.day_condition}</span>
                   </div>
                   <div className="flex items-center justify-center gap-1 mb-2">
                     <span className="text-sm font-semibold text-content-primary">{day.max_temperature}°</span>
-                    <span className="text-content-secondary dark:text-content-secondary">/</span>
+                    <span className="text-content-secondary">/</span>
                     <span className="text-sm text-content-secondary">{day.min_temperature}°</span>
                   </div>
-                  <div className="text-xs text-content-tertiary">
+                  <div className="text-xs text-content-secondary">
                     {day.day_wind_direction} {day.day_wind_power}级
                   </div>
                 </div>
@@ -449,8 +459,8 @@ const WeatherPage: React.FC = () => {
                     <span className="text-xs ml-2">{alert.level}预警</span>
                   </div>
                 </div>
-                <p className="text-xs text-content-secondary leading-relaxed">{alert.detail}</p>
-                <p className="text-xs text-content-tertiary mt-2">{alert.updated}</p>
+                <p className={`text-xs leading-relaxed ${getAlertDetailColor(alert.level)}`}>{alert.detail}</p>
+                <p className={`text-xs mt-2 ${getAlertDetailColor(alert.level)} opacity-70`}>{alert.updated}</p>
               </div>
             ))}
           </div>

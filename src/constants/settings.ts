@@ -51,4 +51,4 @@ export const FLOAT_TYPE_OPTIONS = [
   { type: 'plugin' as const, label: '插件' },
 ];
 
-export const DEFAULT_WINDOW_SIZE = { width: 1024, height: 800 };
+export const DEFAULT_WINDOW_SIZE = { width: 1160, height: 800 };

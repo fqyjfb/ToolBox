@@ -209,32 +209,12 @@ const Settings: React.FC = () => {
   };
 
   const handleWindowSizeChange = (key: 'width' | 'height', value: string) => {
-    const numValue = Number(value);
-    if (isNaN(numValue) || numValue <= 0) {
-      addToast({ type: 'error', message: '请输入有效的正数' });
+    const numValue = Math.trunc(Number(value));
+    const limit = key === 'width' ? { min: 300, max: 3000 } : { min: 300, max: 2000 };
+    if (isNaN(numValue) || numValue < limit.min || numValue > limit.max) {
+      addToast({ type: 'info', message: `无效值已忽略，保留当前尺寸` });
       return;
     }
-
-    if (key === 'width') {
-      if (numValue > 3000) {
-        addToast({ type: 'error', message: '宽度不能超过3000px' });
-        return;
-      }
-      if (numValue < 300) {
-        addToast({ type: 'error', message: '宽度不能小于300px' });
-        return;
-      }
-    } else {
-      if (numValue > 2000) {
-        addToast({ type: 'error', message: '高度不能超过2000px' });
-        return;
-      }
-      if (numValue < 300) {
-        addToast({ type: 'error', message: '高度不能小于300px' });
-        return;
-      }
-    }
-
     const newSize = { ...defaultWindowSize, [key]: numValue };
     setDefaultWindowSize(newSize);
     handleSettingUpdate('defaultWindowSize', JSON.stringify(newSize));

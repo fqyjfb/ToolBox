@@ -188,14 +188,19 @@ const shortcutFunctions = {
   restoreDefaultWindow: () => {
     if (mainWindow) {
       const [width, height] = mainWindow.getSize();
-      const origin = loadSettings().defaultWindowSize || { width: 1024, height: 800 };
-      if (width === origin.width && height === origin.height) {
+      const raw = loadSettings().defaultWindowSize;
+      const origin = typeof raw === 'string'
+        ? (() => { try { return JSON.parse(raw); } catch { return null; } })()
+        : (raw || null);
+      const originW = (origin && typeof origin.width === 'number') ? origin.width : 1160;
+      const originH = (origin && typeof origin.height === 'number') ? origin.height : 800;
+      if (width === originW && height === originH) {
         mainWindow.maximize();
       } else {
         if (mainWindow.isMaximized()) mainWindow.unmaximize();
         checkLockAndShowMain(() => {
           if (!mainWindow.isVisible()) mainWindow.show();
-          mainWindow.setSize(origin.width, origin.height, true);
+          mainWindow.setSize(originW, originH, true);
           mainWindow.center();
         });
       }
@@ -378,9 +383,14 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   nativeTheme.themeSource = loadSettings().systemTheme || 'system';
   const useDarkBackground = isDarkTheme();
 
+  const rawWindowSize = loadSettings().defaultWindowSize;
+  const defaultWindowSize = typeof rawWindowSize === 'string'
+    ? (() => { try { return JSON.parse(rawWindowSize); } catch { return null; } })()
+    : (rawWindowSize || null);
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: (defaultWindowSize && typeof defaultWindowSize.width === 'number') ? defaultWindowSize.width : 1160,
+    height: (defaultWindowSize && typeof defaultWindowSize.height === 'number') ? defaultWindowSize.height : 800,
     frame: false,
     titleBarStyle: 'hidden',
     icon: iconPath,

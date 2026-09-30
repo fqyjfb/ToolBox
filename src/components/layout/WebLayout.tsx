@@ -7,7 +7,15 @@ interface WebLayoutProps {
 
 const WebLayout: React.FC<WebLayoutProps> = ({ children }) => {
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div
+      className="h-screen flex flex-col overflow-hidden web-page"
+      style={{
+        backgroundColor: 'var(--color-bg-primary)',
+        backgroundImage: 'radial-gradient(circle, var(--color-border-light) 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <WebNavbar />
       <main className="flex-1 overflow-y-auto scrollbar-hide max-w-7xl w-full mx-auto" style={{ padding: 'var(--space-4)', paddingTop: 'var(--space-3)' }}>
         {children}

@@ -104,7 +104,7 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ className = '' }) => {
         </div>
       </div>
 
-      <div className="flex-1 p-3 overflow-y-auto">
+      <div className="flex-1 p-3 overflow-y-auto scrollbar-hide">
         <div className="bg-surface-secondary rounded-xl p-4 mb-3 border border-content-light">
           <div className="flex items-center justify-between mb-3">
             <div>

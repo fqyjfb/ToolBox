@@ -74,7 +74,7 @@ const CountryCodePage: React.FC = () => {
       <div className="flex-1 bg-surface rounded-lg shadow-sm flex flex-col min-h-0">
         <table className="w-full flex-shrink-0">
           <thead>
-            <tr className="bg-surface-secondary/50">
+            <tr className="bg-surface-secondary-50">
               <th className="text-left py-2 px-3 text-xs font-medium text-content-secondary">国家/地区</th>
               <th className="text-left py-2 px-3 text-xs font-medium text-content-secondary">国家代码</th>
               <th className="text-left py-2 px-3 text-xs font-medium text-content-secondary">电话区号</th>
@@ -136,7 +136,7 @@ const CountryCodePage: React.FC = () => {
         </div>
 
         {filteredCodes.length > 0 && (
-          <div className="flex-shrink-0 px-3 py-2 bg-surface-secondary/50">
+          <div className="flex-shrink-0 px-3 py-2 bg-surface-secondary-50">
             <p className="text-xs text-content-secondary">
               共找到 <span className="font-medium text-content-primary">{filteredCodes.length}</span> 个国家/地区，点击行复制区号
             </p>

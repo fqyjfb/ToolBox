@@ -67,6 +67,13 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 }) => {
   const addToast = useToastStore(state => state.addToast);
   const [locationLoading, setLocationLoading] = React.useState(false);
+  const [sizeInputs, setSizeInputs] = React.useState({
+    width: String(defaultWindowSize.width),
+    height: String(defaultWindowSize.height),
+  });
+  React.useEffect(() => {
+    setSizeInputs({ width: String(defaultWindowSize.width), height: String(defaultWindowSize.height) });
+  }, [defaultWindowSize]);
   const [passwordSet, setPasswordSet] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -179,16 +186,22 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
           <div className="flex items-center gap-1">
             <input
               type="number"
-              value={defaultWindowSize.width}
-              onChange={(e) => onWindowSizeChange('width', e.target.value)}
-              className="w-20 px-2 py-1 text-xs border border-content bg-surface text-content-primary"
+              min={300}
+              max={3000}
+              value={sizeInputs.width}
+              onChange={(e) => setSizeInputs(prev => ({ ...prev, width: e.target.value }))}
+              onBlur={() => onWindowSizeChange('width', sizeInputs.width)}
+              className="w-20 px-2 py-1 text-xs border border-content bg-surface rounded-md transition-colors cursor-pointer text-content-primary focus:border-primary focus:bg-surface-secondary outline-none"
             />
             <span className="text-content-secondary">x</span>
             <input
               type="number"
-              value={defaultWindowSize.height}
-              onChange={(e) => onWindowSizeChange('height', e.target.value)}
-              className="w-20 px-2 py-1 text-xs border border-content bg-surface text-content-primary"
+              min={300}
+              max={2000}
+              value={sizeInputs.height}
+              onChange={(e) => setSizeInputs(prev => ({ ...prev, height: e.target.value }))}
+              onBlur={() => onWindowSizeChange('height', sizeInputs.height)}
+              className="w-20 px-2 py-1 text-xs border border-content bg-surface rounded-md transition-colors cursor-pointer text-content-primary focus:border-primary focus:bg-surface-secondary outline-none"
             />
             <span className="text-xs text-content-secondary dark:text-content-tertiary ml-1">px</span>
           </div>
@@ -235,7 +248,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               value={weatherCity}
               onChange={(e) => setWeatherCity(e.target.value)}
               placeholder="请输入城市名称"
-              className="w-28 px-2 py-1 text-xs border border-content bg-surface text-content-primary"
+              className="w-28 px-2 py-1 text-xs border border-content bg-surface rounded-md transition-colors cursor-pointer text-content-primary focus:border-primary focus:bg-surface-secondary outline-none"
             />
             <button
               onClick={handleLocationClick}
