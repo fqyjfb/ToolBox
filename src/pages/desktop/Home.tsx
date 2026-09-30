@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { hotNewsApi } from '../../services/hotNews';
 import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps, ensureAppIconsCached } from '../../utils/quickLaunch';
 import { loadHomeTools } from '../../utils/homeTools';
+import { loadHomeBookmarks, removeHomeBookmark, saveHomeBookmarkOrder, type HomeBookmark } from '../../utils/homeBookmarks';
 import { isElectron } from '../../utils/environment';
 import SearchBar from '../../components/home/SearchBar';
 import FavoritesBar from '../../components/home/FavoritesBar';
 import ToolGrid from '../../components/home/ToolGrid';
 import NewsContainer from '../../components/home/NewsContainer';
 import QuickLaunchBar from '../../components/home/QuickLaunchBar';
+import HomeBookmarkBar from '../../components/home/HomeBookmarkBar';
 import MoyuCard from '../../components/home/MoyuCard';
 import { useHomeFavorites } from '../../hooks/useHomeFavorites';
 import './Home.css';
@@ -23,6 +25,7 @@ const Home: React.FC = () => {
   const { favorites, handleFavoritesReorder } = useHomeFavorites();
 
   const [homeQuickLaunchApps, setHomeQuickLaunchApps] = useState<QuickLaunchItem[]>([]);
+  const [homeBookmarks, setHomeBookmarks] = useState<HomeBookmark[]>([]);
   const [homeTools, setHomeTools] = useState(() => loadHomeTools());
 
   const navigate = useNavigate();
@@ -82,6 +85,25 @@ const Home: React.FC = () => {
     saveHomeQuickLaunchApps(reorderedApps);
   }, []);
 
+  const fetchHomeBookmarks = useCallback(async () => {
+    setHomeBookmarks(await loadHomeBookmarks());
+  }, []);
+
+  const handleRemoveHomeBookmark = useCallback(async (id: string) => {
+    setHomeBookmarks(prev => prev.filter(bookmark => bookmark.id !== id));
+    await removeHomeBookmark(id);
+  }, []);
+
+  const handleHomeBookmarkReorder = useCallback(async (orderedIds: string[]) => {
+    setHomeBookmarks(prev => {
+      const bookmarkMap = new Map(prev.map(bookmark => [bookmark.id, bookmark]));
+      return orderedIds
+        .map(id => bookmarkMap.get(id))
+        .filter((bookmark): bookmark is HomeBookmark => !!bookmark);
+    });
+    await saveHomeBookmarkOrder(orderedIds);
+  }, []);
+
   const navigateToTool = useCallback((path: string) => {
     navigate(path);
   }, [navigate]);
@@ -94,8 +116,17 @@ const Home: React.FC = () => {
     fetchSixtySeconds();
     if (isDesktop) {
       fetchHomeQuickLaunchApps();
+      void fetchHomeBookmarks();
     }
-  }, [fetchSixtySeconds, fetchHomeQuickLaunchApps, isDesktop]);
+  }, [fetchSixtySeconds, fetchHomeQuickLaunchApps, fetchHomeBookmarks, isDesktop]);
+
+  // 插件窗口改动首页网址后，回到主窗口即刷新
+  useEffect(() => {
+    if (!isDesktop) return;
+    const handleFocus = () => { void fetchHomeBookmarks(); };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchHomeBookmarks, isDesktop]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -121,12 +152,17 @@ const Home: React.FC = () => {
         <div className="flex flex-col gap-1 w-home-card flex-shrink-0">
           <ToolGrid tools={homeTools} onToolClick={navigateToTool} />
           {isDesktop && (
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 flex flex-col quicklaunch-group">
               <QuickLaunchBar
                 apps={homeQuickLaunchApps}
                 onLaunch={handleLaunchApp}
                 onRemove={handleRemoveHomeQuickLaunch}
                 onReorder={handleQuickLaunchReorder}
+              />
+              <HomeBookmarkBar
+                bookmarks={homeBookmarks}
+                onRemove={handleRemoveHomeBookmark}
+                onReorder={handleHomeBookmarkReorder}
               />
             </div>
           )}

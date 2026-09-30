@@ -294,6 +294,32 @@
   width: 100%;
 }
 
+/* 图标区容器：高度随图标行数自适应，超出上限（5 行）可滚动但不显示滚动条 */
+.quicklaunch-scroll,
+.quicklaunch-group {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.quicklaunch-scroll::-webkit-scrollbar,
+.quicklaunch-group::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* 上下内边距 8px*2 + 5 行图标 36px*5 + 行间距 6px*4 */
+.quicklaunch-scroll {
+  max-height: 220px;
+}
+
+/* 相邻图标区去掉中间多余间距，使两个区域看起来是一个整体 */
+.quicklaunch-group > .quicklaunch-scroll + .quicklaunch-scroll .quicklaunch-bar {
+  padding-block-start: 0;
+}
+
 .quicklaunch-item {
   cursor: pointer;
   display: flex;
@@ -305,14 +331,10 @@
   height: 36px;
 }
 
-.quicklaunch-item > .quicklaunch-title {
-  --var: -0%;
-  position: absolute;
-  top: var(--var);
-  transition: all var(--transition-slow);
+/* 图标悬浮提示：渲染到 body 并用固定定位，避免被滚动容器裁剪 */
+.quicklaunch-title {
   background-color: var(--color-primary);
   border-radius: 7px;
-  opacity: 0;
   padding-inline: 7px;
   padding-block: 3px;
   width: max-content;
@@ -323,7 +345,14 @@
   z-index: 200;
 }
 
-.quicklaunch-item > .quicklaunch-title::after {
+.quicklaunch-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  animation: quicklaunch-tooltip-in var(--transition-normal) ease-out;
+}
+
+.quicklaunch-tooltip::after {
   content: "";
   position: absolute;
   border-top: 10px solid var(--color-primary);
@@ -334,13 +363,16 @@
   transform: translate(-50%);
 }
 
-.quicklaunch-item:hover > .quicklaunch-title {
-  --var: -100%;
-  opacity: 1;
-}
+@keyframes quicklaunch-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 6px));
+  }
 
-.quicklaunch-item:hover {
-  z-index: 150;
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
 }
 
 .tools-grid {

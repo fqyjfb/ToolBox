@@ -4,6 +4,7 @@ import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDndSensors } from '../../hooks/useDndSensors';
+import { useHoverTooltip } from '../../hooks/useHoverTooltip';
 import ContextMenu, { ContextMenuItem } from '../ui/ContextMenu';
 import type { QuickLaunchItem } from '../../utils/quickLaunch';
 
@@ -18,7 +19,9 @@ const SortableQuickLaunchItem: React.FC<{
   app: QuickLaunchItem;
   onLaunch: (path: string) => void;
   onContextMenu: (e: React.MouseEvent) => void;
-}> = ({ app, onLaunch, onContextMenu }) => {
+  onMouseEnter: (e: React.MouseEvent) => void;
+  onMouseLeave: () => void;
+}> = ({ app, onLaunch, onContextMenu, onMouseEnter, onMouseLeave }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: app.id });
 
   const style = {
@@ -38,6 +41,8 @@ const SortableQuickLaunchItem: React.FC<{
       className={`quicklaunch-item cursor-grab active:cursor-grabbing ${isDragging ? 'shadow-lg' : ''}`}
       onClick={() => onLaunch(app.path)}
       onContextMenu={onContextMenu}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {app.icon ? (
         <img
@@ -46,7 +51,6 @@ const SortableQuickLaunchItem: React.FC<{
           className="w-8 h-8 object-contain"
         />
       ) : null}
-      <span className="quicklaunch-title">{app.name}</span>
     </div>
   );
 };
@@ -64,6 +68,7 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
   });
 
   const sensors = useDndSensors();
+  const { tooltipNode, showTooltip, hideTooltip } = useHoverTooltip();
 
   const handleContextMenu = useCallback((e: React.MouseEvent, appId: string) => {
     e.preventDefault();
@@ -143,10 +148,11 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
   };
 
   return (
-    <div className="w-full relative z-10">
+    <div className="w-full relative z-10 quicklaunch-scroll" onWheel={hideTooltip}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={hideTooltip}
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={apps.map(app => app.id)} strategy={verticalListSortingStrategy}>
@@ -157,6 +163,8 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
                 app={app}
                 onLaunch={onLaunch}
                 onContextMenu={(e) => handleContextMenu(e, app.id)}
+                onMouseEnter={(e) => showTooltip(e, app.name)}
+                onMouseLeave={hideTooltip}
               />
             ))}
           </div>
@@ -170,6 +178,8 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
         items={getContextMenuItems()}
         onClose={handleCloseContextMenu}
       />
+
+      {tooltipNode}
     </div>
   );
 };
