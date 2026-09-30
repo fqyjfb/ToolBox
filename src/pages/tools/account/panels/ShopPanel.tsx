@@ -15,6 +15,7 @@ import Select from '../../../../components/ui/Select';
 import PasswordInput from '../../../../components/forms/PasswordInput';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface ShopPanelProps {
@@ -538,7 +539,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
             <input type="text" value={shopForm.base_deposit} onChange={(e) => setShopForm(prev => ({ ...prev, base_deposit: e.target.value }))} placeholder="基础保证金" className={modalControlClass} />
             <input type="text" value={shopForm.risk_deposit} onChange={(e) => setShopForm(prev => ({ ...prev, risk_deposit: e.target.value }))} placeholder="风险保证金" className={modalControlClass} />
           </div>
-          <textarea value={shopForm.remark} onChange={(e) => setShopForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
+          <AutoResizeTextarea value={shopForm.remark} onChange={(e) => setShopForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" className={modalTextareaClass} />
         </div>
       </Modal>
 

@@ -824,7 +824,7 @@ const MemoPage: React.FC = () => {
                 onChange={(e) => setNewMemoContent(e.target.value)}
                 placeholder="内容"
                 rows={4}
-                className="w-full bg-transparent resize-none focus:outline-none text-sm text-gray-600 dark:text-content-secondary placeholder-gray-400"
+                className="w-full bg-transparent resize-none focus:outline-none text-sm text-content-primary placeholder-gray-400"
               />
             </div>
           </div>
@@ -876,7 +876,7 @@ const MemoPage: React.FC = () => {
                   onChange={(e) => setEditingMemo({ ...editingMemo, content: e.target.value })}
                   placeholder="内容"
                   rows={4}
-                  className="w-full bg-transparent resize-none focus:outline-none text-sm text-gray-600 dark:text-content-secondary placeholder-gray-400"
+                  className="w-full bg-transparent resize-none focus:outline-none text-sm text-content-primary placeholder-gray-400"
                 />
               </div>
             </div>
@@ -995,7 +995,7 @@ const MemoPage: React.FC = () => {
                 >
                   <Copy size={14} />
                 </button>
-                <p className="text-sm text-gray-600 dark:text-content-secondary whitespace-pre-wrap break-words">
+                <p className="text-sm text-content-primary whitespace-pre-wrap break-words">
                   {(previewMemo.content || '暂无内容').split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
                     if (part.match(/^https?:\/\/[^\s]+$/)) {
                       return <LinkWithCopy key={index} url={part} onCopy={handleCopyUrl} />;

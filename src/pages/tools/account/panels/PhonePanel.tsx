@@ -12,6 +12,7 @@ import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextM
 import Select from '../../../../components/ui/Select';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface PhonePanelProps {
@@ -353,7 +354,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
             ]}
             className={modalControlClass}
           />
-          <textarea value={phoneForm.remarks} onChange={(e) => setPhoneForm(prev => ({ ...prev, remarks: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
+          <AutoResizeTextarea value={phoneForm.remarks} onChange={(e) => setPhoneForm(prev => ({ ...prev, remarks: e.target.value }))} placeholder="备注" className={modalTextareaClass} />
         </div>
       </Modal>
 

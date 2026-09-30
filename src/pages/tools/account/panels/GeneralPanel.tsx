@@ -16,6 +16,7 @@ import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextM
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
 import { openUrl } from '../../../../services/browserService';
+import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface GeneralPanelProps {
@@ -469,9 +470,9 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
               className={modalControlClass}
             />
           </div>
-          <input type="text" value={generalForm.security_question} onChange={(e) => setGeneralForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题" className={modalControlClass} />
+          <AutoResizeTextarea value={generalForm.security_question} onChange={(e) => setGeneralForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题" minRows={1} className={modalTextareaClass} />
           <input type="text" value={generalForm.security_answer} onChange={(e) => setGeneralForm(prev => ({ ...prev, security_answer: e.target.value }))} placeholder="安全答案" className={modalControlClass} />
-          <textarea value={generalForm.notes} onChange={(e) => setGeneralForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
+          <AutoResizeTextarea value={generalForm.notes} onChange={(e) => setGeneralForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" className={modalTextareaClass} />
         </div>
       </Modal>
 

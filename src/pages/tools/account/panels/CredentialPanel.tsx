@@ -13,6 +13,7 @@ import Select from '../../../../components/ui/Select';
 import ContextMenu, { ContextMenuItem } from '../../../../components/ui/ContextMenu';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface CredentialPanelProps {
@@ -461,7 +462,7 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
             placeholder="手机号"
             className={modalControlClass}
           />
-          <textarea value={credentialForm.certificate_remark} onChange={(e) => setCredentialForm(prev => ({ ...prev, certificate_remark: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
+          <AutoResizeTextarea value={credentialForm.certificate_remark} onChange={(e) => setCredentialForm(prev => ({ ...prev, certificate_remark: e.target.value }))} placeholder="备注" className={modalTextareaClass} />
         </div>
       </Modal>
 

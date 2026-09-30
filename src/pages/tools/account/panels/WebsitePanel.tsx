@@ -23,6 +23,7 @@ import PasswordInput from '../../../../components/forms/PasswordInput';
 import { logError } from '../../../../services/loggerService';
 import { openUrl } from '../../../../services/browserService';
 import { localStorageService, STORAGE_KEYS } from '../../../../services/localStorageService';
+import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 const findCategoryById = (catList: WebsiteAccountCategory[], targetId: string): WebsiteAccountCategory | undefined => {
@@ -810,8 +811,8 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
               className={modalControlClass}
             />
           </div>
-          <textarea value={accountForm.security_question} onChange={(e) => setAccountForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题及答案" rows={2} className={modalTextareaClass} />
-          <textarea value={accountForm.notes} onChange={(e) => setAccountForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
+          <AutoResizeTextarea value={accountForm.security_question} onChange={(e) => setAccountForm(prev => ({ ...prev, security_question: e.target.value }))} placeholder="安全问题及答案" className={modalTextareaClass} />
+          <AutoResizeTextarea value={accountForm.notes} onChange={(e) => setAccountForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注" className={modalTextareaClass} />
         </div>
       </Modal>
 

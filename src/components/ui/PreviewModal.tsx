@@ -136,7 +136,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
       return (
         <div className="py-2">
           <span className="text-sm text-content-secondary font-medium">{label}</span>
-          <div className="mt-1 max-h-24 overflow-y-auto">
+          <div className="mt-1 max-h-40 overflow-y-auto scrollbar-thin pr-1">
             <span className="text-sm text-content-primary whitespace-pre-wrap break-words">{value}</span>
           </div>
         </div>
@@ -288,7 +288,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
           {('shop_name' in item) && (
             <>
               <div className="pb-3 mb-3">

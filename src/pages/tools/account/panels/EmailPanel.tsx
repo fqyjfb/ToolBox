@@ -13,6 +13,7 @@ import PasswordInput from '../../../../components/forms/PasswordInput';
 import SelectWithCustom from '../../../../components/forms/SelectWithCustom';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface EmailPanelProps {
@@ -410,8 +411,8 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
               placeholder="手机号"
               className={modalControlClass}
             />
-          <textarea value={emailForm.verification_info} onChange={(e) => setEmailForm(prev => ({ ...prev, verification_info: e.target.value }))} placeholder="验证信息（如安全问题等）" rows={2} className={modalTextareaClass} />
-          <textarea value={emailForm.remark} onChange={(e) => setEmailForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
+          <AutoResizeTextarea value={emailForm.verification_info} onChange={(e) => setEmailForm(prev => ({ ...prev, verification_info: e.target.value }))} placeholder="验证信息（如安全问题等）" className={modalTextareaClass} />
+          <AutoResizeTextarea value={emailForm.remark} onChange={(e) => setEmailForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" className={modalTextareaClass} />
         </div>
       </Modal>
 

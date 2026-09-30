@@ -14,6 +14,7 @@ import Select from '../../../../components/ui/Select';
 import PasswordInput from '../../../../components/forms/PasswordInput';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
+import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface SocialPanelProps {
@@ -506,7 +507,7 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
             ]}
             className={modalControlClass}
           />
-          <textarea value={socialForm.remark} onChange={(e) => setSocialForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" rows={2} className={modalTextareaClass} />
+          <AutoResizeTextarea value={socialForm.remark} onChange={(e) => setSocialForm(prev => ({ ...prev, remark: e.target.value }))} placeholder="备注" className={modalTextareaClass} />
         </div>
       </Modal>
 
