@@ -12,6 +12,7 @@ import { usePluginStore } from '../../store/pluginStore';
 import { useThemeStore } from '../../store/themeStore';
 import { ALL_TOOLS, ToolInfo } from '../../constants/tools';
 import CachedIcon from '../ui/CachedIcon';
+import Tooltip from '../ui/Tooltip';
 import { isElectron } from '../../utils/environment';
 import { iconMap } from '../../utils/iconMap';
 import { pluginApi } from '../../services/pluginApi';
@@ -223,20 +224,24 @@ interface NavItemProps {
 
 const NavItem: React.FC<NavItemProps> = ({ icon, title, active, collapsed, onClick, onRemove }) => (
   <div className="relative group">
-    <button
-      className={`sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-left ${
-        active ? 'sidebar-nav-item--active text-button-text shadow-sm' : 'text-content-primary'
-      } ${collapsed ? 'justify-center' : ''}`}
-      title={collapsed ? title : ''}
-      onClick={onClick}
-    >
-      {collapsed ? <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{icon}</span> : icon}
-      {!collapsed && <span className="whitespace-nowrap">{title}</span>}
-    </button>
-    {!collapsed && onRemove && (
-      <button className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-content-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemove(); }} title="移除">
-        <X className="w-3 h-3" />
+    {/* 收起态图标旁没有文字，用自定义气泡补提示；展开态文案已可见，不再提示 */}
+    <Tooltip title={collapsed ? title : ''} position="right" className="w-full">
+      <button
+        className={`sidebar-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-left ${
+          active ? 'sidebar-nav-item--active text-button-text shadow-sm' : 'text-content-primary'
+        } ${collapsed ? 'justify-center' : ''}`}
+        onClick={onClick}
+      >
+        {collapsed ? <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{icon}</span> : icon}
+        {!collapsed && <span className="whitespace-nowrap">{title}</span>}
       </button>
+    </Tooltip>
+    {!collapsed && onRemove && (
+      <Tooltip title="移除" className="absolute right-2 top-1/2 -translate-y-1/2">
+        <button className="w-5 h-5 flex items-center justify-center rounded text-content-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+          <X className="w-3 h-3" />
+        </button>
+      </Tooltip>
     )}
   </div>
 );
@@ -266,9 +271,11 @@ const SortableNavItem: React.FC<SortableNavItemProps> = ({ id, icon, title, acti
         <span className="whitespace-nowrap flex-1">{title}</span>
       </button>
       {onRemove && (
-        <button className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-content-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemove(); }} title="移除">
-          <X className="w-3 h-3" />
-        </button>
+        <Tooltip title="移除" className="absolute right-2 top-1/2 -translate-y-1/2">
+          <button className="w-5 h-5 flex items-center justify-center rounded text-content-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+            <X className="w-3 h-3" />
+          </button>
+        </Tooltip>
       )}
     </div>
   );
@@ -282,16 +289,18 @@ interface SidebarBottomButtonProps {
   active?: boolean;
 }
 
+// 气泡方向与主导航（NavItem 收起态）保持一致：统一从右侧弹出
 const SidebarBottomButton: React.FC<SidebarBottomButtonProps> = ({ icon, title, onClick, active }) => (
-  <button
-    className={`sidebar-nav-item flex items-center justify-center w-8 h-8 rounded-md ${
-      active ? 'sidebar-nav-item--active text-button-text' : 'text-content-primary'
-    }`}
-    title={title}
-    onClick={onClick}
-  >
-    {icon}
-  </button>
+  <Tooltip title={title} position="right">
+    <button
+      className={`sidebar-nav-item flex items-center justify-center w-8 h-8 rounded-md ${
+        active ? 'sidebar-nav-item--active text-button-text' : 'text-content-primary'
+      }`}
+      onClick={onClick}
+    >
+      {icon}
+    </button>
+  </Tooltip>
 );
 
 export default React.memo(Sidebar);

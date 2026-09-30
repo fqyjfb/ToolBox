@@ -8,6 +8,7 @@ import { useSidebarStore } from '../../store/sidebarStore';
 import { useTodoNotification } from '../../contexts/TodoNotificationContext';
 import { isElectron } from '../../utils/environment';
 import Breadcrumb from '../ui/Breadcrumb';
+import Tooltip from '../ui/Tooltip';
 import PageTransition from './PageTransition';
 import './Content.css';
 
@@ -40,13 +41,15 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
     <div className={`flex-1 flex flex-col text-content-primary ${className}`} style={{ overflowX: 'hidden' }}>
       <div className="pl-4 pr-0 py-0 flex items-center justify-between" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          <button className="flex items-center justify-center w-6 h-6 rounded hover:bg-menu-hover transition-colors" onClick={toggleSidebar} title={isCollapsed ? '展开侧边栏' : '收起侧边栏'}>
-            {isCollapsed ? (
-              <PanelLeft className="w-4 h-4 text-content-secondary" />
-            ) : (
-              <PanelLeftClose className="w-4 h-4 text-content-secondary" />
-            )}
-          </button>
+          <Tooltip title={isCollapsed ? '展开侧边栏' : '收起侧边栏'} position="bottom">
+            <button className="flex items-center justify-center w-6 h-6 rounded hover:bg-menu-hover transition-colors" onClick={toggleSidebar}>
+              {isCollapsed ? (
+                <PanelLeft className="w-4 h-4 text-content-secondary" />
+              ) : (
+                <PanelLeftClose className="w-4 h-4 text-content-secondary" />
+              )}
+            </button>
+          </Tooltip>
           <Breadcrumb />
         </div>
         <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
@@ -75,29 +78,35 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
             )}
 
             <div className="flex items-center overflow-hidden rounded-lg">
-              <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover" onClick={toggleTheme} title={isDark ? '浅色模式' : '深色模式'}>
-                {isDark ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                )}
-              </button>
+              <Tooltip title={isDark ? '浅色模式' : '深色模式'} position="bottom">
+                <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover" onClick={toggleTheme}>
+                  {isDark ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  )}
+                </button>
+              </Tooltip>
 
-              <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover relative" onClick={() => navigate('/tools/todo')} title="待办事项">
-                <Bell className="w-4 h-4" />
-                {pendingCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                    {pendingCount > 9 ? '9+' : pendingCount}
-                  </span>
-                )}
-              </button>
-              <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover" onClick={() => navigate('/settings')} title="设置">
-                <Settings className="w-4 h-4" />
-              </button>
+              <Tooltip title="待办事项" position="bottom">
+                <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover relative" onClick={() => navigate('/tools/todo')}>
+                  <Bell className="w-4 h-4" />
+                  {pendingCount > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                      {pendingCount > 9 ? '9+' : pendingCount}
+                    </span>
+                  )}
+                </button>
+              </Tooltip>
+              <Tooltip title="设置" position="bottom">
+                <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover" onClick={() => navigate('/settings')}>
+                  <Settings className="w-4 h-4" />
+                </button>
+              </Tooltip>
 
               {isDesktop && (
                 <>

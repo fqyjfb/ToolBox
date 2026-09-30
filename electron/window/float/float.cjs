@@ -50,10 +50,11 @@ function renderFloatBall() {
     } else {
       const itemsHTML = floatConfig.map((item, index) => {
         const iconHTML = getIconByName(item.icon, item);
+        // 名称仅用自定义 .tooltip-label 展示，不再加原生 title，避免悬浮时出现两个提示
         if (iconHTML) {
-          return '<div class="tooltip-item" data-index="' + index + '" title="' + item.name + '">' + iconHTML + '<span class="tooltip-label">' + item.name + '</span></div>';
+          return '<div class="tooltip-item" data-index="' + index + '">' + iconHTML + '<span class="tooltip-label">' + item.name + '</span></div>';
         } else {
-          return '<div class="tooltip-item" data-index="' + index + '" title="' + item.name + '"><span style="color: var(--float-fallback-text);">' + item.name.charAt(0) + '</span><span class="tooltip-label">' + item.name + '</span></div>';
+          return '<div class="tooltip-item" data-index="' + index + '"><span style="color: var(--float-fallback-text);">' + item.name.charAt(0) + '</span><span class="tooltip-label">' + item.name + '</span></div>';
         }
       }).join('');
       tooltipContainer.innerHTML = itemsHTML;
