@@ -163,10 +163,19 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ className = '' }) => {
               <Calendar className="w-3 h-3 text-green-500" />
               <span className="text-xs text-content-secondary">下个假期</span>
             </div>
-            <p className="text-lg font-bold text-content-primary">{moyuData.nextHoliday.name}</p>
-            <p className="text-xs text-content-secondary">
-              {moyuData.nextHoliday.date} · {moyuData.nextHoliday.duration}天
-            </p>
+            {moyuData.nextHoliday ? (
+              <>
+                <p className="text-lg font-bold text-content-primary">{moyuData.nextHoliday.name}</p>
+                <p className="text-xs text-content-secondary">
+                  {moyuData.nextHoliday.date} · {moyuData.nextHoliday.duration}天
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-bold text-content-primary">待定</p>
+                <p className="text-xs text-content-secondary">放假安排等待公布</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -257,7 +266,7 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ className = '' }) => {
           </div>
         )}
 
-        {moyuData.nextHoliday.workdays && moyuData.nextHoliday.workdays.length > 0 && (
+        {moyuData.nextHoliday?.workdays && moyuData.nextHoliday.workdays.length > 0 && (
           <div className="mt-2 pt-2">
             <p className="text-xs text-content-secondary mb-1">调休上班:</p>
             <div className="flex flex-wrap gap-1">

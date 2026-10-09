@@ -460,8 +460,18 @@ declare interface Window {
     onOpenAddTodo: (callback: () => void) => void;
     onOpenAddMemo: (callback: () => void) => void;
     onLaunchPlugin: (callback: (pluginId: string) => void) => void;
+    // 定时提醒：托盘/悬浮球触发新建（data 可选预填数据）；主进程 show-reminder 事件下发弹窗内容
+    // data 使用宽松类型避免与 CreateReminderRequest 的字面量联合类型冲突；调用方按需断言
+    onOpenAddReminder: (callback: (data?: unknown) => void) => void;
+    onShowReminder: (callback: (reminder: { title: string; content: string; id?: string }) => void) => void;
     sqlite: {
       invoke: <T>(channel: string, payload?: unknown) => Promise<T>;
+    };
+    // 定时提醒：主进程 Windows 计划任务管理（schtasks 注册/删除）
+    reminder: {
+      schedule: (reminder: unknown) => Promise<void>;
+      remove: (id: string) => Promise<void>;
+      notify: (reminder: { title: string; content: string; id?: string; notify_method?: string }) => Promise<void>;
     };
     ipcRenderer: {
       invoke: <T>(channel: string, ...args: unknown[]) => Promise<T>;

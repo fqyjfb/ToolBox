@@ -9,6 +9,7 @@ const notesService = require('../services/notesService.cjs');
 const systemInfoService = require('../services/systemInfoService.cjs');
 const { getFloatWindow } = require('./floatWindow.cjs');
 const { getFileIcon, isSupportedFileType, getShortcutInfo, getCacheFilePath } = require('../lib/iconExtractor.cjs');
+const { getAppIcon } = require('../lib/appIcon.cjs');
 
 // 快启动扫描统一过滤规则（桌面扫描与开始菜单扫描共享，保证整体去重一致）
 const QUICK_LAUNCH_SKIP_DIRS = ['startup', 'help', 'documentation', 'maintenance', 'readme', 'uninstall'];
@@ -357,25 +358,6 @@ const resetAutoLockTimer = () => {
 
 const createWindow = (onReadyCallback, showOnReady = true) => {
   const { app } = require('electron');
-  let iconPath = null;
-  const iconPaths = app.isPackaged
-    ? [
-        path.join(process.resourcesPath, 'app', 'public', 'favicon.ico'),
-        path.join(process.resourcesPath, 'app', 'public', 'favicon.png'),
-        path.join(process.resourcesPath, 'public', 'favicon.ico'),
-        path.join(process.resourcesPath, 'public', 'favicon.png')
-      ]
-    : [
-        path.join(__dirname, '../../public/favicon.ico'),
-        path.join(__dirname, '../../public/favicon.png')
-      ];
-
-  for (const p of iconPaths) {
-    if (fs.existsSync(p)) {
-      iconPath = p;
-      break;
-    }
-  }
 
   // 窗口底色取当前主题底色（与 src/styles/theme.css 的 --color-bg-primary 一致），
   // 避免窗口出现早于页面首帧时闪一下白屏
@@ -393,7 +375,7 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     height: (defaultWindowSize && typeof defaultWindowSize.height === 'number') ? defaultWindowSize.height : 800,
     frame: false,
     titleBarStyle: 'hidden',
-    icon: iconPath,
+    icon: getAppIcon(),
     backgroundColor: useDarkBackground ? '#16181D' : '#FFFFFF',
     show: false,
     alwaysOnTop: false,
@@ -1200,32 +1182,12 @@ const registerIpcHandlers = () => {
 
   ipcMain.on('open-internal', (event, urlPath) => {
     const { BrowserWindow, Menu, MenuItem, nativeImage, app } = require('electron');
-    // 查找 icon 路径
-    let iconPath = null;
-    const iconPaths = app.isPackaged
-      ? [
-          path.join(process.resourcesPath, 'app', 'public', 'favicon.ico'),
-          path.join(process.resourcesPath, 'app', 'public', 'favicon.png'),
-          path.join(process.resourcesPath, 'public', 'favicon.ico'),
-          path.join(process.resourcesPath, 'public', 'favicon.png')
-        ]
-      : [
-          path.join(__dirname, '../../public/favicon.ico'),
-          path.join(__dirname, '../../public/favicon.png')
-        ];
-
-    for (const p of iconPaths) {
-      if (fs.existsSync(p)) {
-        iconPath = p;
-        break;
-      }
-    }
     
     const internalWindow = new BrowserWindow({
       width: 1024,
       height: 768,
       title: 'ToolBox 浏览器',
-      icon: iconPath,
+      icon: getAppIcon(),
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,

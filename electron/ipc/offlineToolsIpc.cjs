@@ -2,6 +2,7 @@ const { ipcMain, BrowserWindow, Menu, MenuItem, nativeTheme, dialog } = require(
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
+const { getAppIcon } = require('../lib/appIcon.cjs');
 
 const CONFIG_FILE = path.join(app.getPath('userData'), 'offline-tools.json');
 
@@ -210,6 +211,8 @@ function openHtmlWindow(filePath) {
     height: 768,
     minWidth: 400,
     minHeight: 300,
+    // 独立窗口会出现在任务栏，必须带应用图标，否则显示 Electron 默认图标
+    icon: getAppIcon(),
     show: false,
     autoHideMenuBar: true,
     webPreferences: {

@@ -181,6 +181,16 @@ export class SQLiteClient {
     return this.ensureReady().then(() => invoke('sqlite:plugin:delete', { pluginId, userId, key: key || null }).then(() => {}));
   }
 
+  exportAllPluginData(): Promise<Record<string, unknown>[]> {
+    if (!isElectron()) return Promise.resolve([]);
+    return this.ensureReady().then(() => invoke('sqlite:plugin:exportAll') as Promise<Record<string, unknown>[]>);
+  }
+
+  importAllPluginData(rows: Record<string, unknown>[]): Promise<void> {
+    if (!isElectron()) return Promise.resolve();
+    return this.ensureReady().then(() => invoke('sqlite:plugin:importAll', rows).then(() => {}));
+  }
+
   openDatabaseFolder(): Promise<boolean> {
     if (!isElectron()) return Promise.resolve(false);
     return this.ensureReady().then(() => invoke('sqlite:openDatabaseFolder') as Promise<boolean>);

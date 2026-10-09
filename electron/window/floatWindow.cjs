@@ -346,6 +346,19 @@ const registerFloatIpcHandlers = () => {
           });
         }
       },
+      {
+        label: '定时提醒',
+        click: () => {
+          checkLockAndShow(() => {
+            const mainWindow = require('./mainWindow.cjs').getMainWindow();
+            if (mainWindow) {
+              mainWindow.show();
+              mainWindow.focus();
+              mainWindow.webContents.send('navigate-to', '/tools/reminder');
+            }
+          });
+        }
+      },
       ...buildAppearanceMenu(settings),
       { type: 'separator' },
       {

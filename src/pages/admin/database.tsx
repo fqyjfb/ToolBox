@@ -9,6 +9,7 @@ interface SettingsState {
   isLoading: boolean
   showRestoreDialog: boolean
   restoreData: string | null
+  restoreFileName: string | null
 }
 
 const DatabasePage: React.FC = () => {
@@ -18,7 +19,8 @@ const DatabasePage: React.FC = () => {
   const [state, setState] = useState<SettingsState>({
     isLoading: false,
     showRestoreDialog: false,
-    restoreData: null
+    restoreData: null,
+    restoreFileName: null
   })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -58,6 +60,7 @@ const DatabasePage: React.FC = () => {
       setState(prev => ({
         ...prev,
         restoreData: content,
+        restoreFileName: file.name,
         showRestoreDialog: true
       }))
     }
@@ -70,13 +73,18 @@ const DatabasePage: React.FC = () => {
 
     setState(prev => ({ ...prev, isLoading: true }))
     try {
-      const result = await databaseBackupService.importFromJSON(state.restoreData)
+      const isSQL = state.restoreFileName?.toLowerCase().endsWith('.sql')
+      const result = isSQL
+        ? await databaseBackupService.importFromSQL(state.restoreData)
+        : await databaseBackupService.importFromJSON(state.restoreData)
+
       if (result.success) {
         addToast({ type: 'success', message: result.message })
         setState(prev => ({
           ...prev,
           showRestoreDialog: false,
-          restoreData: null
+          restoreData: null,
+          restoreFileName: null
         }))
       } else {
         addToast({ type: 'error', message: result.message })
@@ -92,7 +100,8 @@ const DatabasePage: React.FC = () => {
     setState(prev => ({
       ...prev,
       showRestoreDialog: false,
-      restoreData: null
+      restoreData: null,
+      restoreFileName: null
     }))
   }
 

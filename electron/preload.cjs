@@ -13,6 +13,9 @@ let settingChangedCallback = null;
 let openAddTodoCallback = null;
 let openAddMemoCallback = null;
 let launchPluginCallback = null;
+let openAddReminderCallback = null;
+let showReminderCallback = null;
+let pendingReminder = null;
 
 ipcRenderer.on('navigate-to', (event, path) => {
   if (navigateCallback) {
@@ -29,6 +32,28 @@ ipcRenderer.on('open-add-todo', () => {
 ipcRenderer.on('open-add-memo', () => {
   if (openAddMemoCallback) {
     openAddMemoCallback();
+  }
+});
+
+// 桌面入口（托盘/悬浮球）触发"新建提醒"：可携带预填数据（标题/内容/来源类型/来源 id）
+ipcRenderer.on('open-add-reminder', () => {
+  if (openAddReminderCallback) {
+    openAddReminderCallback();
+  }
+});
+
+ipcRenderer.on('open-add-reminder-with-data', (event, data) => {
+  if (openAddReminderCallback) {
+    openAddReminderCallback(data);
+  }
+});
+
+// 主进程 second-instance 收到 --reminder <id> 后，从数据库读取并下发到渲染进程弹窗
+ipcRenderer.on('show-reminder', (event, reminder) => {
+  if (showReminderCallback) {
+    showReminderCallback(reminder);
+  } else {
+    pendingReminder = reminder;
   }
 });
 
@@ -251,6 +276,12 @@ contextBridge.exposeInMainWorld('electron', {
       return ipcRenderer.invoke(channel, payload);
     },
   },
+  // 定时提醒：主进程 Windows 计划任务管理（schtasks 注册/删除）
+  reminder: {
+    schedule: (reminder) => ipcRenderer.invoke('reminder:schedule', reminder),
+    remove: (id) => ipcRenderer.invoke('reminder:remove', id),
+    notify: (reminder) => ipcRenderer.invoke('reminder:notify', reminder),
+  },
   s3: s3Api,
   email: emailApi,
   screenshot: {
@@ -356,6 +387,17 @@ contextBridge.exposeInMainWorld('electron', {
   },
   onOpenAddMemo: (callback) => {
     openAddMemoCallback = callback;
+  },
+  onOpenAddReminder: (callback) => {
+    openAddReminderCallback = callback;
+  },
+  onShowReminder: (callback) => {
+    showReminderCallback = callback;
+    if (pendingReminder) {
+      const data = pendingReminder;
+      pendingReminder = null;
+      callback(data);
+    }
   },
   onLaunchPlugin: (callback) => {
     launchPluginCallback = callback;

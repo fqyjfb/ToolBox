@@ -1,19 +1,13 @@
 import { supabase } from './supabase'
 import { offlineStorage } from './offlineStorage'
-import { StorageLocation, SyncMetadata } from '../types/offline'
+import { StorageLocation, SyncMetadata, USER_DATA_TABLES } from '../types/offline'
 import { logError, logInfo } from './loggerService'
 import { BaseEntity } from '../types/common'
 
 type CreateInput<T extends BaseEntity> = Omit<T, keyof BaseEntity>
 
-const SYNC_TABLES = [
-  'shops', 'social_accounts', 'emails', 'phones', 'companies', 'credentials', 'general_accounts',
-  'website_accounts', 'website_account_categories',
-  'todos', 'todo_categories',
-  'quick_replies', 'quick_reply_categories',
-  'clipboard_items', 'clipboard_categories',
-  'memos', 'memo_categories'
-]
+// 同步表清单统一引用 USER_DATA_TABLES，消除重复定义
+const SYNC_TABLES = USER_DATA_TABLES
 
 class StorageContext {
   private userId: string = ''
@@ -73,6 +67,7 @@ class StorageContext {
           { key: 'quickReply', name: '快捷回复', enabled: true },
           { key: 'clipboard', name: '云剪贴板', enabled: false },
           { key: 'memo', name: '备忘录', enabled: true },
+          { key: 'reminder', name: '定时提醒', enabled: true },
         ]
       }
       const updatedMetadata: SyncMetadata = {

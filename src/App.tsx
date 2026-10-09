@@ -23,6 +23,7 @@ import { QueryProvider } from './providers/QueryProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { websiteBookmarksQuery, websiteCategoriesQuery } from './services/websiteQueries';
 const LogsPage = React.lazy(() => import('./pages/logs/index'));
+const ReminderPopup = React.lazy(() => import('./pages/tools/reminder/ReminderPopup'));
 import { isElectron } from './utils/environment';
 import { usePreloadTools } from './hooks/usePreloadTools';
 import { RecentToolsHandler } from './hooks/useRecentTools';
@@ -181,12 +182,31 @@ const PluginLaunchHandler: React.FC = () => {
   return null;
 };
 
+// 定时提醒弹窗（notify_method === 'popup'）由主进程 reminderPopupWindow.cjs
+// 创建独立 BrowserWindow 加载 ?standalone=reminder-popup#/reminder-popup 路由渲染，
+// 不再在主窗口 React 树内显示 Modal
+
 const isMobile = (): boolean => {
   if (typeof window !== 'undefined') {
     return window.innerWidth < 768;
   }
   return false;
 };
+
+// 独立窗口判定：由主进程单独创建的 BrowserWindow，以 ?standalone= 标识，
+// 不参与主窗口的布局与路由树。纯 URL 判断，故提到模块级，
+// 便于在 App 任一位置（含 hooks 之后的提前 return）生效。
+const getStandaloneMode = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('standalone');
+};
+
+const isStandaloneLogWindow = (): boolean => getStandaloneMode() === 'logs';
+
+// 定时提醒弹窗：独立 BrowserWindow 加载 ?standalone=reminder-popup
+const isStandaloneReminderPopup = (): boolean => getStandaloneMode() === 'reminder-popup';
+
+const isStandaloneWindow = (): boolean => isStandaloneLogWindow() || isStandaloneReminderPopup();
 
 function App() {
   const queryClient = useQueryClient();
@@ -308,7 +328,7 @@ function App() {
           setSyncEnabled(metadata.syncEnabled);
           setStorageLocation(metadata.storageLocation);
           if (metadata.syncModules && metadata.syncModules.length > 0) {
-            const validKeys = ['account', 'todo', 'quickReply', 'clipboard', 'memo'] as const;
+            const validKeys = ['account', 'todo', 'quickReply', 'clipboard', 'memo', 'reminder'] as const;
             setSyncModules(metadata.syncModules.filter(m => validKeys.includes(m.key)));
           }
           if (metadata.lastSyncTime !== '1970-01-01T00:00:00Z') {
@@ -330,6 +350,24 @@ function App() {
     return () => clearTimeout(timer);
   }, [isAuthenticated, user?.id, setSyncEnabled, setStorageLocation, setSyncModules, setLastSyncTime, setSyncOnStartupEnabled]);
 
+  // 提醒弹窗是主进程创建的独立 BrowserWindow，与主窗口无任何关联：
+  // 不进入下面的初始化等待（鉴权/插件/预取均为网络或 IPC 耗时操作），
+  // 也不挂载 Router 与各 Provider，收到 show-reminder 即刻渲染。
+  // 此处位于全部 hooks 之后，条件返回不影响 hooks 调用顺序。
+  if (isStandaloneReminderPopup()) {
+    return (
+      <Suspense
+        fallback={
+          <div className="w-full h-full flex items-center justify-center bg-bg-primary">
+            <LoadingSpinner size="md" />
+          </div>
+        }
+      >
+        <ReminderPopup />
+      </Suspense>
+    );
+  }
+
   // 只等本地初始化完成；鉴权是网络请求，不能阻塞首屏（首页是公开路由，不依赖登录态）
   if (!isInitialized) {
     return (
@@ -344,17 +382,9 @@ function App() {
 
   const currentRoutes = isDesktopApp ? desktopRoutes : isWebApp ? webRoutes : mobileRoutes;
 
-  const isStandaloneLogWindow = () => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('standalone') === 'logs';
-    }
-    return false;
-  };
-
   // 根据平台选择布局组件
   const getLayoutComponent = () => {
-    if (isStandaloneLogWindow()) return null;
+    if (isStandaloneWindow()) return null;
     if (isDesktopApp) return Layout;
     if (isWebApp) return WebLayout;
     return MobileLayout;
@@ -368,30 +398,36 @@ function App() {
         <NavSearchProvider>
           <QueryProvider>
             <Router>
-            {isDesktopApp && !isStandaloneLogWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
-            {isDesktopApp && !isStandaloneLogWindow() && <PluginLaunchHandler />}
-            <RecentToolsHandler />
-            <Routes>
-              <Route
-                path="/*"
-                element={
-                  <>
-                    {isStandaloneLogWindow() ? (
-                      <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
-                        <Routes>
-                          <Route path="/logs" element={<LogsPage />} />
-                        </Routes>
-                      </Suspense>
-                    ) : (
-                      renderRoutes(currentRoutes, isAuthenticated, isAdmin || false, LayoutComponent, isLoading)
-                    )}
-                    <Toast />
-                    <PluginPanels />
-                  </>
-                }
-              />
-            </Routes>
-          </Router>
+              {isDesktopApp && !isStandaloneWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
+              {isDesktopApp && !isStandaloneWindow() && <PluginLaunchHandler />}
+              <RecentToolsHandler />
+              <Routes>
+                <Route
+                  path="/*"
+                  element={
+                    <>
+                      {isStandaloneLogWindow() ? (
+                        <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
+                          <Routes>
+                            <Route path="/logs" element={<LogsPage />} />
+                          </Routes>
+                        </Suspense>
+                      ) : isStandaloneReminderPopup() ? (
+                        <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
+                          <Routes>
+                            <Route path="/reminder-popup" element={<ReminderPopup />} />
+                          </Routes>
+                        </Suspense>
+                      ) : (
+                        renderRoutes(currentRoutes, isAuthenticated, isAdmin || false, LayoutComponent, isLoading)
+                      )}
+                      <Toast />
+                      <PluginPanels />
+                    </>
+                  }
+                />
+              </Routes>
+            </Router>
           </QueryProvider>
         </NavSearchProvider>
       </TodoNotificationProvider>

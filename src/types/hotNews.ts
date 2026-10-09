@@ -300,7 +300,8 @@ export interface MoyuData {
   currentHoliday: null;
   date: MoyuDate;
   moyuQuote: string;
-  nextHoliday: MoyuNextHoliday;
+  // 次年放假安排未公布时，接口会返回 null（如国庆后至国务院公布次年安排之间）
+  nextHoliday: MoyuNextHoliday | null;
   nextWeekend: MoyuNextWeekend;
   progress: MoyuProgress;
   today: MoyuToday;

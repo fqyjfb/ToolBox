@@ -176,3 +176,13 @@ CREATE TABLE IF NOT EXISTS plugin_data (
 CREATE INDEX IF NOT EXISTS idx_pd_plugin ON plugin_data(plugin_id);
 CREATE INDEX IF NOT EXISTS idx_pd_user ON plugin_data(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pd_unique ON plugin_data(plugin_id, user_id, data_key);
+
+CREATE TABLE IF NOT EXISTS reminders (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  data TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now', 'localtime')),
+  updated_at TEXT DEFAULT (datetime('now', 'localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_reminders_user_id ON reminders(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_updated_at ON reminders(updated_at);

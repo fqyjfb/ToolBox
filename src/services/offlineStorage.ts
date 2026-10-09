@@ -8,6 +8,7 @@ const STORES = [
   'quick_replies', 'quick_reply_categories',
   'clipboard_items', 'clipboard_categories',
   'memos', 'memo_categories',
+  'reminders',
   'sync_metadata', 'pending_operations'
 ];
 

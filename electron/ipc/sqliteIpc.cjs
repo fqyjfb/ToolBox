@@ -8,6 +8,8 @@ let registered = false;
 function register() {
   if (registered) return;
   registered = true;
+  // 计划任务对账已移至主进程 whenReady（全库只读汇总，见 main.cjs reconcileReminderTasks）：
+  // 渲染进程首次 sqlite:init 携带的是空用户名，在此同步只会看到默认库并误删命名用户库的任务。
   ipcMain.handle('sqlite:init', async (_e, username) => {
     const { app } = require('electron');
     const userDataPath = app.getPath('userData');
@@ -92,6 +94,12 @@ function register() {
 
   ipcMain.handle('sqlite:plugin:delete', (_e, { pluginId, userId, key }) =>
     sqliteService.deletePluginData(pluginId, userId, key));
+
+  ipcMain.handle('sqlite:plugin:exportAll', () =>
+    sqliteService.exportAllPluginData());
+
+  ipcMain.handle('sqlite:plugin:importAll', (_e, rows) =>
+    sqliteService.importAllPluginData(rows));
 
   ipcMain.handle('sqlite:openDatabaseFolder', () => {
     const filePath = sqliteService.getFilePath();

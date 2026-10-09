@@ -1,9 +1,10 @@
-export type SyncModuleKey = 
+export type SyncModuleKey =
   | 'account'
   | 'todo'
   | 'quickReply'
   | 'clipboard'
-  | 'memo';
+  | 'memo'
+  | 'reminder';
 
 export type StorageLocation = 'local' | 'cloud';
 
@@ -109,4 +110,8 @@ export const MODULE_TABLE_MAP: Record<SyncModuleKey, string[]> = {
   quickReply: ['quick_replies', 'quick_reply_categories'],
   clipboard: ['clipboard_items', 'clipboard_categories'],
   memo: ['memos', 'memo_categories'],
+  reminder: ['reminders'],
 };
+
+// 统一的业务数据表清单，由 MODULE_TABLE_MAP 扁平化派生
+export const USER_DATA_TABLES: string[] = Object.values(MODULE_TABLE_MAP).flat();

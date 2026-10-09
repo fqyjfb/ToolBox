@@ -41,6 +41,14 @@ export const formatDateTimeForInput = (dateTimeStr: string): string => {
   return `${date.getFullYear()}-${month}-${day}T${time}`;
 };
 
+/** Date → 'YYYY-MM-DD HH:mm'（本地时间），与提醒的 remind_time 存储格式一致 */
+export const toLocalDateTimeString = (date: Date): string => {
+  const month = padDateTimePart(date.getMonth() + 1);
+  const day = padDateTimePart(date.getDate());
+  const time = `${padDateTimePart(date.getHours())}:${padDateTimePart(date.getMinutes())}`;
+  return `${date.getFullYear()}-${month}-${day} ${time}`;
+};
+
 export const formatHotValue = (value: number | string): string => {
   if (typeof value === 'number') {
     if (value >= 10000) {

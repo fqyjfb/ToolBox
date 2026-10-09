@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Store, Globe, Mail, Phone, Building, FileText, Layers, Plus, Share2 } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -7,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDndSensors } from '../../../hooks/useDndSensors';
 import { PlatformVisibility } from '../../../types/account';
 import { useAuthStore } from '../../../store/AuthStore';
+import { useRequireAuth } from '../../../hooks/useRequireAuth';
 import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 import WebsitePanel from './panels/WebsitePanel';
 import ShopPanel from './panels/ShopPanel';
@@ -160,9 +160,8 @@ const savePlatformOrder = (order: PlatformType[]) => {
 };
 
 const AccountManagerPage: React.FC = () => {
-  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  useRequireAuth();
 
   const [activePlatform, setActivePlatform] = useState<PlatformType>('website_account');
   const savedColumns = loadSavedColumns();
@@ -230,10 +229,6 @@ const AccountManagerPage: React.FC = () => {
   const companyPanelRef = useRef<PanelRef>(null);
   const credentialPanelRef = useRef<PanelRef>(null);
   const generalPanelRef = useRef<PanelRef>(null);
-
-  useEffect(() => {
-    if (!isAuthenticated) navigate('/login');
-  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     saveColumns(columnsRef.current);

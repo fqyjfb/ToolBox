@@ -1,40 +1,18 @@
 const { Tray, Menu, nativeImage } = require('electron');
-const path = require('path');
-const fs = require('fs');
 const { exec } = require('child_process');
 const { loadSettings } = require('../lib/config.cjs');
+const { getAppIcon } = require('../lib/appIcon.cjs');
 
 let tray = null;
 
 const createTray = () => {
   if (tray) return;
   
-  let iconPath = null;
-  const iconPaths = [
-    path.join(__dirname, '../../public/favicon.png'),
-    path.join(__dirname, '../../dist/favicon.png'),
-    path.join(process.resourcesPath, 'app', 'public', 'favicon.png'),
-    path.join(process.resourcesPath, 'app', 'dist', 'favicon.png'),
-    path.join(process.resourcesPath, 'public', 'favicon.png'),
-    path.join(process.resourcesPath, 'dist', 'favicon.png'),
-    path.join(process.resourcesPath, 'favicon.png')
-  ];
-
-  for (const p of iconPaths) {
-    if (fs.existsSync(p)) {
-      iconPath = p;
-      break;
-    }
-  }
-
+  // 与所有窗口共用同一份图标解析（含打包后 asar 外真实文件优先）
   let icon;
-  if (iconPath) {
-    try {
-      icon = nativeImage.createFromPath(iconPath);
-    } catch (error) {
-      icon = nativeImage.createEmpty();
-    }
-  } else {
+  try {
+    icon = getAppIcon() || nativeImage.createEmpty();
+  } catch (error) {
     icon = nativeImage.createEmpty();
   }
 
@@ -118,6 +96,22 @@ const refreshTrayMenu = () => {
             mainWindow.webContents.send('navigate-to', '/tools/memo');
             setTimeout(() => {
               mainWindow.webContents.send('open-add-memo');
+            }, 300);
+          }
+        });
+      },
+    },
+    {
+      label: '新建提醒',
+      click: () => {
+        checkLockAndShow(() => {
+          const mainWindow = require('./mainWindow.cjs').getMainWindow();
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+            mainWindow.webContents.send('navigate-to', '/tools/reminder');
+            setTimeout(() => {
+              mainWindow.webContents.send('open-add-reminder');
             }, 300);
           }
         });

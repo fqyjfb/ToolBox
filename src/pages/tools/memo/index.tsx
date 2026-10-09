@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useCallbackRef } from '../../../hooks/useCallbackRef';
 import { useNavigate } from 'react-router-dom';
-import { StickyNote, Plus, Trash2, Edit, Tag, AlertCircle, Copy } from 'lucide-react';
+import { StickyNote, Plus, Trash2, Edit, Tag, AlertCircle, Copy, Bell } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -10,6 +10,7 @@ import { memoService } from '../../../services/MemoService';
 import { openUrl } from '../../../services/browserService';
 import { MemoCategory, Memo } from '../../../types/memo';
 import { useAuthStore } from '../../../store/AuthStore';
+import { useRequireAuth } from '../../../hooks/useRequireAuth';
 import { useToastStore } from '../../../store/toastStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
 import { logError, logInfo } from '../../../services/loggerService';
@@ -118,7 +119,7 @@ const SortableCategoryButton: React.FC<{
 const MemoPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthenticated = useRequireAuth();
   const addToast = useToastStore((state) => state.addToast);
   const { searchQuery, isSearchActive } = useNavSearch();
   const [categories, setCategories] = useState<MemoCategory[]>([]);
@@ -194,12 +195,6 @@ const MemoPage: React.FC = () => {
     message: '',
     onConfirm: () => {}
   });
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
 
   const loadCategories = useCallbackRef(async () => {
     if (!user) return;
@@ -539,6 +534,23 @@ const MemoPage: React.FC = () => {
             setEditingMemoCategoryId(memo.category_id);
             setEditingMemoPriority(memo.priority);
             setShowEditMemoModal(true);
+            handleCloseContextMenu();
+          }
+        },
+        {
+          id: 'set-as-reminder',
+          label: '设为提醒',
+          icon: <Bell className="w-4 h-4" />,
+          onClick: () => {
+            // 渲染进程内直接携带预填数据跳转到提醒页面，避免 IPC 往返
+            navigate('/tools/reminder', {
+              state: {
+                title: memo.title,
+                content: memo.content,
+                source_type: 'memo',
+                source_id: memo.id,
+              },
+            });
             handleCloseContextMenu();
           }
         },

@@ -1,18 +1,16 @@
 import { offlineStorage } from './offlineStorage';
+import { sqliteClient } from './sqliteClient';
+import { USER_DATA_TABLES } from '../types/offline';
 import { DISPLAY_LIMITS } from '../constants/timers';
 
-const BACKUP_TABLES = [
-  'shops', 'social_accounts', 'emails', 'phones', 'companies',
-  'credentials', 'general_accounts', 'website_accounts', 'website_account_categories',
-  'todos', 'todo_categories', 'quick_replies', 'quick_reply_categories',
-  'clipboard_items', 'clipboard_categories', 'memos', 'memo_categories'
-];
+// plugin_data 表结构不同于标准 KV 表，需要单独处理
+const PLUGIN_DATA_KEY = 'plugin_data';
 
 async function collectAllTableData(): Promise<Record<string, unknown[]>> {
   const users = await offlineStorage.getStoredUsers();
   const result: Record<string, unknown[]> = {};
 
-  for (const table of BACKUP_TABLES) {
+  for (const table of USER_DATA_TABLES) {
     const allData: unknown[] = [];
     for (const userId of users) {
       try {
@@ -23,6 +21,13 @@ async function collectAllTableData(): Promise<Record<string, unknown[]>> {
       }
     }
     result[table] = allData;
+  }
+
+  // plugin_data 表结构不同，通过专用 IPC 全量导出
+  try {
+    result[PLUGIN_DATA_KEY] = await sqliteClient.exportAllPluginData();
+  } catch {
+    result[PLUGIN_DATA_KEY] = [];
   }
 
   return result;
@@ -89,16 +94,37 @@ export const databaseBackupService = {
       const data = JSON.parse(jsonData) as Record<string, unknown[]>;
       let totalImported = 0;
 
-      for (const [table, records] of Object.entries(data)) {
-        if (Array.isArray(records)) {
-          for (const record of records) {
-            try {
-              await offlineStorage.put(table, record as { id: string });
-              totalImported++;
-            } catch {
-              // 忽略单条记录的错误
-            }
+      // 先清空所有业务数据表，确保恢复后不残留旧数据
+      for (const table of USER_DATA_TABLES) {
+        try {
+          await offlineStorage.clear(table);
+        } catch {
+          // ignore clear errors
+        }
+      }
+
+      // 恢复标准 KV 结构表
+      for (const table of USER_DATA_TABLES) {
+        const records = data[table];
+        if (!Array.isArray(records)) continue;
+        for (const record of records) {
+          try {
+            await offlineStorage.put(table, record as { id: string });
+            totalImported++;
+          } catch {
+            // 忽略单条记录的错误
           }
+        }
+      }
+
+      // 恢复 plugin_data（结构不同，通过专用 IPC）
+      const pluginRows = data[PLUGIN_DATA_KEY];
+      if (Array.isArray(pluginRows) && pluginRows.length > 0) {
+        try {
+          await sqliteClient.importAllPluginData(pluginRows as Record<string, unknown>[]);
+          totalImported += pluginRows.length;
+        } catch {
+          // plugin_data 恢复失败不影响其它表
         }
       }
 
@@ -106,5 +132,117 @@ export const databaseBackupService = {
     } catch {
       return { success: false, message: '备份文件格式错误' };
     }
-  }
+  },
+
+  async importFromSQL(sqlContent: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // 先清空所有业务数据表
+      for (const table of USER_DATA_TABLES) {
+        try {
+          await offlineStorage.clear(table);
+        } catch {
+          // ignore clear errors
+        }
+      }
+
+      const lines = sqlContent.split('\n');
+      let totalImported = 0;
+      const validTables = new Set([...USER_DATA_TABLES, PLUGIN_DATA_KEY]);
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.toUpperCase().startsWith('INSERT INTO')) continue;
+
+        // 解析: INSERT INTO table_name (col1, col2, ...) VALUES (val1, val2, ...);
+        const match = trimmed.match(/^INSERT INTO\s+(\w+)\s*\(([^)]*)\)\s*VALUES\s*\((.*)\);?\s*$/i);
+        if (!match) continue;
+
+        const [, table, columnsStr, valuesStr] = match;
+        if (!validTables.has(table)) continue;
+
+        const columns = columnsStr.split(',').map(c => c.trim());
+        const values = parseSQLValues(valuesStr);
+
+        if (columns.length !== values.length) continue;
+
+        const record: Record<string, unknown> = {};
+        for (let i = 0; i < columns.length; i++) {
+          record[columns[i]] = values[i];
+        }
+
+        try {
+          if (table === PLUGIN_DATA_KEY) {
+            // plugin_data 通过标准 put 写入（insertOrReplace 会处理结构差异）
+            await sqliteClient.importAllPluginData([record]);
+          } else {
+            await offlineStorage.put(table, record as { id: string });
+          }
+          totalImported++;
+        } catch {
+          // 忽略单条记录的错误
+        }
+      }
+
+      return { success: true, message: `成功恢复 ${totalImported} 条数据` };
+    } catch {
+      return { success: false, message: 'SQL文件格式错误' };
+    }
+  },
 };
+
+// 解析 SQL VALUES 子句中的值列表
+function parseSQLValues(valuesStr: string): unknown[] {
+  const values: unknown[] = [];
+  let current = '';
+  let inString = false;
+  let i = 0;
+
+  while (i < valuesStr.length) {
+    const char = valuesStr[i];
+
+    if (char === "'" && !inString) {
+      inString = true;
+      i++;
+      continue;
+    }
+
+    if (char === "'" && inString) {
+      // 检查是否是转义的单引号 ''
+      if (valuesStr[i + 1] === "'") {
+        current += "'";
+        i += 2;
+        continue;
+      }
+      inString = false;
+      i++;
+      continue;
+    }
+
+    if (char === ',' && !inString) {
+      values.push(parseSQLValue(current.trim()));
+      current = '';
+      i++;
+      continue;
+    }
+
+    current += char;
+    i++;
+  }
+
+  if (current.trim()) {
+    values.push(parseSQLValue(current.trim()));
+  }
+
+  return values;
+}
+
+function parseSQLValue(value: string): unknown {
+  if (value.toUpperCase() === 'NULL') return null;
+  if (value === '') return '';
+  // 数字
+  if (/^-?\d+(\.\d+)?$/.test(value)) {
+    return Number(value);
+  }
+  // 去掉外层引号后的字符串
+  return value;
+}

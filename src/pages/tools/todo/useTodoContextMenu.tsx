@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Edit, Trash2, CheckSquare, Plus, Tag } from 'lucide-react'
+import { Edit, Trash2, CheckSquare, Plus, Tag, Bell } from 'lucide-react'
 import { Todo, TodoCategory } from '../../../services/TodoService'
 import { ContextMenuItem } from '../../../components/ui/ContextMenu'
 import { getDeleteCategoryMessage } from '../../../constants/todo'
@@ -15,6 +15,7 @@ export interface TodoContextMenuHandlers {
   onCloseContextMenu: () => void
   onShowAddTodoModal: () => void
   onShowCategoryModal: () => void
+  onSetAsReminder: (todo: Todo) => void
 }
 
 const getItemMenuItems = (item: Todo, handlers: TodoContextMenuHandlers): ContextMenuItem[] => [
@@ -30,6 +31,15 @@ const getItemMenuItems = (item: Todo, handlers: TodoContextMenuHandlers): Contex
     icon: <CheckSquare className={`w-4 h-4 ${item.is_completed ? 'fill-current' : ''}`} />,
     onClick: () => {
       handlers.onToggleComplete(item.id)
+      handlers.onCloseContextMenu()
+    }
+  },
+  {
+    id: 'set-as-reminder',
+    label: '设为提醒',
+    icon: <Bell className="w-4 h-4" />,
+    onClick: () => {
+      handlers.onSetAsReminder(item)
       handlers.onCloseContextMenu()
     }
   },

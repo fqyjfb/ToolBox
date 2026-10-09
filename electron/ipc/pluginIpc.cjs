@@ -5,6 +5,7 @@ const { pathToFileURL } = require('url');
 const { getMimeType } = require('../services/fileTypeUtils.cjs');
 // 安装成功后把插件图标落盘到本地缓存，保证已安装插件的图标展示不再依赖网络
 const { cachePluginIcon, resolveIconUrls, isDarkTheme } = require('../lib/config.cjs');
+const { getAppIcon } = require('../lib/appIcon.cjs');
 
 let pluginIpcRegistered = false;
 const { app } = require('electron');
@@ -270,6 +271,8 @@ async function openPluginWindow(pluginId, userId) {
       height: manifest.height || 600,
       minWidth: 400,
       minHeight: 300,
+      // 会出现在任务栏（skipTaskbar: false），必须带应用图标，否则显示 Electron 默认图标
+      icon: getAppIcon(),
       frame: false,
       transparent: false,
       alwaysOnTop: true,

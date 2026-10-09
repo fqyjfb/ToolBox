@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Clipboard, Plus, Trash2, Edit, ClipboardPaste, Tag } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -9,6 +8,7 @@ import { clipboardService } from '../../../services/ClipboardService';
 import { openUrl } from '../../../services/browserService';
 import { ClipboardCategory, ClipboardItem } from '../../../types/clipboard';
 import { useAuthStore } from '../../../store/AuthStore';
+import { useRequireAuth } from '../../../hooks/useRequireAuth';
 import { useToastStore } from '../../../store/toastStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
 import { logError } from '../../../services/loggerService';
@@ -85,9 +85,8 @@ const SortableCategoryButton: React.FC<{
 };
 
 const CloudClipboardPage: React.FC = () => {
-  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthenticated = useRequireAuth();
   const addToast = useToastStore((state) => state.addToast);
   const { searchQuery, isSearchActive } = useNavSearch();
   const [categories, setCategories] = useState<ClipboardCategory[]>([]);
@@ -134,12 +133,6 @@ const CloudClipboardPage: React.FC = () => {
     message: '',
     onConfirm: () => {}
   });
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     if (user) {

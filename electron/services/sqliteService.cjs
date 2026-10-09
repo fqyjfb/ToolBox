@@ -8,6 +8,15 @@ let dbPath = null;
 let initPromise = null;
 let currentUsername = null;
 
+// 按用户导出/导入的业务数据表清单（与前端 USER_DATA_TABLES 保持一致）
+const USER_DATA_TABLES = [
+  'shops', 'social_accounts', 'emails', 'phones', 'companies',
+  'credentials', 'general_accounts', 'website_accounts', 'website_account_categories',
+  'todos', 'todo_categories', 'quick_replies', 'quick_reply_categories',
+  'clipboard_items', 'clipboard_categories', 'memos', 'memo_categories',
+  'reminders'
+];
+
 function getDefaultDbDir(userDataPath) {
   return path.join(userDataPath, 'ToolBox');
 }
@@ -370,6 +379,36 @@ function deletePluginData(pluginId, userId, key) {
   }
 }
 
+// 全量导出 plugin_data 表（备份用，结构不同于标准 KV 表）
+function exportAllPluginData() {
+  return queryAll('SELECT id, plugin_id, user_id, data_key, data_value, created_at, updated_at FROM plugin_data', []);
+}
+
+// 全量导入 plugin_data 表（恢复用，先清空再写入）
+function importAllPluginData(rows) {
+  if (!rows || rows.length === 0) return;
+  const database = requireDb();
+  database.run('DELETE FROM plugin_data');
+  database.run('BEGIN');
+  try {
+    const stmt = database.prepare(
+      'INSERT OR REPLACE INTO plugin_data (id, plugin_id, user_id, data_key, data_value, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)'
+    );
+    for (const row of rows) {
+      stmt.run([
+        row.id, row.plugin_id, row.user_id, row.data_key,
+        row.data_value ?? null, row.created_at, row.updated_at
+      ]);
+    }
+    stmt.free();
+    database.run('COMMIT');
+  } catch (e) {
+    database.run('ROLLBACK');
+    throw e;
+  }
+  schedulePersist();
+}
+
 function getStorageStats(userId) {
   const tables = ['shops', 'social_accounts', 'emails', 'phones', 'companies',
     'credentials', 'general_accounts', 'website_accounts', 'todos',
@@ -396,23 +435,123 @@ function getStorageStats(userId) {
   return stats;
 }
 
+// 已存储用户 = 所有业务表中出现过的 user_id 并集。
+// 原实现只查 shops 表：从未用过店铺模块的用户列表恒为空，依赖用户清单的功能会静默失效
+// （历史上计划任务对账就曾因拿不到命名用户而把其任务误判为孤儿删光）。
 function getStoredUsers() {
-  try {
-    const results = queryAll('SELECT DISTINCT user_id FROM shops', []);
-    return results.map(r => r.user_id).filter(Boolean);
-  } catch {
-    return [];
+  const users = new Set();
+  for (const table of USER_DATA_TABLES) {
+    try {
+      const rows = queryAll(`SELECT DISTINCT user_id FROM ${table}`, []);
+      for (const r of rows) {
+        if (r.user_id) users.add(r.user_id);
+      }
+    } catch {
+      // 表尚未创建时跳过，不影响其余表
+    }
   }
+  return Array.from(users);
+}
+
+// 启动期提醒对账专用：以「独立只读连接」遍历数据目录下全部 ToolBox*.db，
+// 汇总 reminders 表记录（id 去重）。绝不使用/切换全局单例连接 db，
+// 避免与渲染进程抢在登录前发出的空用户名 sqlite:init 互相抢连接。
+// 单个库损坏或被写盘覆盖只跳过该库，不影响其余库与启动流程。
+async function readAllReminders(userDataPath) {
+  if (!SQL) {
+    if (!initSqlJs) initSqlJs = require('sql.js');
+    SQL = await initSqlJs();
+  }
+
+  const dir = loadSettingsSafe().dbPath || getDefaultDbDir(userDataPath);
+  const byId = new Map();
+  let files = [];
+  try {
+    files = fs.readdirSync(dir).filter((f) => /^ToolBox(?:_.+)?\.db$/.test(f));
+  } catch (err) {
+    console.error('[SQLite] readAllReminders 读取数据目录失败:', err.message);
+    return byId;
+  }
+
+  for (const file of files) {
+    let reader = null;
+    try {
+      reader = new SQL.Database(fs.readFileSync(path.join(dir, file)));
+      const stmt = reader.prepare('SELECT data FROM reminders');
+      while (stmt.step()) {
+        try {
+          const reminder = JSON.parse(stmt.getAsObject().data);
+          if (reminder && reminder.id && !byId.has(reminder.id)) byId.set(reminder.id, reminder);
+        } catch {
+          // 单行 data 损坏：跳过该行
+        }
+      }
+      stmt.free();
+    } catch (err) {
+      console.error(`[SQLite] readAllReminders 跳过无法读取的库 ${file}:`, err.message);
+    } finally {
+      try { if (reader) reader.close(); } catch { /* 忽略关闭异常 */ }
+    }
+  }
+  return byId;
+}
+
+// 提醒触发专用：计划任务命令行只带提醒 id，无从判断它归属哪个用户库，故需逐库定位。
+// 全程使用独立连接，绝不切换全局单例连接 db —— 复用全局连接会把渲染进程后续的读写
+// 永久留在别人的库上（表现为新建记录在登录账号列表里凭空消失）。
+// updatedRecord 可选：传入时在归属库就地回写（写盘后立即关闭独立连接）。
+// 返回 { reminder, updated }；未找到返回 null。
+async function findReminderInOwningDb(userDataPath, reminderId, updatedRecord) {
+  if (!SQL) {
+    if (!initSqlJs) initSqlJs = require('sql.js');
+    SQL = await initSqlJs();
+  }
+
+  const dir = loadSettingsSafe().dbPath || getDefaultDbDir(userDataPath);
+  let files = [];
+  try {
+    files = fs.readdirSync(dir).filter((f) => /^ToolBox(?:_.+)?\.db$/.test(f));
+  } catch (err) {
+    console.error('[SQLite] findReminderInOwningDb 读取数据目录失败:', err.message);
+    return null;
+  }
+
+  for (const file of files) {
+    let conn = null;
+    try {
+      conn = new SQL.Database(fs.readFileSync(path.join(dir, file)));
+      const stmt = conn.prepare('SELECT data FROM reminders WHERE id = ?');
+      stmt.bind([reminderId]);
+      const row = stmt.step() ? stmt.getAsObject() : null;
+      stmt.free();
+      if (!row) continue;
+
+      const reminder = JSON.parse(row.data);
+      let updated = null;
+      if (updatedRecord) {
+        updated = updatedRecord;
+        const { recordId, userId } = extractUserAndId(updated);
+        const write = conn.prepare('INSERT OR REPLACE INTO reminders (id, user_id, data) VALUES (?, ?, ?)');
+        try {
+          write.run([recordId, userId, JSON.stringify(updated)]);
+        } finally {
+          write.free();
+        }
+        fs.writeFileSync(path.join(dir, file), Buffer.from(conn.export()));
+      }
+      return { reminder, updated };
+    } catch (err) {
+      console.error(`[SQLite] findReminderInOwningDb 跳过无法读写的库 ${file}:`, err.message);
+    } finally {
+      try { if (conn) conn.close(); } catch { /* 忽略关闭异常 */ }
+    }
+  }
+  return null;
 }
 
 function exportUserData(userId) {
-  const tables = ['shops', 'social_accounts', 'emails', 'phones', 'companies',
-    'credentials', 'general_accounts', 'website_accounts', 'website_account_categories',
-    'todos', 'todo_categories', 'quick_replies', 'quick_reply_categories',
-    'clipboard_items', 'clipboard_categories', 'memos', 'memo_categories'];
-
   const exportData = {};
-  for (const table of tables) {
+  for (const table of USER_DATA_TABLES) {
     try {
       exportData[table] = queryByUser(table, userId);
     } catch {
@@ -427,13 +566,8 @@ function importUserData(userId, jsonStr) {
   let imported = 0;
   let failed = 0;
 
-  const storeNames = Object.keys(importData).filter(key => {
-    const tables = ['shops', 'social_accounts', 'emails', 'phones', 'companies',
-      'credentials', 'general_accounts', 'website_accounts', 'website_account_categories',
-      'todos', 'todo_categories', 'quick_replies', 'quick_reply_categories',
-      'clipboard_items', 'clipboard_categories', 'memos', 'memo_categories'];
-    return tables.includes(key);
-  });
+  const validTables = new Set(USER_DATA_TABLES);
+  const storeNames = Object.keys(importData).filter(key => validTables.has(key));
 
   for (const storeName of storeNames) {
     const items = importData[storeName];
@@ -482,9 +616,14 @@ module.exports = {
   getPluginData,
   setPluginData,
   deletePluginData,
+  exportAllPluginData,
+  importAllPluginData,
   getStorageStats,
   getStoredUsers,
+  readAllReminders,
+  findReminderInOwningDb,
   exportUserData,
   importUserData,
+  flushPersist,
   close,
 };

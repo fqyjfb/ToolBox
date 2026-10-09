@@ -29,6 +29,7 @@ const QuickReplyPage = React.lazy(() => import('../pages/tools/quick-reply'));
 const TodoManagerPage = React.lazy(() => import('../pages/tools/todo'));
 const NotesPage = React.lazy(() => import('../pages/tools/notes'));
 const MemoPage = React.lazy(() => import('../pages/tools/memo'));
+const ReminderPage = React.lazy(() => import('../pages/tools/reminder'));
 const ProfilePage = React.lazy(() => import('../pages/tools/profile'));
 const AccountManagerPage = React.lazy(() => import('../pages/tools/account'));
 const MarkdownToWechatPage = React.lazy(() => import('../pages/tools/markdown-to-wechat'));
@@ -82,6 +83,7 @@ const authRequiredRoutes: RouteConfig[] = [
   { path: '/tools/todo', element: <TodoManagerPage />, requiresAuth: true },
   { path: '/tools/memo', element: <MemoPage />, requiresAuth: true },
   { path: '/tools/notes', element: <NotesPage />, requiresAuth: true },
+  { path: '/tools/reminder', element: <ReminderPage />, requiresAuth: true },
   { path: '/tools/profile', element: <ProfilePage />, requiresAuth: true },
   { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
   { path: '/tools/country-code', element: <CountryCodePage />, requiresAuth: true },

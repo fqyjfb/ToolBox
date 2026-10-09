@@ -11,6 +11,7 @@ const {
   setLogWindow,
   importLogs
 } = require('./logger.cjs');
+const { getAppIcon } = require('../lib/appIcon.cjs');
 
 let logWindow = null;
 let logIpcHandlersRegistered = false;
@@ -30,7 +31,7 @@ function createLogWindow() {
     minWidth: 600,
     minHeight: 400,
     title: '日志监控',
-    icon: path.join(__dirname, '../../public/favicon.png'),
+    icon: getAppIcon(),
     frame: false,
     titleBarStyle: 'hidden',
     webPreferences: {

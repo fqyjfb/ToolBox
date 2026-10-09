@@ -54,16 +54,20 @@ const { stopPythonService } = require('./services/pythonProcessService.cjs');
 const { registerOcrIpc } = require('./ipc/ocrIpc.cjs');
 const { registerFileManagerIpc } = require('./ipc/fileManagerIpc.cjs');
 const { registerSqliteIpc } = require('./ipc/sqliteIpc.cjs');
+const { notifyReminder } = require('./services/reminderNotifier.cjs');
+const { nextOccurrence } = require('./services/reminderRecurrence.cjs');
 const { createWindow, registerIpcHandlers, startMemoryOptimization, stopMemoryOptimization, getMainWindow, setIsQuitting, cleanupQuickLaunchHotkeys } = require('./window/mainWindow.cjs');
 const { createFloatWindow, registerFloatIpcHandlers } = require('./window/floatWindow.cjs');
 const { createTray } = require('./window/tray.cjs');
 const { registerLogIpcHandlers } = require('./logs/window.cjs');
 const { initLogger } = require('./logs/logger.cjs');
 const { loadSettings } = require('./lib/config.cjs');
-const { sqliteService } = require('./services/sqliteService.cjs');
+const sqliteService = require('./services/sqliteService.cjs');
 const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow.cjs');
 const { registerQuickLoginIpcHandlers } = require('./window/quickLoginWindow.cjs');
 const { registerOfflineToolsIpc } = require('./ipc/offlineToolsIpc.cjs');
+const { registerReminderIpc } = require('./ipc/reminderIpc.cjs');
+const reminderScheduler = require('./services/reminderScheduler.cjs');
 // 邮箱模块（emailIpc → emailService → nodemailer / imapflow / mailparser）不在顶层 require：
 // 这三个依赖体积大、文件多，一旦打包后有文件缺失（磁盘坏块导致 npm 包文件损坏时就会发生），
 // 顶层 require 会直接中断整个 main.cjs 的加载，导致进程存活但永远创建不出窗口。
@@ -125,12 +129,151 @@ async function handleLocalMediaRequest(request) {
   }
 }
 
+// Windows 通知依赖 AppUserModelID：未设置时部分场景（托盘/任务栏分组、通知归属）
+// 会异常。须早于任何窗口与通知的创建，值与 package.json 的 build.appId 保持一致。
+// 注意：仅靠它无法解决「重启后系统提醒不弹出」——系统通知已改由
+// services/reminderNotifier.cjs 用 node-notifier 呈现，失败回退弹窗。
+//
+// 只在打包后设置：开发态不存在与该 AUMID 匹配的快捷方式，Shell 在任务栏解析不到图标时
+// 会弃用窗口 icon 直接回退到可执行文件图标（electron.exe 的 Electron 默认图标），
+// 表现为「开发态任务栏显示 Electron 默认图标，而托盘/窗口标题栏图标正常」。
+// 打包安装后快捷方式即携带该 AUMID，图标恢复正常，故此处不做其它补偿。
+if (process.platform === 'win32' && app.isPackaged) {
+  app.setAppUserModelId('com.toolbox.app');
+}
+
 const gotTheLock = app.requestSingleInstanceLock();
+
+// 本次会话已弹出的提醒：冷启动参数路径与启动到期补偿扫描可能命中同一条，统一判重只弹一次。
+// 判重键必须带上触发时间：应用点关闭只是隐藏窗口、进程常驻不退出，「关闭重开」并不会重置本集合，
+// 只按 id 判重会让重新武装（改时间/重新启用）的提醒在同一进程里永远不再弹出。
+const firedReminderKeysThisSession = new Set();
+
+// 到期补偿宽限窗口：只补弹 24h 内错过的启用提醒，避免翻出陈旧记录
+const CATCHUP_GRACE_MS = 24 * 60 * 60 * 1000;
+
+// 提醒统一弹出入口：计划任务冷/热唤醒、启动到期补偿全部经此函数。
+// 记录定位顺序：当前全局连接 → 遍历全部用户库定位归属库 → 触发索引兜底（记录已不在任何库）。
+async function fireReminder(reminderId) {
+  if (!reminderId) return;
+
+  // 库按用户名分库：冷启动时全局连接尚未打开；热路径下也可能正指向其他用户库
+  let reminder = null;
+  try {
+    reminder = sqliteService.get('reminders', reminderId);
+  } catch {
+    // 全局数据库尚未初始化
+  }
+  // 在当前全局连接里命中：它本就是归属库，可直接在此读写
+  const inGlobalDb = !!reminder;
+
+  let fromIndex = false;
+  if (!reminder) {
+    // 归属库未知：用独立连接逐库定位，绝不切走渲染进程正在用的全局连接
+    const located = await sqliteService.findReminderInOwningDb(app.getPath('userData'), reminderId);
+    if (located) reminder = located.reminder;
+  }
+  if (!reminder) {
+    // 最后回退到注册任务时另存的触发索引
+    reminder = reminderScheduler.getTriggerInfo(reminderId);
+    fromIndex = true;
+  }
+  if (!reminder) {
+    logFatal('[Main] fireReminder: 未找到提醒记录，已跳过:', reminderId);
+    return;
+  }
+
+  // 同一触发时间只弹一次（冷启动参数与启动补偿会同时命中同一条）；
+  // 提醒改时间后键随之变化，因此可以再次弹出。
+  const firedKey = `${reminderId}@${reminder.remind_time || ''}`;
+  if (firedReminderKeysThisSession.has(firedKey)) return;
+  firedReminderKeysThisSession.add(firedKey);
+
+  // 系统通知与独立弹窗统一走 reminderNotifier：
+  // 系统通知失败时自动回退弹窗，提醒不会静默丢失
+  await notifyReminder(reminder);
+
+  // 记录已不在任何库（被删除或库不可读）：仅清理残留任务，不回写、不复活已删记录
+  if (fromIndex) {
+    await reminderScheduler.removeTask(reminderId);
+    return;
+  }
+
+  // 一次性提醒：禁用并删除任务；重复提醒：推算下次时间并重建任务
+  const now = new Date().toISOString();
+  const isOneTime = reminder.repeat_type === 'none';
+  const updated = isOneTime
+    ? { ...reminder, id: reminderId, is_enabled: false, last_triggered_at: now }
+    : { ...reminder, id: reminderId, remind_time: nextOccurrence(reminder.remind_time, reminder.repeat_type), last_triggered_at: now };
+
+  if (inGlobalDb) {
+    sqliteService.insert('reminders', updated);
+    sqliteService.flushPersist();
+  } else {
+    await sqliteService.findReminderInOwningDb(app.getPath('userData'), reminderId, updated);
+  }
+
+  if (isOneTime) {
+    await reminderScheduler.removeTask(reminderId);
+  } else {
+    await reminderScheduler.scheduleTask(updated);
+  }
+}
+
+// 启动阶段唯一的计划任务对账 + 到期补偿，在创建任何窗口前完成：
+// 遍历全部用户库得到权威白名单（不依赖渲染进程登录、不信任当前全局连接），
+// 串行对账系统计划任务，再补弹宽限窗口内错过的提醒。任何一步失败只记日志，不阻断启动。
+async function reconcileReminderTasks() {
+  let byId;
+  try {
+    byId = await sqliteService.readAllReminders(app.getPath('userData'));
+  } catch (err) {
+    logFatal('[Main] 提醒全库汇总失败，已跳过本次对账:', err);
+    return;
+  }
+
+  try {
+    await reminderScheduler.reconcileTasks([...byId.values()]);
+  } catch (err) {
+    logFatal('[Main] 计划任务对账失败:', err);
+  }
+
+  const nowMs = Date.now();
+  for (const reminder of byId.values()) {
+    if (!reminder.is_enabled) continue;
+    const remindMs = new Date(reminder.remind_time).getTime();
+    if (Number.isNaN(remindMs) || remindMs > nowMs || nowMs - remindMs > CATCHUP_GRACE_MS) continue;
+    // 本周期已触发过（last_triggered_at 不早于当前 remind_time）的不重复弹
+    if (reminder.last_triggered_at
+      && new Date(reminder.last_triggered_at).getTime() >= remindMs) continue;
+    try {
+      await fireReminder(reminder.id);
+    } catch (err) {
+      logFatal('[Main] 到期补偿触发失败:', err);
+    }
+  }
+}
+
+// 提取计划任务唤醒时携带的 --reminder=<id>
+function getScheduledReminderId(argv) {
+  if (!Array.isArray(argv)) return null;
+  const arg = argv.find((a) => typeof a === 'string' && a.startsWith('--reminder='));
+  return arg ? arg.slice('--reminder='.length) : null;
+}
 
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
+    const reminderId = getScheduledReminderId(argv);
+    if (reminderId) {
+      // 只发提醒本身：此处若 show()+focus() 主窗口会抢走焦点并盖住提醒。
+      // fireReminder 内部会先定位提醒归属库再回写状态，避免写错当前连接的库。
+      fireReminder(reminderId).catch((err) => logFatal('[Main] 热路径提醒触发失败:', err));
+      return;
+    }
+
+    // 普通启动第二实例：唤醒主窗口（锁定态除外）
     const settings = getCachedSettings();
     if (settings.isLockEnabled === 1) {
       require('./window/lockWindow.cjs').toggleLock();
@@ -186,8 +329,16 @@ app.whenReady().then(async () => {
   safeRegister('registerLogIpcHandlers', registerLogIpcHandlers);
   safeRegister('registerQuickLoginIpcHandlers', registerQuickLoginIpcHandlers);
   safeRegister('registerOfflineToolsIpc', registerOfflineToolsIpc);
+  safeRegister('registerReminderIpc', registerReminderIpc);
   safeRegister('registerEmailIpc', () => require('./ipc/emailIpc.cjs').registerEmailIpc());
   safeRegister('registerIpcHandlers', registerIpcHandlers);
+
+  // 创建任何窗口前完成「全库计划任务对账 + 到期补偿」：失败只记日志，不阻断窗口创建
+  try {
+    await reconcileReminderTasks();
+  } catch (err) {
+    logFatal('[Main] 提醒对账异常:', err);
+  }
 
   let isLocked = false;
   try {
@@ -196,14 +347,29 @@ app.whenReady().then(async () => {
     logFatal('[Main] 锁定窗口创建失败，改为直接打开主窗口:', err);
   }
 
+  // 计划任务唤醒的若是本实例（应用原先未运行），second-instance 事件不会触发，
+  // 必须在此主动消费一次启动参数，否则提醒到时间毫无反应。
+  const startupReminderId = getScheduledReminderId(process.argv);
+
   if (!isLocked) {
     try {
-      createWindow(onWindowReady, true);
+      // 由计划任务唤醒的冷启动只呈现提醒本身，主窗口隐藏创建：
+      // createWindow 的第二参数仅控制是否 show()，窗口本身照常创建，
+      // 托盘、快捷键、自动锁定等初始化不受影响，用户可随时从托盘唤出主窗口。
+      createWindow(onWindowReady, !startupReminderId);
     } catch (err) {
       logFatal('[Main] 主窗口创建失败:', err);
       showFatalDialog(`主窗口创建失败，应用即将退出：\n${err && err.message ? err.message : err}`);
       app.quit();
     }
+  }
+
+  if (startupReminderId) {
+    // 不能等渲染进程的 sqlite:init：主窗口隐藏创建时页面被节流，初始化可能迟迟不发生。
+    // 常规情况下该提醒已被上面的到期补偿扫描弹出，fireReminder 内部按「id + 触发时间」判重，
+    // 不会重复弹；此处只兜底补偿未覆盖的场景（如记录不在任何库、仅存于触发索引）。
+    fireReminder(startupReminderId)
+      .catch((err) => logFatal('[Main] 冷启动提醒触发失败:', err));
   }
 }).catch((err) => {
   logFatal('[Main] 初始化失败，窗口未创建:', err);

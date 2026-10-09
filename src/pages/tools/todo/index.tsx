@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
   todoServiceWrapper,
@@ -9,6 +10,7 @@ import {
 } from '../../../services/TodoService';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
+import { useRequireAuth } from '../../../hooks/useRequireAuth';
 import ContextMenu from '../../../components/ui/ContextMenu';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import type { TodoBoardItem, TodoCardHandlers } from '../../../components/ui/TodoCard';
@@ -89,6 +91,8 @@ const buildBoards = (
 
 const TodoManagerPage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
+  const isAuthenticated = useRequireAuth();
   const { searchQuery, isSearchActive, clearSearch } = useNavSearch();
 
   const searchKeyword = isSearchActive ? searchQuery.trim() : '';
@@ -384,6 +388,18 @@ const TodoManagerPage: React.FC = () => {
     onCloseContextMenu: handleCloseContextMenu,
     onShowAddTodoModal: openAddTodoModal,
     onShowCategoryModal: openCreateCategoryModal,
+    onSetAsReminder: (todo) => {
+      // 渲染进程内直接携带预填数据跳转到提醒页面，避免 IPC 往返
+      navigate('/tools/reminder', {
+        state: {
+          title: todo.title,
+          content: todo.description || '',
+          remind_time: todo.due_date || '',
+          source_type: 'todo',
+          source_id: todo.id,
+        },
+      });
+    },
   }), [
     handleEditTodo,
     handleToggleCompleteLocal,
@@ -394,6 +410,7 @@ const TodoManagerPage: React.FC = () => {
     handleCloseContextMenu,
     openAddTodoModal,
     openCreateCategoryModal,
+    navigate,
   ]);
 
   const contextMenuItems = useMemo(
@@ -401,7 +418,7 @@ const TodoManagerPage: React.FC = () => {
     [todos, categories, contextMenuHandlers, getContextMenuItems]
   );
 
-  if (!user) return null;
+  if (!isAuthenticated) return null;
 
   // 仅在首次加载（本地无任何数据）时展示骨架，避免搜索时闪烁
   const showSkeleton = isLoading && categories.length === 0 && todos.length === 0;
