@@ -4,6 +4,7 @@ import { databaseBackupService } from '../../services/DatabaseBackupService'
 import Modal from '../../components/ui/Modal'
 import { useToastStore } from '../../store/toastStore'
 import { useThemeStore } from '../../store/themeStore'
+import CompactUnsupportedHint from '../../components/ui/CompactUnsupportedHint'
 
 interface SettingsState {
   isLoading: boolean
@@ -107,6 +108,7 @@ const DatabasePage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      <CompactUnsupportedHint />
       <div className="p-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-content-primary">数据管理</h1>
       </div>

@@ -136,9 +136,74 @@ let autoLockTimer = null;
 let lastActivityTime = Date.now();
 let isQuitting = false;
 
+// 小窗（compact）尺寸约束，单位 DIP
+const COMPACT_WINDOW_SIZE = { width: 320, height: 680 };
+const COMPACT_MIN_SIZE = { width: 280, height: 480 };
+// 上限 480 必须恒小于 Tailwind md 断点 768：保证小窗内页面永远命中移动端样式分支
+const COMPACT_MAX_WIDTH = 480;
+
+// 当前窗口模式；largeBounds = 进入小窗前的大窗尺寸快照，切回时原样恢复
+let windowMode = 'large';
+let largeBounds = null;
+
 const shortcutManager = new ShortcutManager();
 // P2: 快启动全局热键映射表（appId -> accelerator），置于模块作用域以便退出时统一注销
 const quickLaunchHotkeys = new Map();
+
+// 解析大窗默认尺寸（与 createWindow 取值口径一致，避免两处默认值不一致）
+const resolveLargeWindowSize = () => {
+  const raw = loadSettings().defaultWindowSize;
+  const size = typeof raw === 'string'
+    ? (() => { try { return JSON.parse(raw); } catch { return null; } })()
+    : (raw || null);
+  return {
+    width: (size && typeof size.width === 'number') ? size.width : 1160,
+    height: (size && typeof size.height === 'number') ? size.height : 800,
+  };
+};
+
+// 小窗 ⇄ 大窗切换的唯一出口（渲染层 IPC 与任何原生入口都走这里，模式持久化到 settings）
+// 注意：原生 API 的 getSize() 返回 [width, height] 数组，统一转成 { width, height } 后再落地，
+// 避免上层按对象取值拿到 undefined 导致 setSize 抛错、模式状态无法推进（窗口卡死在小窗尺寸）
+const toSizeObject = (size) => {
+  if (Array.isArray(size)) return { width: size[0], height: size[1] };
+  if (size && typeof size === 'object') return { width: size.width, height: size.height };
+  return null;
+};
+const isValidSize = (size) =>
+  !!size && Number.isFinite(size.width) && Number.isFinite(size.height) && size.width > 0 && size.height > 0;
+
+const applyWindowMode = (mode) => {
+  if (!mainWindow || (mode !== 'compact' && mode !== 'large') || mode === windowMode) return;
+
+  try {
+    if (mainWindow.isMaximized()) mainWindow.unmaximize();
+
+    if (mode === 'compact') {
+      // 快照进入小窗前的大窗尺寸，切回时原样恢复；快照无效时回退默认大窗尺寸
+      const snapshot = toSizeObject(mainWindow.getSize());
+      largeBounds = isValidSize(snapshot) ? snapshot : null;
+      mainWindow.setMinimumSize(COMPACT_MIN_SIZE.width, COMPACT_MIN_SIZE.height);
+      mainWindow.setMaximumSize(COMPACT_MAX_WIDTH, 0); // 高度 0 = 不限制
+      mainWindow.setSize(COMPACT_WINDOW_SIZE.width, COMPACT_WINDOW_SIZE.height, true);
+      mainWindow.center();
+    } else {
+      mainWindow.setMinimumSize(0, 0);   // 解除下限（与现状一致）
+      mainWindow.setMaximumSize(0, 0);   // 解除上限（Electron：传 0 移除约束）
+      const target = isValidSize(largeBounds) ? largeBounds : resolveLargeWindowSize();
+      mainWindow.setSize(target.width, target.height, true);
+      mainWindow.center();
+    }
+  } catch (error) {
+    // 尺寸调整失败也要让模式状态与渲染层保持一致，否则后续切换会被 mode === windowMode 短路挡掉
+    console.error('[Window] applyWindowMode failed:', error);
+  }
+
+  windowMode = mode;
+  const settings = loadSettings();
+  settings.windowMode = mode;
+  saveSettings(settings);
+};
 
 // 检查锁定状态，如果已锁定则聚焦锁定窗口
 const checkLockAndShowMain = (callback) => {
@@ -188,6 +253,13 @@ const shortcutFunctions = {
   },
   restoreDefaultWindow: () => {
     if (mainWindow) {
+      // 小窗模式下仅恢复小窗尺寸并居中，不做默认尺寸判断
+      if (windowMode === 'compact') {
+        if (mainWindow.isMaximized()) mainWindow.unmaximize();
+        mainWindow.setSize(COMPACT_WINDOW_SIZE.width, COMPACT_WINDOW_SIZE.height, true);
+        mainWindow.center();
+        return;
+      }
       const [width, height] = mainWindow.getSize();
       const raw = loadSettings().defaultWindowSize;
       const origin = typeof raw === 'string'
@@ -214,12 +286,14 @@ const shortcutFunctions = {
   },
   windowMinimize: () => {
     if (mainWindow) {
+      if (isWindowEdgeDocked()) { toggleEdgeDockWindow(); return; } // 停靠态最小化即折叠（吸附期不占用任务栏）
       if (mainWindow.isMaximized()) mainWindow.unmaximize();
       mainWindow.minimize();
     }
   },
   windowMaximizer: () => {
     if (mainWindow) {
+      if (windowMode === 'compact') return; // 小窗不支持最大化
       if (mainWindow.isMaximized()) {
         mainWindow.unmaximize();
       } else {
@@ -282,7 +356,6 @@ const startMemoryOptimization = () => {
     try {
       if (mainWindow && mainWindow.webContents) {
         mainWindow.webContents.executeJavaScript('window.gc && window.gc();');
-        mainWindow.webContents.send('memory-cleanup');
       }
     } catch (error) {
       console.error('[MEMORY] Memory cleanup error:', error);
@@ -356,6 +429,300 @@ const resetAutoLockTimer = () => {
   lastActivityTime = Date.now();
 };
 
+// ===== 边缘吸附 + 贴边自动隐藏 =====
+// 拖动停止 150ms 后判定贴边：对齐到工作区左/右/顶部边缘（只平移单轴，不改尺寸，大窗/小窗均生效）。
+// 停靠后混合事件驱动：展开态由渲染层光标跨界事件（IPC 转发）驱动折叠/展开，零轮询；
+// 隐藏态由主进程低频轮询光标，进入感应区停留后展开；折叠/展开为主进程逐帧插值动画。
+// 用户再次拖动窗口或关闭设置即退出停靠。
+const EDGE_HIDE_MARGIN = 8;          // 隐藏时窗口移出屏幕边缘的余量（DIP）：窗口完全滑出，覆盖 DWM 边缘阴影与 DIP→物理像素取整误差，确保边缘无任何可见残留
+const EDGE_TRIGGER_WIDTH = 24;       // 隐藏时光标触发展开的感应区宽度（DIP，扩宽覆盖其他应用内靠边悬停）
+const EDGE_SNAP_THRESHOLD = 30;      // 吸附判定距离（DIP，按显示缩放比放大）
+const EDGE_HIDE_DELAY_MS = 500;      // 光标离开窗口后收回的延迟
+const EDGE_POLL_INTERVAL_MS = 200;   // 隐藏态光标位置轮询间隔
+const EDGE_TRIGGER_DWELL_MS = 250;   // 感应区停留时长，过滤快速划过
+const EDGE_ANIM_DURATION = 220;      // 折叠/展开动画时长，置 0 即瞬时移动
+const EDGE_ANIM_FRAME_MS = 16;       // 动画步进间隔，约 60fps
+
+let snapTimer = null;                // 拖动停止后的吸附判定定时器
+let edgePollTimer = null;            // 隐藏态光标位置轮询定时器
+let edgeDockedEdge = null;           // 当前停靠边：'left' | 'right' | 'top' | null
+let edgeHidden = false;              // 是否处于贴边隐藏态（窗口完全滑出屏幕不可见）
+let edgeSelfMoveUntil = 0;           // 自身 setBounds 引发的 move 忽略窗口期
+let edgeAnim = null;                 // 当前动画句柄 { timer }，同一时刻至多一个
+let edgeHideTimer = null;            // 光标离开后的延迟折叠定时器
+let edgeTriggerAt = 0;               // 光标进入感应区的时刻（0 = 不在感应区内）
+let edgeZoneArmed = false;           // 感应区武装标记：折叠后光标须先离开感应区再进入才可停留触发
+let edgeTopmost = false;             // 隐藏态置顶标记：由吸附管理切换，不覆盖用户手动置顶
+
+const stopEdgePoll = () => {
+  if (edgePollTimer) {
+    clearInterval(edgePollTimer);
+    edgePollTimer = null;
+  }
+};
+
+const startEdgePoll = () => {
+  stopEdgePoll();
+  edgePollTimer = setInterval(pollEdgeWindowState, EDGE_POLL_INTERVAL_MS);
+  if (edgePollTimer.unref) edgePollTimer.unref();
+};
+
+const cancelEdgeAnimation = () => {
+  if (edgeAnim) {
+    clearTimeout(edgeAnim.timer);
+    edgeAnim = null;
+  }
+};
+
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3); // 展开：起步快减速入位
+const easeInCubic = (t) => t * t * t;               // 折叠：缓起加速离场
+
+// 从当前位置向 (targetX, targetY) 逐帧插值（静止轴传当前值即可），动画全程屏蔽自身引发的 move 事件
+const startEdgeAnimation = (targetX, targetY, easing, onDone) => {
+  cancelEdgeAnimation();
+  const from = mainWindow.getBounds();
+  const startTime = Date.now();
+  edgeSelfMoveUntil = startTime + EDGE_ANIM_DURATION + 200;
+  const step = () => {
+    if (mainWindow.isMinimized()) {
+      // 最小化瞬间中止动画，避免逐帧 setBounds 污染还原位置导致窗口状态错乱
+      edgeAnim = null;
+      return;
+    }
+    const t = Math.min(1, (Date.now() - startTime) / EDGE_ANIM_DURATION);
+    const k = easing(t);
+    mainWindow.setBounds({
+      x: Math.round(from.x + (targetX - from.x) * k),
+      y: Math.round(from.y + (targetY - from.y) * k),
+      width: from.width,
+      height: from.height
+    });
+    if (t < 1) {
+      edgeAnim = { timer: setTimeout(step, EDGE_ANIM_FRAME_MS) };
+    } else {
+      edgeAnim = null;
+      if (onDone) onDone();
+    }
+  };
+  edgeAnim = { timer: setTimeout(step, EDGE_ANIM_FRAME_MS) };
+};
+
+const clearEdgeDock = () => {
+  cancelEdgeAnimation();
+  if (edgeHideTimer) {
+    clearTimeout(edgeHideTimer);
+    edgeHideTimer = null;
+  }
+  edgeTriggerAt = 0;
+  edgeZoneArmed = false;
+  if (edgeTopmost && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setAlwaysOnTop(false); // 退出停靠还原隐藏态置顶
+    edgeTopmost = false;
+  }
+  if (edgeDockedEdge && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setSkipTaskbar(false); // 退出停靠还原任务栏图标
+  }
+  edgeDockedEdge = null;
+  stopEdgePoll();
+  if (snapTimer) {
+    clearTimeout(snapTimer);
+    snapTimer = null;
+  }
+};
+
+const getDisplayForBounds = (bounds) => screen.getDisplayNearestPoint({
+  x: bounds.x + bounds.width / 2,
+  y: bounds.y + bounds.height / 2
+});
+
+// 只平移单轴调整窗口位置（x/y 传 null 表示该轴保持不变），并短暂屏蔽自身引发的 move 事件
+const setEdgeWindowPos = (x, y, bounds) => {
+  edgeSelfMoveUntil = Date.now() + 300;
+  mainWindow.setBounds({
+    ...bounds,
+    x: x === null ? bounds.x : x,
+    y: y === null ? bounds.y : y
+  });
+};
+
+// 停靠展开态的窗口位置（左/右对齐工作区左右缘，顶部对齐顶缘）
+const getEdgeShownPos = (bounds) => {
+  const { workArea } = getDisplayForBounds(bounds);
+  if (edgeDockedEdge === 'left') return { x: workArea.x, y: bounds.y };
+  if (edgeDockedEdge === 'right') return { x: workArea.x + workArea.width - bounds.width, y: bounds.y };
+  return { x: bounds.x, y: workArea.y };
+};
+
+// 光标是否位于窗口当前边界内（getCursorScreenPoint 异常时按不在窗口内处理）
+const isCursorInsideWindow = () => {
+  let cursor;
+  try {
+    cursor = screen.getCursorScreenPoint();
+  } catch {
+    return false;
+  }
+  const bounds = mainWindow.getBounds();
+  return cursor.x >= bounds.x && cursor.x <= bounds.x + bounds.width
+    && cursor.y >= bounds.y && cursor.y <= bounds.y + bounds.height;
+};
+
+// 贴边隐藏：完全滑出屏幕不可见（水平停靠只平移 x，顶部停靠只平移 y；动画完成后再启动隐藏态轮询）
+const hideEdgeWindow = () => {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMinimized() || !mainWindow.isVisible() || !edgeDockedEdge) return;
+  if (edgeHideTimer) {
+    clearTimeout(edgeHideTimer);
+    edgeHideTimer = null;
+  }
+  edgeTriggerAt = 0;
+  edgeZoneArmed = false; // 折叠时光标常停留在感应区内，解除武装防止立即二次展开
+  edgeHidden = true;
+  stopEdgePoll();
+  if (!mainWindow.isAlwaysOnTop()) {
+    mainWindow.setAlwaysOnTop(true); // 隐藏态保持置顶：展开滑入瞬间即在其他应用（含最大化窗口）之上，无被遮挡的中间态
+    edgeTopmost = true;
+  }
+  const bounds = mainWindow.getBounds();
+  const { workArea } = getDisplayForBounds(bounds);
+  if (edgeDockedEdge === 'left') {
+    startEdgeAnimation(workArea.x - bounds.width - EDGE_HIDE_MARGIN, bounds.y, easeInCubic, startEdgePoll);
+  } else if (edgeDockedEdge === 'right') {
+    startEdgeAnimation(workArea.x + workArea.width + EDGE_HIDE_MARGIN, bounds.y, easeInCubic, startEdgePoll);
+  } else {
+    startEdgeAnimation(bounds.x, workArea.y - bounds.height - EDGE_HIDE_MARGIN, easeInCubic, startEdgePoll);
+  }
+};
+
+// 贴边展开：滑回工作区内完整显示（停轮询，交回渲染层事件驱动）
+const showEdgeWindow = () => {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMinimized() || !edgeDockedEdge) return;
+  stopEdgePoll();
+  edgeHidden = false;
+  edgeTriggerAt = 0;
+  if (edgeTopmost) {
+    mainWindow.setAlwaysOnTop(false); // 还原隐藏态置顶（用户手动置顶不受影响）
+    edgeTopmost = false;
+  }
+  mainWindow.moveTop(); // 展开覆盖其他应用（含最大化窗口）显示，不抢焦点
+  const { x, y } = getEdgeShownPos(mainWindow.getBounds());
+  startEdgeAnimation(x, y, easeOutCubic);
+};
+
+// 停靠窗口显示切换（托盘左键 / 标题栏最小化按钮 / 全局最小化快捷键共用）：
+// 折叠 ⇄ 展开；最小化先还原（restore 事件接管展开）；被隐藏先恢复显示（focus 接管展开）
+const toggleEdgeDockWindow = () => {
+  if (!mainWindow || mainWindow.isDestroyed() || !edgeDockedEdge) return;
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+    return;
+  }
+  if (!mainWindow.isVisible()) {
+    mainWindow.show();
+    return;
+  }
+  if (edgeHidden) {
+    showEdgeWindow();
+    mainWindow.focus(); // 显式唤出接管焦点，便于直接操作
+  } else {
+    hideEdgeWindow();
+  }
+};
+
+const isWindowEdgeDocked = () => !!edgeDockedEdge;
+
+// 停靠隐藏态轮询：光标进入停靠边感应区（纵向/横向落在窗口范围内）并停留 → 展开
+const pollEdgeWindowState = () => {
+  if (!mainWindow || mainWindow.isDestroyed() || !edgeDockedEdge) {
+    stopEdgePoll();
+    return;
+  }
+  if (mainWindow.isMinimized() || !mainWindow.isVisible()) return;
+
+  let cursor;
+  try {
+    cursor = screen.getCursorScreenPoint();
+  } catch {
+    return;
+  }
+  const bounds = mainWindow.getBounds();
+  const { workArea } = screen.getDisplayNearestPoint(cursor);
+  const inXRange = cursor.x >= bounds.x && cursor.x <= bounds.x + bounds.width;
+  const inYRange = cursor.y >= bounds.y && cursor.y <= bounds.y + bounds.height;
+  let inZone = false;
+  if (edgeDockedEdge === 'left') {
+    inZone = cursor.x <= workArea.x + EDGE_TRIGGER_WIDTH && inYRange;
+  } else if (edgeDockedEdge === 'right') {
+    inZone = cursor.x >= workArea.x + workArea.width - EDGE_TRIGGER_WIDTH && inYRange;
+  } else {
+    inZone = cursor.y <= workArea.y + EDGE_TRIGGER_WIDTH && inXRange;
+  }
+  if (!inZone) {
+    edgeTriggerAt = 0;
+    edgeZoneArmed = true; // 光标处于感应区外时（重新）武装：须再次进入并停留才可触发
+    return;
+  }
+  if (!edgeZoneArmed) return; // 折叠后光标仍停留在感应区内，须先离开再进入，防止立即二次展开
+  if (!edgeTriggerAt) {
+    edgeTriggerAt = Date.now(); // 进入感应区，开始停留计时
+    return;
+  }
+  if (Date.now() - edgeTriggerAt >= EDGE_TRIGGER_DWELL_MS) {
+    edgeTriggerAt = 0;
+    showEdgeWindow();
+  }
+};
+
+// 拖动停止后的吸附判定：贴边则对齐并进入停靠管理，未贴边则保持原位
+const snapWindowToEdge = () => {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMaximized()) return;
+  if (edgeDockedEdge) return; // 已在停靠管理中，避免隐藏态被误判为未贴边
+
+  const bounds = mainWindow.getBounds();
+  const display = getDisplayForBounds(bounds);
+  const workArea = display.workArea;
+  const threshold = EDGE_SNAP_THRESHOLD * (display.scaleFactor || 1);
+
+  const leftDistance = bounds.x - workArea.x;
+  const rightDistance = (workArea.x + workArea.width) - (bounds.x + bounds.width);
+  const topDistance = bounds.y - workArea.y;
+
+  let snapEdge = null;
+  if (Math.abs(leftDistance) <= threshold) snapEdge = 'left';
+  else if (Math.abs(rightDistance) <= threshold) snapEdge = 'right';
+  else if (Math.abs(topDistance) <= threshold) snapEdge = 'top';
+  if (!snapEdge) return;
+
+  if (snapEdge === 'left') {
+    setEdgeWindowPos(workArea.x, null, bounds);
+  } else if (snapEdge === 'right') {
+    setEdgeWindowPos(workArea.x + workArea.width - bounds.width, null, bounds);
+  } else {
+    setEdgeWindowPos(null, workArea.y, bounds);
+  }
+  edgeDockedEdge = snapEdge;
+  edgeHidden = false; // 拖动重新吸附时窗口必然处于展开位置，纠正隐藏态标记（停靠必然从展开态开始）
+  mainWindow.setSkipTaskbar(true); // 停靠期不占用任务栏（含 Alt+Tab），由贴边感应与托盘接管唤出
+  startEdgePoll();
+};
+
+// 主窗口 move 入口：用户拖动即退出停靠，停止拖动后重新判定吸附
+const handleMainWindowMove = () => {
+  if (!loadSettings().isWindowEdgeAdsorption) return;
+  if (Date.now() < edgeSelfMoveUntil) return; // 吸附 / 隐藏自身的位置调整，忽略
+  clearEdgeDock();
+  snapTimer = setTimeout(snapWindowToEdge, 150);
+};
+
+// 关闭吸附设置 / 窗口销毁时退出停靠；处于隐藏态先瞬时恢复完整显示（需在清空停靠边前执行，
+// getEdgeShownPos 依赖未清空的 edgeDockedEdge；不走动画以免被随后的 clearEdgeDock 中途取消）
+const resetEdgeSnap = () => {
+  if (edgeHidden && mainWindow && !mainWindow.isDestroyed()) {
+    const bounds = mainWindow.getBounds();
+    const { x, y } = getEdgeShownPos(bounds);
+    setEdgeWindowPos(x, y, bounds);
+  }
+  clearEdgeDock();
+};
+
 const createWindow = (onReadyCallback, showOnReady = true) => {
   const { app } = require('electron');
 
@@ -370,11 +737,24 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     ? (() => { try { return JSON.parse(rawWindowSize); } catch { return null; } })()
     : (rawWindowSize || null);
 
+  // 按上次模式开窗：settings 无 windowMode 字段（旧配置）时回退大窗，避免首帧闪烁
+  windowMode = loadSettings().windowMode === 'compact' ? 'compact' : 'large';
+  const initialSize = windowMode === 'compact'
+    ? COMPACT_WINDOW_SIZE
+    : {
+        width: (defaultWindowSize && typeof defaultWindowSize.width === 'number') ? defaultWindowSize.width : 1160,
+        height: (defaultWindowSize && typeof defaultWindowSize.height === 'number') ? defaultWindowSize.height : 800,
+      };
+
   mainWindow = new BrowserWindow({
-    width: (defaultWindowSize && typeof defaultWindowSize.width === 'number') ? defaultWindowSize.width : 1160,
-    height: (defaultWindowSize && typeof defaultWindowSize.height === 'number') ? defaultWindowSize.height : 800,
+    width: initialSize.width,
+    height: initialSize.height,
     frame: false,
     titleBarStyle: 'hidden',
+    // Windows 下 DWM 阴影/系统边框线由 WS_THICKFRAME 样式触发，hasShadow 与运行时 setHasShadow 均无法移除；
+    // 贴边停靠要求边缘零痕迹，必须以 thickFrame: false 创建（同时移除系统原生 Snap，避免与自定义边缘吸附冲突）；
+    // 由此导致的方角（Electron 在 thickFrame 关闭时强制 rounded_corner_=false，roundedCorners 选项被覆盖）由下方 applyWin11RoundedCorners 恢复
+    thickFrame: false,
     icon: getAppIcon(),
     backgroundColor: useDarkBackground ? '#16181D' : '#FFFFFF',
     show: false,
@@ -389,10 +769,31 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     },
   });
 
+  // 恢复 Win11 窗口圆角：thickFrame: false 时 Electron 强制方角且未暴露运行时圆角 API，
+  // 绕过它直接设置 DWM 圆角偏好为 ROUND（与 Electron 内部 SetRoundedCorners 同一 API；
+  // Win10 无此属性会静默失败，方角即系统常态）。属性一次设置持续有效，仅启动时执行一次。
+  const applyWin11RoundedCorners = () => {
+    const buf = mainWindow.getNativeWindowHandle();
+    const hwnd = process.arch === 'x64' ? buf.readBigUInt64LE(0) : buf.readUInt32LE(0);
+    const script = [
+      '$v = 2', // DWMWCP_ROUND
+      '$d = Add-Type -MemberDefinition \'[DllImport("dwmapi.dll")] public static extern int DwmSetWindowAttribute(IntPtr h, int a, ref int v, int s);\' -Name Dwm -Namespace Win32 -PassThru',
+      '[void]$d::DwmSetWindowAttribute([IntPtr]::new(' + hwnd + '), 33, [ref]$v, 4)', // 33 = DWMWA_WINDOW_CORNER_PREFERENCE
+    ].join('\n');
+    execFile('powershell.exe', ['-NoProfile', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], () => {});
+  };
+  applyWin11RoundedCorners();
+
   // T09 / Phase 4：文件监听的事件推送目标 = 主窗口（notes-fs-changed 走 webContents.send）。
   // 必须在建窗之后注入：registerIpcHandlers 先于 createWindow 执行，那时主窗口还不存在；
   // 而且这里只能用模块级的 mainWindow —— open-internal 那个 internalWindow 是另一个作用域的局部变量。
   require('../services/notesWatcherService.cjs').setTargetWindow(mainWindow);
+
+  // 小窗模式开窗：应用尺寸约束（大窗约束与现状一致，无需额外设置）
+  if (windowMode === 'compact') {
+    mainWindow.setMinimumSize(COMPACT_MIN_SIZE.width, COMPACT_MIN_SIZE.height);
+    mainWindow.setMaximumSize(COMPACT_MAX_WIDTH, 0);
+  }
 
   let indexPath;
   if (app.isPackaged) {
@@ -428,6 +829,7 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
       }
       initShortcuts();
       startAutoLock();
+      startMemoryOptimization(); // 开机即按当前设置启动内存优化（此前仅切换设置时启动，重启后不生效）
 
       if (onReadyCallback) {
         onReadyCallback();
@@ -445,6 +847,12 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     }
   });
 
+  // 渲染进程崩溃降级：停靠展开态的折叠依赖渲染层光标跨界事件转发，进程已死则退出停靠管理，
+  // 窗口保持展开位置不再自动隐藏；隐藏态由主进程轮询与焦点驱动，不受影响
+  mainWindow.webContents.on('render-process-gone', () => {
+    if (edgeDockedEdge && !edgeHidden) clearEdgeDock();
+  });
+
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -454,53 +862,49 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
 
   mainWindow.on('closed', () => {
     stopAutoLock();
+    clearEdgeDock();
     mainWindow = null;
   });
 
+  // 最小化：非停靠态隐藏进托盘；停靠态放行系统最小化（Windows 下事件无法取消：系统已完成
+  // 最小化，事件内做位置调整会与最小化/还原流程冲突，导致还原后窗口状态错乱无法交互），
+  // 与常规最小化行为一致；清理进行中的折叠定时/动画，避免还原后窗口被误折叠。
+  // 还原展开由 restore / focus 处理器负责
   mainWindow.on('minimize', (event) => {
+    if (edgeDockedEdge) {
+      if (edgeHideTimer) {
+        clearTimeout(edgeHideTimer);
+        edgeHideTimer = null;
+      }
+      cancelEdgeAnimation();
+      return;
+    }
     event.preventDefault();
     mainWindow.hide();
   });
 
-  let isAdjusting = false;
-  mainWindow.on('move', () => {
-    const settings = loadSettings();
-    if (!settings.isWindowEdgeAdsorption) return;
-    if (isAdjusting) return;
+  // 边缘吸附与贴边隐藏的入口挂载（核心逻辑见模块级 handleMainWindowMove / snapWindowToEdge）
+  mainWindow.on('move', handleMainWindowMove);
 
-    const windowBounds = mainWindow.getBounds();
-    const centerPoint = {
-      x: windowBounds.x + windowBounds.width / 2,
-      y: windowBounds.y + windowBounds.height / 2
-    };
+  // 隐藏态被系统被动夺焦（其他应用逐一最小化后焦点转移）时拒绝焦点不展开：
+  // 停靠态已不占任务栏/Alt+Tab，focus 无用户主动唤出路径；立即 blur 避免焦点滞留隐藏窗口
+  mainWindow.on('focus', () => {
+    if (edgeDockedEdge && edgeHidden) mainWindow.blur();
+  });
 
-    const display = screen.getDisplayNearestPoint(centerPoint);
-    const workArea = display.workArea;
-    const scaleFactor = display.scaleFactor;
-    const threshold = 30 * scaleFactor;
+  // 从最小化还原（任务栏 / Win+D 等）：停靠隐藏态自动展开（focus 若先于还原完成触发，
+  // 会被 showEdgeWindow 的 isMinimized 守卫拦截，此处兜底保证展开）
+  mainWindow.on('restore', () => {
+    if (!edgeDockedEdge || !edgeHidden) return;
+    showEdgeWindow();
+  });
 
-    const leftEdgeDistance = windowBounds.x - workArea.x;
-    const rightEdgeDistance = (workArea.x + workArea.width) - (windowBounds.x + windowBounds.width);
-    let newBounds = { ...windowBounds };
-
-    if (Math.abs(leftEdgeDistance) <= threshold) {
-      Object.assign(newBounds, {
-        x: workArea.x,
-        y: workArea.y,
-        height: workArea.height
-      });
-    } else if (Math.abs(rightEdgeDistance) <= threshold) {
-      Object.assign(newBounds, {
-        x: workArea.x + workArea.width - windowBounds.width,
-        y: workArea.y,
-        height: workArea.height
-      });
-    }
-    if (JSON.stringify(newBounds) !== JSON.stringify(windowBounds)) {
-      isAdjusting = true;
-      mainWindow.setBounds(newBounds, true);
-      isAdjusting = false;
-    }
+  // 失焦收回：停靠展开态被切走（点击其他应用 / Alt+Tab）且光标已在窗外时折叠；
+  // 光标仍在窗口内（自家子窗口、文件对话框等夺焦）不折叠，交回渲染层 mouseleave 流程
+  mainWindow.on('blur', () => {
+    if (!edgeDockedEdge || edgeHidden) return;
+    if (isCursorInsideWindow()) return;
+    hideEdgeWindow();
   });
 };
 
@@ -546,14 +950,37 @@ const registerIpcHandlers = () => {
     return errorStr || '更新失败，请稍后重试';
   };
 
-  ipcMain.on('window-minimize', () => { mainWindow.minimize(); });
+  // 标题栏最小化按钮：停靠态切换「折叠 ⇄ 展开」（吸附期不占用任务栏，真实最小化将无从还原）；
+  // 非停靠态走系统最小化（由 minimize 事件转入托盘）
+  ipcMain.on('window-minimize', () => {
+    if (isWindowEdgeDocked()) toggleEdgeDockWindow();
+    else mainWindow.minimize();
+  });
+
+  // 边缘吸附停靠态：渲染层光标跨界事件转发（mouseleave → 延迟折叠；mouseenter → 取消折叠）
+  ipcMain.on('edge-snap:cursor-left', () => {
+    if (!edgeDockedEdge || edgeHidden) return; // 未停靠 / 已折叠时忽略渲染层事件
+    if (edgeHideTimer) clearTimeout(edgeHideTimer);
+    edgeHideTimer = setTimeout(hideEdgeWindow, EDGE_HIDE_DELAY_MS);
+  });
+
+  ipcMain.on('edge-snap:cursor-enter', () => {
+    if (edgeHideTimer) {
+      clearTimeout(edgeHideTimer);
+      edgeHideTimer = null;
+    }
+    if (edgeDockedEdge && edgeHidden) showEdgeWindow();
+  });
+
   ipcMain.on('window-maximize', () => {
+    if (windowMode === 'compact') return; // 小窗模式不提供最大化
     if (mainWindow.isMaximized()) {
       mainWindow.unmaximize();
     } else {
       mainWindow.maximize();
     }
   });
+  ipcMain.on('window-mode-set', (_event, mode) => { applyWindowMode(mode); });
   ipcMain.on('window-close', () => { mainWindow.hide(); });
   ipcMain.on('open-external', (event, url) => { shell.openExternal(url); });
 
@@ -877,6 +1304,11 @@ const registerIpcHandlers = () => {
 
     if (setting.name === 'isMemoryOptimizationEnabled') {
       startMemoryOptimization();
+    }
+
+    // 关闭边缘吸附时退出停靠管理；若窗口正贴边隐藏，先恢复完整显示
+    if (setting.name === 'isWindowEdgeAdsorption' && !setting.value) {
+      resetEdgeSnap();
     }
 
     if (setting.name === 'isAutoLockEnabled' || setting.name === 'autoLockTimeout') {
@@ -1342,6 +1774,8 @@ module.exports = {
   stopAutoLock,
   resetAutoLockTimer,
   getMainWindow: () => mainWindow,
+  isWindowEdgeDocked: () => isWindowEdgeDocked(),
+  toggleEdgeDockWindow: () => toggleEdgeDockWindow(),
   setIsQuitting: (val) => { isQuitting = val; },
   cleanupQuickLaunchHotkeys,
 };

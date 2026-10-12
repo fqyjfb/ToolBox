@@ -10,6 +10,7 @@ import ContextMenu from '../../components/ui/ContextMenu'
 import { useContextMenu } from '../../hooks/useContextMenu'
 import Modal from '../../components/ui/Modal'
 import Select from '../../components/ui/Select'
+import CompactUnsupportedHint from '../../components/ui/CompactUnsupportedHint'
 
 interface UserItem {
   id: string
@@ -207,6 +208,7 @@ const UserListPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      <CompactUnsupportedHint />
       <div className="p-4 flex items-center justify-between flex-shrink-0">
         <h1 className="text-lg font-semibold text-content-primary">用户管理</h1>
         <button

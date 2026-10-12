@@ -34,6 +34,7 @@ import type { TodoContextMenuHandlers } from './useTodoContextMenu';
 import TodoBoard from './TodoBoard';
 import TodoFormModal from './TodoFormModal';
 import CategoryFormModal from './CategoryFormModal';
+import { useIsCompactMode } from '../../../store/windowModeStore';
 
 const EMPTY_TODO_FORM: CreateTodoRequest & { category_id: string | null } = {
   title: '',
@@ -93,6 +94,8 @@ const TodoManagerPage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const isAuthenticated = useRequireAuth();
+  // 小窗模式：标题与新建按钮分行，页签单行横向滚动
+  const isCompact = useIsCompactMode();
   const { searchQuery, isSearchActive, clearSearch } = useNavSearch();
 
   const searchKeyword = isSearchActive ? searchQuery.trim() : '';
@@ -428,13 +431,15 @@ const TodoManagerPage: React.FC = () => {
       className="h-full flex flex-col overflow-hidden"
       onContextMenu={(e) => handleContextMenu(e, 'empty')}
     >
-      <div className="flex-1 overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
+      <div className={`flex-1 overflow-y-auto ${isCompact ? 'scrollbar-hide' : ''}`}>
+        <div className={`${isCompact ? 'flex flex-col items-stretch gap-2 mb-2' : 'flex items-center justify-between mb-4'}`}>
           <div>
-            <h3 className="text-lg font-bold text-text-primary mb-1">我的待办事项</h3>
-            <p className="text-xs text-text-secondary">管理您的日常任务和分组记录</p>
+            <h3 className={`font-bold text-text-primary ${isCompact ? 'text-base mb-0' : 'text-lg mb-1'}`}>我的待办事项</h3>
+            {!isCompact && (
+              <p className="text-xs text-text-secondary">管理您的日常任务和分组记录</p>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={openAddTodoModal}
@@ -454,13 +459,13 @@ const TodoManagerPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex gap-4 mb-4">
+        <div className={isCompact ? 'flex gap-3 mb-2 overflow-x-auto scrollbar-hide' : 'flex gap-4 mb-4'}>
           {TODO_TABS.map(tab => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`pb-2 text-sm font-semibold transition-colors ${
+              className={`pb-2 text-sm font-semibold transition-colors flex-shrink-0 whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-b-2 border-primary text-primary'
                   : 'border-b-2 border-transparent text-text-secondary hover:text-text-primary'

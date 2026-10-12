@@ -17,8 +17,8 @@ import {
   SyncErrorDetail
 } from '../types/offline';
 
-// 有效同步模块键列表
-const VALID_MODULE_KEYS: readonly SyncModuleKey[] = ['account', 'todo', 'quickReply', 'clipboard', 'memo'];
+// 有效同步模块键列表（需与 MODULE_TABLE_MAP 保持一致，否则对应模块配置会被 filterValidModules 丢弃）
+const VALID_MODULE_KEYS: readonly SyncModuleKey[] = ['account', 'todo', 'quickReply', 'clipboard', 'memo', 'reminder'];
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
@@ -152,10 +152,26 @@ export const syncManager = {
       await syncTablesWithConcurrency(allTables, async (table) => {
         try {
           const { data, error } = await supabase.from(table).select('*').eq('user_id', userId);
-          if (!error && data && data.length > 0) {
-            await offlineStorage.batchPut(table, data);
-            logInfo(`同步表 ${table} 到本地: ${data.length} 条`, 'syncManager');
+          if (error) {
+            logError(`同步表 ${table} 到本地失败`, 'syncManager', error as Error);
+            return;
           }
+
+          const cloudRows = (data || []) as SyncItem[];
+          if (cloudRows.length > 0) {
+            await offlineStorage.batchPut(table, cloudRows);
+          }
+
+          // 全量覆盖语义：清理云端已不存在的本地记录，避免他机删除后本机残留
+          const localRows = await offlineStorage.queryByUser<SyncItem>(table, userId);
+          await this.reconcileDeletions(
+            table,
+            localRows,
+            new Set(cloudRows.map(row => row.id)),
+            null
+          );
+
+          logInfo(`同步表 ${table} 到本地: ${cloudRows.length} 条`, 'syncManager');
         } catch (error) {
           logError(`同步表 ${table} 失败`, 'syncManager', error as Error);
         }
@@ -273,6 +289,71 @@ export const syncManager = {
     return await offlineStorage.queryByUser('pending_operations', userId);
   },
 
+  // 分页拉取云端当前全量 id 集合（只取 id，负载极小）。
+  // Supabase 单次请求默认上限 1000 行，必须分页，否则 id 集合不完整会误删本地数据。
+  // 失败时返回 null，调用方据此跳过删除对账，绝不误删。
+  async fetchCloudIdSet(table: string, userId: string): Promise<Set<string> | null> {
+    const PAGE_SIZE = 1000;
+    const ids = new Set<string>();
+    let from = 0;
+
+    try {
+      for (;;) {
+        const { data, error } = await supabase
+          .from(table)
+          .select('id')
+          .eq('user_id', userId)
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) {
+          logError(`拉取云端 id 集合失败: ${table}`, 'syncManager', error as Error);
+          return null;
+        }
+        if (!data || data.length === 0) break;
+
+        for (const row of data) {
+          const id = (row as { id?: unknown }).id;
+          if (typeof id === 'string') ids.add(id);
+        }
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return ids;
+    } catch (error) {
+      logError(`拉取云端 id 集合异常: ${table}`, 'syncManager', error as Error);
+      return null;
+    }
+  },
+
+  // 删除对账：本地有、云端没有 → 判定为「远端已删除」，清理本地副本。
+  // 删除是物理 DELETE，云端不留痕迹，增量同步（updated_at > lastSyncTime）无法感知，只能靠 id 差集识别。
+  // lastSyncTime 传 null 表示全量对账（syncCloudToLocal / syncLocalToCloud 场景）。
+  async reconcileDeletions(
+    storeName: string,
+    localData: Array<{ id: string; updated_at?: unknown }>,
+    cloudIdSet: Set<string>,
+    lastSyncTime: string | null
+  ): Promise<string[]> {
+    const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : null;
+
+    const deletedRemotely = localData.filter(item => {
+      if (cloudIdSet.has(item.id)) return false;
+      if (lastSyncDate === null) return true;
+
+      // 增量对账：只清理「上次同步前就已存在」的记录。
+      // updated_at 晚于上次同步的说明是本机新增/修改且尚未上传，必须保留（由 localOnly 负责上传）。
+      const updatedAt = typeof item.updated_at === 'string' ? new Date(item.updated_at) : null;
+      return updatedAt !== null && !Number.isNaN(updatedAt.getTime()) && updatedAt <= lastSyncDate;
+    });
+
+    if (deletedRemotely.length === 0) return [];
+
+    const ids = deletedRemotely.map(item => item.id);
+    await offlineStorage.batchDelete(storeName, ids);
+    logInfo(`对账删除 ${storeName}: ${ids.length} 条（云端已删除）`, 'syncManager');
+    return ids;
+  },
+
   async syncTable(
     userId: string,
     tableName: string,
@@ -348,6 +429,15 @@ export const syncManager = {
 
       if (conflicts.length > 0) {
         await this.handleConflicts(userId, conflicts);
+      }
+
+      // 删除对账：物理删除在云端不留痕迹，增量同步无法感知，需按云端 id 差集清理本地残留。
+      // 仅在云端模式下执行——本地模式的数据本就不在云端，对账会误删。
+      if (await this.getStorageLocation(userId) === 'cloud') {
+        const cloudIdSet = await this.fetchCloudIdSet(tableName, userId);
+        if (cloudIdSet) {
+          await this.reconcileDeletions(storeName, localData, cloudIdSet, lastSyncTime);
+        }
       }
 
       return {
@@ -457,13 +547,15 @@ export const syncManager = {
         }
       }
 
-      await this.updateSyncTime(userId);
-
       if (errors.length > 0) {
-        logInfo(`同步完成，但有 ${errors.length} 个表失败`, 'syncManager');
+        // 有表同步失败时不推进同步位点：否则本地未上传成功的记录会在下一轮对账中
+        // 因「updated_at <= lastSyncTime 且云端不存在」被误判为远端已删除而清除
+        logInfo(`同步完成，但有 ${errors.length} 个表失败，保持同步位点不变`, 'syncManager');
         for (const { tableName, error } of errors) {
           logError(`表 ${tableName} 同步失败: ${error.message}`, 'syncManager');
         }
+      } else {
+        await this.updateSyncTime(userId);
       }
 
       if (onProgress) {
@@ -621,16 +713,24 @@ export const syncManager = {
         return;
       }
 
-      const syncEnabled = await this.isSyncEnabled(userId);
-      if (!syncEnabled) {
-        logInfo('启动同步跳过：同步未启用', 'syncManager');
-        return;
-      }
-
       const storageLocation = await this.getStorageLocation(userId);
       if (storageLocation !== 'cloud') {
         logInfo('启动同步跳过：非云端存储模式', 'syncManager');
         return;
+      }
+
+      // 云端模式下 DAL 的写操作本来就会同步到云端，若同时关闭后台同步，
+      // 会造成「新增能同步、删除不能同步」的不一致状态。
+      // 因此「从未同步过」的用户按启用处理并回写，使设置页开关与实际行为一致；
+      // 已同步过的用户则尊重其显式选择。
+      if (!(await this.isSyncEnabled(userId))) {
+        const metadata = await this.getSyncMetadata(userId);
+        if (!metadata || metadata.lastSyncTime !== '1970-01-01T00:00:00Z') {
+          logInfo('启动同步跳过：同步未启用', 'syncManager');
+          return;
+        }
+        await this.setSyncEnabled(userId, true);
+        logInfo('云端模式且从未同步，已自动启用数据同步', 'syncManager');
       }
 
       if (isSyncingLock) {

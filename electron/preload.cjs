@@ -124,6 +124,11 @@ contextBridge.exposeInMainWorld('electron', {
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
+  // 边缘吸附停靠态：渲染层光标跨界事件转发（mouseleave → 延迟折叠 / mouseenter → 取消折叠）
+  edgeSnapCursorLeft: () => ipcRenderer.send('edge-snap:cursor-left'),
+  edgeSnapCursorEnter: () => ipcRenderer.send('edge-snap:cursor-enter'),
+  // 窗口模式切换（小窗/大窗），模式持久化由主进程负责
+  setWindowMode: (mode) => ipcRenderer.send('window-mode-set', mode),
   restart: () => ipcRenderer.invoke('restart-app'),
   openExternal: (url) => ipcRenderer.send('open-external', url),
   openInternal: (url) => ipcRenderer.send('open-internal', url),

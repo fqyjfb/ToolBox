@@ -11,10 +11,15 @@ import PluginService, { InstallProgress } from '../../../services/PluginService'
 import { useToastStore } from '../../../store/toastStore';
 import { PluginInfo, InstalledPlugin } from '../../../types/plugin';
 import { logError } from '../../../services/loggerService';
+import { useIsCompactMode } from '../../../store/windowModeStore';
+import { useOverflowItems } from '../../../hooks/useOverflowItems';
+import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
 
 const pluginService = new PluginService();
 
 const PluginStorePage: React.FC = () => {
+  // 小窗模式：标题/页签与操作按钮分行排布，内容区收窄内边距
+  const isCompact = useIsCompactMode();
   const {
     availablePlugins,
     installedPlugins,
@@ -269,11 +274,21 @@ const PluginStorePage: React.FC = () => {
     ];
   }, [availablePlugins]);
 
+  // 小窗：分类按可用宽度收拢，放不下的进「更多」下拉
+  const { containerRef, visible, overflow } = useOverflowItems(categories, (category) => category.id, { enabled: isCompact });
+
+  const overflowMenuItems: OverflowMenuItem[] = overflow.map((category) => ({
+    key: category.id,
+    label: category.name,
+    active: selectedCategory === category.id,
+    onClick: () => setSelectedCategory(category.id),
+  }));
+
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+      <div className={`${isCompact ? 'flex flex-col items-stretch gap-2 px-2 py-2' : 'flex items-center justify-between px-4 py-3'}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
             <Package className="w-4 h-4 text-button-text" />
           </div>
           <h1 className="text-lg font-semibold text-content-primary">插件商店</h1>
@@ -301,7 +316,7 @@ const PluginStorePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center ${isCompact ? 'gap-1' : 'gap-2'}`}>
           <button
             onClick={() => {
               window.electron?.plugin?.openExtensionsDir();
@@ -329,25 +344,31 @@ const PluginStorePage: React.FC = () => {
       </div>
 
       {activeTab === 'explore' && (
-        <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
-                selectedCategory === category.id
-                  ? 'bg-primary text-button-text'
-                  : 'text-content-secondary hover:bg-menu-hover'
-              }`}
-            >
-              <category.icon className="w-3.5 h-3.5" />
-              {category.name}
-            </button>
-          ))}
+        <div className={`flex items-center gap-2 py-2 ${isCompact ? 'px-2' : 'px-4'}`}>
+          <div
+            ref={containerRef}
+            className={`flex items-center gap-2 min-w-0 flex-1 ${isCompact ? 'flex-nowrap overflow-hidden' : 'flex-wrap'}`}
+          >
+            {visible.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap flex-shrink-0 transition-colors ${
+                  selectedCategory === category.id
+                    ? 'bg-primary text-button-text'
+                    : 'text-content-secondary hover:bg-menu-hover'
+                }`}
+              >
+                <category.icon className="w-3.5 h-3.5" />
+                {category.name}
+              </button>
+            ))}
+          </div>
+          <OverflowMenu items={overflowMenuItems} />
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className={`flex-1 overflow-y-auto ${isCompact ? 'p-2 scrollbar-hide' : 'p-4'}`}>
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />

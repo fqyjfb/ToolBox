@@ -3,6 +3,7 @@ import { X, Copy, Share2, ExternalLink } from 'lucide-react';
 import { Shop, SocialAccount, Email, Phone, Company, Credential, GeneralAccount } from '../../types/account';
 import { WebsiteAccount } from '../../types/websiteAccount';
 import { useToastStore } from '../../store/toastStore';
+import { useIsCompactMode } from '../../store/windowModeStore';
 import { openUrl } from '../../services/browserService';
 
 export type PreviewItem = Shop | SocialAccount | Email | Phone | Company | Credential | GeneralAccount | WebsiteAccount;
@@ -16,6 +17,8 @@ interface PreviewModalProps {
 
 const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, title }) => {
   const addToast = useToastStore((state) => state.addToast);
+  // 小窗：内边距收窄、双列字段改单列、标题与徽标分行，保证内容完整可见
+  const isCompact = useIsCompactMode();
 
   const handleCopyText = async (text: string, message: string) => {
     try {
@@ -143,10 +146,10 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
       );
     }
     return (
-      <div className="flex items-center justify-between py-2">
-        <span className="text-sm text-content-secondary font-medium">{label}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-content-primary max-w-[200px] truncate">{value}</span>
+      <div className="flex items-center justify-between gap-2 py-2">
+        <span className="text-sm text-content-secondary font-medium flex-shrink-0">{label}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm text-content-primary truncate">{value}</span>
           {copyable && (
             <button
               onClick={() => handleCopyText(value, `${label}已复制`)}
@@ -164,12 +167,12 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
   const renderUrlField = (label: string, url: string) => {
     if (!url) return null;
     return (
-      <div className="flex items-center justify-between py-2">
-        <span className="text-sm text-content-secondary font-medium">{label}</span>
+      <div className="flex items-center justify-between gap-2 py-2">
+        <span className="text-sm text-content-secondary font-medium flex-shrink-0">{label}</span>
         <button
           onClick={() => openUrl(url)}
-          className="flex items-center gap-1 text-primary hover:text-primary-hover transition-colors truncate max-w-[200px]"
-          title="点击打开网站"
+          className="flex items-center gap-1 text-primary hover:text-primary-hover transition-colors truncate min-w-0"
+          title="打开"
         >
           <span className="truncate">{url}</span>
           <ExternalLink className="w-3 h-3 flex-shrink-0" />
@@ -236,42 +239,48 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
 
   if (!isOpen || !item) return null;
 
+  // 小窗改为单列，双列在窄宽度下字段值会被截断得难以辨认
+  const fieldGridClass = isCompact ? 'grid grid-cols-1 gap-y-1' : 'grid grid-cols-2 gap-x-6 gap-y-2';
+
+  const statusBadge = getStatusBadge(item);
+  const categoryBadge = getCategoryBadge(item);
+  const hasBadges = !!statusBadge || !!categoryBadge || ('url' in item && !!item.url);
+  const badges = (
+    <>
+      {statusBadge && (
+        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusBadge.colorClass}`}>
+          {statusBadge.text}
+        </span>
+      )}
+      {categoryBadge && (
+        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-surface-secondary text-content-primary">
+          {categoryBadge}
+        </span>
+      )}
+      {'url' in item && item.url && (
+        <button
+          onClick={() => openUrl(item.url)}
+          className="p-1.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          title="打开"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </button>
+      )}
+    </>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center ${isCompact ? 'p-2' : 'p-4'}`}>
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-surface rounded-lg shadow-lg w-full max-w-lg max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-content-primary">{title}</h3>
-            {(() => {
-              const statusBadge = getStatusBadge(item);
-              const categoryBadge = getCategoryBadge(item);
-              return (
-                <>
-                  {statusBadge && (
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusBadge.colorClass}`}>
-                      {statusBadge.text}
-                    </span>
-                  )}
-                  {categoryBadge && (
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-surface-secondary text-content-primary">
-                      {categoryBadge}
-                    </span>
-                  )}
-                  {'url' in item && item.url && (
-                    <button
-                      onClick={() => openUrl(item.url)}
-                      className="p-1.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      title="打开网站"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </button>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-          <div className="flex items-center gap-2">
+      <div className={`relative bg-surface rounded-lg shadow-lg w-full max-w-lg flex flex-col ${isCompact ? 'max-h-[86vh]' : 'max-h-[80vh]'}`}>
+        {/* 小窗：徽标与操作按钮换到标题下方一行，标题不再被挤没 */}
+        <div className={`${isCompact ? 'flex flex-col gap-1 px-2 py-2' : 'flex items-center justify-between px-4 py-3'}`}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <h3 className={`font-semibold text-content-primary truncate ${isCompact ? 'text-sm' : 'text-base'}`}>{title}</h3>
+              {!isCompact && badges}
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleShare}
               className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -285,17 +294,21 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
             >
               <X className="w-4 h-4" />
             </button>
+            </div>
           </div>
+          {isCompact && hasBadges && (
+            <div className="flex items-center gap-2 flex-wrap">{badges}</div>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+        <div className={`flex-1 overflow-y-auto scrollbar-thin ${isCompact ? 'p-2' : 'p-4'}`}>
           {('shop_name' in item) && (
             <>
               <div className="pb-3 mb-3">
                 {renderField('店铺名称', (item as Shop).shop_name)}
                 {renderField('平台', (item as Shop).platform)}
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className={fieldGridClass}>
                 {renderField('账号', (item as Shop).account, true)}
                 {renderField('密码', (item as Shop).password, true)}
                 {renderField('支付密码', (item as Shop).payment_password, true)}
@@ -327,7 +340,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('用户名', (item as SocialAccount).user_name || (item as SocialAccount).account)}
                 {renderField('平台', (item as SocialAccount).platform)}
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className={fieldGridClass}>
                 {renderField('账号', (item as SocialAccount).account, true)}
                 {renderField('密码', (item as SocialAccount).password, true)}
                 {renderField('邮箱', (item as SocialAccount).email, true)}
@@ -348,7 +361,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
               <div className="pb-3 mb-3">
                 {renderField('邮箱地址', (item as Email).email, true)}
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className={fieldGridClass}>
                 {renderField('密码', (item as Email).password, true)}
                 {renderField('手机号', (item as Email).phone, true)}
                 {renderField('验证信息', (item as Email).verification_info)}
@@ -366,7 +379,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
               <div className="pb-3 mb-3">
                 {renderField('手机号', (item as Phone).phone_number, true)}
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className={fieldGridClass}>
                 {renderField('机主', (item as Phone).owner)}
                 {renderField('运营商', (item as Phone).phone_operator)}
                 {renderField('地区', (item as Phone).phone_region)}
@@ -385,7 +398,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('企业名称', (item as Company).name)}
                 {renderField('统一社会信用代码', (item as Company).unified_social_credit_code, true)}
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className={fieldGridClass}>
                 {renderField('法人', (item as Company).legal_person)}
                 {renderField('成立日期', (item as Company).establishment_date)}
                 {renderField('注册资本', (item as Company).registered_capital)}
@@ -409,7 +422,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('证件名称', (item as Credential).certificate_name)}
                 {renderField('身份证号', (item as Credential).id_card_number, true)}
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className={fieldGridClass}>
                 {renderField('性别', (item as Credential).gender)}
                 {renderField('出生日期', (item as Credential).birth_date)}
                 {renderField('开户银行', (item as Credential).bank_name)}
@@ -435,7 +448,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
                 {renderField('平台名称', (item as GeneralAccount).platform_name)}
                 {renderUrlField('网站', (item as GeneralAccount).website)}
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className={fieldGridClass}>
                 {renderField('账号', (item as GeneralAccount).account, true)}
                 {renderField('密码', (item as GeneralAccount).password, true)}
                 {renderField('邮箱', (item as GeneralAccount).email, true)}
@@ -457,7 +470,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
 
           {('category_id' in item && 'username' in item && !('platform_name' in item) && !('shop_name' in item)) && (
             <>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className={fieldGridClass}>
                 {renderField('用户名', (item as WebsiteAccount).username, true)}
                 {renderField('密码', (item as WebsiteAccount).password, true)}
                 {renderField('邮箱', (item as WebsiteAccount).email, true)}

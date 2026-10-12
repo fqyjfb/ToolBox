@@ -1,7 +1,6 @@
 import React from 'react';
 import type { HomeToolItem } from '../../utils/homeTools';
 import { iconMap } from '../../utils/iconMap';
-import WeatherCard from './WeatherCard';
 
 interface ToolGridProps {
   tools: HomeToolItem[];
@@ -9,12 +8,12 @@ interface ToolGridProps {
 }
 
 const ToolGrid: React.FC<ToolGridProps> = ({ tools, onToolClick }) => {
-  const renderToolItem = (tool: HomeToolItem) => {
+  const renderToolItem = (tool: HomeToolItem, extraClass?: string) => {
     const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
     return (
       <div
         key={tool.id}
-        className="tools-item"
+        className={`tools-item ${extraClass || ''}`}
         style={{ backgroundColor: tool.color }}
         onClick={() => onToolClick(tool.path)}
       >
@@ -25,43 +24,24 @@ const ToolGrid: React.FC<ToolGridProps> = ({ tools, onToolClick }) => {
   };
 
   return (
-    <div className="flex-shrink-0 h-[var(--card-height)] overflow-visible relative z-0">
+    <div className="tools-card flex-shrink-0 h-[var(--card-height)] overflow-visible relative z-0">
       <div className="tools-grid">
-        {/* 第一行第一列 - 天气卡片（占2行） */}
-        <div 
-          className="tools-item tools-item--weather cursor-pointer"
-          onClick={() => onToolClick('/tools/weather')}
-        >
-          <WeatherCard />
-        </div>
-        
-        {/* 第一行第二列 - 工具1 */}
-        {tools[0] && renderToolItem(tools[0])}
-        
-        {/* 第一行第三列 - 工具2 */}
+        {/* 第一列前两行 - 工具1（占2行） */}
+        {tools[0] && renderToolItem(tools[0], 'tools-item--tall')}
+
+        {/* 第一行第二、三列 */}
         {tools[1] && renderToolItem(tools[1])}
-        
-        {/* 第二行第二列 - 工具3 */}
         {tools[2] && renderToolItem(tools[2])}
-        
-        {/* 第二行第三列 - 工具4 */}
+
+        {/* 第二行第二、三列 */}
         {tools[3] && renderToolItem(tools[3])}
-        
-        {/* 第三行第一列 - 新闻（宽卡片，占2列） */}
-        {tools[4] && (
-          <div
-            key={tools[4].id}
-            className="tools-item tools-item--news"
-            style={{ backgroundColor: tools[4].color }}
-            onClick={() => onToolClick(tools[4].path)}
-          >
-            {React.createElement(iconMap[tools[4].iconName] || iconMap.Clipboard, { className: 'w-10 h-10' })}
-            <span className="tools-name" style={{ color: '#FFFFFF' }}>{tools[4].name}</span>
-          </div>
-        )}
-        
-        {/* 第三行第三列 - 工具6 */}
-        {tools[5] && renderToolItem(tools[5])}
+        {tools[4] && renderToolItem(tools[4])}
+
+        {/* 第三行第一、二列 - 宽卡片（占2列） */}
+        {tools[5] && renderToolItem(tools[5], 'tools-item--wide')}
+
+        {/* 第三行第三列 */}
+        {tools[6] && renderToolItem(tools[6])}
       </div>
     </div>
   );

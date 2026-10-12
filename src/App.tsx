@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/shallow';
 import Layout from './components/layout/Layout';
 import WebLayout from './components/layout/WebLayout';
 import MobileLayout from './components/layout/MobileLayout';
+import CompactLayout from './components/layout/CompactLayout';
 import Toast from './components/ui/Toast';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import ErrorBoundary from './components/ui/ErrorBoundary';
@@ -11,6 +12,7 @@ import PluginPanels from './components/plugins/PluginPanels';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/AuthStore';
 import { useSidebarStore } from './store/sidebarStore';
+import { useWindowModeStore } from './store/windowModeStore';
 import { useSyncStore } from './store/syncStore';
 import { logError, logInfo } from './services/loggerService';
 import { syncManager } from './services/syncManager';
@@ -248,6 +250,25 @@ function App() {
     }
   }, [isDark]);
 
+  // 小窗模式根节点 class：与 dark class 同款机制，供 P2 页面级 CSS 覆写兜底使用
+  const windowMode = useWindowModeStore((s) => s.mode);
+  useEffect(() => {
+    // isDesktopApp 定义在 isInitialized 早退之后，此处用 isElectron()（环境恒定，无碍）
+    document.documentElement.classList.toggle('compact-mode', isElectron() && windowMode === 'compact');
+  }, [windowMode]);
+
+  // 边缘吸附停靠态：光标跨越窗口边界时通知主进程（mouseleave → 延迟折叠 / mouseenter → 取消折叠、提示条即时展开）
+  useEffect(() => {
+    if (!isElectron() || !window.electron?.edgeSnapCursorLeft) return undefined;
+    const { edgeSnapCursorLeft, edgeSnapCursorEnter } = window.electron;
+    document.addEventListener('mouseleave', edgeSnapCursorLeft);
+    document.addEventListener('mouseenter', edgeSnapCursorEnter);
+    return () => {
+      document.removeEventListener('mouseleave', edgeSnapCursorLeft);
+      document.removeEventListener('mouseenter', edgeSnapCursorEnter);
+    };
+  }, []);
+
   useEffect(() => {
     const handleSettingChanged = (setting: { name: string; value: unknown }) => {
       if (setting.name === 'isMenuVisible') {
@@ -281,6 +302,9 @@ function App() {
             if (customKey) {
               setEncryptionKey(customKey);
             }
+            // 窗口模式回流：getSettings 本就随初始化调用一次，带出上次模式，首帧即按正确布局渲染（无闪烁）
+            const winMode = settings.find(s => s.name === 'windowMode')?.value;
+            useWindowModeStore.getState().hydrate(winMode === 'compact' ? 'compact' : 'large');
           } catch (error) {
             logError('加载桌面端自定义配置失败', 'App', error as Error);
           }
@@ -347,7 +371,16 @@ function App() {
       syncManager.syncOnStartup(user.id);
     }, 2000);
 
-    return () => clearTimeout(timer);
+    // 断网恢复在线时补一次增量同步（仅在离线→在线跃迁时触发，不是轮询）
+    const handleOnline = () => {
+      syncManager.syncOnStartup(user.id);
+    };
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('online', handleOnline);
+    };
   }, [isAuthenticated, user?.id, setSyncEnabled, setStorageLocation, setSyncModules, setLastSyncTime, setSyncOnStartupEnabled]);
 
   // 提醒弹窗是主进程创建的独立 BrowserWindow，与主窗口无任何关联：
@@ -379,12 +412,15 @@ function App() {
 
   const isDesktopApp = isElectron();
   const isWebApp = !isDesktopApp && !isMobileDevice;
+  // 小窗模式：仅 Electron 生效；路由仍走 desktopRoutes，保证桌面路由全部可达
+  const isCompact = isDesktopApp && windowMode === 'compact';
 
   const currentRoutes = isDesktopApp ? desktopRoutes : isWebApp ? webRoutes : mobileRoutes;
 
   // 根据平台选择布局组件
   const getLayoutComponent = () => {
     if (isStandaloneWindow()) return null;
+    if (isCompact) return CompactLayout;
     if (isDesktopApp) return Layout;
     if (isWebApp) return WebLayout;
     return MobileLayout;

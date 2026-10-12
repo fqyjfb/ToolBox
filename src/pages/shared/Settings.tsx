@@ -3,6 +3,7 @@ import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, Refresh
 import { useShallow } from 'zustand/shallow';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
+import { useIsCompactMode } from '../../store/windowModeStore';
 import { useThemeStore } from '../../store/themeStore';
 import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
 import {
@@ -41,6 +42,7 @@ const Settings: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const isCompact = useIsCompactMode(); // 小窗下分组栏强制折叠（48px），保留用户手动展开能力
   const [browserMode, setBrowserMode] = useState<'internal' | 'external'>('internal');
   const [autostartEnabled, setAutostartEnabled] = useState(false);
   const [autoLockEnabled, setAutoLockEnabled] = useState(false);
@@ -408,7 +410,7 @@ const Settings: React.FC = () => {
     <div className="flex h-full overflow-hidden">
       <aside
         className="flex-shrink-0 flex flex-col bg-surface-60 transition-all duration-200"
-        style={{ width: sidebarCollapsed ? '48px' : '145px' }}
+        style={{ width: (isCompact || sidebarCollapsed) ? '48px' : '145px' }}
       >
         <div className="flex flex-col flex-1 py-2 overflow-y-auto scrollbar-hide">
           {tabs.map(tab => (
@@ -423,7 +425,7 @@ const Settings: React.FC = () => {
               title={tab.label}
             >
               <tab.icon size={16} className="flex-shrink-0" />
-              {!sidebarCollapsed && <span className="truncate">{tab.label}</span>}
+              {!sidebarCollapsed && !isCompact && <span className="truncate">{tab.label}</span>}
             </button>
           ))}
         </div>
@@ -434,7 +436,7 @@ const Settings: React.FC = () => {
             title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
           >
             <PanelLeft size={16} className="flex-shrink-0" />
-            {!sidebarCollapsed && <span className="truncate">收起</span>}
+            {!sidebarCollapsed && !isCompact && <span className="truncate">收起</span>}
           </button>
         </div>
       </aside>

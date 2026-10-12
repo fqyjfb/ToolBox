@@ -81,7 +81,7 @@ const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200"
         onClick={handleOverlayClick}
@@ -89,7 +89,7 @@ const Modal: React.FC<ModalProps> = ({
       <div
         ref={modalRef}
         className={`
-          relative w-full ${sizeClasses[size]} mx-4
+          relative w-full ${sizeClasses[size]}
           bg-surface rounded-lg shadow-lg
           overflow-hidden
           animate-[slideIn_0.25s_cubic-bezier(0.175,0.885,0.32,1.275)]

@@ -24,6 +24,9 @@ import { logError } from '../../../../services/loggerService';
 import { openUrl } from '../../../../services/browserService';
 import { localStorageService, STORAGE_KEYS } from '../../../../services/localStorageService';
 import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
+import { useIsCompactMode } from '../../../../store/windowModeStore';
+import { useOverflowItems } from '../../../../hooks/useOverflowItems';
+import OverflowMenu, { OverflowMenuItem } from '../../../../components/ui/OverflowMenu';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 const findCategoryById = (catList: WebsiteAccountCategory[], targetId: string): WebsiteAccountCategory | undefined => {
@@ -70,12 +73,12 @@ const SortableCategoryItem: React.FC<{
       style={style}
       {...attributes}
       {...listeners}
-      className="relative z-10 cursor-grab active:cursor-grabbing"
+      className="relative z-10 flex-shrink-0 cursor-grab active:cursor-grabbing"
     >
       <button
         onClick={onClick}
         onContextMenu={onContextMenu}
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 ${
           isActive
             ? 'bg-primary text-button-text shadow-sm'
             : 'text-content-secondary hover:bg-menu-hover'
@@ -94,6 +97,7 @@ const SortableCategoryItem: React.FC<{
 const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId }, ref) => {
   const addToast = useToastStore((state) => state.addToast);
   const isDark = useThemeStore((state) => state.isDark);
+  const isCompact = useIsCompactMode();
   const { searchQuery, isSearchActive } = useNavSearch();
 
   const [categories, setCategories] = useState<WebsiteAccountCategory[]>([]);
@@ -299,6 +303,13 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     setCurrentPage(1);
     loadAccounts(1, categoryId);
   }, [loadAccounts]);
+
+  // 小窗：分类按可用宽度收拢，放不下的进「更多」下拉
+  const categoryBarItems: Array<{ key: string; category?: WebsiteAccountCategory }> = [
+    { key: 'all' },
+    ...categories.map((category) => ({ key: category.id, category })),
+  ];
+  const { containerRef, visible, overflow } = useOverflowItems(categoryBarItems, (item) => item.key, { enabled: isCompact });
 
   const openCategoryModal = useCallback((category: WebsiteAccountCategory | null = null, parentCategory: WebsiteAccountCategory | null = null) => {
     if (category) {
@@ -515,6 +526,14 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     setContextMenu({ isOpen: true, x: e.clientX, y: e.clientY, type, targetId });
   }, []);
 
+  const overflowMenuItems: OverflowMenuItem[] = overflow.map((item) => ({
+    key: item.key,
+    label: item.category?.name ?? '全部',
+    active: item.category ? selectedCategory === item.category.id : selectedCategory === null,
+    onClick: () => handleCategorySelect(item.category?.id ?? null),
+    onContextMenu: item.category ? (e) => handleContextMenu(e, 'category', item.category!.id) : undefined,
+  }));
+
   const handleCloseContextMenu = useCallback(() => {
     setContextMenu(prev => ({ ...prev, isOpen: false }));
   }, []);
@@ -542,6 +561,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
 
       return [
         { id: 'edit', label: '编辑', icon: <Edit className="w-4 h-4" />, onClick: () => { openCategoryModal(category); handleCloseContextMenu(); } },
+        { id: 'add-category', label: '添加分类', icon: <Tag className="w-4 h-4" />, onClick: () => { openCategoryModal(); handleCloseContextMenu(); } },
         { id: 'add-subcategory', label: '添加子分类', icon: <Plus className="w-4 h-4" />, onClick: () => { openCategoryModal(null, category); handleCloseContextMenu(); } },
         { id: 'divider1', label: '', divider: true },
         { id: 'delete', label: '删除', icon: <Trash2 className="w-4 h-4" />, onClick: () => handleOpenConfirmDialog('删除确认', '确定要删除这个分类吗？', () => handleDeleteCategory(category.id)) }
@@ -613,83 +633,90 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
 
   return (
     <div className="h-full flex flex-col" onClick={handleCloseContextMenu}>
-      <div className="mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex-1 category-dropdown-container relative">
-              <div className="rounded-lg px-3 py-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button onClick={() => handleCategorySelect(null)} className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 ${selectedCategory === null ? 'bg-primary text-button-text shadow-sm' : 'text-content-secondary hover:bg-menu-hover'}`}>
-                    全部
-                  </button>
-                  {categories.length === 0 ? (
-                    <div className="text-xs text-content-tertiary">暂无分类</div>
-                  ) : (
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleCategoriesDragEnd}
+      <div className={`${isCompact ? 'mb-2' : 'mb-4'} flex-shrink-0`}>
+        <div className={`${isCompact ? 'flex flex-col items-stretch gap-1' : 'flex items-center justify-between'}`}>
+          <div className="flex-1 min-w-0 category-dropdown-container relative">
+            <div className={isCompact ? 'py-1' : 'rounded-lg px-3 py-2'}>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleCategoriesDragEnd}
+              >
+                <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    {/* 展开子分类下拉时不能用 overflow-hidden，否则弹层会被裁掉 */}
+                    <div
+                      ref={containerRef}
+                      className={`flex items-center min-w-0 flex-1 ${
+                        isCompact
+                          ? `gap-1 flex-nowrap${expandedCategories.size === 0 ? ' overflow-hidden' : ''}`
+                          : 'gap-2 flex-wrap'
+                      }`}
                     >
-                      <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {categories.map(category => (
-                            <div key={category.id} className="relative">
-                              <SortableCategoryItem
-                                category={category}
-                                isActive={selectedCategory === category.id}
-                                isExpanded={expandedCategories.has(category.id)}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (category.children && category.children.length > 0) {
-                                    const isExpanded = expandedCategories.has(category.id);
-                                    const newExpanded = new Set<string>();
-                                    if (!isExpanded) {
-                                      newExpanded.add(category.id);
-                                    }
-                                    setExpandedCategories(newExpanded);
+                      {visible.map((item) =>
+                        item.category ? (
+                          <div key={item.key} className="relative">
+                            <SortableCategoryItem
+                              category={item.category}
+                              isActive={selectedCategory === item.category.id}
+                              isExpanded={expandedCategories.has(item.category.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (item.category!.children && item.category!.children.length > 0) {
+                                  const isExpanded = expandedCategories.has(item.category!.id);
+                                  const newExpanded = new Set<string>();
+                                  if (!isExpanded) {
+                                    newExpanded.add(item.category!.id);
                                   }
-                                  handleCategorySelect(category.id);
-                                }}
-                                onContextMenu={(e) => handleContextMenu(e, 'category', category.id)}
-                                getCategoryColor={getCategoryColor}
-                              />
-                              {category.children && category.children.length > 0 && expandedCategories.has(category.id) && (
-                                <div className="absolute top-full left-0 mt-1 bg-bg-primary rounded-lg shadow-lg border border-border z-10 min-w-[120px] py-1">
-                                  {category.children.map(child => (
-                                    <button
-                                      key={child.id}
-                                      onClick={() => {
-                                        handleCategorySelect(child.id);
-                                        setExpandedCategories(new Set());
-                                      }}
-                                      onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
-                                      className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
-                                        selectedCategory === child.id
-                                          ? 'bg-surface-secondary text-content-primary'
-                                          : 'text-text-primary hover:bg-bg-secondary'
-                                      }`}
-                                    >
-                                      <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(child.name).dot}`}></div>
-                                      <span>{child.name}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </DndContext>
-                  )}
-                </div>
-              </div>
+                                  setExpandedCategories(newExpanded);
+                                }
+                                handleCategorySelect(item.category!.id);
+                              }}
+                              onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
+                              getCategoryColor={getCategoryColor}
+                            />
+                            {item.category.children && item.category.children.length > 0 && expandedCategories.has(item.category.id) && (
+                              <div className="absolute top-full left-0 mt-1 bg-bg-primary rounded-lg shadow-lg border border-border z-10 min-w-[120px] max-w-[180px] py-1">
+                                {item.category.children.map(child => (
+                                  <button
+                                    key={child.id}
+                                    onClick={() => {
+                                      handleCategorySelect(child.id);
+                                      setExpandedCategories(new Set());
+                                    }}
+                                    onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
+                                    className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
+                                      selectedCategory === child.id
+                                        ? 'bg-surface-secondary text-content-primary'
+                                        : 'text-text-primary hover:bg-bg-secondary'
+                                    }`}
+                                  >
+                                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getCategoryColor(child.name).dot}`}></div>
+                                    <span className="truncate">{child.name}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            key={item.key}
+                            onClick={() => handleCategorySelect(null)}
+                            className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${selectedCategory === null ? 'bg-primary text-button-text shadow-sm' : 'text-content-secondary hover:bg-menu-hover'}`}
+                          >
+                            全部
+                          </button>
+                        )
+                      )}
+                      {categories.length === 0 && (
+                        <div className="text-xs text-content-tertiary">暂无分类</div>
+                      )}
+                    </div>
+                    <OverflowMenu items={overflowMenuItems} />
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => openCategoryModal()} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-content-secondary hover:text-content-primary hover:bg-menu-hover bg-surface-secondary rounded-full transition-colors">
-              <Tag size={14} />
-              添加分类
-            </button>
           </div>
         </div>
       </div>

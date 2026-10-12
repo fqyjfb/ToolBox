@@ -13,6 +13,7 @@ import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManag
 import Select from '../../components/ui/Select'
 import { openUrl } from '../../services/browserService'
 import { useThemeStore } from '../../store/themeStore'
+import CompactUnsupportedHint from '../../components/ui/CompactUnsupportedHint'
 
 const isForeignDomain = (url: string): boolean => {
   try {
@@ -405,6 +406,7 @@ const ToolsPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      <CompactUnsupportedHint />
       <div className="p-4 flex items-center justify-between flex-shrink-0">
         <h1 className="text-lg font-semibold text-content-primary">工具管理</h1>
         {activeTab === 'tools' && (

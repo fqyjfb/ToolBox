@@ -14,11 +14,27 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import Select from '../../components/ui/Select';
 import { logDebug, logInfo, logWarn } from '../../services/loggerService';
+import { useIsCompactMode } from '../../store/windowModeStore';
+import { useOverflowItems } from '../../hooks/useOverflowItems';
+import OverflowMenu, { OverflowMenuItem } from '../../components/ui/OverflowMenu';
 import './QuickLaunch.css';
 
 // 真实分类 id 判断（排除 全部/最常用/最近使用 等虚拟分类）
 const isConcreteCategoryId = (id: string): boolean =>
   id !== 'all' && id !== 'frequent' && id !== 'recent';
+
+// 分类栏条目：虚拟分类 + 真实分类，统一参与「按宽度收拢」
+type CategoryBarItem = {
+  key: string;
+  special?: 'all' | 'frequent' | 'recent';
+  category?: QuickLaunchCategory;
+};
+
+const SPECIAL_CATEGORY_LABEL: Record<'all' | 'frequent' | 'recent', string> = {
+  all: '全部',
+  frequent: '最常用',
+  recent: '最近使用',
+};
 
 const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'medium'; showText: boolean; disabled?: boolean; showUnassignedBadge?: boolean; singleClick?: boolean; onLaunch: (path: string) => void; onContextMenu: (e: React.MouseEvent) => void; }> = ({ app, iconSize, showText, disabled, showUnassignedBadge, singleClick, onLaunch, onContextMenu }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: app.id, disabled });
@@ -93,7 +109,7 @@ const SortableCategoryItem: React.FC<{ category: QuickLaunchCategory; isActive: 
       className={`cursor-grab active:cursor-grabbing`}
     >
       <button
-        className={`px-3 py-1 text-sm font-medium rounded-full transition-colors flex items-center gap-1 ${
+        className={`px-3 py-1 text-sm font-medium rounded-full transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${
           isActive
             ? 'text-white'
             : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
@@ -112,6 +128,8 @@ const SortableCategoryItem: React.FC<{ category: QuickLaunchCategory; isActive: 
 const QuickLaunch: React.FC = () => {
   const { searchQuery, isSearchActive } = useNavSearch();
   const addToast = useToastStore(state => state.addToast);
+  // 小窗模式：分类栏改单行横向滚动、工具栏独立成行，避免头部占满整个可视高度
+  const isCompact = useIsCompactMode();
   const [apps, setApps] = useState<QuickLaunchItem[]>([]);
   const [categories, setCategories] = useState<QuickLaunchCategory[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
@@ -954,77 +972,136 @@ const QuickLaunch: React.FC = () => {
     return [];
   }, [contextMenu.type, contextMenu.targetId, apps, categories, addToast, handleLaunch, handleRename, handleSetHotkey, handleMoveToCategory, handleRemove, handleEditCategory, handleDeleteCategory, handleAddApp, handleAddCategory, handleClearAll, handleRemoveInvalidApps, handleRepairInvalidApps, handleExportConfig, handleImportConfig, handleCloseContextMenu]);
 
+  // 小窗：分类栏按可用宽度收拢，放不下的进「更多」下拉（与网址导航页一致）
+  const categoryBarItems = useMemo<CategoryBarItem[]>(
+    () => [
+      { key: 'all', special: 'all' },
+      { key: 'frequent', special: 'frequent' },
+      { key: 'recent', special: 'recent' },
+      ...categories.map((category) => ({ key: category.id, category })),
+    ],
+    [categories]
+  );
+  const { containerRef, visible, overflow } = useOverflowItems(categoryBarItems, (item) => item.key, { enabled: isCompact });
+
+  const isBarItemActive = (item: CategoryBarItem): boolean =>
+    activeCategoryId === (item.special ?? item.category?.id);
+
+  const selectBarItem = (item: CategoryBarItem): void =>
+    setActiveCategoryId(item.special ?? item.category!.id);
+
+  const overflowMenuItems: OverflowMenuItem[] = overflow.map((item) => ({
+    key: item.key,
+    label: item.special ? SPECIAL_CATEGORY_LABEL[item.special] : item.category!.name,
+    active: isBarItemActive(item),
+    onClick: () => selectBarItem(item),
+    onContextMenu: item.special
+      ? undefined
+      : (e: React.MouseEvent) => handleContextMenu(e, 'category', item.category!.id),
+  }));
+
+  const renderBarItem = (item: CategoryBarItem) => {
+    if (item.special === 'all') {
+      return (
+        <button
+          className={`px-3 py-1 text-sm font-medium rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${
+            activeCategoryId === 'all'
+              ? 'bg-primary text-button-text'
+              : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
+          }`}
+          onClick={() => setActiveCategoryId('all')}
+        >
+          全部
+        </button>
+      );
+    }
+    if (item.special === 'frequent') {
+      return (
+        <button
+          className={`flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${
+            activeCategoryId === 'frequent'
+              ? 'bg-primary text-button-text'
+              : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
+          }`}
+          onClick={() => setActiveCategoryId('frequent')}
+          title="按启动次数排序，取前 8"
+        >
+          <Flame size={12} />
+          最常用
+        </button>
+      );
+    }
+    if (item.special === 'recent') {
+      return (
+        <button
+          className={`flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${
+            activeCategoryId === 'recent'
+              ? 'bg-primary text-button-text'
+              : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
+          }`}
+          onClick={() => setActiveCategoryId('recent')}
+          title="按最近启动时间排序，取前 8"
+        >
+          <Clock size={12} />
+          最近使用
+        </button>
+      );
+    }
+    return (
+      <SortableCategoryItem
+        category={item.category!}
+        isActive={activeCategoryId === item.category!.id}
+        onClick={() => setActiveCategoryId(item.category!.id)}
+        onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
+      />
+    );
+  };
+
+  // 小窗下收窄最小列宽：一行排得下更多应用（小图标 4 个 / 中图标 3 个），减少纵向滚动
+  const appGridClass = iconSize === 'small'
+    ? (isCompact
+        ? 'grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-2 auto-rows-quick-launch-sm'
+        : 'grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2 auto-rows-quick-launch-sm')
+    : (isCompact
+        ? 'grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2.5 auto-rows-quick-launch-lg'
+        : 'grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-3.5 auto-rows-quick-launch-lg');
+
   return (
     <div
         className="h-full flex flex-col"
         onContextMenu={(e) => handleContextMenu(e, 'empty')}
       >
         
-      <div className="flex items-center justify-between pl-6 pr-0 py-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
-              activeCategoryId === 'all'
-                ? 'bg-primary text-button-text'
-                : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
-            }`}
-            onClick={() => setActiveCategoryId('all')}
-          >
-            全部
-          </button>
-          {/* P0: 虚拟分类 - 最常用 / 最近使用 */}
-          <button
-            className={`flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full transition-colors ${
-              activeCategoryId === 'frequent'
-                ? 'bg-primary text-button-text'
-                : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
-            }`}
-            onClick={() => setActiveCategoryId('frequent')}
-            title="按启动次数排序，取前 8"
-          >
-            <Flame size={12} />
-            最常用
-          </button>
-          <button
-            className={`flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full transition-colors ${
-              activeCategoryId === 'recent'
-                ? 'bg-primary text-button-text'
-                : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
-            }`}
-            onClick={() => setActiveCategoryId('recent')}
-            title="按最近启动时间排序，取前 8"
-          >
-            <Clock size={12} />
-            最近使用
-          </button>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleCategoriesDragEnd}
-          >
-            <SortableContext items={categories.map(cat => cat.id)} strategy={horizontalListSortingStrategy}>
-              <div className="flex items-center gap-2 flex-wrap">
-                {categories.map((category) => (
-                  <SortableCategoryItem
-                    key={category.id}
-                    category={category}
-                    isActive={activeCategoryId === category.id}
-                    onClick={() => setActiveCategoryId(category.id)}
-                    onContextMenu={(e) => handleContextMenu(e, 'category', category.id)}
-                  />
+      <div className={`flex ${isCompact ? 'flex-col items-stretch gap-1 px-1 py-1' : 'items-center justify-between pl-6 pr-0 py-2'}`}>
+        {/* 小窗：分类栏按宽度收拢，放不下的进「更多」下拉，不再横向铺满 */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleCategoriesDragEnd}
+        >
+          <SortableContext items={categories.map(cat => cat.id)} strategy={horizontalListSortingStrategy}>
+            <div className="flex items-center gap-1 min-w-0 flex-1">
+              <div
+                ref={containerRef}
+                className={`flex items-center min-w-0 flex-1 ${isCompact ? 'gap-1 flex-nowrap overflow-hidden' : 'gap-2 flex-wrap'}`}
+              >
+                {visible.map((item) => (
+                  <React.Fragment key={item.key}>{renderBarItem(item)}</React.Fragment>
                 ))}
               </div>
-            </SortableContext>
-          </DndContext>
-          <button
-            onClick={handleAddCategory}
-            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            title="添加分类"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-        <div className="flex items-center gap-2 rounded-lg px-2 py-1">
+              <OverflowMenu items={overflowMenuItems} />
+              <button
+                onClick={handleAddCategory}
+                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+                title="添加分类"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          </SortableContext>
+        </DndContext>
+        {/* 小窗：工具栏单独一行，右侧不再与分类栏挤在同一行 */}
+        <div className={`flex items-center ${isCompact ? 'justify-between gap-1 px-0.5 py-0.5' : 'gap-2 rounded-lg px-2 py-1'}`}>
           {/* P0: 自动排序模式下拉 */}
           <Select
             value={sortMode}
@@ -1108,7 +1185,7 @@ const QuickLaunch: React.FC = () => {
             onDragEnd={handleAppsDragEnd}
           >
             <SortableContext items={filteredApps.map(app => app.id)} strategy={rectSortingStrategy}>
-              <div className={`grid ${iconSize === 'small' ? 'grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2 auto-rows-quick-launch-sm' : 'grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-3.5 auto-rows-quick-launch-lg'} min-h-quick-launch transition-colors duration-200 ${
+              <div className={`grid ${appGridClass} min-h-quick-launch transition-colors duration-200 ${
                 isDragOver ? 'border-2 border-dashed border-green-400 rounded-lg p-4' : ''
               }`}>
                 {filteredApps.map((app) => (

@@ -60,3 +60,24 @@
   filter: blur(3px);
   transform: scale(0.8);
 }
+
+/* 小窗模式：收藏图标保持原尺寸单行横向滚动（不压缩、不换行），
+   避免 12 个图标被挤成一条导致图标变形/加载不到而显示占位 */
+.compact-mode .favorites-bar {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 4px;
+  height: 44px;
+  padding-inline: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.compact-mode .favorites-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.compact-mode .favorite-item {
+  flex-shrink: 0;
+}

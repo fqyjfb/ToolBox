@@ -21,6 +21,9 @@ const consoleLog = (message: string, data?: unknown) => {
   }
 };
 
+import { useIsCompactMode } from '../../../store/windowModeStore';
+import { useOverflowItems } from '../../../hooks/useOverflowItems';
+import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
@@ -75,12 +78,28 @@ const getPriorityLabel = (priority: string) => {
   }
 };
 
+// 「全部」入口：小窗下是横向 chip，大窗下是占满侧栏宽度的竖排按钮
+const AllCategoryButton: React.FC<{ isSelected: boolean; compact?: boolean; onClick: () => void }> = ({ isSelected, compact, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`${compact ? 'px-2 py-1 text-xs gap-1 flex-shrink-0 whitespace-nowrap' : 'w-full px-3 py-2 text-sm gap-2 text-left'} font-medium rounded-lg transition-colors flex items-center ${
+      isSelected
+        ? 'bg-primary text-button-text'
+        : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
+    }`}
+  >
+    <Tag size={14} />
+    全部
+  </button>
+);
+
 const SortableCategoryButton: React.FC<{
   category: MemoCategory;
   isSelected: boolean;
+  compact?: boolean;
   onClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
-}> = ({ category, isSelected, onClick, onContextMenu }) => {
+}> = ({ category, isSelected, compact, onClick, onContextMenu }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
 
   const style = {
@@ -102,7 +121,7 @@ const SortableCategoryButton: React.FC<{
       <button
         onClick={onClick}
         onContextMenu={onContextMenu}
-        className={`w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors text-left flex items-center gap-2 ${
+        className={`${compact ? 'px-2 py-1 text-xs gap-1 flex-shrink-0 whitespace-nowrap' : 'w-full px-3 py-2 text-sm gap-2 text-left'} font-medium rounded-lg transition-colors flex items-center ${
           isSelected
             ? 'bg-primary text-button-text'
             : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
@@ -120,6 +139,8 @@ const MemoPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useRequireAuth();
+  // 小窗模式：分类从左侧 120px 竖排侧栏改为顶部单行横向滚动条（侧栏会吃掉近一半宽度）
+  const isCompact = useIsCompactMode();
   const addToast = useToastStore((state) => state.addToast);
   const { searchQuery, isSearchActive } = useNavSearch();
   const [categories, setCategories] = useState<MemoCategory[]>([]);
@@ -646,36 +667,71 @@ const MemoPage: React.FC = () => {
     setPreviewMemo(null);
   };
 
+  // 小窗：分类按可用宽度收拢，放不下的进「更多」下拉（hook 必须早于下面的条件返回）
+  const categoryBarItems: Array<{ key: string; category?: MemoCategory }> = [
+    { key: 'all' },
+    ...categories.map((category) => ({ key: category.id, category })),
+  ];
+  const { containerRef, visible, overflow } = useOverflowItems(categoryBarItems, (item) => item.key, { enabled: isCompact });
+
   if (!isAuthenticated) {
     return null;
   }
 
+  const overflowMenuItems: OverflowMenuItem[] = overflow.map((item) => ({
+    key: item.key,
+    label: item.category?.name ?? '全部',
+    color: item.category?.color,
+    active: item.category ? selectedCategory === item.category.id : selectedCategory === null,
+    onClick: () => setSelectedCategory(item.category?.id ?? null),
+    onContextMenu: item.category
+      ? (e: React.MouseEvent) => handleContextMenu(e, 'category', item.category!.id)
+      : undefined,
+  }));
+
   return (
-    <div 
-      className="h-full flex overflow-hidden"
-      onContextMenu={(e) => handleContextMenu(e, 'empty')}
+    // DndContext / SortableContext 提到最外层：小窗与大窗只是分类的排布不同，拖拽排序共用同一套上下文
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
     >
-        <div className="w-32 max-w-[120px] flex-shrink-0 mr-4 flex flex-col">
-          <div className="mb-2">
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={`w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors text-left flex items-center gap-2 ${
-                selectedCategory === null
-                  ? 'bg-primary text-button-text'
-                  : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
-              }`}
-            >
-              <Tag size={14} />
-              全部
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+      <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+        <div
+          className={`h-full flex overflow-hidden ${isCompact ? 'flex-col' : ''}`}
+          onContextMenu={(e) => handleContextMenu(e, 'empty')}
+        >
+          {isCompact ? (
+            <div className="flex items-center gap-1 px-1 pb-2 flex-shrink-0">
+              <div ref={containerRef} className="flex items-center gap-1 flex-nowrap min-w-0 flex-1 overflow-hidden">
+                {visible.map((item) =>
+                  item.category ? (
+                    <SortableCategoryButton
+                      key={item.key}
+                      compact
+                      category={item.category}
+                      isSelected={selectedCategory === item.category.id}
+                      onClick={() => setSelectedCategory(item.category!.id)}
+                      onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
+                    />
+                  ) : (
+                    <AllCategoryButton
+                      key={item.key}
+                      compact
+                      isSelected={selectedCategory === null}
+                      onClick={() => setSelectedCategory(null)}
+                    />
+                  )
+                )}
+              </div>
+              <OverflowMenu items={overflowMenuItems} />
+            </div>
+          ) : (
+            <div className="w-32 max-w-[120px] flex-shrink-0 mr-4 flex flex-col">
+              <div className="mb-2">
+                <AllCategoryButton isSelected={selectedCategory === null} onClick={() => setSelectedCategory(null)} />
+              </div>
+              <div className="flex-1 overflow-y-auto">
                 <div className="space-y-2">
                   {categories.map((category) => (
                     <SortableCategoryButton
@@ -687,10 +743,9 @@ const MemoPage: React.FC = () => {
                     />
                   ))}
                 </div>
-              </SortableContext>
-            </DndContext>
-          </div>
-        </div>
+              </div>
+            </div>
+          )}
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto scrollbar-hide p-1">
@@ -1035,7 +1090,9 @@ const MemoPage: React.FC = () => {
         title={confirmDialog.title}
         message={confirmDialog.message}
       />
-    </div>
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 };
 

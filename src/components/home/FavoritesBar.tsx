@@ -45,6 +45,8 @@ const SortableFavoriteItem: React.FC<{ bookmark: Bookmark; onClick: () => void; 
           className="w-8 h-8 object-contain"
           defaultIcon={<Globe className="w-8 h-8 text-content-secondary" />}
           type="general"
+          // 收藏条目最多 12 个，直接加载：小窗横向滚动时不会出现「滚动到才加载」的图标缺失
+          iconOnly
         />
       ) : (
         <Globe className="w-8 h-8 text-content-secondary" />

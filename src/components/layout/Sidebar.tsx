@@ -18,7 +18,7 @@ import { iconMap } from '../../utils/iconMap';
 import { pluginApi } from '../../services/pluginApi';
 import './Sidebar.css';
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<{ forceCollapsed?: boolean }> = ({ forceCollapsed = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isDesktop = isElectron();
@@ -30,6 +30,8 @@ const Sidebar: React.FC = () => {
     removePinnedTool: s.removePinnedTool,
     reorderPinnedTools: s.reorderPinnedTools,
   })));
+  // 小窗（CompactLayout）强制折叠：只影响读取、不写回 store，不污染大窗的折叠/展开偏好
+  const collapsed = forceCollapsed || isCollapsed;
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isAdmin = useAuthStore((s) => s.isAdmin);
   const installedPlugins = usePluginStore((s) => s.installedPlugins);
@@ -121,25 +123,25 @@ const Sidebar: React.FC = () => {
   if (!isVisible) return null;
 
   return (
-    <aside className={`sidebar-root ${isCollapsed ? 'collapsed' : 'expanded'}`} style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+    <aside className={`sidebar-root ${collapsed ? 'collapsed' : 'expanded'}`} style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
       <div className="sidebar-logo" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties} onClick={() => navigate('/')}>
         <img src="./favicon.svg" alt="ToolBox" className="w-8 h-8 flex-shrink-0" />
-        {!isCollapsed && <span className="text-sm font-semibold text-content-primary whitespace-nowrap">ToolBox</span>}
+        {!collapsed && <span className="text-sm font-semibold text-content-primary whitespace-nowrap">ToolBox</span>}
       </div>
 
       <nav className="sidebar-fixed" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {fixedItems.map((item) => (
-          <NavItem key={item.id} icon={item.icon} title={item.title} active={item.active} collapsed={isCollapsed} onClick={() => navigate(item.path)} />
+          <NavItem key={item.id} icon={item.icon} title={item.title} active={item.active} collapsed={collapsed} onClick={() => navigate(item.path)} />
         ))}
       </nav>
 
-      {!isCollapsed && <div className="sidebar-divider" />}
+      {!collapsed && <div className="sidebar-divider" />}
 
       <nav className="sidebar-pinned" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        {pinnedTools.length === 0 && !isCollapsed && (
+        {pinnedTools.length === 0 && !collapsed && (
           <div className="text-xs text-content-secondary px-3 py-2">右键工具卡片添加到此处</div>
         )}
-        {!isCollapsed && pinnedTools.length > 0 ? (
+        {!collapsed && pinnedTools.length > 0 ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={pinnedToolIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1">
@@ -177,7 +179,7 @@ const Sidebar: React.FC = () => {
                   icon={iconElement}
                   title={tool.name}
                   active={isActive(tool.path)}
-                  collapsed={isCollapsed}
+                  collapsed={collapsed}
                   onClick={() => {
                     if (plugin) {
                       pluginApi.openPluginWindow(tool.id);
@@ -193,15 +195,15 @@ const Sidebar: React.FC = () => {
       </nav>
 
       <div className="sidebar-bottom" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        {pluginButtons.length > 0 && !isCollapsed && <div className="sidebar-divider" />}
+        {pluginButtons.length > 0 && !collapsed && <div className="sidebar-divider" />}
         {pluginButtons.length > 0 && (
-          <div className={`flex items-center gap-1 px-1 ${isCollapsed ? 'flex-col' : 'mb-2'}`}>
+          <div className={`flex items-center gap-1 px-1 ${collapsed ? 'flex-col' : 'mb-2'}`}>
             {pluginButtons.map((btn) => (
               <SidebarBottomButton key={btn.id} icon={btn.icon} title={btn.label} onClick={btn.onClick} />
             ))}
           </div>
         )}
-        <div className={`flex items-center gap-1 px-1 ${isCollapsed ? 'flex-col' : ''}`}>
+        <div className={`flex items-center gap-1 px-1 ${collapsed ? 'flex-col' : ''}`}>
           <SidebarBottomButton icon={<User className="w-4 h-4" />} title={isAuthenticated ? '个人信息' : '登录'} active={isActive('/tools/profile') || isActive('/login')} onClick={() => navigate(isAuthenticated ? '/tools/profile' : '/login')} />
           {isAdmin && (
             <SidebarBottomButton icon={<LayoutDashboard className="w-4 h-4" />} title="管理" active={isStartsWith('/admin')} onClick={() => navigate('/admin')} />

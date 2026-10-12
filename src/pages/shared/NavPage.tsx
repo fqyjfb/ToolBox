@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Star, StarOff, Menu, ChevronDown, Search } from 'lucide-react'
+import { Star, StarOff, ChevronDown, Search } from 'lucide-react'
 import CachedIcon from '../../components/ui/CachedIcon'
 import { websiteService } from '../../services/WebsiteService'
 import { websiteBookmarksQuery, websiteCategoriesQuery } from '../../services/websiteQueries'
@@ -38,7 +38,6 @@ const NavPage: React.FC = () => {
   // 订阅 themeKey，确保自定义主题保存后 NavPage 强制重渲染，CSS 变量同步生效
   useThemeStore((s) => s.themeKey);
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [hoveredBookmark, setHoveredBookmark] = useState<{ id: string; cx: number; top: number; bottom: number } | null>(null)
   const tooltipRef = useRef<HTMLDivElement | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState<{ left: number; top: number } | null>(null)
@@ -695,55 +694,6 @@ const NavPage: React.FC = () => {
         </div>
       </div>
       
-      {/* 移动端分类导航按钮 */}
-      <div className="md:hidden p-4">
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="flex items-center justify-between w-full px-4 py-2 bg-surface-secondary dark:bg-surface rounded-lg"
-        >
-          <span>{activeMainCategoryId ? categoriesTree.find(c => c.id === activeMainCategoryId)?.name || '网站分类' : '网站分类'}</span>
-          <Menu className="w-5 h-5" />
-        </button>
-        
-        {/* 移动端分类菜单 */}
-        {isMobileMenuOpen && (
-          <div className="mt-2 bg-white/80 dark:bg-content-primary/$1 backdrop-blur-sm border border-content/$1 dark:border-content/$1 rounded-lg shadow-lg">
-            <nav className="p-2 space-y-1">
-              <button
-                onClick={() => {
-                  handleFavoriteClick()
-                  setIsMobileMenuOpen(false)
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-all duration-300 font-medium ${
-                  favoritesView
-                    ? 'bg-[var(--color-favorites-active)] text-white shadow-lg transform scale-105'
-                    : 'bg-[var(--color-favorites)] text-white dark:text-[var(--color-favorites-text)] hover:bg-[var(--color-favorites-hover)] hover:shadow-md'
-                }`}
-              >
-                <div className="flex items-center">
-                  <span>我的收藏</span>
-                </div>
-              </button>
-              {categoriesTree.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => {
-                    switchMainCategory(category.id)
-                    setIsMobileMenuOpen(false)
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors font-medium ${
-                    activeMainCategoryId === category.id
-                      ? 'bg-content-primary text-white dark:bg-white dark:text-content-primary'
-                      : 'text-content-primary hover:bg-menu-hover'
-                  }`}
-                >
-                  <span>{category.name}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-        )}
-      </div>
       
       {/* 卡片描述悬浮提示框：portal 到 body，避免被祖先的 transform / overflow 劫持定位与裁剪 */}
       {hoveredBookmark && hoveredBookmarkInfo?.description && createPortal(

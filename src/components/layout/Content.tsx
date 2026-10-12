@@ -1,14 +1,18 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Minus, Maximize2, X, Search, X as XIcon, Bell, Settings, PanelLeft, PanelLeftClose } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Settings, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
-import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useThemeStore } from '../../store/themeStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { useTodoNotification } from '../../contexts/TodoNotificationContext';
 import { isElectron } from '../../utils/environment';
 import Breadcrumb from '../ui/Breadcrumb';
 import Tooltip from '../ui/Tooltip';
+import HeaderWeather from './HeaderWeather';
+import WindowModeButton from './WindowModeButton';
+import ThemeToggleButton from './ThemeToggleButton';
+import WindowControls from './WindowControls';
+import HeaderSearchBox from './HeaderSearchBox';
 import PageTransition from './PageTransition';
 import './Content.css';
 
@@ -19,23 +23,11 @@ interface ContentProps {
 
 const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
   const isDesktop = isElectron();
-  const { searchQuery, setSearchQuery, performSearch, clearSearch, handleSearch } = useNavSearch();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { isDark, toggleTheme } = useThemeStore(useShallow((s) => ({ isDark: s.isDark, toggleTheme: s.toggleTheme })));
   // 订阅 themeKey，确保自定义主题保存后 Content 强制重渲染，面包屑/头部按钮颜色同步更新
   useThemeStore((s) => s.themeKey);
   const { isCollapsed, toggleSidebar } = useSidebarStore(useShallow((s) => ({ isCollapsed: s.isCollapsed, toggleSidebar: s.toggleSidebar })));
   const { pendingCount } = useTodoNotification();
-
-
-
-  const showSearch = ['/launch', '/nav', '/tools/country-code', '/tools/exchange', '/tools/cloud-clipboard', '/tools/quick-reply', '/tools/todo', '/tools/memo', '/tools/account', '/tools/profile', '/tools/plugin-store'].includes(location.pathname);
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    handleSearch(query);
-  };
 
   return (
     <div className={`flex-1 flex flex-col text-content-primary ${className}`} style={{ overflowX: 'hidden' }}>
@@ -54,43 +46,16 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
         </div>
         <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <div className="flex items-center">
-            {showSearch && (
-              <div className="relative">
-                <input
-                  placeholder="搜索..."
-                  className="border border-transparent focus:border-content px-4 py-1 rounded-xl w-56 transition-[width] duration-300 focus:w-64 outline-none bg-surface-60 text-content-primary placeholder-text-content-tertiary text-sm"
-                  name="search"
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && performSearch()}
-                  style={{ height: '28px' } as React.CSSProperties}
-                />
-                {searchQuery && (
-                  <button onClick={clearSearch} className="absolute right-9 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary transition-all duration-300 ease-in-out">
-                    <XIcon size={14} />
-                  </button>
-                )}
-                <button onClick={performSearch} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary transition-all duration-300 ease-in-out">
-                  <Search size={16} />
-                </button>
-              </div>
-            )}
+            <HeaderSearchBox />
 
             <div className="flex items-center overflow-hidden rounded-lg">
-              <Tooltip title={isDark ? '浅色模式' : '深色模式'} position="bottom">
-                <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover" onClick={toggleTheme}>
-                  {isDark ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                    </svg>
-                  )}
-                </button>
-              </Tooltip>
+              {isDesktop && (
+                <>
+                  <HeaderWeather />
+                  <WindowModeButton />
+                </>
+              )}
+              <ThemeToggleButton />
 
               <Tooltip title="待办事项" position="bottom">
                 <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover relative" onClick={() => navigate('/tools/todo')}>
@@ -108,19 +73,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
                 </button>
               </Tooltip>
 
-              {isDesktop && (
-                <>
-                  <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover" onClick={() => window.electron?.minimize()}>
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-menu-hover" onClick={() => window.electron?.maximize()}>
-                    <Maximize2 className="w-4 h-4" />
-                  </button>
-                  <button className="w-9 h-9 flex items-center justify-center text-content-secondary transition-colors duration-200 hover:bg-red-600 hover:text-white" onClick={() => window.electron?.close()}>
-                    <X className="w-4 h-4" />
-                  </button>
-                </>
-              )}
+              <WindowControls />
             </div>
           </div>
         </div>

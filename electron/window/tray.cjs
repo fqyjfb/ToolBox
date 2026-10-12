@@ -27,10 +27,17 @@ const createTray = () => {
         require('./lockWindow.cjs').toggleLock();
         return;
       }
-      const mainWindow = require('./mainWindow.cjs').getMainWindow();
-      if (mainWindow && mainWindow.isVisible()) {
+      const windowModule = require('./mainWindow.cjs');
+      const mainWindow = windowModule.getMainWindow();
+      if (!mainWindow) return;
+      // 停靠（贴边吸附）态：左键切换「折叠 ⇄ 展开」；非停靠态保持原 显示/隐藏 切换
+      if (windowModule.isWindowEdgeDocked()) {
+        windowModule.toggleEdgeDockWindow();
+        return;
+      }
+      if (mainWindow.isVisible()) {
         mainWindow.hide();
-      } else if (mainWindow) {
+      } else {
         mainWindow.show();
       }
     });

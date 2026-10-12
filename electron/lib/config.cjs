@@ -109,6 +109,7 @@ const defaultSettings = {
   leftMenuPosition: 'left',
   howLinkOpenMethod: 'internal',
   defaultWindowSize: { width: 1024, height: 800 },
+  windowMode: 'large', // 窗口模式：'large' 大窗（默认） | 'compact' 小窗 320×680
   isFloatWindowEnabled: 0,
   isLockEnabled: 0,
   lockPassword: '',

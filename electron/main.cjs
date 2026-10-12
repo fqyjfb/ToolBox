@@ -97,6 +97,10 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
+// 暴露渲染层 window.gc：仅「内存优化」开启时的定时清理会调用它，未开启时无任何调用、无副作用。
+// 该开关必须在 app ready 前设置，运行时无法按设置动态开关。
+app.commandLine.appendSwitch('js-flags', '--expose-gc');
+
 /**
  * local-media 协议：流式返回本地文件（仅供 <img> 等小体积预览使用）。
  *

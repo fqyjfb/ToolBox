@@ -15,6 +15,7 @@ import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManag
 import CachedIcon from '../../components/ui/CachedIcon'
 import Select from '../../components/ui/Select'
 import { useThemeStore } from '../../store/themeStore'
+import CompactUnsupportedHint from '../../components/ui/CompactUnsupportedHint'
 
 const AdminWebsitesPage: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -469,6 +470,7 @@ const AdminWebsitesPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      <CompactUnsupportedHint />
       <div className="p-4 flex items-center justify-between flex-shrink-0">
         <h1 className="text-lg font-semibold text-content-primary">网址管理</h1>
         {activeTab === 'bookmarks' && (

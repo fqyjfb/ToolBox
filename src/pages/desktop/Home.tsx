@@ -13,10 +13,13 @@ import QuickLaunchBar from '../../components/home/QuickLaunchBar';
 import HomeBookmarkBar from '../../components/home/HomeBookmarkBar';
 import MoyuCard from '../../components/home/MoyuCard';
 import { useHomeFavorites } from '../../hooks/useHomeFavorites';
+import { useIsCompactMode } from '../../store/windowModeStore';
 import './Home.css';
 
 const Home: React.FC = () => {
   const isDesktop = isElectron();
+  // 小窗模式：纵向单列流式排布（内容超出由外层容器滚动），不再把各卡片锁死在一屏内
+  const isCompact = useIsCompactMode();
 
   const [sixtySecondsData, setSixtySecondsData] = useState<string[] | null>(null);
   const [sixtySecondsLoading, setSixtySecondsLoading] = useState(false);
@@ -142,17 +145,19 @@ const Home: React.FC = () => {
   }, [refreshHomeTools]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className={`flex flex-col ${isCompact ? 'min-h-full' : 'h-full'}`}>
       <div className="flex flex-col items-center gap-2 mb-2 flex-shrink-0">
         <SearchBar searchTypes={searchTypes} />
         <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />
       </div>
 
-      <div className="flex gap-2 flex-1 items-stretch min-h-0">
+      <div className={`home-cols flex gap-2 ${isCompact ? 'items-stretch' : 'flex-1 items-stretch min-h-0'}`}>
         <div className="flex flex-col gap-1 w-home-card flex-shrink-0">
-          <ToolGrid tools={homeTools} onToolClick={navigateToTool} />
+          {/* 小窗：隐藏工具卡片容器，仅保留快启动 / 网址收藏夹 */}
+          {!isCompact && <ToolGrid tools={homeTools} onToolClick={navigateToTool} />}
           {isDesktop && (
-            <div className="flex-1 min-h-0 flex flex-col quicklaunch-group">
+            // 小窗下不再 flex-1 撑满剩余高度：图标区按内容高度紧跟工具卡片排布，避免溢出浮在卡片上
+            <div className={`flex flex-col quicklaunch-group ${isCompact ? '' : 'flex-1 min-h-0'}`}>
               <QuickLaunchBar
                 apps={homeQuickLaunchApps}
                 onLaunch={handleLaunchApp}

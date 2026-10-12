@@ -14,8 +14,9 @@ export const defaultHomeTools: HomeToolItem[] = [
   { id: 'todo', name: '待办事项', path: '/tools/todo', color: '#bc8acf', textColor: '#fff', iconName: 'CheckSquare' },
   { id: 'nav', name: '导航', path: '/nav', color: '#f5a623', textColor: '#fff', iconName: 'Globe' },
   { id: 'account', name: '账号', path: '/tools/account', color: '#00bcd4', textColor: '#fff', iconName: 'Rocket' },
-  { id: 'news', name: '新闻', path: '/news', color: '#e91e63', textColor: '#fff', iconName: 'MessageSquare' },
   { id: 'translate', name: '在线翻译', path: '/tools/translate', color: '#2196F3', textColor: '#fff', iconName: 'Languages' },
+  { id: 'news', name: '新闻', path: '/news', color: '#e91e63', textColor: '#fff', iconName: 'MessageSquare' },
+  { id: 'memo', name: '备忘录', path: '/tools/memo', color: '#7c4dff', textColor: '#fff', iconName: 'StickyNote' },
 ];
 
 // 已废弃的快捷工具 ID（从首页移除）：旧版本 localStorage 中可能仍存在，加载时过滤

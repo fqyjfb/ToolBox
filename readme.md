@@ -1,6 +1,6 @@
 # ToolBox
 
-[![Version](https://img.shields.io/badge/version-3.0.6-blue.svg)](./docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.0.8-blue.svg)](./docs/CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
 一个基于 Electron + React + TypeScript 构建的现代化桌面工具应用，集成多种实用工具和服务，支持插件扩展。
@@ -20,7 +20,7 @@
   - 开发工具：JSON 格式化、URL 编码/解码、哈希生成、正则测试、SQL 压缩、HTML 转文本、HEX 编解码、CSV/JSON 互转、Markdown 处理、记事本
   - 转换工具：大小写转换、时间戳转换、进制转换
   - 实用工具：天气、翻译、汇率换算、OCR文字识别（插件版）、二维码生成、IP 信息查询、区号查询、Emoji 清理器
-  - AI 工具：SEO 元标签生成、站点地图生成、调色板（AI 助手和字体生成器已迁移为插件）
+  - AI 工具：SEO 标签生成、站点地图生成、调色板（AI 助手和字体生成器已迁移为插件）
   - 离线工具：本地文件离线运行，无需网络连接
   - 其他工具：文本去重、URL 解析器
 - **密码锁定**：支持通过 Ctrl+L 快捷键锁定/解锁应用，自动锁定功能
