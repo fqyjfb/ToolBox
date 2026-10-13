@@ -21,6 +21,7 @@ import PlatformVisibilitySelector from '../../../components/ui/PlatformVisibilit
 import { useIsCompactMode } from '../../../store/windowModeStore';
 import { useOverflowItems } from '../../../hooks/useOverflowItems';
 import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
+import CompactSelector, { CompactSelectorItem } from '../../../components/ui/CompactSelector';
 
 type PlatformType = 'website_account' | 'shops' | 'social' | 'emails' | 'phones' | 'companies' | 'credentials' | 'general';
 
@@ -384,7 +385,7 @@ const AccountManagerPage: React.FC = () => {
 
   const currentPlatform = platforms.find(p => p.id === activePlatform);
 
-  // 小窗：平台页签按可用宽度收拢，放不下的进「更多」下拉
+  // 小窗：平台页签按可用宽度收拢，放不下的进「更多」下拉（大窗模式）
   const { containerRef, visible, overflow } = useOverflowItems(visiblePlatforms, (platform) => platform.id, { enabled: isCompact });
 
   const overflowMenuItems: OverflowMenuItem[] = overflow.map((platform) => ({
@@ -394,35 +395,52 @@ const AccountManagerPage: React.FC = () => {
     onClick: () => setActivePlatform(platform.id),
   }));
 
+  // 小窗模式：所有平台收进 CompactSelector 下拉，原标签位置显示当前选中项
+  const compactPlatformItems: CompactSelectorItem[] = visiblePlatforms.map((platform) => ({
+    key: platform.id,
+    label: platform.name,
+    icon: <platform.icon size={14} />,
+    active: activePlatform === platform.id,
+    onClick: () => setActivePlatform(platform.id),
+  }));
+
   return (
     <>
       <div className="h-full flex flex-col overflow-hidden">
           <div className={`flex-shrink-0 ${isCompact ? 'px-2' : 'px-4'}`}>
-            <div className={`${isCompact ? 'flex flex-col items-stretch gap-1' : 'flex items-center justify-between'}`}>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext items={visiblePlatforms.map(p => p.id)} strategy={horizontalListSortingStrategy}>
-                  <div className="flex items-center gap-1 min-w-0 flex-1">
-                    <div
-                      ref={containerRef}
-                      className={`flex items-center gap-1 min-w-0 flex-1 ${isCompact ? 'flex-nowrap overflow-hidden' : 'flex-wrap'}`}
-                    >
-                      {visible.map((platform) => (
-                        <SortablePlatformTab
-                          key={platform.id}
-                          platform={platform}
-                          isActive={activePlatform === platform.id}
-                          onClick={() => setActivePlatform(platform.id)}
-                        />
-                      ))}
+            <div className={`${isCompact ? 'flex items-center justify-between gap-1' : 'flex items-center justify-between'}`}>
+              {isCompact ? (
+                <CompactSelector
+                  items={compactPlatformItems}
+                  selectedKey={activePlatform}
+                  title="切换平台"
+                />
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={visiblePlatforms.map(p => p.id)} strategy={horizontalListSortingStrategy}>
+                    <div className="flex items-center gap-1 min-w-0 flex-1">
+                      <div
+                        ref={containerRef}
+                        className="flex items-center gap-1 min-w-0 flex-1 flex-wrap"
+                      >
+                        {visible.map((platform) => (
+                          <SortablePlatformTab
+                            key={platform.id}
+                            platform={platform}
+                            isActive={activePlatform === platform.id}
+                            onClick={() => setActivePlatform(platform.id)}
+                          />
+                        ))}
+                      </div>
+                      <OverflowMenu items={overflowMenuItems} variant="plain" />
                     </div>
-                    <OverflowMenu items={overflowMenuItems} variant="plain" />
-                  </div>
-                </SortableContext>
-              </DndContext>
+                  </SortableContext>
+                </DndContext>
+              )}
               <div className={`flex items-center gap-1 ${isCompact ? 'justify-end' : ''}`}>
                 <PlatformVisibilitySelector
                   platforms={platforms}

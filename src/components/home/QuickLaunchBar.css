@@ -1,0 +1,129 @@
+/* 快启动条样式（组件级，随 QuickLaunchBar 加载；大窗首页左侧栏与小窗个人信息区共用，
+   HomeBookmarkBar 复用 .quicklaunch-scroll/.quicklaunch-bar/.quicklaunch-item） */
+
+.quicklaunch-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-inline: 8px;
+  padding-block: 8px;
+  position: relative;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+}
+
+/* 图标区容器：高度随图标行数自适应，超出上限（5 行）可滚动但不显示滚动条 */
+.quicklaunch-scroll,
+.quicklaunch-group {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.quicklaunch-scroll::-webkit-scrollbar,
+.quicklaunch-group::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* 上下内边距 8px*2 + 5 行图标 36px*5 + 行间距 6px*4 */
+.quicklaunch-scroll {
+  max-height: 220px;
+}
+
+/* 相邻图标区去掉中间多余间距，使两个区域看起来是一个整体 */
+.quicklaunch-group > .quicklaunch-scroll + .quicklaunch-scroll .quicklaunch-bar {
+  padding-block-start: 0;
+}
+
+.quicklaunch-item {
+  cursor: pointer;
+  display: flex;
+  transition: all var(--transition-normal);
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 36px;
+  height: 36px;
+}
+
+/* 图标悬浮提示：渲染到 body 并用固定定位，避免被滚动容器裁剪 */
+.quicklaunch-title {
+  background-color: var(--color-primary);
+  border-radius: 7px;
+  padding-inline: 7px;
+  padding-block: 3px;
+  width: max-content;
+  font-size: small;
+  font-weight: bold;
+  color: var(--color-bg-primary);
+  white-space: nowrap;
+  z-index: 200;
+}
+
+.quicklaunch-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  animation: quicklaunch-tooltip-in var(--transition-normal) ease-out;
+}
+
+.quicklaunch-tooltip::after {
+  content: "";
+  position: absolute;
+  border-top: 10px solid var(--color-primary);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%);
+}
+
+@keyframes quicklaunch-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 6px));
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
+}
+
+/* ===== 小窗个人信息区横向快启动：单行不换行、横向滚动无滚动条、紧凑无背景 ===== */
+.quicklaunch-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.quicklaunch-scroll-x::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.quicklaunch-bar-x {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+  width: max-content;
+}
+
+.quicklaunch-bar-x .quicklaunch-item {
+  width: 22px;
+  height: 22px;
+}
+
+/* 小窗快启动图标：18×18px */
+.quicklaunch-icon-x {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}

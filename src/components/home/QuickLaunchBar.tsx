@@ -7,12 +7,15 @@ import { useDndSensors } from '../../hooks/useDndSensors';
 import { useHoverTooltip } from '../../hooks/useHoverTooltip';
 import ContextMenu, { ContextMenuItem } from '../ui/ContextMenu';
 import type { QuickLaunchItem } from '../../utils/quickLaunch';
+import './QuickLaunchBar.css';
 
 interface QuickLaunchBarProps {
   apps: QuickLaunchItem[];
   onLaunch: (path: string) => void;
   onRemove: (appId: string) => void;
   onReorder?: (apps: QuickLaunchItem[]) => void;
+  /** 小窗模式：水平单行布局，横向滚动 */
+  isHorizontal?: boolean;
 }
 
 const SortableQuickLaunchItem: React.FC<{
@@ -21,7 +24,8 @@ const SortableQuickLaunchItem: React.FC<{
   onContextMenu: (e: React.MouseEvent) => void;
   onMouseEnter: (e: React.MouseEvent) => void;
   onMouseLeave: () => void;
-}> = ({ app, onLaunch, onContextMenu, onMouseEnter, onMouseLeave }) => {
+  isHorizontal?: boolean;
+}> = ({ app, onLaunch, onContextMenu, onMouseEnter, onMouseLeave, isHorizontal }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: app.id });
 
   const style = {
@@ -48,14 +52,14 @@ const SortableQuickLaunchItem: React.FC<{
         <img
           src={`data:image/png;base64,${app.icon}`}
           alt={app.name}
-          className="w-8 h-8 object-contain"
+          className={isHorizontal ? 'quicklaunch-icon-x' : 'w-8 h-8 object-contain'}
         />
       ) : null}
     </div>
   );
 };
 
-const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemove, onReorder }) => {
+const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemove, onReorder, isHorizontal }) => {
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
     x: number;
@@ -147,16 +151,25 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
     }
   };
 
+  // 小窗横向模式：鼠标滚轮映射为横向滚动
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!isHorizontal) return;
+    e.currentTarget.scrollLeft += e.deltaY;
+  };
+
   return (
-    <div className="w-full relative z-10 quicklaunch-scroll" onWheel={hideTooltip}>
+    <div
+      className={`w-full relative z-10 ${isHorizontal ? 'quicklaunch-scroll-x' : 'quicklaunch-scroll'}`}
+      onWheel={(e) => { hideTooltip(); handleWheel(e); }}
+    >
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={hideTooltip}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={apps.map(app => app.id)} strategy={verticalListSortingStrategy}>
-          <div className="quicklaunch-bar">
+        <SortableContext items={apps.map(app => app.id)} strategy={isHorizontal ? undefined : verticalListSortingStrategy}>
+          <div className={isHorizontal ? 'quicklaunch-bar-x' : 'quicklaunch-bar'}>
             {apps.map((app) => (
               <SortableQuickLaunchItem
                 key={app.id}
@@ -165,6 +178,7 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
                 onContextMenu={(e) => handleContextMenu(e, app.id)}
                 onMouseEnter={(e) => showTooltip(e, app.name)}
                 onMouseLeave={hideTooltip}
+                isHorizontal={isHorizontal}
               />
             ))}
           </div>

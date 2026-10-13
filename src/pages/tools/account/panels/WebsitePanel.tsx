@@ -27,6 +27,7 @@ import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
 import { useIsCompactMode } from '../../../../store/windowModeStore';
 import { useOverflowItems } from '../../../../hooks/useOverflowItems';
 import OverflowMenu, { OverflowMenuItem } from '../../../../components/ui/OverflowMenu';
+import CompactSelector, { CompactSelectorItem } from '../../../../components/ui/CompactSelector';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 const findCategoryById = (catList: WebsiteAccountCategory[], targetId: string): WebsiteAccountCategory | undefined => {
@@ -304,12 +305,43 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     loadAccounts(1, categoryId);
   }, [loadAccounts]);
 
-  // 小窗：分类按可用宽度收拢，放不下的进「更多」下拉
+  // 小窗：分类按可用宽度收拢，放不下的进「更多」下拉（大窗模式）
   const categoryBarItems: Array<{ key: string; category?: WebsiteAccountCategory }> = [
     { key: 'all' },
     ...categories.map((category) => ({ key: category.id, category })),
   ];
   const { containerRef, visible, overflow } = useOverflowItems(categoryBarItems, (item) => item.key, { enabled: isCompact });
+
+  // 小窗模式：主分类收进 CompactSelector 下拉，原分类位置显示当前选中项
+  const mainCategories = categories.filter(c => !c.parent_id);
+  // 小窗模式：「全部」固定为第一个标签，不进下拉列表
+  const compactCategoryItems: CompactSelectorItem[] = mainCategories.map((category) => ({
+    key: category.id,
+    label: category.name,
+    color: getCategoryColor(category.name).dot.replace('bg-', '').replace('-500', ''),
+    active: selectedCategory === category.id,
+    onClick: () => handleCategorySelect(category.id),
+    onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, 'category', category.id),
+  }));
+
+  // 小窗模式：主分类 + 子分类 两级 CompactSelector
+  // 选中子分类时，通过 parent_id 回溯到主分类，保证两级选择器都可见
+  const selectedCategoryData = selectedCategory ? findCategoryById(categories, selectedCategory) : null;
+  const activeMainCategory = selectedCategoryData?.parent_id
+    ? findCategoryById(categories, selectedCategoryData.parent_id)
+    : (selectedCategoryData?.parent_id ? null : selectedCategoryData);
+  const activeMainCategoryChildren = activeMainCategory?.children || [];
+  const selectedChildCategory = selectedCategoryData?.parent_id ? selectedCategoryData : null;
+
+  // 小窗模式：子分类 CompactSelector 选项（基于当前主分类的子分类列表）
+  const compactChildItems: CompactSelectorItem[] = activeMainCategoryChildren.map((child) => ({
+    key: child.id,
+    label: child.name,
+    color: getCategoryColor(child.name).dot.replace('bg-', '').replace('-500', ''),
+    active: selectedCategory === child.id,
+    onClick: () => handleCategorySelect(child.id),
+    onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, 'category', child.id),
+  }));
 
   const openCategoryModal = useCallback((category: WebsiteAccountCategory | null = null, parentCategory: WebsiteAccountCategory | null = null) => {
     if (category) {
@@ -637,85 +669,109 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
         <div className={`${isCompact ? 'flex flex-col items-stretch gap-1' : 'flex items-center justify-between'}`}>
           <div className="flex-1 min-w-0 category-dropdown-container relative">
             <div className={isCompact ? 'py-1' : 'rounded-lg px-3 py-2'}>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleCategoriesDragEnd}
-              >
-                <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
-                  <div className="flex items-center gap-2 min-w-0">
-                    {/* 展开子分类下拉时不能用 overflow-hidden，否则弹层会被裁掉 */}
-                    <div
-                      ref={containerRef}
-                      className={`flex items-center min-w-0 flex-1 ${
-                        isCompact
-                          ? `gap-1 flex-nowrap${expandedCategories.size === 0 ? ' overflow-hidden' : ''}`
-                          : 'gap-2 flex-wrap'
-                      }`}
-                    >
-                      {visible.map((item) =>
-                        item.category ? (
-                          <div key={item.key} className="relative">
-                            <SortableCategoryItem
-                              category={item.category}
-                              isActive={selectedCategory === item.category.id}
-                              isExpanded={expandedCategories.has(item.category.id)}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (item.category!.children && item.category!.children.length > 0) {
-                                  const isExpanded = expandedCategories.has(item.category!.id);
-                                  const newExpanded = new Set<string>();
-                                  if (!isExpanded) {
-                                    newExpanded.add(item.category!.id);
+              {isCompact ? (
+                <div className="flex items-center gap-1 min-w-0">
+                  {/* 「全部」固定为第一个标签，不进下拉 */}
+                  <button
+                    onClick={() => handleCategorySelect(null)}
+                    className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${selectedCategory === null ? 'bg-primary text-button-text shadow-sm' : 'text-content-secondary hover:bg-menu-hover'}`}
+                  >
+                    全部
+                  </button>
+                  {/* 主分类 CompactSelector */}
+                  <CompactSelector
+                    items={compactCategoryItems}
+                    selectedKey={selectedCategoryData?.parent_id ? selectedCategoryData.parent_id : (selectedCategory ?? '')}
+                    title="切换分类"
+                    emptyText="暂无分类"
+                  />
+                  {/* 子分类 CompactSelector（选中主分类且有子分类时显示） */}
+                  {activeMainCategoryChildren.length > 0 && (
+                    <CompactSelector
+                      items={compactChildItems}
+                      selectedKey={selectedChildCategory?.id ?? ''}
+                      title="切换子分类"
+                      emptyText="暂无子分类"
+                      isSubLevel
+                    />
+                  )}
+                </div>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleCategoriesDragEnd}
+                >
+                  <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        ref={containerRef}
+                        className="flex items-center min-w-0 flex-1 gap-2 flex-wrap"
+                      >
+                        {visible.map((item) =>
+                          item.category ? (
+                            <div key={item.key} className="relative">
+                              <SortableCategoryItem
+                                category={item.category}
+                                isActive={selectedCategory === item.category.id}
+                                isExpanded={expandedCategories.has(item.category.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (item.category!.children && item.category!.children.length > 0) {
+                                    const isExpanded = expandedCategories.has(item.category!.id);
+                                    const newExpanded = new Set<string>();
+                                    if (!isExpanded) {
+                                      newExpanded.add(item.category!.id);
+                                    }
+                                    setExpandedCategories(newExpanded);
                                   }
-                                  setExpandedCategories(newExpanded);
-                                }
-                                handleCategorySelect(item.category!.id);
-                              }}
-                              onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
-                              getCategoryColor={getCategoryColor}
-                            />
-                            {item.category.children && item.category.children.length > 0 && expandedCategories.has(item.category.id) && (
-                              <div className="absolute top-full left-0 mt-1 bg-bg-primary rounded-lg shadow-lg border border-border z-10 min-w-[120px] max-w-[180px] py-1">
-                                {item.category.children.map(child => (
-                                  <button
-                                    key={child.id}
-                                    onClick={() => {
-                                      handleCategorySelect(child.id);
-                                      setExpandedCategories(new Set());
-                                    }}
-                                    onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
-                                    className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
-                                      selectedCategory === child.id
-                                        ? 'bg-surface-secondary text-content-primary'
-                                        : 'text-text-primary hover:bg-bg-secondary'
-                                    }`}
-                                  >
-                                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getCategoryColor(child.name).dot}`}></div>
-                                    <span className="truncate">{child.name}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <button
-                            key={item.key}
-                            onClick={() => handleCategorySelect(null)}
-                            className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${selectedCategory === null ? 'bg-primary text-button-text shadow-sm' : 'text-content-secondary hover:bg-menu-hover'}`}
-                          >
-                            全部
-                          </button>
-                        )
-                      )}
-                      {categories.length === 0 && (
-                        <div className="text-xs text-content-tertiary">暂无分类</div>
-                      )}
+                                  handleCategorySelect(item.category!.id);
+                                }}
+                                onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
+                                getCategoryColor={getCategoryColor}
+                              />
+                              {item.category.children && item.category.children.length > 0 && expandedCategories.has(item.category.id) && (
+                                <div className="absolute top-full left-0 mt-1 bg-bg-primary rounded-lg shadow-lg border border-border z-10 min-w-[120px] max-w-[180px] py-1">
+                                  {item.category.children.map(child => (
+                                    <button
+                                      key={child.id}
+                                      onClick={() => {
+                                        handleCategorySelect(child.id);
+                                        setExpandedCategories(new Set());
+                                      }}
+                                      onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
+                                      className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
+                                        selectedCategory === child.id
+                                          ? 'bg-surface-secondary text-content-primary'
+                                          : 'text-text-primary hover:bg-bg-secondary'
+                                      }`}
+                                    >
+                                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getCategoryColor(child.name).dot}`}></div>
+                                      <span className="truncate">{child.name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              key={item.key}
+                              onClick={() => handleCategorySelect(null)}
+                              className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${selectedCategory === null ? 'bg-primary text-button-text shadow-sm' : 'text-content-secondary hover:bg-menu-hover'}`}
+                            >
+                              全部
+                            </button>
+                          )
+                        )}
+                        {categories.length === 0 && (
+                          <div className="text-xs text-content-tertiary">暂无分类</div>
+                        )}
+                      </div>
+                      <OverflowMenu items={overflowMenuItems} />
                     </div>
-                    <OverflowMenu items={overflowMenuItems} />
-                  </div>
-                </SortableContext>
-              </DndContext>
+                  </SortableContext>
+                </DndContext>
+              )}
             </div>
           </div>
         </div>

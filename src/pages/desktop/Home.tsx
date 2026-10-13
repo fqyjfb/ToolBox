@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { hotNewsApi } from '../../services/hotNews';
-import { QuickLaunchItem, loadHomeQuickLaunchApps, removeHomeQuickLaunchApp, saveHomeQuickLaunchApps, ensureAppIconsCached } from '../../utils/quickLaunch';
 import { loadHomeTools } from '../../utils/homeTools';
 import { loadHomeBookmarks, removeHomeBookmark, saveHomeBookmarkOrder, type HomeBookmark } from '../../utils/homeBookmarks';
 import { isElectron } from '../../utils/environment';
@@ -13,6 +12,7 @@ import QuickLaunchBar from '../../components/home/QuickLaunchBar';
 import HomeBookmarkBar from '../../components/home/HomeBookmarkBar';
 import MoyuCard from '../../components/home/MoyuCard';
 import { useHomeFavorites } from '../../hooks/useHomeFavorites';
+import { useHomeQuickLaunch } from '../../hooks/useHomeQuickLaunch';
 import { useIsCompactMode } from '../../store/windowModeStore';
 import './Home.css';
 
@@ -26,8 +26,9 @@ const Home: React.FC = () => {
   const [sixtySecondsError, setSixtySecondsError] = useState('');
 
   const { favorites, handleFavoritesReorder } = useHomeFavorites();
+  // 快启动数据与操作（加载/启动/删除/排序）由共享 hook 承担；小窗模式下由 CompactLayout 个人信息区渲染
+  const { apps: homeQuickLaunchApps, launchApp: handleLaunchApp, removeApp: handleRemoveHomeQuickLaunch, reorderApps: handleQuickLaunchReorder } = useHomeQuickLaunch();
 
-  const [homeQuickLaunchApps, setHomeQuickLaunchApps] = useState<QuickLaunchItem[]>([]);
   const [homeBookmarks, setHomeBookmarks] = useState<HomeBookmark[]>([]);
   const [homeTools, setHomeTools] = useState(() => loadHomeTools());
 
@@ -66,28 +67,6 @@ const Home: React.FC = () => {
     void fetchSixtySeconds(true);
   }, [fetchSixtySeconds]);
 
-  const fetchHomeQuickLaunchApps = useCallback(() => {
-    const apps = loadHomeQuickLaunchApps();
-    setHomeQuickLaunchApps(apps);
-    if (apps.length > 0) {
-      ensureAppIconsCached(apps).catch(() => {});
-    }
-  }, []);
-
-  const handleRemoveHomeQuickLaunch = useCallback((appId: string) => {
-    removeHomeQuickLaunchApp(appId);
-    setHomeQuickLaunchApps(prev => prev.filter(app => app.id !== appId));
-  }, []);
-
-  const handleLaunchApp = useCallback((path: string) => {
-    window.electron?.openFile(path);
-  }, []);
-
-  const handleQuickLaunchReorder = useCallback((reorderedApps: QuickLaunchItem[]) => {
-    setHomeQuickLaunchApps(reorderedApps);
-    saveHomeQuickLaunchApps(reorderedApps);
-  }, []);
-
   const fetchHomeBookmarks = useCallback(async () => {
     setHomeBookmarks(await loadHomeBookmarks());
   }, []);
@@ -118,10 +97,9 @@ const Home: React.FC = () => {
   useEffect(() => {
     fetchSixtySeconds();
     if (isDesktop) {
-      fetchHomeQuickLaunchApps();
       void fetchHomeBookmarks();
     }
-  }, [fetchSixtySeconds, fetchHomeQuickLaunchApps, fetchHomeBookmarks, isDesktop]);
+  }, [fetchSixtySeconds, fetchHomeBookmarks, isDesktop]);
 
   // 插件窗口改动首页网址后，回到主窗口即刷新
   useEffect(() => {
@@ -145,33 +123,37 @@ const Home: React.FC = () => {
   }, [refreshHomeTools]);
 
   return (
-    <div className={`flex flex-col ${isCompact ? 'min-h-full' : 'h-full'}`}>
+    <div className={`flex flex-col ${isCompact ? 'h-full' : 'h-full'}`}>
       <div className="flex flex-col items-center gap-2 mb-2 flex-shrink-0">
         <SearchBar searchTypes={searchTypes} />
-        <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />
+        {/* 小窗模式：隐藏收藏栏，释放垂直空间 */}
+        {!isCompact && (
+          <FavoritesBar favorites={favorites} onReorder={handleFavoritesReorder} />
+        )}
       </div>
 
-      <div className={`home-cols flex gap-2 ${isCompact ? 'items-stretch' : 'flex-1 items-stretch min-h-0'}`}>
-        <div className="flex flex-col gap-1 w-home-card flex-shrink-0">
-          {/* 小窗：隐藏工具卡片容器，仅保留快启动 / 网址收藏夹 */}
-          {!isCompact && <ToolGrid tools={homeTools} onToolClick={navigateToTool} />}
-          {isDesktop && (
-            // 小窗下不再 flex-1 撑满剩余高度：图标区按内容高度紧跟工具卡片排布，避免溢出浮在卡片上
-            <div className={`flex flex-col quicklaunch-group ${isCompact ? '' : 'flex-1 min-h-0'}`}>
-              <QuickLaunchBar
-                apps={homeQuickLaunchApps}
-                onLaunch={handleLaunchApp}
-                onRemove={handleRemoveHomeQuickLaunch}
-                onReorder={handleQuickLaunchReorder}
-              />
-              <HomeBookmarkBar
-                bookmarks={homeBookmarks}
-                onRemove={handleRemoveHomeBookmark}
-                onReorder={handleHomeBookmarkReorder}
-              />
-            </div>
-          )}
-        </div>
+      <div className={`home-cols flex gap-2 ${isCompact ? 'flex-1 min-h-0 items-stretch' : 'flex-1 items-stretch min-h-0'}`}>
+        {/* 小窗模式：左侧栏（工具卡片+快启动+网址收藏夹）不渲染；快启动由 CompactLayout 个人信息区承担 */}
+        {!isCompact && (
+          <div className="flex flex-col gap-1 w-home-card flex-shrink-0">
+            <ToolGrid tools={homeTools} onToolClick={navigateToTool} />
+            {isDesktop && (
+              <div className="flex flex-col quicklaunch-group flex-1 min-h-0">
+                <QuickLaunchBar
+                  apps={homeQuickLaunchApps}
+                  onLaunch={handleLaunchApp}
+                  onRemove={handleRemoveHomeQuickLaunch}
+                  onReorder={handleQuickLaunchReorder}
+                />
+                <HomeBookmarkBar
+                  bookmarks={homeBookmarks}
+                  onRemove={handleRemoveHomeBookmark}
+                  onReorder={handleHomeBookmarkReorder}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex-1 min-w-0 flex flex-col">
           <NewsContainer

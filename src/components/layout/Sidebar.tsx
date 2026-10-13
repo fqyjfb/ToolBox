@@ -18,7 +18,7 @@ import { iconMap } from '../../utils/iconMap';
 import { pluginApi } from '../../services/pluginApi';
 import './Sidebar.css';
 
-const Sidebar: React.FC<{ forceCollapsed?: boolean }> = ({ forceCollapsed = false }) => {
+const Sidebar: React.FC<{ forceCollapsed?: boolean; hideLogo?: boolean }> = ({ forceCollapsed = false, hideLogo = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isDesktop = isElectron();
@@ -124,10 +124,13 @@ const Sidebar: React.FC<{ forceCollapsed?: boolean }> = ({ forceCollapsed = fals
 
   return (
     <aside className={`sidebar-root ${collapsed ? 'collapsed' : 'expanded'}`} style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
-      <div className="sidebar-logo" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties} onClick={() => navigate('/')}>
-        <img src="./favicon.svg" alt="ToolBox" className="w-8 h-8 flex-shrink-0" />
-        {!collapsed && <span className="text-sm font-semibold text-content-primary whitespace-nowrap">ToolBox</span>}
-      </div>
+      {/* 小窗模式：logo 由标题栏下方个人信息区承担，侧栏不再显示 */}
+      {!hideLogo && (
+        <div className="sidebar-logo" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties} onClick={() => navigate('/')}>
+          <img src="./favicon.svg" alt="ToolBox" className="w-8 h-8 flex-shrink-0" />
+          {!collapsed && <span className="text-sm font-semibold text-content-primary whitespace-nowrap">ToolBox</span>}
+        </div>
+      )}
 
       <nav className="sidebar-fixed" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {fixedItems.map((item) => (

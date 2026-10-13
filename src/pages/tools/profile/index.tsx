@@ -220,7 +220,7 @@ const ProfilePage: React.FC = () => {
         }
       `}</style>
 
-      <div className={`flex items-center justify-between px-8 py-5 ${mounted ? 'profile-header' : 'opacity-0'}`}>
+      <div className={`flex items-center justify-between pb-2 ${mounted ? 'profile-header' : 'opacity-0'}`}>
         <div className="flex items-center gap-4">
           <div className="profile-avatar rounded-full flex items-center justify-center overflow-hidden">
             <svg viewBox="0 0 1088 1024" preserveAspectRatio="xMidYMid meet" className="w-9 h-9 relative z-10">
@@ -279,7 +279,7 @@ const ProfilePage: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-8 pb-4">
+      <div className="flex-1 overflow-y-auto scrollbar-hide pb-2">
         <div className="rounded-lg overflow-hidden" style={{ background: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
 
           <div className="profile-section px-6 py-4">

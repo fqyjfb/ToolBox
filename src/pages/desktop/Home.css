@@ -282,99 +282,6 @@
   background-color: var(--color-bg-tertiary);
 }
 
-.quicklaunch-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-inline: 8px;
-  padding-block: 8px;
-  position: relative;
-  justify-content: flex-start;
-  align-items: center;
-  width: 100%;
-}
-
-/* 图标区容器：高度随图标行数自适应，超出上限（5 行）可滚动但不显示滚动条 */
-.quicklaunch-scroll,
-.quicklaunch-group {
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.quicklaunch-scroll::-webkit-scrollbar,
-.quicklaunch-group::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
-}
-
-/* 上下内边距 8px*2 + 5 行图标 36px*5 + 行间距 6px*4 */
-.quicklaunch-scroll {
-  max-height: 220px;
-}
-
-/* 相邻图标区去掉中间多余间距，使两个区域看起来是一个整体 */
-.quicklaunch-group > .quicklaunch-scroll + .quicklaunch-scroll .quicklaunch-bar {
-  padding-block-start: 0;
-}
-
-.quicklaunch-item {
-  cursor: pointer;
-  display: flex;
-  transition: all var(--transition-normal);
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  width: 36px;
-  height: 36px;
-}
-
-/* 图标悬浮提示：渲染到 body 并用固定定位，避免被滚动容器裁剪 */
-.quicklaunch-title {
-  background-color: var(--color-primary);
-  border-radius: 7px;
-  padding-inline: 7px;
-  padding-block: 3px;
-  width: max-content;
-  font-size: small;
-  font-weight: bold;
-  color: var(--color-bg-primary);
-  white-space: nowrap;
-  z-index: 200;
-}
-
-.quicklaunch-tooltip {
-  position: fixed;
-  transform: translate(-50%, -100%);
-  pointer-events: none;
-  animation: quicklaunch-tooltip-in var(--transition-normal) ease-out;
-}
-
-.quicklaunch-tooltip::after {
-  content: "";
-  position: absolute;
-  border-top: 10px solid var(--color-primary);
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  top: 100%;
-  left: 50%;
-  transform: translate(-50%);
-}
-
-@keyframes quicklaunch-tooltip-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, calc(-100% + 6px));
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, -100%);
-  }
-}
-
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(3, var(--tools-grid-item-size));
@@ -430,15 +337,6 @@
    目标：纵向单列流式排布，各区块高度可控；图标区紧贴工具卡片下方，不再撑满/溢出浮在卡片上 */
 .compact-mode .home-cols > div {
   flex: none;
-}
-
-/* 快启动 / 网址收藏夹：各限高两行图标，内部滚动且不显示滚动条 */
-.compact-mode .quicklaunch-group {
-  flex: none;
-}
-
-.compact-mode .quicklaunch-scroll {
-  max-height: 94px;
 }
 
 /* 新闻 / 摸鱼卡片：压缩最小高度，避免单屏被两张卡片占满 */
