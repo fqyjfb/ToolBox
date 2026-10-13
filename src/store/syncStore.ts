@@ -23,8 +23,6 @@ interface SyncStore {
   lastSyncTime: string | null;
   pendingOperationsCount: number;
   conflicts: ConflictItem[];
-  storageUsed: number;
-  storageQuota: number;
   storageLocation: StorageLocation;
   syncOnStartupEnabled: boolean;
   currentSyncTable: string | null;
@@ -45,7 +43,6 @@ interface SyncStore {
   setLastSyncTime: (time: string | null) => void;
   setPendingOperationsCount: (count: number) => void;
   setConflicts: (conflicts: ConflictItem[] | ((prev: ConflictItem[]) => ConflictItem[])) => void;
-  setStorageInfo: (used: number, quota: number) => void;
   setStorageLocation: (location: StorageLocation) => void;
   setSyncOnStartupEnabled: (enabled: boolean) => void;
   setCurrentSyncTable: (tableName: string | null) => void;
@@ -58,7 +55,6 @@ interface SyncStore {
   setShowConflictModal: (show: boolean) => void;
   setTableDataCounts: (counts: TableDataCount[]) => void;
   setTotalDataCount: (count: number) => void;
-  resetSyncState: () => void;
 }
 
 export const useSyncStore = create<SyncStore>((set) => ({
@@ -75,8 +71,6 @@ export const useSyncStore = create<SyncStore>((set) => ({
   lastSyncTime: null,
   pendingOperationsCount: 0,
   conflicts: [],
-  storageUsed: 0,
-  storageQuota: 0,
   storageLocation: 'cloud',
   syncOnStartupEnabled: true,
   currentSyncTable: null,
@@ -103,7 +97,6 @@ export const useSyncStore = create<SyncStore>((set) => ({
   setConflicts: (conflicts) => set((state) => ({
     conflicts: typeof conflicts === 'function' ? conflicts(state.conflicts) : conflicts
   })),
-  setStorageInfo: (used, quota) => set({ storageUsed: used, storageQuota: quota }),
   setStorageLocation: (location) => set({ storageLocation: location }),
   setSyncOnStartupEnabled: (enabled) => set({ syncOnStartupEnabled: enabled }),
   setCurrentSyncTable: (tableName) => set({ currentSyncTable: tableName }),
@@ -122,19 +115,6 @@ export const useSyncStore = create<SyncStore>((set) => ({
   setShowConflictModal: (show) => set({ showConflictModal: show }),
   setTableDataCounts: (counts) => set({ tableDataCounts: counts }),
   setTotalDataCount: (count) => set({ totalDataCount: count }),
-  resetSyncState: () => set({
-    syncEnabled: false,
-    isSyncing: false,
-    syncProgress: 0,
-    lastSyncTime: null,
-    pendingOperationsCount: 0,
-    conflicts: [],
-    currentSyncTable: null,
-    tableSyncStatuses: [],
-    totalSyncedCount: 0,
-    lastSyncSummary: null,
-    showConflictModal: false,
-  }),
 }));
 
 if (typeof window !== 'undefined') {

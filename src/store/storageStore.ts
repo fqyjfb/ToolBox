@@ -22,7 +22,6 @@ interface StorageStore {
   isLoading: boolean;
   stats: StorageStats;
   isStatsLoading: boolean;
-  setStorageInfo: (used: number, quota: number) => void;
   refreshStorageInfo: () => Promise<void>;
   refreshStorageStats: (userId: string) => Promise<void>;
 }
@@ -46,8 +45,6 @@ export const useStorageStore = create<StorageStore>((set) => ({
     total: 0,
   },
   isStatsLoading: false,
-
-  setStorageInfo: (used, quota) => set({ storageUsed: used, storageQuota: quota }),
 
   refreshStorageInfo: async () => {
     set({ isLoading: true });

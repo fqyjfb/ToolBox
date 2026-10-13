@@ -4,7 +4,9 @@ import { Bell, Settings, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useThemeStore } from '../../store/themeStore';
 import { useSidebarStore } from '../../store/sidebarStore';
-import { useTodoNotification } from '../../contexts/TodoNotificationContext';
+import { useQuery } from '@tanstack/react-query';
+import { useAuthStore } from '../../store/AuthStore';
+import { todoPendingCountQuery } from '../../services/todoQueries';
 import { isElectron } from '../../utils/environment';
 import Breadcrumb from '../ui/Breadcrumb';
 import Tooltip from '../ui/Tooltip';
@@ -27,7 +29,9 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
   // 订阅 themeKey，确保自定义主题保存后 Content 强制重渲染，面包屑/头部按钮颜色同步更新
   useThemeStore((s) => s.themeKey);
   const { isCollapsed, toggleSidebar } = useSidebarStore(useShallow((s) => ({ isCollapsed: s.isCollapsed, toggleSidebar: s.toggleSidebar })));
-  const { pendingCount } = useTodoNotification();
+  // 待办徽标：与写操作共享 queryKeys.todo.all，待办页增删后 invalidate 即可刷新
+  const userId = useAuthStore((s) => s.user?.id ?? '');
+  const { data: pendingCount = 0 } = useQuery(todoPendingCountQuery(userId));
 
   return (
     <div className={`flex-1 flex flex-col text-content-primary ${className}`} style={{ overflowX: 'hidden' }}>

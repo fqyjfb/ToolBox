@@ -37,6 +37,8 @@ const CompactUserInfo: React.FC = () => {
   const admin = useAuthStore((s) => s.admin);
   const navigate = useNavigate();
   const location = useLocation();
+  // 小窗个人信息区：仅头像 / 姓名 / 邮箱三处可跳转，等级与管理员徽章不参与跳转
+  const goProfile = () => navigate('/tools/profile');
   const { apps, launchApp, removeApp, reorderApps } = useHomeQuickLaunch();
   const showSearch = isSearchRoute(location.pathname);
 
@@ -54,8 +56,8 @@ const CompactUserInfo: React.FC = () => {
       {(user || showSearch) && (
         <div className="flex items-center gap-2">
           {user && currentLevel && (
-            <div className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" onClick={() => navigate('/tools/profile')}>
-      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border border-content-light bg-bg-primary flex-shrink-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border border-content-light bg-bg-primary flex-shrink-0 cursor-pointer" onClick={goProfile}>
         <svg viewBox="0 0 1088 1024" preserveAspectRatio="xMidYMid meet" className="w-6 h-6">
           <path d="M972.298912 790.448083c-31.060997 45.726663-76.791953 32.988092-76.791952 32.988093 9.171943 27.429989-5.07311 65.113498-5.07311 65.113498-31.400063 62.950345-26.97504 101.711139-26.975041 101.711139-43.91116-21.906222-50.108766-110.930293-36.005348-139.205801s-16.193608-48.452065-16.193608-48.452065l23.66593-74.19531s42.675072 70.027806 105.136132 16.708644c52.332007-44.662255 108.260687-26.42996 108.260687-26.42996s-30.829231 5.223329-76.02369 71.761762z" fill="#B1CFE0"/>
           <path d="M856.158166 762.872167c55.327804 67.735893 94.57359 12.64844 94.57359 12.64844 33.430165-50.50792 97.582262-56.834285 97.582262-56.834286-18.103535 6.05168-40.889612 23.095098-73.409879 73.598726-21.361142 33.176939-81.33715 38.09983-81.33715 38.099831s26.75615 6.425081-3.137431 58.164796c-29.902165 51.735423-26.979332 101.711139-26.979333 101.711139-35.855129-17.888937-58.490986-89.058407-40.456122-125.213974s-40.314487-85.337268-40.314488-85.337268c48.383394-0.639504 73.478551-16.837404 73.478551-16.837404z" fill="#88ADC2"/>
@@ -84,7 +86,7 @@ const CompactUserInfo: React.FC = () => {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-semibold text-content-primary truncate">{user.name || '未设置'}</span>
+          <span className="text-sm font-semibold text-content-primary truncate cursor-pointer" onClick={goProfile}>{user.name || '未设置'}</span>
           <span className="text-[10px] px-1 py-0.5 rounded font-medium" style={{ backgroundColor: currentLevel.color, color: 'var(--color-bg-primary)' }}>{currentLevel.label}</span>
           {admin && (
             <span className="text-[10px] px-1 py-0.5 rounded font-medium" style={{ backgroundColor: 'var(--color-success)', color: 'var(--color-bg-primary)' }}>
@@ -92,7 +94,7 @@ const CompactUserInfo: React.FC = () => {
             </span>
           )}
         </div>
-        <p className="text-xs text-content-secondary truncate">{user.username}</p>
+        <p className="text-xs text-content-secondary truncate cursor-pointer" onClick={goProfile}>{user.email || user.username}</p>
       </div>
             </div>
           )}

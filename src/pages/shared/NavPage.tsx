@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Star, StarOff, ChevronDown, Search } from 'lucide-react'
 import CachedIcon from '../../components/ui/CachedIcon'
 import { websiteService } from '../../services/WebsiteService'
-import { websiteBookmarksQuery, websiteCategoriesQuery } from '../../services/websiteQueries'
+import { websiteBookmarksQuery, websiteCategoriesQuery, websiteFavoritesQuery } from '../../services/websiteQueries'
+import { queryKeys } from '../../queries/keys'
 import { useNavSearch } from '../../contexts/NavSearchContext'
 import { openUrl } from '../../services/browserService'
 import { useNavStore } from '../../store/navStore'
@@ -24,17 +25,13 @@ const NavPage: React.FC = () => {
     activeMainCategoryId,
     activeSubCategoryIds,
     favoritesView,
-    favorites,
-    favoritesLoaded,
     setActiveMainCategory,
     setActiveSubCategory,
     setFavoritesView,
-    setFavorites,
-    resetFavorites,
-    applyFavorite
   } = useNavStore()
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const queryClient = useQueryClient()
   // 订阅 themeKey，确保自定义主题保存后 NavPage 强制重渲染，CSS 变量同步生效
   useThemeStore((s) => s.themeKey);
 
@@ -62,6 +59,13 @@ const NavPage: React.FC = () => {
   // 使用 React Query 获取书签数据
   const { data: bookmarksData, isError: bookmarksError, isLoading: isBookmarksLoading } = useQuery(websiteBookmarksQuery)
 
+  // 收藏：与首页收藏栏共用同一份缓存（websiteFavoritesQuery），
+  // 任一侧收藏/取消收藏后两侧同时生效，不再各拉各的。
+  const { data: favorites = [], isPending: isFavoritesPending } = useQuery({
+    ...websiteFavoritesQuery,
+    enabled: isAuthenticated,
+  })
+
   // 构建分类树
   const categoriesTree = useMemo(() => {
     if (!categories || categories.length === 0) return []
@@ -81,23 +85,6 @@ const NavPage: React.FC = () => {
     setActiveMainCategory(categoriesTree[0].id)
     setActiveSubCategory(categoriesTree[0].id, 'all')
   }, [categoriesTree, activeMainCategoryId, setActiveMainCategory, setActiveSubCategory])
-
-  // 收藏只在会话内加载一次，切走再切回不重复请求；登出后清空，避免残留上个账号的收藏
-  useEffect(() => {
-    if (!isAuthenticated) {
-      if (favoritesLoaded) resetFavorites()
-      return
-    }
-    if (favoritesLoaded) return
-    let alive = true
-    websiteService.getFavorites().then((list) => {
-      if (alive) setFavorites(list)
-    }).catch(() => {
-      // 失败也要落定，否则收藏视图会一直停在未就绪的空白态
-      if (alive) setFavorites([])
-    })
-    return () => { alive = false }
-  }, [isAuthenticated, favoritesLoaded, setFavorites, resetFavorites])
 
   // 处理查询错误
   useEffect(() => {
@@ -313,20 +300,33 @@ const NavPage: React.FC = () => {
     }
   }
 
-  // 处理收藏状态变更
+  // 处理收藏状态变更：乐观更新收藏缓存，失败回滚
   const handleFavoriteChange = async (bookmarkId: string, isFavorite: boolean) => {
     const target = (bookmarksData ?? []).find(b => b.id === bookmarkId)
-    const apply = (on: boolean) => applyFavorite(bookmarkId, target, on)
+    const favoritesKey = queryKeys.website.favorites()
+    const previous = queryClient.getQueryData<Bookmark[]>(favoritesKey)
+
+    const apply = (on: boolean) => {
+      queryClient.setQueryData<Bookmark[]>(favoritesKey, (curr) => {
+        const list = curr ?? []
+        if (!on) return list.filter(f => f.id !== bookmarkId)
+        // 目标不在书签列表里、或已在收藏中时保持不变
+        if (!target || list.some(f => f.id === bookmarkId)) return list
+        // 必须显式置为 true：收藏视图直接渲染这份数据，而 target 取自公开书签，
+        // 其 is_favorite 是 false（是否收藏是 per-user 的）。服务端 getFavorites()
+        // 返回的每一项同样带 is_favorite: true，本地乐观更新需保持一致，
+        // 否则新收藏的卡片在收藏视图里星标仍是未选中态。
+        return [...list, { ...target, is_favorite: true }]
+      })
+    }
 
     apply(isFavorite)
     const ok = await (isFavorite
       ? websiteService.addFavorite(bookmarkId)
       : websiteService.removeFavorite(bookmarkId)
     ).catch(() => false)
-    if (!ok) apply(!isFavorite)
+    if (!ok) queryClient.setQueryData(favoritesKey, previous ?? [])
   }
-
-
 
   // 导航到书签
   const navigateToBookmark = (url: string) => {
@@ -657,7 +657,7 @@ const NavPage: React.FC = () => {
               {/* 我的收藏内容 */}
               {favoritesView && (
                 <div>
-                  {isAuthenticated && !favoritesLoaded ? null : favorites.length > 0 ? (
+                  {isAuthenticated && isFavoritesPending ? null : favorites.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3">
                       {favorites.map((bookmark) => renderBookmarkCard(bookmark))}
                     </div>

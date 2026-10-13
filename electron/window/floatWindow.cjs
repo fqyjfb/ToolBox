@@ -181,6 +181,14 @@ const buildAppearanceMenu = (settings) => {
   }];
 };
 
+// 唤出主窗口：停靠折叠态先展开，再显示并取焦点；可选跳转到指定路由
+const showMainAndNavigate = (route) => {
+  const mainWindow = require('./mainWindow.cjs').getMainWindow();
+  if (!mainWindow) return;
+  require('./mainWindow.cjs').showMainWindow();
+  if (route) mainWindow.webContents.send('navigate-to', route);
+};
+
 let floatIpcHandlersRegistered = false;
 
 const registerFloatIpcHandlers = () => {
@@ -203,8 +211,6 @@ const registerFloatIpcHandlers = () => {
       return true;
     };
     
-    const mainWindow = require('./mainWindow.cjs').getMainWindow();
-    
     if (action.startsWith('open-app:')) {
       const appPath = action.replace('open-app:', '');
       require('electron').shell.openPath(appPath).catch(err => {});
@@ -221,13 +227,13 @@ const registerFloatIpcHandlers = () => {
     }
     
     const actions = {
-      home: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/'); } },
-      tools: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/tools'); } },
-      quick: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/launch'); } },
-      bookmark: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/nav'); } },
-      todo: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/tools/todo'); } },
-      news: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/news'); } },
-      settings: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('navigate-to', '/settings'); } },
+      home: () => showMainAndNavigate('/'),
+      tools: () => showMainAndNavigate('/tools'),
+      quick: () => showMainAndNavigate('/launch'),
+      bookmark: () => showMainAndNavigate('/nav'),
+      todo: () => showMainAndNavigate('/tools/todo'),
+      news: () => showMainAndNavigate('/news'),
+      settings: () => showMainAndNavigate('/settings'),
       'clear-recycle-bin': () => {
         exec('powershell -Command "Clear-RecycleBin -Force; exit 0"', (error) => {
           if (!error) { require('electron').dialog.showMessageBox({ type: 'info', title: '提示', message: '回收站已清空' }); }
@@ -244,16 +250,10 @@ const registerFloatIpcHandlers = () => {
        checkLockAndShow(() => actions[navAction]());
        return;
      }
-     
+    
      if (action.startsWith('nav:')) {
        const navPath = action.replace('nav:', '');
-       checkLockAndShow(() => {
-         if (mainWindow && navPath) {
-           mainWindow.show();
-           mainWindow.focus();
-           mainWindow.webContents.send('navigate-to', navPath);
-         }
-       });
+       checkLockAndShow(() => { if (navPath) showMainAndNavigate(navPath); });
        return;
      }
     if (typeof actions[action] === 'function') {
@@ -288,11 +288,6 @@ const registerFloatIpcHandlers = () => {
     saveSettings(settings);
   });
 
-  ipcMain.on('float-set-ignore-events', (_event, ignore) => {
-    if (!floatWindow) return;
-    floatWindow.setIgnoreMouseEvents(ignore, { forward: ignore });
-  });
-
   ipcMain.on('float-show-context-menu', () => {
     if (!floatWindow) return;
     const settings = loadSettings();
@@ -313,51 +308,19 @@ const registerFloatIpcHandlers = () => {
     const menu = Menu.buildFromTemplate([
       {
         label: '主窗口',
-        click: () => { 
-          checkLockAndShow(() => {
-            const mainWindow = require('./mainWindow.cjs').getMainWindow();
-            if (mainWindow) { mainWindow.show(); mainWindow.focus(); } 
-          });
-        }
+        click: () => checkLockAndShow(() => showMainAndNavigate())
       },
       {
         label: '记事本',
-        click: () => {
-          checkLockAndShow(() => {
-            const mainWindow = require('./mainWindow.cjs').getMainWindow();
-            if (mainWindow) {
-              mainWindow.show();
-              mainWindow.focus();
-              mainWindow.webContents.send('navigate-to', '/tools/notes');
-            }
-          });
-        }
+        click: () => checkLockAndShow(() => showMainAndNavigate('/tools/notes'))
       },
       {
         label: '备忘录',
-        click: () => {
-          checkLockAndShow(() => {
-            const mainWindow = require('./mainWindow.cjs').getMainWindow();
-            if (mainWindow) {
-              mainWindow.show();
-              mainWindow.focus();
-              mainWindow.webContents.send('navigate-to', '/tools/memo');
-            }
-          });
-        }
+        click: () => checkLockAndShow(() => showMainAndNavigate('/tools/memo'))
       },
       {
         label: '定时提醒',
-        click: () => {
-          checkLockAndShow(() => {
-            const mainWindow = require('./mainWindow.cjs').getMainWindow();
-            if (mainWindow) {
-              mainWindow.show();
-              mainWindow.focus();
-              mainWindow.webContents.send('navigate-to', '/tools/reminder');
-            }
-          });
-        }
+        click: () => checkLockAndShow(() => showMainAndNavigate('/tools/reminder'))
       },
       ...buildAppearanceMenu(settings),
       { type: 'separator' },
@@ -377,10 +340,6 @@ const registerFloatIpcHandlers = () => {
       }
     ]);
     menu.popup({ window: floatWindow });
-  });
-
-  ipcMain.on('float-drop-files', (_event, paths) => {
-    paths.forEach(p => { require('electron').shell.openPath(p).catch(err => {}); });
   });
 
   ipcMain.on('float-expanded', (_event, expanded) => {

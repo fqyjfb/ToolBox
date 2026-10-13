@@ -6,6 +6,8 @@ import { logError } from '../services/loggerService'
 import { getDataAccessLayer, clearAllDataAccessInstances } from '../services/dataAccessLayer'
 import { offlineStorage } from '../services/offlineStorage'
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService'
+import { queryClient } from '../services/queryClient'
+import { queryKeys } from '../queries/keys'
 
 interface AuthStateData {
   user: User | null
@@ -135,6 +137,11 @@ export const useAuthStore = create<AuthState>()(
         // 清理所有旧的 StorageContext 实例，确保用户切换时状态完全隔离
         clearAllDataAccessInstances();
 
+        // 丢弃上个账号的私有数据缓存（收藏、待办徽标等），与 logout 成对处理，
+        // 覆盖「未走登出就换号登录」的路径
+        queryClient.removeQueries({ queryKey: queryKeys.website.favorites() });
+        queryClient.removeQueries({ queryKey: queryKeys.todo.all });
+
         const dbUsername = user.name || user.username || user.id;
         await offlineStorage.init(dbUsername);
 
@@ -151,6 +158,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
+        // 用户私有数据的查询缓存（收藏、待办徽标等）queryKey 不含 userId，
+        // 不移除的话下个账号在 gcTime 内会命中上个账号的缓存。
+        // 放在 try 之前：登出接口失败时本地也已置为未登录，同样必须清掉。
+        queryClient.removeQueries({ queryKey: queryKeys.website.favorites() });
+        queryClient.removeQueries({ queryKey: queryKeys.todo.all });
         try {
           await authService.logout();
           offlineStorage.resetInit();

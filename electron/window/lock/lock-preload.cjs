@@ -10,5 +10,4 @@ contextBridge.exposeInMainWorld('lockElectron', {
   // 拖拽相关
   dragStart: () => ipcRenderer.send('lock-drag-start'),
   dragMove: () => ipcRenderer.send('lock-drag-move'),
-  dragEnd: () => ipcRenderer.send('lock-drag-end'),
 });

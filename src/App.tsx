@@ -19,7 +19,6 @@ import { syncManager } from './services/syncManager';
 import { validateEncryptionKey, setEncryptionKey } from './utils/crypto';
 import { reinitSupabase } from './services/supabase';
 import { NavSearchProvider } from './contexts/NavSearchContext';
-import { TodoNotificationProvider } from './contexts/TodoNotificationContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes, RouteConfig } from './config/routes';
 import { QueryProvider } from './providers/QueryProvider';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,7 +27,6 @@ const LogsPage = React.lazy(() => import('./pages/logs/index'));
 const ReminderPopup = React.lazy(() => import('./pages/tools/reminder/ReminderPopup'));
 import { isElectron } from './utils/environment';
 import { usePreloadTools } from './hooks/usePreloadTools';
-import { RecentToolsHandler } from './hooks/useRecentTools';
 import { pluginApi } from './services/pluginApi';
 
 // 路由保护组件
@@ -164,22 +162,6 @@ const TrayNavigationHandler: React.FC = () => {
       window.electron?.onNavigate(() => {});
     };
   }, [navigate]);
-
-  return null;
-};
-
-const PluginLaunchHandler: React.FC = () => {
-  useEffect(() => {
-    const handleLaunchPlugin = (pluginId: string) => {
-      pluginApi.openPluginWindow(pluginId);
-    };
-
-    window.electron?.onLaunchPlugin?.(handleLaunchPlugin);
-
-    return () => {
-      window.electron?.onLaunchPlugin?.(() => {});
-    };
-  }, []);
 
   return null;
 };
@@ -430,13 +412,10 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <TodoNotificationProvider>
-        <NavSearchProvider>
+      <NavSearchProvider>
           <QueryProvider>
             <Router>
-              {isDesktopApp && !isStandaloneWindow() && <TrayNavigationHandler>{/* Tray navigation handler */}</TrayNavigationHandler>}
-              {isDesktopApp && !isStandaloneWindow() && <PluginLaunchHandler />}
-              <RecentToolsHandler />
+              {isDesktopApp && !isStandaloneWindow() && <TrayNavigationHandler />}
               <Routes>
                 <Route
                   path="/*"
@@ -446,12 +425,6 @@ function App() {
                         <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
                           <Routes>
                             <Route path="/logs" element={<LogsPage />} />
-                          </Routes>
-                        </Suspense>
-                      ) : isStandaloneReminderPopup() ? (
-                        <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
-                          <Routes>
-                            <Route path="/reminder-popup" element={<ReminderPopup />} />
                           </Routes>
                         </Suspense>
                       ) : (
@@ -466,7 +439,6 @@ function App() {
             </Router>
           </QueryProvider>
         </NavSearchProvider>
-      </TodoNotificationProvider>
     </ErrorBoundary>
   );
 }

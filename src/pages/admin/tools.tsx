@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Edit, Trash2, X, Check, ExternalLink } from 'lucide-react'
 import toolService, { Tool, ToolCategory } from '../../services/ToolService'
+import { queryKeys } from '../../queries/keys'
 import { useToastStore } from '../../store/toastStore'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import Pagination from '../../components/ui/Pagination'
@@ -136,7 +137,7 @@ const ToolsPage: React.FC = () => {
   useThemeStore((s) => s.themeKey);
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['toolCategories'],
+    queryKey: queryKeys.tool.categories(),
     queryFn: () => toolService.getCategories(),
   })
 
@@ -152,7 +153,7 @@ const ToolsPage: React.FC = () => {
   }
 
   const { data: toolsData, isLoading: toolsLoading } = useQuery({
-    queryKey: ['tools', filterCategory, searchTerm, currentPage, pageSize],
+    queryKey: [...queryKeys.tool.list(), filterCategory, searchTerm, currentPage, pageSize],
     queryFn: () => toolService.getTools(filterCategory, searchTerm, currentPage, pageSize),
   })
 
@@ -164,7 +165,7 @@ const ToolsPage: React.FC = () => {
     mutationFn: (toolData: Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'category_name'>) => 
       toolService.addTool(toolData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tools'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tool.list() })
       addToast({ message: '添加成功', type: 'success' })
     },
     onError: () => {
@@ -176,7 +177,7 @@ const ToolsPage: React.FC = () => {
     mutationFn: ({ id, toolData }: { id: string; toolData: Partial<Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'category_name'>> }) =>
       toolService.updateTool(id, toolData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tools'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tool.list() })
       addToast({ message: '更新成功', type: 'success' })
     },
     onError: () => {
@@ -187,7 +188,7 @@ const ToolsPage: React.FC = () => {
   const deleteToolMutation = useMutation({
     mutationFn: (id: string) => toolService.deleteTool(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tools'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tool.list() })
       addToast({ message: '删除成功', type: 'success' })
     },
     onError: () => {
@@ -199,7 +200,7 @@ const ToolsPage: React.FC = () => {
     mutationFn: ({ name, parentId }: { name: string; parentId: string | null }) =>
       toolService.addCategory(name, parentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['toolCategories'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tool.categories() })
       addToast({ message: '添加成功', type: 'success' })
     },
   })
@@ -208,7 +209,7 @@ const ToolsPage: React.FC = () => {
     mutationFn: ({ categoryId, name }: { categoryId: string; name: string }) =>
       toolService.updateCategory(categoryId, name),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['toolCategories'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tool.categories() })
       addToast({ message: '更新成功', type: 'success' })
     },
   })
@@ -216,7 +217,7 @@ const ToolsPage: React.FC = () => {
   const deleteCategoryMutation = useMutation({
     mutationFn: (categoryId: string) => toolService.deleteCategory(categoryId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['toolCategories'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tool.categories() })
       addToast({ message: '删除成功', type: 'success' })
     },
   })

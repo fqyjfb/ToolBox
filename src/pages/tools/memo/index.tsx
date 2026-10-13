@@ -25,6 +25,7 @@ import { useIsCompactMode } from '../../../store/windowModeStore';
 import { useOverflowItems } from '../../../hooks/useOverflowItems';
 import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
@@ -203,18 +204,6 @@ const MemoPage: React.FC = () => {
     x: 0,
     y: 0,
     type: 'empty'
-  });
-
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: () => {}
   });
 
   const loadCategories = useCallbackRef(async () => {
@@ -526,19 +515,7 @@ const MemoPage: React.FC = () => {
     setContextMenu(prev => ({ ...prev, isOpen: false }));
   }, []);
 
-  const handleOpenConfirmDialog = useCallback((title: string, message: string, onConfirm: () => void) => {
-    setConfirmDialog({
-      isOpen: true,
-      title,
-      message,
-      onConfirm
-    });
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  const handleCloseConfirmDialog = useCallback(() => {
-    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-  }, []);
+  const { confirmDialog, handleOpenConfirmDialog, handleCloseConfirmDialog } = useConfirmDialog(handleCloseContextMenu);
 
   const getContextMenuItems = useCallback((): ContextMenuItem[] => {
     if (contextMenu.type === 'memo' && contextMenu.targetId) {

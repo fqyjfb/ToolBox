@@ -1,99 +1,78 @@
 import { create } from 'zustand';
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
-import { DISPLAY_LIMITS } from '../constants/timers';
 
-function loadState() {
-  try {
-    const raw = localStorageService.getString(STORAGE_KEYS.SIDEBAR);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        pinnedToolIds: parsed.pinnedToolIds || [],
-        recentToolIds: parsed.recentToolIds || [],
-        isCollapsed: parsed.isCollapsed ?? true,
-      };
-    }
-  } catch { /* ignore */ }
-  return {};
+type PersistedState = {
+  pinnedToolIds: string[];
+  isCollapsed: boolean;
+};
+
+const DEFAULTS: PersistedState = {
+  pinnedToolIds: [],
+  isCollapsed: true,
+};
+
+// 清洗 localStorage 数据：字段类型不对就回落默认值（兼容旧值与手写脏数据）。
+// 读写一律走 localStorageService 的泛型 get/set —— 它已封装序列化与异常，
+// 不再手写 JSON.parse / JSON.stringify + try-catch。
+function coerce(raw: unknown): PersistedState {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULTS };
+  const parsed = raw as Record<string, unknown>;
+  return {
+    pinnedToolIds: Array.isArray(parsed.pinnedToolIds) ? (parsed.pinnedToolIds as string[]) : DEFAULTS.pinnedToolIds,
+    isCollapsed: typeof parsed.isCollapsed === 'boolean' ? parsed.isCollapsed : DEFAULTS.isCollapsed,
+  };
 }
 
-function saveState(state: Partial<SidebarStore>) {
-  localStorageService.setString(STORAGE_KEYS.SIDEBAR, JSON.stringify({
-    pinnedToolIds: state.pinnedToolIds,
-    recentToolIds: state.recentToolIds,
-    isCollapsed: state.isCollapsed,
-  }));
+function persist(next: PersistedState): void {
+  localStorageService.set<PersistedState>(STORAGE_KEYS.SIDEBAR, next);
 }
 
-const initial = loadState();
+const initial = coerce(localStorageService.get<unknown>(STORAGE_KEYS.SIDEBAR, null));
 
 interface SidebarStore {
   isCollapsed: boolean;
   isVisible: boolean;
   position: 'left' | 'right';
   pinnedToolIds: string[];
-  recentToolIds: string[];
 
   toggleSidebar: () => void;
-  setCollapsed: (collapsed: boolean) => void;
   setVisible: (visible: boolean) => void;
   setPosition: (position: 'left' | 'right') => void;
 
   addPinnedTool: (toolId: string) => void;
   removePinnedTool: (toolId: string) => void;
   reorderPinnedTools: (ids: string[]) => void;
-
-  addRecentTool: (toolId: string) => void;
-  clearRecentTools: () => void;
 }
 
 export const useSidebarStore = create<SidebarStore>((set) => ({
-  isCollapsed: initial.isCollapsed ?? true,
+  isCollapsed: initial.isCollapsed,
   isVisible: true,
   position: 'left',
-  pinnedToolIds: initial.pinnedToolIds || [],
-  recentToolIds: initial.recentToolIds || [],
+  pinnedToolIds: initial.pinnedToolIds,
 
   toggleSidebar: () => set((state) => {
-    const next = { isCollapsed: !state.isCollapsed };
-    saveState({ ...state, ...next });
-    return next;
-  }),
-
-  setCollapsed: (collapsed) => set((state) => {
-    saveState({ ...state, isCollapsed: collapsed });
-    return { isCollapsed: collapsed };
+    const isCollapsed = !state.isCollapsed;
+    persist({ pinnedToolIds: state.pinnedToolIds, isCollapsed });
+    return { isCollapsed };
   }),
 
   setVisible: (visible) => set({ isVisible: visible }),
   setPosition: (position) => set({ position }),
 
   addPinnedTool: (toolId) => set((state) => {
-    const next = { pinnedToolIds: [...new Set([...state.pinnedToolIds, toolId])] };
-    saveState({ ...state, ...next });
-    return next;
+    const pinnedToolIds = [...new Set([...state.pinnedToolIds, toolId])];
+    persist({ pinnedToolIds, isCollapsed: state.isCollapsed });
+    return { pinnedToolIds };
   }),
 
   removePinnedTool: (toolId) => set((state) => {
-    const next = { pinnedToolIds: state.pinnedToolIds.filter((id) => id !== toolId) };
-    saveState({ ...state, ...next });
-    return next;
+    const pinnedToolIds = state.pinnedToolIds.filter((id) => id !== toolId);
+    persist({ pinnedToolIds, isCollapsed: state.isCollapsed });
+    return { pinnedToolIds };
   }),
 
   reorderPinnedTools: (ids) => set((state) => {
-    saveState({ ...state, pinnedToolIds: ids });
+    persist({ pinnedToolIds: ids, isCollapsed: state.isCollapsed });
     return { pinnedToolIds: ids };
-  }),
-
-  addRecentTool: (toolId) => set((state) => {
-    const filtered = state.recentToolIds.filter((id) => id !== toolId);
-    const next = { recentToolIds: [toolId, ...filtered].slice(0, DISPLAY_LIMITS.RECENT_TOOLS) };
-    saveState({ ...state, ...next });
-    return next;
-  }),
-
-  clearRecentTools: () => set((state) => {
-    saveState({ ...state, recentToolIds: [] });
-    return { recentToolIds: [] };
   }),
 }));

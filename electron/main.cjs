@@ -49,6 +49,7 @@ process.on('unhandledRejection', (reason) => {
 const { app, protocol } = require('electron');
 const fs = require('node:fs');
 const { Readable } = require('node:stream');
+const path = require('node:path');
 const { getMimeType } = require('./services/fileTypeUtils.cjs');
 const { stopPythonService } = require('./services/pythonProcessService.cjs');
 const { registerOcrIpc } = require('./ipc/ocrIpc.cjs');
@@ -110,9 +111,28 @@ app.commandLine.appendSwitch('js-flags', '--expose-gc');
  *   - 视频一律由渲染层直接用 `file:///` 地址播放（见 NotesEditor 的 videoFileUrl），
  *     Chromium 对 file:// 走原生文件管线：自有有界缓冲 + 原生 seek，不经过本协议。
  */
+// local-media 仅允许访问「图标缓存目录」与「笔记根目录」文件，杜绝路径穿越
+function resolveLocalMediaRoots() {
+  const roots = [path.join(app.getPath('userData'), 'icon-cache')];
+  try {
+    const s = loadSettings() || {};
+    const vp = s.notesViewPath || s.notes_view_path;
+    if (vp) roots.push(path.resolve(vp));
+  } catch { /* ignore */ }
+  return roots;
+}
+function isLocalMediaAllowed(p) {
+  const resolved = path.resolve(p);
+  return resolveLocalMediaRoots().some(r => resolved === r || resolved.startsWith(r + path.sep));
+}
+
 async function handleLocalMediaRequest(request) {
   const url = new URL(request.url);
   const filePath = decodeURIComponent(url.pathname.slice(1));
+
+  if (!isLocalMediaAllowed(filePath)) {
+    return new Response('Forbidden', { status: 403 });
+  }
 
   try {
     const stat = await fs.promises.stat(filePath);

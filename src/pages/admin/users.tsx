@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Edit, Lock, Search, ArrowUpDown, X, RefreshCw } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { userService } from '../../services/UserService'
+import { queryKeys } from '../../queries/keys'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import Pagination from '../../components/ui/Pagination'
 import { useToastStore } from '../../store/toastStore'
@@ -56,7 +57,7 @@ const UserListPage: React.FC = () => {
   const { contextMenu, handleContextMenu, handleClose, handleItemClick } = useContextMenu<UserItem>()
   
   const { data, isLoading, error } = useQuery({
-    queryKey: ['admin-users', currentPage, pageSize, searchQuery, sortBy, sortOrder, memberLevelFilter, statusFilter],
+    queryKey: [...queryKeys.admin.users(), currentPage, pageSize, searchQuery, sortBy, sortOrder, memberLevelFilter, statusFilter],
     queryFn: () => userService.getUserList(
       currentPage,
       pageSize,
@@ -74,7 +75,7 @@ const UserListPage: React.FC = () => {
       userService.updateUser(id, userData),
     onSuccess: (result) => {
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.admin.users() })
         addToast({ type: 'success', message: result.message })
         setIsEditModalOpen(false)
       } else {

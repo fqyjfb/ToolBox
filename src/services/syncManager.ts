@@ -20,6 +20,16 @@ import {
 // 有效同步模块键列表（需与 MODULE_TABLE_MAP 保持一致，否则对应模块配置会被 filterValidModules 丢弃）
 const VALID_MODULE_KEYS: readonly SyncModuleKey[] = ['account', 'todo', 'quickReply', 'clipboard', 'memo', 'reminder'];
 
+// 默认同步模块（含 reminder，需与 VALID_MODULE_KEYS 保持一致）
+const DEFAULT_SYNC_MODULES: SyncModule[] = [
+  { key: 'account', name: '账号管理', enabled: true },
+  { key: 'todo', name: '待办事项', enabled: true },
+  { key: 'quickReply', name: '快捷回复', enabled: true },
+  { key: 'clipboard', name: '云剪贴板', enabled: false },
+  { key: 'memo', name: '备忘录', enabled: true },
+  { key: 'reminder', name: '定时提醒', enabled: true },
+];
+
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
@@ -67,25 +77,13 @@ export const syncManager = {
           lastSyncTime: '1970-01-01T00:00:00Z',
           syncEnabled: false,
           storageLocation: 'cloud',
-          syncModules: [
-            { key: 'account', name: '账号管理', enabled: true },
-            { key: 'todo', name: '待办事项', enabled: true },
-            { key: 'quickReply', name: '快捷回复', enabled: true },
-            { key: 'clipboard', name: '云剪贴板', enabled: false },
-            { key: 'memo', name: '备忘录', enabled: true },
-          ]
+          syncModules: DEFAULT_SYNC_MODULES,
         };
         await offlineStorage.put('sync_metadata', metadata);
         return metadata;
       }
 
-      const defaultModules: SyncModule[] = [
-        { key: 'account', name: '账号管理', enabled: true },
-        { key: 'todo', name: '待办事项', enabled: true },
-        { key: 'quickReply', name: '快捷回复', enabled: true },
-        { key: 'clipboard', name: '云剪贴板', enabled: false },
-        { key: 'memo', name: '备忘录', enabled: true },
-      ];
+      const defaultModules: SyncModule[] = DEFAULT_SYNC_MODULES;
 
       const existingKeys = new Set(metadata.syncModules?.map(m => m.key) || []);
       const missingModules = defaultModules.filter(m => !existingKeys.has(m.key));
@@ -113,13 +111,7 @@ export const syncManager = {
       lastSyncTime: '1970-01-01T00:00:00Z',
       syncEnabled: false,
       storageLocation: 'cloud' as StorageLocation,
-      syncModules: [
-        { key: 'account', name: '账号管理', enabled: true },
-        { key: 'todo', name: '待办事项', enabled: true },
-        { key: 'quickReply', name: '快捷回复', enabled: true },
-        { key: 'clipboard', name: '云剪贴板', enabled: false },
-        { key: 'memo', name: '备忘录', enabled: true },
-      ]
+      syncModules: DEFAULT_SYNC_MODULES,
     };
 
     const oldLocation = metadata.storageLocation || 'cloud';
@@ -237,13 +229,7 @@ export const syncManager = {
       lastSyncTime: '1970-01-01T00:00:00Z',
       syncEnabled: false,
       storageLocation: 'cloud' as StorageLocation,
-      syncModules: [
-        { key: 'account', name: '账号管理', enabled: true },
-        { key: 'todo', name: '待办事项', enabled: true },
-        { key: 'quickReply', name: '快捷回复', enabled: true },
-        { key: 'clipboard', name: '云剪贴板', enabled: false },
-        { key: 'memo', name: '备忘录', enabled: true },
-      ]
+      syncModules: DEFAULT_SYNC_MODULES,
     };
 
     metadata.syncEnabled = enabled;
@@ -258,13 +244,7 @@ export const syncManager = {
       lastSyncTime: '1970-01-01T00:00:00Z',
       syncEnabled: false,
       storageLocation: 'cloud' as StorageLocation,
-      syncModules: [
-        { key: 'account', name: '账号管理', enabled: true },
-        { key: 'todo', name: '待办事项', enabled: true },
-        { key: 'quickReply', name: '快捷回复', enabled: true },
-        { key: 'clipboard', name: '云剪贴板', enabled: false },
-        { key: 'memo', name: '备忘录', enabled: true },
-      ]
+      syncModules: DEFAULT_SYNC_MODULES,
     };
 
     metadata.syncModules = filterValidModules(metadata.syncModules)
@@ -682,13 +662,7 @@ export const syncManager = {
       lastSyncTime: '1970-01-01T00:00:00Z',
       syncEnabled: false,
       storageLocation: 'cloud' as StorageLocation,
-      syncModules: [
-        { key: 'account', name: '账号管理', enabled: true },
-        { key: 'todo', name: '待办事项', enabled: true },
-        { key: 'quickReply', name: '快捷回复', enabled: true },
-        { key: 'clipboard', name: '云剪贴板', enabled: false },
-        { key: 'memo', name: '备忘录', enabled: true },
-      ]
+      syncModules: DEFAULT_SYNC_MODULES,
     };
 
     metadata.syncOnStartupEnabled = enabled;

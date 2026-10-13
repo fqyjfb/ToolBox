@@ -12,7 +12,6 @@ let downloadProgressCallback = null;
 let settingChangedCallback = null;
 let openAddTodoCallback = null;
 let openAddMemoCallback = null;
-let launchPluginCallback = null;
 let openAddReminderCallback = null;
 let showReminderCallback = null;
 let pendingReminder = null;
@@ -42,12 +41,6 @@ ipcRenderer.on('open-add-reminder', () => {
   }
 });
 
-ipcRenderer.on('open-add-reminder-with-data', (event, data) => {
-  if (openAddReminderCallback) {
-    openAddReminderCallback(data);
-  }
-});
-
 // 主进程 second-instance 收到 --reminder <id> 后，从数据库读取并下发到渲染进程弹窗
 ipcRenderer.on('show-reminder', (event, reminder) => {
   if (showReminderCallback) {
@@ -66,12 +59,6 @@ ipcRenderer.on('update-download-progress', (event, progress) => {
 ipcRenderer.on('setting-changed', (event, setting) => {
   if (settingChangedCallback) {
     settingChangedCallback(setting);
-  }
-});
-
-ipcRenderer.on('launch-plugin', (event, pluginId) => {
-  if (launchPluginCallback) {
-    launchPluginCallback(pluginId);
   }
 });
 
@@ -275,7 +262,7 @@ contextBridge.exposeInMainWorld('electron', {
   },
   sqlite: {
     invoke: (channel, payload) => {
-      if (typeof channel !== 'string' || !/^sqlite:[A-Za-z]+$/.test(channel)) {
+      if (typeof channel !== 'string' || !/^sqlite:[A-Za-z:]+$/.test(channel)) {
         return Promise.reject(new Error('不支持的 sqlite 通道'));
       }
       return ipcRenderer.invoke(channel, payload);
@@ -403,9 +390,6 @@ contextBridge.exposeInMainWorld('electron', {
       pendingReminder = null;
       callback(data);
     }
-  },
-  onLaunchPlugin: (callback) => {
-    launchPluginCallback = callback;
   },
   ipcRenderer: {
     invoke: (channel, ...args) => {

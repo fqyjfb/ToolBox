@@ -137,7 +137,7 @@ let lastActivityTime = Date.now();
 let isQuitting = false;
 
 // 小窗（compact）尺寸约束，单位 DIP
-const COMPACT_WINDOW_SIZE = { width: 320, height: 680 };
+const COMPACT_WINDOW_SIZE = { width: 320, height: 725 };
 const COMPACT_MIN_SIZE = { width: 280, height: 480 };
 // 上限 480 必须恒小于 Tailwind md 断点 768：保证小窗内页面永远命中移动端样式分支
 const COMPACT_MAX_WIDTH = 480;
@@ -434,12 +434,12 @@ const resetAutoLockTimer = () => {
 // 停靠后混合事件驱动：展开态由渲染层光标跨界事件（IPC 转发）驱动折叠/展开，零轮询；
 // 隐藏态由主进程低频轮询光标，进入感应区停留后展开；折叠/展开为主进程逐帧插值动画。
 // 用户再次拖动窗口或关闭设置即退出停靠。
-const EDGE_HIDE_MARGIN = 8;          // 隐藏时窗口移出屏幕边缘的余量（DIP）：窗口完全滑出，覆盖 DWM 边缘阴影与 DIP→物理像素取整误差，确保边缘无任何可见残留
-const EDGE_TRIGGER_WIDTH = 24;       // 隐藏时光标触发展开的感应区宽度（DIP，扩宽覆盖其他应用内靠边悬停）
+const EDGE_HIDE_MARGIN = 32;         // 折叠时移出屏幕的余量（DIP）：留出富余覆盖 DWM 在窗口矩形外合成的内容（窗口阴影/圆角补偿）与 DIP→物理像素取整误差，确保屏幕边缘零可见残留
+const EDGE_TRIGGER_WIDTH = 4;        // 隐藏时光标触发展开的感应区宽度（DIP）：距屏幕边 4px 内即触发展开计时
 const EDGE_SNAP_THRESHOLD = 30;      // 吸附判定距离（DIP，按显示缩放比放大）
 const EDGE_HIDE_DELAY_MS = 500;      // 光标离开窗口后收回的延迟
 const EDGE_POLL_INTERVAL_MS = 200;   // 隐藏态光标位置轮询间隔
-const EDGE_TRIGGER_DWELL_MS = 250;   // 感应区停留时长，过滤快速划过
+const EDGE_TRIGGER_DWELL_MS = 50;    // 感应区停留时长，过滤快速划过
 const EDGE_ANIM_DURATION = 220;      // 折叠/展开动画时长，置 0 即瞬时移动
 const EDGE_ANIM_FRAME_MS = 16;       // 动画步进间隔，约 60fps
 
@@ -582,13 +582,17 @@ const hideEdgeWindow = () => {
     edgeTopmost = true;
   }
   const bounds = mainWindow.getBounds();
-  const { workArea } = getDisplayForBounds(bounds);
+  // 展开位按 workArea 对齐（避让任务栏），折叠位必须按整块屏幕外缘收起：
+  // workArea 是扣除任务栏等保留区后的可用区，当停靠边正是任务栏所在边（顶部最常见）时，
+  // 「移出 workArea」仍落在屏幕范围内，而折叠态窗口位于置顶层，会压在任务栏之上，
+  // 在桌面顶部露出窗口本体与阴影构成的暗带。物理屏幕矩形（display.bounds）才是真正的屏幕边界。
+  const screenBounds = getDisplayForBounds(bounds).bounds;
   if (edgeDockedEdge === 'left') {
-    startEdgeAnimation(workArea.x - bounds.width - EDGE_HIDE_MARGIN, bounds.y, easeInCubic, startEdgePoll);
+    startEdgeAnimation(screenBounds.x - bounds.width - EDGE_HIDE_MARGIN, bounds.y, easeInCubic, startEdgePoll);
   } else if (edgeDockedEdge === 'right') {
-    startEdgeAnimation(workArea.x + workArea.width + EDGE_HIDE_MARGIN, bounds.y, easeInCubic, startEdgePoll);
+    startEdgeAnimation(screenBounds.x + screenBounds.width + EDGE_HIDE_MARGIN, bounds.y, easeInCubic, startEdgePoll);
   } else {
-    startEdgeAnimation(bounds.x, workArea.y - bounds.height - EDGE_HIDE_MARGIN, easeInCubic, startEdgePoll);
+    startEdgeAnimation(bounds.x, screenBounds.y - bounds.height - EDGE_HIDE_MARGIN, easeInCubic, startEdgePoll);
   }
 };
 
@@ -625,6 +629,19 @@ const toggleEdgeDockWindow = () => {
   } else {
     hideEdgeWindow();
   }
+};
+
+// 由悬浮球菜单等入口唤出主窗口：停靠折叠态先展开，再显示并取焦点
+const showMainWindow = () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  if (edgeDockedEdge && edgeHidden) {
+    showEdgeWindow();
+    mainWindow.focus();
+    return;
+  }
+  mainWindow.show();
+  mainWindow.focus();
 };
 
 const isWindowEdgeDocked = () => !!edgeDockedEdge;
@@ -1774,6 +1791,7 @@ module.exports = {
   stopAutoLock,
   resetAutoLockTimer,
   getMainWindow: () => mainWindow,
+  showMainWindow: () => showMainWindow(),
   isWindowEdgeDocked: () => isWindowEdgeDocked(),
   toggleEdgeDockWindow: () => toggleEdgeDockWindow(),
   setIsQuitting: (val) => { isQuitting = val; },

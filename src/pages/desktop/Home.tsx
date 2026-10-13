@@ -155,7 +155,8 @@ const Home: React.FC = () => {
           </div>
         )}
 
-        <div className="flex-1 min-w-0 flex flex-col">
+        {/* 小窗模式下通过 CSS order 与新闻区互换位置：摸鱼日报在上 */}
+        <div className="home-col-news flex-1 min-w-0 flex flex-col">
           <NewsContainer
             sixtySecondsLoading={sixtySecondsLoading}
             sixtySecondsError={sixtySecondsError}
@@ -164,7 +165,7 @@ const Home: React.FC = () => {
           />
         </div>
 
-        <div className="w-72 flex-shrink-0">
+        <div className="home-col-moyu w-72 flex-shrink-0">
           <MoyuCard className="h-full" />
         </div>
       </div>

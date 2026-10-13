@@ -24,8 +24,6 @@ const PluginStorePage: React.FC = () => {
     availablePlugins,
     installedPlugins,
     isLoading,
-    searchQuery,
-    setSearchQuery,
     setAvailablePlugins,
     setInstalledPlugins,
     installingPluginId,
@@ -35,8 +33,6 @@ const PluginStorePage: React.FC = () => {
     availablePlugins: s.availablePlugins,
     installedPlugins: s.installedPlugins,
     isLoading: s.isLoading,
-    searchQuery: s.searchQuery,
-    setSearchQuery: s.setSearchQuery,
     setAvailablePlugins: s.setAvailablePlugins,
     setInstalledPlugins: s.setInstalledPlugins,
     installingPluginId: s.installingPluginId,
@@ -46,14 +42,8 @@ const PluginStorePage: React.FC = () => {
 
   const removePinnedTool = useSidebarStore((s) => s.removePinnedTool);
   const addToast = useToastStore((s) => s.addToast);
-  const { searchQuery: globalSearchQuery } = useNavSearch();
-
-  // 同步全局搜索框与本地搜索状态
-  useEffect(() => {
-    if (globalSearchQuery !== searchQuery) {
-      setSearchQuery(globalSearchQuery);
-    }
-  }, [globalSearchQuery]);
+  // 搜索词唯一来源：全局搜索框（NavSearchContext），不再在 pluginStore 存副本
+  const { searchQuery } = useNavSearch();
 
   const [activeTab, setActiveTab] = useState<'explore' | 'installed'>('explore');
   const [selectedCategory, setSelectedCategory] = useState('all');

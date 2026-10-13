@@ -5,6 +5,17 @@ const { getAppIcon } = require('../lib/appIcon.cjs');
 
 let tray = null;
 
+// 唤出主窗口：停靠折叠态先展开，再显示并取焦点；可选跳转到指定路由，并在路由切换后延迟执行回调
+const showMainAndNavigate = (route, afterNavigate) => {
+  const mainWindow = require('./mainWindow.cjs').getMainWindow();
+  if (!mainWindow) return;
+  require('./mainWindow.cjs').showMainWindow();
+  if (route) mainWindow.webContents.send('navigate-to', route);
+  if (typeof afterNavigate === 'function') {
+    setTimeout(() => afterNavigate(mainWindow), 300);
+  }
+};
+
 const createTray = () => {
   if (tray) return;
   
@@ -80,15 +91,7 @@ const refreshTrayMenu = () => {
       label: '新建待办',
       click: () => {
         checkLockAndShow(() => {
-          const mainWindow = require('./mainWindow.cjs').getMainWindow();
-          if (mainWindow) {
-            mainWindow.show();
-            mainWindow.focus();
-            mainWindow.webContents.send('navigate-to', '/tools/todo');
-            setTimeout(() => {
-              mainWindow.webContents.send('open-add-todo');
-            }, 300);
-          }
+          showMainAndNavigate('/tools/todo', (mw) => mw.webContents.send('open-add-todo'));
         });
       },
     },
@@ -96,15 +99,7 @@ const refreshTrayMenu = () => {
       label: '新建备忘',
       click: () => {
         checkLockAndShow(() => {
-          const mainWindow = require('./mainWindow.cjs').getMainWindow();
-          if (mainWindow) {
-            mainWindow.show();
-            mainWindow.focus();
-            mainWindow.webContents.send('navigate-to', '/tools/memo');
-            setTimeout(() => {
-              mainWindow.webContents.send('open-add-memo');
-            }, 300);
-          }
+          showMainAndNavigate('/tools/memo', (mw) => mw.webContents.send('open-add-memo'));
         });
       },
     },
@@ -112,15 +107,7 @@ const refreshTrayMenu = () => {
       label: '新建提醒',
       click: () => {
         checkLockAndShow(() => {
-          const mainWindow = require('./mainWindow.cjs').getMainWindow();
-          if (mainWindow) {
-            mainWindow.show();
-            mainWindow.focus();
-            mainWindow.webContents.send('navigate-to', '/tools/reminder');
-            setTimeout(() => {
-              mainWindow.webContents.send('open-add-reminder');
-            }, 300);
-          }
+          showMainAndNavigate('/tools/reminder', (mw) => mw.webContents.send('open-add-reminder'));
         });
       },
     },
@@ -174,8 +161,7 @@ const refreshTrayMenu = () => {
           label: '设置',
           click: () => {
             checkLockAndShow(() => {
-              const mainWindow = require('./mainWindow.cjs').getMainWindow();
-              if (mainWindow) { mainWindow.show(); mainWindow.webContents.send('navigate-to', '/settings'); }
+              showMainAndNavigate('/settings');
             });
           },
         },

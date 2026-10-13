@@ -219,7 +219,7 @@ declare interface Window {
     edgeSnapCursorLeft: () => void;
     /** 边缘吸附停靠态：光标进入窗口转发（取消折叠/遗忘回收，悬浮提示条即时展开） */
     edgeSnapCursorEnter: () => void;
-    /** 切换窗口模式：'compact' 小窗 320×680 / 'large' 恢复大窗 */
+    /** 切换窗口模式：'compact' 小窗 / 'large' 恢复大窗 */
     setWindowMode: (mode: 'large' | 'compact') => void;
     restart: () => Promise<{ code: number; msg: string }>;
     openExternal: (url: string) => void;
@@ -257,7 +257,7 @@ declare interface Window {
     updateSetting: (setting: { name: string; value: string | number | boolean | object }) => Promise<UpdateResult>;
     setThemeSnapshot: (colors: Record<string, string> | null) => Promise<UpdateResult>;
     clearCache: () => Promise<UpdateResult>;
-    clearIconCache: (type: 'all' | 'expired') => Promise<{ code: number; msg: string }>;
+    clearIconCache: (type: 'all' | 'expired') => Promise<{ success: boolean; error?: string }>;
     resolveIcons: (urls: string[]) => Promise<Record<string, string | null>>;
     networkTest: (payload: { url: string; timeout?: number }) => Promise<{ ok: boolean; statusCode: number; latencyMs: number; error: string | null }>;
     getUserDataPath: () => Promise<string>;
@@ -319,11 +319,6 @@ declare interface Window {
       removeTargetPath: (id: string) => Promise<boolean>;
       copyFiles: (sourcePaths: string[], destPath: string) => Promise<number>;
       deleteItem: (itemPath: string) => Promise<boolean>;
-    };
-    python: {
-      start: () => Promise<{ success: boolean; pid?: number; port?: number; httpPort?: number; error?: string }>;
-      stop: () => Promise<{ success: boolean; error?: string }>;
-      status: () => Promise<PythonServiceStatus>;
     };
     notes: {
       hasRootPath: () => Promise<boolean>;
@@ -465,7 +460,6 @@ declare interface Window {
     onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean | object }) => void) => void;
     onOpenAddTodo: (callback: () => void) => void;
     onOpenAddMemo: (callback: () => void) => void;
-    onLaunchPlugin: (callback: (pluginId: string) => void) => void;
     // 定时提醒：托盘/悬浮球触发新建（data 可选预填数据）；主进程 show-reminder 事件下发弹窗内容
     // data 使用宽松类型避免与 CreateReminderRequest 的字面量联合类型冲突；调用方按需断言
     onOpenAddReminder: (callback: (data?: unknown) => void) => void;

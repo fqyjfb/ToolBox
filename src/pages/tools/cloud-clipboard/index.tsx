@@ -14,6 +14,7 @@ import { useNavSearch } from '../../../contexts/NavSearchContext';
 import { logError } from '../../../services/loggerService';
 
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
@@ -125,18 +126,6 @@ const CloudClipboardPage: React.FC = () => {
     x: 0,
     y: 0,
     type: 'empty'
-  });
-
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: () => {}
   });
 
   useEffect(() => {
@@ -412,19 +401,7 @@ const CloudClipboardPage: React.FC = () => {
     setContextMenu(prev => ({ ...prev, isOpen: false }));
   }, []);
 
-  const handleOpenConfirmDialog = useCallback((title: string, message: string, onConfirm: () => void) => {
-    setConfirmDialog({
-      isOpen: true,
-      title,
-      message,
-      onConfirm
-    });
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  const handleCloseConfirmDialog = useCallback(() => {
-    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-  }, []);
+  const { confirmDialog, handleOpenConfirmDialog, handleCloseConfirmDialog } = useConfirmDialog(handleCloseContextMenu);
 
   const getContextMenuItems = useCallback((): ContextMenuItem[] => {
     if (contextMenu.type === 'item' && contextMenu.targetId) {

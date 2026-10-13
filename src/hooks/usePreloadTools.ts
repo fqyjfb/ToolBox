@@ -24,5 +24,3 @@ export const usePreloadTools = () => {
     }
   }, []);
 };
-
-export default usePreloadTools;

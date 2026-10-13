@@ -6,6 +6,7 @@ import { useAuthStore } from '../../../store/AuthStore';
 import { useToastStore } from '../../../store/toastStore';
 import { useRequireAuth } from '../../../hooks/useRequireAuth';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import { logError, logInfo } from '../../../services/loggerService';
 import type { Reminder, CreateReminderRequest } from '../../../types/reminder';
 import { REMINDER_DEBOUNCE_MS } from '../../../constants/reminder';
@@ -45,18 +46,6 @@ const ReminderPage: React.FC = () => {
     isOpen: false,
     x: 0,
     y: 0,
-  });
-
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: () => {},
   });
 
   const loadReminders = useCallback(async () => {
@@ -239,14 +228,7 @@ const ReminderPage: React.FC = () => {
     setContextMenu(prev => ({ ...prev, isOpen: false }));
   }, []);
 
-  const handleOpenConfirmDialog = useCallback((title: string, message: string, onConfirm: () => void) => {
-    setConfirmDialog({ isOpen: true, title, message, onConfirm });
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  const handleCloseConfirmDialog = useCallback(() => {
-    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-  }, []);
+  const { confirmDialog, handleOpenConfirmDialog, handleCloseConfirmDialog } = useConfirmDialog(handleCloseContextMenu);
 
   // 立即触发：与主进程定时触发共用同一通道，系统通知失败时主进程自动回退弹窗
   const handleTriggerNow = useCallback(async (reminder: Reminder) => {

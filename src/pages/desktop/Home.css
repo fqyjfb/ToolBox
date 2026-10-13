@@ -354,6 +354,15 @@
     flex-direction: column;
   }
 
+  /* 小窗模式：纵向堆叠时把摸鱼日报提到新闻区域上方 */
+  .compact-mode .home-cols > .home-col-news {
+    order: 2;
+  }
+
+  .compact-mode .home-cols > .home-col-moyu {
+    order: 1;
+  }
+
   /* 双类选择器确保覆盖 Tailwind 的 w-home-card / w-72 定宽 */
   .home-cols > div.w-home-card,
   .home-cols > div.w-72 {

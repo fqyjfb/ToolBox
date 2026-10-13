@@ -1,24 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../services/supabase';
-import { websiteService } from '../services/WebsiteService';
+import { useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../store/AuthStore';
+import { websiteFavoritesQuery } from '../services/websiteQueries';
+import { queryKeys } from '../queries/keys';
 import localStorageService, { STORAGE_KEYS } from '../services/localStorageService';
-import type { Bookmark } from '../components/home/FavoritesBar';
+import type { Bookmark } from '../types/website';
 
 type FavoritesCache = { favorites: Bookmark[]; timestamp: number };
 
-// 'unknown' 表示登录态尚未确认，此状态既不能拉取也不能清缓存：
-// 旧实现用 boolean 初值 false 充当「未登录」，导致每次回到首页都先清空缓存再重新请求
-type AuthStatus = 'unknown' | 'authenticated' | 'anonymous';
-
-const CACHE_EXPIRY = 5 * 60 * 1000;
-
-/**
- * 本次页面会话是否已成功拉取过收藏。
- * 切换导航只是组件卸载重挂，本模块不会重新求值，可据此复用数据；
- * 整页刷新（含设置里「刷新页面」快捷键，本质是 reload）会重新执行本模块，标记归零后照常重新拉取。
- */
-let hasFetchedThisSession = false;
-
+// 本地缓存只用于整页刷新后的首帧占位：此时 React Query 缓存为空，
+// 先渲染上次结果，避免回到首页时收藏栏闪一次空列表。
+// 缓存、失效、重试一律交给 React Query，不再自建 TTL 与「本次会话已拉取」标记。
 const readCache = (): FavoritesCache | null =>
   localStorageService.get<FavoritesCache | null>(STORAGE_KEYS.HOME_FAVORITES, null);
 
@@ -26,64 +18,29 @@ const writeCache = (favorites: Bookmark[]): void => {
   localStorageService.set(STORAGE_KEYS.HOME_FAVORITES, { favorites, timestamp: Date.now() } as FavoritesCache);
 };
 
-const isCacheFresh = (cache: FavoritesCache | null): boolean =>
-  !!cache?.favorites && Date.now() - cache.timestamp < CACHE_EXPIRY;
-
-// 首页网站导航收藏夹 Hook（三端共用）：登录态检查 + 收藏拉取 + 本地缓存
+// 首页网站导航收藏夹 Hook（三端共用）
 export const useHomeFavorites = () => {
-  const [authStatus, setAuthStatus] = useState<AuthStatus>('unknown');
-  // 首屏先用缓存渲染，回到首页不会闪一次空列表
-  const [favorites, setFavorites] = useState<Bookmark[]>(() => readCache()?.favorites || []);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const queryClient = useQueryClient();
 
+  // 与网站导航页的收藏视图共用同一份缓存（websiteFavoritesQuery），
+  // 任一侧收藏 / 取消收藏后两侧同时生效。
+  const { data: favorites = [] } = useQuery({
+    ...websiteFavoritesQuery,
+    enabled: isAuthenticated,
+    placeholderData: () => (isAuthenticated ? readCache()?.favorites : undefined),
+  });
+
+  // 未登录时清掉占位，避免下个账号首帧看到上个账号的收藏
   useEffect(() => {
-    let alive = true;
+    if (!isAuthenticated) localStorageService.remove(STORAGE_KEYS.HOME_FAVORITES);
+  }, [isAuthenticated]);
 
-    void supabase.auth.getUser()
-      .then(({ data }) => {
-        if (alive) setAuthStatus(data.user ? 'authenticated' : 'anonymous');
-      })
-      .catch(() => {
-        if (alive) setAuthStatus('anonymous');
-      });
-
-    return () => { alive = false; };
-  }, []);
-
-  useEffect(() => {
-    // 登录态未确认前保持现状：不清缓存、不发起请求
-    if (authStatus === 'unknown') return;
-
-    if (authStatus === 'anonymous') {
-      // 归零标记，使本次会话内重新登录后能再次拉取
-      hasFetchedThisSession = false;
-      localStorageService.remove(STORAGE_KEYS.HOME_FAVORITES);
-      setFavorites([]);
-      return;
-    }
-
-    // 本次页面会话已拉取过且缓存未过期：切换导航回来直接沿用，不再打网络、不闪空
-    if (hasFetchedThisSession && isCacheFresh(readCache())) return;
-
-    let alive = true;
-
-    void websiteService.getFavorites()
-      .then(userFavorites => {
-        if (!alive) return;
-        hasFetchedThisSession = true;
-        writeCache(userFavorites);
-        setFavorites(userFavorites);
-      })
-      .catch(() => {
-        // 拉取失败时保留当前展示（缓存或上次结果），不置空
-      });
-
-    return () => { alive = false; };
-  }, [authStatus]);
-
+  // 拖拽排序只改展示顺序（服务端没有该字段），同步进查询缓存与占位，刷新后仍保留
   const handleFavoritesReorder = useCallback((reorderedFavorites: Bookmark[]) => {
-    setFavorites(reorderedFavorites);
+    queryClient.setQueryData(queryKeys.website.favorites(), reorderedFavorites);
     writeCache(reorderedFavorites);
-  }, []);
+  }, [queryClient]);
 
   return {
     favorites,

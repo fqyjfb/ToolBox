@@ -13,6 +13,7 @@ import Select from '../../../../components/ui/Select';
 import PreviewModal from '../../../../components/ui/PreviewModal';
 import { logError } from '../../../../services/loggerService';
 import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
+import { useConfirmDialog } from '../../../../hooks/useConfirmDialog';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 interface PhonePanelProps {
@@ -49,9 +50,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     isOpen: boolean; x: number; y: number; type: 'item' | 'empty'; targetId?: string;
   }>({ isOpen: false, x: 0, y: 0, type: 'empty' });
 
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean; title: string; message: string; onConfirm: () => void;
-  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const { confirmDialog, handleOpenConfirmDialog, handleCloseConfirmDialog } = useConfirmDialog();
 
   useImperativeHandle(ref, () => ({
     openModal: (phone?: Phone) => {
@@ -196,14 +195,6 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
     setCurrentPage(1);
     loadData(1);
   };
-
-  const handleOpenConfirmDialog = useCallback((title: string, message: string, onConfirm: () => void) => {
-    setConfirmDialog({ isOpen: true, title, message, onConfirm });
-  }, []);
-
-  const handleCloseConfirmDialog = useCallback(() => {
-    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-  }, []);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, type: 'item' | 'empty', targetId?: string) => {
     e.preventDefault();

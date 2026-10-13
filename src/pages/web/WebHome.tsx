@@ -8,7 +8,7 @@ import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../../types/hot
 import WeatherCard from '../../components/home/WeatherCard';
 import FavoritesBar from '../../components/home/FavoritesBar';
 import { useHomeFavorites } from '../../hooks/useHomeFavorites';
-import { useRevealAnimation } from '../../hooks/useScrollParallax';
+import { useRevealAnimation } from '../../hooks/useRevealAnimation';
 import { DISPLAY_LIMITS } from '../../constants/timers';
 import './WebHome.css';
 

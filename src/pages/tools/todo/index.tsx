@@ -31,6 +31,7 @@ import { useTodoOperations } from './useTodoOperations';
 import { useCategoryOperations } from './useCategoryOperations';
 import { useTodoContextMenu } from './useTodoContextMenu';
 import type { TodoContextMenuHandlers } from './useTodoContextMenu';
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import TodoBoard from './TodoBoard';
 import TodoFormModal from './TodoFormModal';
 import CategoryFormModal from './CategoryFormModal';
@@ -111,18 +112,6 @@ const TodoManagerPage: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<TodoCategory | null>(null);
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_CATEGORY_COLOR);
   const [newCategoryName, setNewCategoryName] = useState('');
-
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: () => {},
-  });
 
   const [newTodo, setNewTodo] = useState<CreateTodoRequest & { category_id: string | null }>(EMPTY_TODO_FORM);
 
@@ -335,19 +324,7 @@ const TodoManagerPage: React.FC = () => {
     }
   }, [deleteCategory, loadTodos]);
 
-  const handleOpenConfirmDialog = useCallback((title: string, message: string, onConfirm: () => void) => {
-    setConfirmDialog({
-      isOpen: true,
-      title,
-      message,
-      onConfirm,
-    });
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  const handleCloseConfirmDialog = useCallback(() => {
-    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-  }, []);
+  const { confirmDialog, handleOpenConfirmDialog, handleCloseConfirmDialog } = useConfirmDialog(handleCloseContextMenu);
 
   const handleCloseAddTodoModal = () => {
     setShowAddTodoModal(false);

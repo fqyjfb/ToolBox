@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, PackageOpen, Search, X } from 'lucide-react';
 import toolService, { Tool } from '../../services/ToolService';
+import { queryKeys } from '../../queries/keys';
 import { openUrl } from '../../services/browserService';
 import CachedIcon from '../../components/ui/CachedIcon';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -23,14 +24,14 @@ const ToolDownloadPage: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('');
 
   const { data: categories = [] } = useQuery({
-    queryKey: ['toolCategories'],
+    queryKey: queryKeys.tool.categories(),
     queryFn: () => toolService.getCategories(),
   });
 
   const mainCategories = useMemo(() => categories.filter((c) => !c.parent_id), [categories]);
 
   const { data: toolsData, isLoading } = useQuery({
-    queryKey: ['userToolDownloads', filterCategory],
+    queryKey: [...queryKeys.tool.userDownloads(), filterCategory],
     queryFn: () => toolService.getTools(filterCategory || undefined, undefined, 1, 1000),
   });
 

@@ -1,13 +1,18 @@
 import { useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { todoServiceWrapper, CreateTodoRequest } from '../../../services/TodoService'
 import { useAuthStore } from '../../../store/AuthStore'
 import { useToastStore } from '../../../store/toastStore'
-import { useTodoNotification } from '../../../contexts/TodoNotificationContext'
+import { queryKeys } from '../../../queries/keys'
 
 export const useTodoOperations = () => {
   const user = useAuthStore((state) => state.user)
   const addToast = useToastStore((state) => state.addToast)
-  const { refreshCount } = useTodoNotification()
+  const queryClient = useQueryClient()
+  // 待办写操作后让侧边栏徽标重新取数（徽标走 todoPendingCountQuery）
+  const refreshCount = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.todo.all })
+  }, [queryClient])
 
   const createTodo = useCallback(async (todoData: CreateTodoRequest): Promise<boolean> => {
     if (!user || !todoData.title.trim()) return false

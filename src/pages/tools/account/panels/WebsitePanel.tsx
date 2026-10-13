@@ -28,6 +28,7 @@ import { useIsCompactMode } from '../../../../store/windowModeStore';
 import { useOverflowItems } from '../../../../hooks/useOverflowItems';
 import OverflowMenu, { OverflowMenuItem } from '../../../../components/ui/OverflowMenu';
 import CompactSelector, { CompactSelectorItem } from '../../../../components/ui/CompactSelector';
+import { useConfirmDialog } from '../../../../hooks/useConfirmDialog';
 import { modalControlClass, modalTextareaClass } from '../shared';
 
 const findCategoryById = (catList: WebsiteAccountCategory[], targetId: string): WebsiteAccountCategory | undefined => {
@@ -167,9 +168,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     isOpen: boolean; x: number; y: number; type: 'item' | 'category' | 'empty'; targetId?: string;
   }>({ isOpen: false, x: 0, y: 0, type: 'empty' });
 
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean; title: string; message: string; onConfirm: () => void;
-  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const { confirmDialog, handleOpenConfirmDialog, handleCloseConfirmDialog } = useConfirmDialog();
 
   const categoryColors = [
     { bg: 'bg-blue-50', text: 'text-blue-600', dot: 'bg-blue-500' },
@@ -543,14 +542,6 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     setCurrentPage(1);
     loadAccounts(1);
   }, [loadAccounts]);
-
-  const handleOpenConfirmDialog = useCallback((title: string, message: string, onConfirm: () => void) => {
-    setConfirmDialog({ isOpen: true, title, message, onConfirm });
-  }, []);
-
-  const handleCloseConfirmDialog = useCallback(() => {
-    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-  }, []);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, type: 'item' | 'category' | 'empty', targetId?: string) => {
     e.preventDefault();

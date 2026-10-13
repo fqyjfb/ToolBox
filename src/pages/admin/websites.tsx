@@ -6,6 +6,7 @@ import { useToastStore } from '../../store/toastStore'
 import { Category, Bookmark } from '../../types/website'
 import { openUrl } from '../../services/browserService'
 import { websiteService, buildCategoryTreeFromData } from '../../services/WebsiteService'
+import { queryKeys } from '../../queries/keys'
 import Modal from '../../components/ui/Modal'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import Pagination from '../../components/ui/Pagination'
@@ -64,7 +65,7 @@ const AdminWebsitesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'categories'>('bookmarks')
 
   const { data: categoriesData = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['categories'],
+    queryKey: queryKeys.website.categories(),
     queryFn: () => websiteService.getCategories()
   })
 
@@ -82,7 +83,7 @@ const AdminWebsitesPage: React.FC = () => {
   }
 
   const { data: bookmarksData, isLoading: bookmarksLoading } = useQuery({
-    queryKey: ['admin_bookmarks', page, pageSize, searchQuery, selectedCategoryId],
+    queryKey: [...queryKeys.website.adminBookmarks(), page, pageSize, searchQuery, selectedCategoryId],
     queryFn: () => websiteService.getAdminBookmarks({
       page,
       pageSize,
@@ -108,7 +109,7 @@ const AdminWebsitesPage: React.FC = () => {
       websiteService.addBookmark(bookmark),
     onSuccess: (data) => {
       if (data) {
-        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.website.adminBookmarks() })
         addToast({ message: '添加成功', type: 'success' })
         setIsAddBookmarkModalOpen(false)
       }
@@ -123,7 +124,7 @@ const AdminWebsitesPage: React.FC = () => {
       websiteService.updateBookmark(id, bookmark),
     onSuccess: (success) => {
       if (success) {
-        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.website.adminBookmarks() })
         addToast({ message: '更新成功', type: 'success' })
         setIsEditBookmarkModalOpen(false)
       }
@@ -137,7 +138,7 @@ const AdminWebsitesPage: React.FC = () => {
     mutationFn: (id: string) => websiteService.deleteBookmark(id),
     onSuccess: (success) => {
       if (success) {
-        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.website.adminBookmarks() })
         addToast({ message: '删除成功', type: 'success' })
       }
     },
@@ -151,7 +152,7 @@ const AdminWebsitesPage: React.FC = () => {
       websiteService.updateBookmark(id, { is_public: isPublic }),
     onSuccess: (success) => {
       if (success) {
-        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.website.adminBookmarks() })
       }
     }
   })
@@ -161,7 +162,7 @@ const AdminWebsitesPage: React.FC = () => {
       websiteService.addCategory(name, parentId),
     onSuccess: (data) => {
       if (data) {
-        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.website.categories() })
         addToast({ message: '添加分类成功', type: 'success' })
       }
     },
@@ -175,7 +176,7 @@ const AdminWebsitesPage: React.FC = () => {
       websiteService.updateCategory(id, name),
     onSuccess: (success) => {
       if (success) {
-        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.website.categories() })
         addToast({ message: '更新分类成功', type: 'success' })
       }
     },
@@ -188,8 +189,8 @@ const AdminWebsitesPage: React.FC = () => {
     mutationFn: (id: string) => websiteService.deleteCategory(id),
     onSuccess: (success) => {
       if (success) {
-        queryClient.invalidateQueries({ queryKey: ['categories'] })
-        queryClient.invalidateQueries({ queryKey: ['admin_bookmarks'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.website.categories() })
+        queryClient.invalidateQueries({ queryKey: queryKeys.website.adminBookmarks() })
         addToast({ message: '删除分类成功', type: 'success' })
       }
     },

@@ -7,10 +7,8 @@ import { useDndSensors } from '../../hooks/useDndSensors';
 import { openUrl } from '../../services/browserService';
 import { DISPLAY_LIMITS } from '../../constants/timers';
 import CachedIcon from '../ui/CachedIcon';
-import type { Bookmark as WebsiteBookmark } from '../../types/website';
+import type { Bookmark } from '../../types/website';
 import './FavoritesBar.css';
-
-export type Bookmark = Pick<WebsiteBookmark, 'id' | 'title' | 'url' | 'ico_url'>;
 
 interface FavoritesBarProps {
   favorites: Bookmark[];
