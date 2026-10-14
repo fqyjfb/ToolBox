@@ -151,7 +151,7 @@ const JsonFormatterPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary text-content-primary rounded-md hover:bg-menu-hover transition-colors"
           >
             <FileText className="w-3.5 h-3.5" />
             示例
@@ -228,28 +228,28 @@ const JsonFormatterPage: React.FC = () => {
 
       <div className="flex-1 bg-surface rounded-lg shadow-md overflow-hidden flex">
         <div className="w-1/2 flex flex-col border-r border-content">
-          <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+          <div className="px-4 py-2 bg-surface-secondary border-b border-content">
             <span className="text-sm font-medium text-content-secondary">输入 JSON</span>
           </div>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
+            className="flex-1 w-full p-4 bg-surface-secondary text-content-primary font-mono text-sm resize-none outline-none"
             placeholder='在此输入 JSON，例如：{"name": "John", "age": 30}'
           />
         </div>
         
         <div className="w-1/2 flex flex-col">
-          <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+          <div className="px-4 py-2 bg-surface-secondary border-b border-content">
             <span className="text-sm font-medium text-content-secondary">输出结果</span>
           </div>
           <textarea
             value={output}
             readOnly
-            className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
+            className="flex-1 w-full p-4 bg-surface-secondary text-content-primary font-mono text-sm resize-none outline-none"
             placeholder="格式化后的 JSON 将显示在这里..."
           />
-          <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-t border-content flex items-center gap-4 text-sm text-content-secondary">
+          <div className="px-4 py-2 bg-surface-secondary border-t border-content flex items-center gap-4 text-sm text-content-secondary">
             <span>字符: <strong className="text-blue-600 dark:text-blue-400">{charCount.toLocaleString()}</strong></span>
             <span>行数: <strong className="text-blue-600 dark:text-blue-400">{lineCount.toLocaleString()}</strong></span>
             <span>大小: <strong className="text-blue-600 dark:text-blue-400">{size}</strong></span>

@@ -261,7 +261,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
         ) : (
           <div className="rounded-lg overflow-hidden">
             <table className="w-full table-fixed">
-              <thead className="bg-surface-secondary dark:bg-content-primary">
+              <thead className="bg-surface-secondary">
                 <tr>
                   {visibleColumns.includes('name') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider max-w-[120px] truncate">企业名称</th>}
                   {visibleColumns.includes('unified_social_credit_code') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider max-w-[120px] truncate">统一社会信用代码</th>}
@@ -276,13 +276,13 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
                 {companies.map((company) => (
                   <tr
                     key={company.id}
-                    className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
+                    className="bg-surface-secondary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                     onClick={() => handleRowClick(company)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', company.id)}
                   >
                     {visibleColumns.includes('name') && (
                       <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
-                        <span className="font-medium text-sm text-content-primary dark:text-white">{company.name}</span>
+                        <span className="font-medium text-sm text-content-primary">{company.name}</span>
                       </td>
                     )}
                     {visibleColumns.includes('unified_social_credit_code') && (
@@ -301,7 +301,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
                     )}
                     {visibleColumns.includes('legal_person') && (
                       <td className="px-4 py-3 max-w-[120px] whitespace-pre-wrap break-words">
-                        <span className="text-sm text-content-primary dark:text-white">{company.legal_person || '-'}</span>
+                        <span className="text-sm text-content-primary">{company.legal_person || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('establishment_date') && (

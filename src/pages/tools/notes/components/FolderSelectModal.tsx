@@ -15,10 +15,10 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading
         </div>
 
         <div className="text-center">
-          <h2 className="mb-2 text-xl font-bold text-content-primary dark:text-white">
+          <h2 className="mb-2 text-xl font-bold text-content-primary">
             选择对话存储位置
           </h2>
-          <p className="max-w-sm text-sm text-gray-600 dark:text-content-secondary">
+          <p className="max-w-sm text-sm text-content-secondary">
             请选择一个文件夹作为对话路径。对话记录与整理过程会保存在该文件夹中；
             选择完成后，可在左侧列表固定目录来查看其中的笔记文件。
           </p>
@@ -27,19 +27,19 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({ onSelect, loading
         <div className="grid w-full max-w-sm grid-cols-2 gap-3">
           <div className="flex items-center gap-2 rounded-lg bg-surface-secondary p-3">
             <FileText className="h-6 w-6 text-primary" />
-            <span className="text-xs text-gray-600 dark:text-content-secondary">Markdown 格式</span>
+            <span className="text-xs text-content-secondary">Markdown 格式</span>
           </div>
           <div className="flex items-center gap-2 rounded-lg bg-surface-secondary p-3">
             <HardDrive className="h-6 w-6 text-primary" />
-            <span className="text-xs text-gray-600 dark:text-content-secondary">本地存储</span>
+            <span className="text-xs text-content-secondary">本地存储</span>
           </div>
           <div className="flex items-center gap-2 rounded-lg bg-surface-secondary p-3">
             <FolderOpen className="h-6 w-6 text-primary" />
-            <span className="text-xs text-gray-600 dark:text-content-secondary">文件夹管理</span>
+            <span className="text-xs text-content-secondary">文件夹管理</span>
           </div>
           <div className="flex items-center gap-2 rounded-lg bg-surface-secondary p-3">
             <CloudOff className="h-6 w-6 text-primary" />
-            <span className="text-xs text-gray-600 dark:text-content-secondary">离线可用</span>
+            <span className="text-xs text-content-secondary">离线可用</span>
           </div>
         </div>
 

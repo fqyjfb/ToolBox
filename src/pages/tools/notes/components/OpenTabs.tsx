@@ -177,7 +177,7 @@ const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
       <div className="relative ml-auto flex-shrink-0">
         <button
           type="button"
-          className="flex items-center rounded p-0.5 text-content-tertiary hover:bg-gray-200 hover:text-content-secondary dark:hover:bg-menu-hover dark:hover:text-gray-200"
+          className="flex items-center rounded p-0.5 text-content-tertiary hover:bg-menu-hover hover:text-content-secondary"
           onClick={() => setMenuOpen((v) => !v)}
           title="更多操作"
           aria-haspopup="menu"

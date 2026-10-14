@@ -10,6 +10,7 @@ export const ALL_TOOLS: ToolInfo[] = [
   { id: 'todo', name: '待办事项', path: '/tools/todo', color: '#bc8acf', iconName: 'CheckSquare' },
   { id: 'memo', name: '备忘录', path: '/tools/memo', color: '#275D7E', iconName: 'StickyNote' },
   { id: 'notes', name: '记事本', path: '/tools/notes', color: '#4caf50', iconName: 'FileText' },
+  { id: 'reminder', name: '定时提醒', path: '/tools/reminder', color: '#ef5350', iconName: 'Bell' },
   { id: 'quick-reply', name: '快捷回复', path: '/tools/quick-reply', color: '#e91e63', iconName: 'MessageSquare' },
   { id: 'cloud-clipboard', name: '云剪贴板', path: '/tools/cloud-clipboard', color: '#67aaf7', iconName: 'Clipboard' },
   { id: 'account', name: '账号管理', path: '/tools/account', color: '#00bcd4', iconName: 'Key' },

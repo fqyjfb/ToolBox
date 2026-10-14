@@ -756,7 +756,7 @@ const MemoPage: React.FC = () => {
                         <div 
                           key={memo.id}
                           ref={colIndex === columnCount - 1 && index === colMemos.length - 1 ? lastMemoRef : null}
-                          className="rounded-md p-3 cursor-pointer hover:bg-surface-secondary dark:hover:bg-surface/$1 transition-colors"
+                          className="rounded-md p-3 cursor-pointer hover:bg-surface-secondary dark:hover:bg-surface-50 transition-colors"
                           style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
                           onClick={() => handleOpenPreview(memo)}
                           onContextMenu={(e) => handleContextMenu(e, 'memo', memo.id)}

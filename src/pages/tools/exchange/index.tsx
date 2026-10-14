@@ -225,7 +225,7 @@ const ExchangePage: React.FC = () => {
         ) : (
           <div className="bg-surface-secondary rounded-lg p-3 mb-3">
             <div className="flex justify-between items-center mb-1.5">
-              <h2 className="text-sm font-semibold text-content-primary dark:text-white">汇率计算器</h2>
+              <h2 className="text-sm font-semibold text-content-primary">汇率计算器</h2>
               <div className="text-xs text-content-secondary font-medium">
                 1 {getCurrencyName(fromCurrency)} = {getExchangeRate(fromCurrency, toCurrency)} {getCurrencyName(toCurrency)}
               </div>
@@ -238,7 +238,7 @@ const ExchangePage: React.FC = () => {
                   value={fromCurrency}
                   onChange={setFromCurrency}
                   options={currencyOptions}
-                  className="px-2 py-2 border border-content rounded-md bg-surface text-content-primary dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 text-xs"
+                  className="px-2 py-2 border border-content rounded-md bg-surface text-content-primary focus:outline-none focus:border-primary text-xs"
                 />
               </div>
               
@@ -250,7 +250,7 @@ const ExchangePage: React.FC = () => {
                   onChange={(e) => setFromAmount(Number(e.target.value) || 0)}
                   min="0"
                   step="0.01"
-                  className="px-2 py-2 border border-content rounded-md bg-surface text-content-primary dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 text-xs"
+                  className="px-2 py-2 border border-content rounded-md bg-surface text-content-primary focus:outline-none focus:border-primary text-xs"
                 />
               </div>
 
@@ -269,7 +269,7 @@ const ExchangePage: React.FC = () => {
                   value={toCurrency}
                   onChange={setToCurrency}
                   options={currencyOptions}
-                  className="px-2 py-2 border border-content rounded-md bg-surface text-content-primary dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 text-xs"
+                  className="px-2 py-2 border border-content rounded-md bg-surface text-content-primary focus:outline-none focus:border-primary text-xs"
                 />
               </div>
               
@@ -279,7 +279,7 @@ const ExchangePage: React.FC = () => {
                   type="number"
                   value={toAmount}
                   readOnly
-                  className="px-2 py-2 border border-content rounded-md bg-surface-secondary text-content-primary dark:text-white focus:outline-none text-xs"
+                  className="px-2 py-2 border border-content rounded-md bg-surface-secondary text-content-primary focus:outline-none text-xs"
                 />
               </div>
             </div>
@@ -288,12 +288,12 @@ const ExchangePage: React.FC = () => {
 
         {!loading && exchangeData && (
           <div className="bg-surface-secondary rounded-lg p-3 mb-3">
-          <h2 className="text-sm font-semibold text-content-primary dark:text-white mb-1.5">常用汇率 (基于 {fromCurrency})</h2>
+          <h2 className="text-sm font-semibold text-content-primary mb-1.5">常用汇率 (基于 {fromCurrency})</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
             {Object.entries(commonRates).map(([code, rate]) => (
               <div key={code} className="bg-surface p-1.5 rounded-md hover:shadow-md transition-all duration-200">
                 <div className="flex flex-col gap-0.25">
-                  <div className="font-semibold text-content-primary dark:text-white text-xs">{code}</div>
+                  <div className="font-semibold text-content-primary text-xs">{code}</div>
                   <div className="text-xs text-content-secondary truncate">{getCurrencyName(code)}</div>
                 </div>
                 <div className="mt-0.5 text-xs font-medium text-blue-600 dark:text-blue-400 font-mono">
@@ -308,7 +308,7 @@ const ExchangePage: React.FC = () => {
         {!loading && exchangeData && (
           <div className="bg-surface-secondary rounded-lg p-3 max-h-[300px] flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-1.5 gap-1.5 flex-shrink-0">
-              <h2 className="text-sm font-semibold text-content-primary dark:text-white">完整汇率数据 (1 {fromCurrency} =)</h2>
+              <h2 className="text-sm font-semibold text-content-primary">完整汇率数据 (1 {fromCurrency} =)</h2>
               <div className="w-full sm:w-56">
                 <div className="relative">
                   <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-content-tertiary" />
@@ -317,7 +317,7 @@ const ExchangePage: React.FC = () => {
                     value={searchCurrency}
                     onChange={(e) => setSearchCurrency(e.target.value)}
                     placeholder="搜索货币..."
-                    className="pl-8 pr-2 py-2 w-full border border-content rounded-md bg-surface text-content-primary dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 text-xs"
+                    className="pl-8 pr-2 py-2 w-full border border-content rounded-md bg-surface text-content-primary focus:outline-none focus:border-primary text-xs"
                   />
                 </div>
               </div>
@@ -326,16 +326,16 @@ const ExchangePage: React.FC = () => {
               <table className="w-full border-collapse">
                 <thead className="sticky top-0 bg-menu-hover">
                   <tr>
-                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-content-primary dark:text-white w-16">货币</th>
-                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-content-primary dark:text-white">名称</th>
-                    <th className="px-2 py-1.5 text-right text-xs font-semibold text-content-primary dark:text-white w-24">汇率</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-content-primary w-16">货币</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-content-primary">名称</th>
+                    <th className="px-2 py-1.5 text-right text-xs font-semibold text-content-primary w-24">汇率</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.entries(filteredRates).map(([code, rate]) => (
                     <tr
                       key={code}
-                      className={`${(code === fromCurrency || code === toCurrency) ? 'bg-primary/10 dark:bg-primary/20' : ''} hover:bg-surface-secondary dark:hover:bg-content-primary transition-colors`}
+                      className={`${(code === fromCurrency || code === toCurrency) ? 'bg-primary/10 dark:bg-primary/20' : ''} hover:bg-surface-secondary transition-colors`}
                     >
                       <td className="px-2 py-1.5 text-xs font-semibold text-content-primary">{code}</td>
                       <td className="px-2 py-1.5 text-xs text-content-secondary">{getCurrencyName(code)}</td>

@@ -573,7 +573,7 @@ console.log(theme);
             <Copy className="w-3.5 h-3.5" />
             复制公众号内容
           </button>
-          <button onClick={copyPreviewHtml} className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors">
+          <button onClick={copyPreviewHtml} className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary text-content-primary rounded-md hover:bg-menu-hover transition-colors">
             <FileText className="w-3.5 h-3.5" />
             复制 HTML
           </button>
@@ -584,15 +584,15 @@ console.log(theme);
       </div>
 
       <div className="flex gap-2 mb-4">
-        <button onClick={() => setActiveTab('edit')} className={`flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab === 'edit' ? 'bg-primary text-button-text' : 'bg-surface-secondary dark:bg-content-primary text-content-primary hover:bg-menu-hover dark:hover:bg-content-hover'}`}>
+        <button onClick={() => setActiveTab('edit')} className={`flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab === 'edit' ? 'bg-primary text-button-text' : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'}`}>
           <Edit3 className="w-3.5 h-3.5" />
           编辑
         </button>
-        <button onClick={() => setActiveTab('preview')} className={`flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab === 'preview' ? 'bg-primary text-button-text' : 'bg-surface-secondary dark:bg-content-primary text-content-primary hover:bg-menu-hover dark:hover:bg-content-hover'}`}>
+        <button onClick={() => setActiveTab('preview')} className={`flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab === 'preview' ? 'bg-primary text-button-text' : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'}`}>
           <Eye className="w-3.5 h-3.5" />
           预览
         </button>
-        <button onClick={() => setActiveTab('split')} className={`flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab === 'split' ? 'bg-primary text-button-text' : 'bg-surface-secondary dark:bg-content-primary text-content-primary hover:bg-menu-hover dark:hover:bg-content-hover'}`}>
+        <button onClick={() => setActiveTab('split')} className={`flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab === 'split' ? 'bg-primary text-button-text' : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'}`}>
           <Eye className="w-3.5 h-3.5" />
           分屏查看
         </button>
@@ -606,7 +606,7 @@ console.log(theme);
               value={markdown}
               onChange={(e) => setMarkdown(e.target.value)}
               onContextMenu={handleContextMenu}
-              className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
+              className="flex-1 w-full p-4 bg-surface-secondary text-content-primary font-mono text-sm resize-none outline-none"
               placeholder="在此输入你的 Markdown 内容..."
             />
           </div>
@@ -614,7 +614,7 @@ console.log(theme);
 
         {activeTab === 'preview' && (
           <div className="w-full overflow-auto">
-            <div ref={previewRef} className="p-6 bg-white dark:bg-content-primary">
+            <div ref={previewRef} className="p-6 bg-white">
               <div className="wx-article" dangerouslySetInnerHTML={{ __html: markdown ? parseMarkdown(markdown) : '<p class="text-content-tertiary">输入 Markdown 内容预览效果...</p>' }} />
             </div>
           </div>
@@ -623,7 +623,7 @@ console.log(theme);
         {activeTab === 'split' && (
           <>
             <div className="w-1/2 flex flex-col border-r border-content">
-              <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+              <div className="px-4 py-2 bg-surface-secondary border-b border-content">
                 <span className="text-sm font-medium text-content-secondary">Markdown 输入</span>
               </div>
               <textarea
@@ -631,15 +631,15 @@ console.log(theme);
                 value={markdown}
                 onChange={(e) => setMarkdown(e.target.value)}
                 onContextMenu={handleContextMenu}
-                className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
+                className="flex-1 w-full p-4 bg-surface-secondary text-content-primary font-mono text-sm resize-none outline-none"
                 placeholder="在此输入你的 Markdown 内容..."
               />
             </div>
             <div className="w-1/2 overflow-auto">
-              <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+              <div className="px-4 py-2 bg-surface-secondary border-b border-content">
                 <span className="text-sm font-medium text-content-secondary">公众号排版预览</span>
               </div>
-              <div ref={previewRef} className="p-4 bg-white dark:bg-content-primary">
+              <div ref={previewRef} className="p-4 bg-white">
                 <div className="wx-article" dangerouslySetInnerHTML={{ __html: markdown ? parseMarkdown(markdown) : '<p class="text-content-tertiary">输入 Markdown 内容预览效果...</p>' }} />
               </div>
             </div>

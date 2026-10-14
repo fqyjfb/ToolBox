@@ -166,7 +166,7 @@ const OfflineToolsPage: React.FC = () => {
             {filteredFiles.map((file) => (
               <div
                 key={file.path}
-                className="group relative bg-surface-secondary dark:bg-content-primary rounded-lg p-3 hover:shadow-md transition-all duration-200 cursor-pointer"
+                className="group relative bg-surface-secondary rounded-lg p-3 hover:shadow-md transition-all duration-200 cursor-pointer"
                 onClick={() => handleOpenFile(file)}
                 title={`在新窗口打开 ${file.fileName}`}
               >
@@ -184,10 +184,10 @@ const OfflineToolsPage: React.FC = () => {
                     </p>
 
                     <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                      <span className="px-1.5 py-0.5 text-xs text-content-secondary dark:text-content-secondary bg-surface dark:bg-content-primary rounded">
+                      <span className="px-1.5 py-0.5 text-xs text-content-secondary dark:text-content-secondary bg-surface rounded">
                         {formatFileSize(file.size)}
                       </span>
-                      <span className="px-1.5 py-0.5 text-xs text-content-secondary dark:text-content-secondary bg-surface dark:bg-content-primary rounded">
+                      <span className="px-1.5 py-0.5 text-xs text-content-secondary dark:text-content-secondary bg-surface rounded">
                         {formatDate(file.mtimeMs)}
                       </span>
                     </div>

@@ -67,7 +67,7 @@ const UrlEncodePage: React.FC = () => {
         </div>
         <button
           onClick={loadSample}
-          className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
+          className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary text-content-primary rounded-md hover:bg-menu-hover transition-colors"
         >
           <FileText className="w-3.5 h-3.5" />
           示例
@@ -105,7 +105,7 @@ const UrlEncodePage: React.FC = () => {
               <textarea
                 value={encoded}
                 readOnly
-                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
+                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-surface text-content-primary font-mono text-sm resize-none outline-none"
                 placeholder="编码结果..."
               />
             )}
@@ -129,7 +129,7 @@ const UrlEncodePage: React.FC = () => {
               <textarea
                 value={decoded}
                 readOnly
-                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
+                className="w-full h-32 px-3 py-2 border border-content rounded-lg bg-surface text-content-primary font-mono text-sm resize-none outline-none"
                 placeholder="解码结果..."
               />
             )}

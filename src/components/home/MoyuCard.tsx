@@ -117,7 +117,7 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ className = '' }) => {
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="px-2 py-0.5 text-xs font-medium bg-surface dark:bg-content-primary text-content-primary dark:text-content-primary rounded-full">
+                <span className="px-2 py-0.5 text-xs font-medium bg-surface text-content-primary dark:text-content-primary rounded-full">
                   {moyuData.date.weekday}
                 </span>
                 <span className="text-xs text-content-secondary">

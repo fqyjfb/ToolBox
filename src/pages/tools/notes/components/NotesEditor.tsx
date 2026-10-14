@@ -392,7 +392,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
         return (
           <div className="flex flex-1 min-h-0 flex-col items-center justify-center gap-3 px-6 text-center">
             <Play className="h-10 w-10 text-content-secondary" />
-            <span className="max-w-full truncate text-sm text-gray-600 dark:text-content-secondary">
+            <span className="max-w-full truncate text-sm text-content-secondary">
               {selectedFile.name}
             </span>
             <p className="max-w-sm text-xs leading-relaxed text-content-tertiary">
@@ -474,7 +474,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
               className={`px-3 py-1 text-sm rounded transition-colors ${
                 htmlViewMode === 'preview'
                   ? 'bg-primary text-button-text'
-                  : 'text-gray-600 dark:text-content-secondary hover:bg-menu-hover'
+                  : 'text-content-secondary hover:bg-menu-hover'
               }`}
               onClick={() => setHtmlViewMode('preview')}
             >
@@ -484,7 +484,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
               className={`px-3 py-1 text-sm rounded transition-colors ${
                 htmlViewMode === 'source'
                   ? 'bg-primary text-button-text'
-                  : 'text-gray-600 dark:text-content-secondary hover:bg-menu-hover'
+                  : 'text-content-secondary hover:bg-menu-hover'
               }`}
               onClick={() => setHtmlViewMode('source')}
             >
@@ -539,7 +539,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     return (
       <section className="flex flex-1 flex-col min-h-0 min-w-0">
         {/* 与打开笔记后的头部保持一致：侧边栏开关常驻，列表被隐藏后仍有入口恢复 */}
-        <div className="flex flex-shrink-0 items-center gap-3 bg-surface-secondary/$1 dark:bg-content-primary/$1 px-4 py-2">
+        <div className="flex flex-shrink-0 items-center gap-3 bg-surface-secondary-50 px-4 py-2">
           {onToggleSidebar ? (
             <button
               className="rounded p-1 text-content-tertiary hover:bg-menu-hover dark:hover:bg-surface"
@@ -552,10 +552,10 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
         </div>
 
         <div className="flex flex-1 flex-col items-center justify-center px-6 pb-10">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface-secondary dark:bg-content-primary">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface-secondary">
             <Edit3 className="h-10 w-10 text-content-tertiary" />
           </div>
-          <h3 className="mt-4 text-lg font-medium text-gray-600 dark:text-content-secondary">
+          <h3 className="mt-4 text-lg font-medium text-content-secondary">
             还没有打开笔记
           </h3>
           <p className="mt-1 max-w-sm text-center text-sm text-content-tertiary">
@@ -576,7 +576,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
             <button
               onClick={onCreateFolder}
               disabled={!onCreateFolder}
-              className="flex items-center gap-2 rounded-lg bg-white/60 dark:bg-content-primary/$1 px-4 py-2 text-sm text-content-primary transition-colors hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 rounded-lg bg-white/60 px-4 py-2 text-sm text-content-primary transition-colors hover:bg-surface-secondary-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FolderPlus className="h-4 w-4" />
               新建文件夹
@@ -594,7 +594,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   return (
     <section className="flex flex-1 flex-col min-h-0 min-w-0">
       {/* flex-shrink-0：头部固定，滚动只发生在下方内容区 */}
-      <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 bg-surface-secondary/$1 dark:bg-content-primary/$1 px-4 py-2">
+      <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 bg-surface-secondary-50 px-4 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <div className="flex min-w-0 items-center gap-2 text-sm">
             {onToggleSidebar && (
@@ -609,7 +609,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
             {getFileIcon()}
             {renameDraft === null ? (
               <span
-                className="cursor-text truncate font-medium text-content-primary dark:text-white"
+                className="cursor-text truncate font-medium text-content-primary"
                 onDoubleClick={startRename}
                 title="双击重命名"
               >
@@ -637,7 +637,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
                       cancelRename();
                     }
                   }}
-                  className="min-w-0 max-w-[240px] rounded border border-primary bg-white/60 px-1 py-0.5 text-sm text-content-primary outline-none dark:bg-content-primary/$1 dark:text-white"
+                  className="min-w-0 max-w-[240px] rounded border border-primary bg-white/60 px-1 py-0.5 text-sm text-content-primary outline-none"
                 />
                 {renameExt && (
                   <span className="text-sm text-content-secondary">{renameExt}</span>

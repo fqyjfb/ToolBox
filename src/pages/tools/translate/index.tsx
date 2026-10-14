@@ -292,7 +292,7 @@ const TranslatePage: React.FC = () => {
             <div className="px-3 py-2">
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-content-secondary hover:bg-menu-hover rounded transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-content-secondary hover:bg-menu-hover rounded transition-colors"
               >
                 {copied ? (
                   <>

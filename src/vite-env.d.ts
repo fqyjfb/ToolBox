@@ -217,8 +217,10 @@ declare interface Window {
     close: () => void;
     /** 边缘吸附停靠态：光标离开窗口转发（主进程延迟折叠） */
     edgeSnapCursorLeft: () => void;
-    /** 边缘吸附停靠态：光标进入窗口转发（取消折叠/遗忘回收，悬浮提示条即时展开） */
+    /** 边缘吸附停靠态：光标进入窗口转发（取消折叠，隐藏态即时展开） */
     edgeSnapCursorEnter: () => void;
+    /** 边缘吸附停靠态：IME 组合态同步（输入中抑制自动折叠） */
+    edgeSnapImeState: (composing: boolean) => void;
     /** 切换窗口模式：'compact' 小窗 / 'large' 恢复大窗 */
     setWindowMode: (mode: 'large' | 'compact') => void;
     restart: () => Promise<{ code: number; msg: string }>;

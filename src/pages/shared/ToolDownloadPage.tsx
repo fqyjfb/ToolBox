@@ -56,14 +56,14 @@ const ToolDownloadPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-semibold text-content-primary dark:text-white">工具下载</h1>
+        <h1 className="text-lg font-semibold text-content-primary">工具下载</h1>
         <div className="relative w-[200px]">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="搜索工具..."
-            className="w-full px-2 py-1 pr-7 border border-gray-200 dark:border-content rounded-md focus:outline-none focus:border-content dark:focus:border-content dark:bg-menu-hover dark:text-white text-xs"
+            className="w-full px-2 py-1 pr-7 border border-gray-200 dark:border-content rounded-md focus:outline-none focus:border-content dark:focus:border-content dark:bg-menu-hover text-xs"
           />
           <span className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
             {searchTerm ? (

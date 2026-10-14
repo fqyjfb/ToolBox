@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Zap, FileText, User, Settings, Info, X, Grid3X3, LayoutDashboard, Package, Wrench, Bell } from 'lucide-react';
+import { Home, Zap, FileText, User, Settings, Info, X, Grid3X3, LayoutDashboard, Package, Wrench } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -66,7 +66,6 @@ const Sidebar: React.FC<{ forceCollapsed?: boolean; hideLogo?: boolean }> = ({ f
     { id: 'home', title: '首页', icon: <Home className="w-4 h-4 flex-shrink-0" />, path: '/', active: isActive('/') },
     ...(isDesktop ? [{ id: 'launch', title: '快启动', icon: <Zap className="w-4 h-4 flex-shrink-0" />, path: '/launch', active: isActive('/launch') }] : []),
     { id: 'notes', title: '记事本', icon: <FileText className="w-4 h-4 flex-shrink-0" />, path: '/tools/notes', active: isStartsWith('/tools/notes') },
-    { id: 'reminder', title: '定时提醒', icon: <Bell className="w-4 h-4 flex-shrink-0" />, path: '/tools/reminder', active: isActive('/tools/reminder') },
     { id: 'tools', title: '工具中心', icon: <Grid3X3 className="w-4 h-4 flex-shrink-0" />, path: '/tools', active: isActive('/tools') },
     { id: 'plugin-store', title: '插件商店', icon: <Package className="w-4 h-4 flex-shrink-0" />, path: '/tools/plugin-store', active: isActive('/tools/plugin-store') },
     { id: 'offline-tools', title: '离线工具', icon: <Wrench className="w-4 h-4 flex-shrink-0" />, path: '/tools/offline-tools', active: isActive('/tools/offline-tools') },

@@ -453,6 +453,8 @@ let edgeHideTimer = null;            // 光标离开后的延迟折叠定时器
 let edgeTriggerAt = 0;               // 光标进入感应区的时刻（0 = 不在感应区内）
 let edgeZoneArmed = false;           // 感应区武装标记：折叠后光标须先离开感应区再进入才可停留触发
 let edgeTopmost = false;             // 隐藏态置顶标记：由吸附管理切换，不覆盖用户手动置顶
+let edgeUserDragging = false;        // 用户拖拽中标记（WM_ENTERSIZEMOVE/EXITSIZEMOVE 维护）：拖拽期间不做吸附判定
+let edgeImeComposing = false;        // 输入法组合态标记：输入中禁止自动折叠（IME 候选窗夺焦/光标在外均不收回）
 
 const stopEdgePoll = () => {
   if (edgePollTimer) {
@@ -523,6 +525,7 @@ const clearEdgeDock = () => {
     mainWindow.setSkipTaskbar(false); // 退出停靠还原任务栏图标
   }
   edgeDockedEdge = null;
+  edgeImeComposing = false; // 退出停靠重置组合态，防止渲染层重载后残留 true 导致重停靠后永不折叠
   stopEdgePoll();
   if (snapTimer) {
     clearTimeout(snapTimer);
@@ -724,6 +727,7 @@ const snapWindowToEdge = () => {
 // 主窗口 move 入口：用户拖动即退出停靠，停止拖动后重新判定吸附
 const handleMainWindowMove = () => {
   if (!loadSettings().isWindowEdgeAdsorption) return;
+  if (edgeUserDragging) return; // 拖拽中由 WM_EXITSIZEMOVE 统一判定吸附，避免拖拽中途停顿被吸附抢位置
   if (Date.now() < edgeSelfMoveUntil) return; // 吸附 / 隐藏自身的位置调整，忽略
   clearEdgeDock();
   snapTimer = setTimeout(snapWindowToEdge, 150);
@@ -903,6 +907,22 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   // 边缘吸附与贴边隐藏的入口挂载（核心逻辑见模块级 handleMainWindowMove / snapWindowToEdge）
   mainWindow.on('move', handleMainWindowMove);
 
+  // 用户拖拽边界（Windows 窗口消息，程序性 setBounds 不触发，吸附/折叠动画不受影响）：
+  // 拖拽开始立即退出停靠并取消进行中的自移动画（修复停靠态拖出时动画/吸附与用户拖拽抢位置导致窗口乱飞）；
+  // 拖拽结束统一做吸附判定
+  mainWindow.hookWindowMessage(0x0231 /* WM_ENTERSIZEMOVE */, () => {
+    edgeUserDragging = true;
+    if (!loadSettings().isWindowEdgeAdsorption) return;
+    cancelEdgeAnimation();
+    clearEdgeDock();
+  });
+  mainWindow.hookWindowMessage(0x0232 /* WM_EXITSIZEMOVE */, () => {
+    edgeUserDragging = false;
+    if (!loadSettings().isWindowEdgeAdsorption) return;
+    if (snapTimer) clearTimeout(snapTimer);
+    snapTimer = setTimeout(snapWindowToEdge, 150);
+  });
+
   // 隐藏态被系统被动夺焦（其他应用逐一最小化后焦点转移）时拒绝焦点不展开：
   // 停靠态已不占任务栏/Alt+Tab，focus 无用户主动唤出路径；立即 blur 避免焦点滞留隐藏窗口
   mainWindow.on('focus', () => {
@@ -917,9 +937,11 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   });
 
   // 失焦收回：停靠展开态被切走（点击其他应用 / Alt+Tab）且光标已在窗外时折叠；
-  // 光标仍在窗口内（自家子窗口、文件对话框等夺焦）不折叠，交回渲染层 mouseleave 流程
+  // 光标仍在窗口内（自家子窗口、文件对话框等夺焦）不折叠，交回渲染层 mouseleave 流程；
+  // IME 组合中候选窗夺焦不折叠（输入中途收回会打断输入，由 compositionend 补偿判定）
   mainWindow.on('blur', () => {
     if (!edgeDockedEdge || edgeHidden) return;
+    if (edgeImeComposing) return;
     if (isCursorInsideWindow()) return;
     hideEdgeWindow();
   });
@@ -977,6 +999,19 @@ const registerIpcHandlers = () => {
   // 边缘吸附停靠态：渲染层光标跨界事件转发（mouseleave → 延迟折叠；mouseenter → 取消折叠）
   ipcMain.on('edge-snap:cursor-left', () => {
     if (!edgeDockedEdge || edgeHidden) return; // 未停靠 / 已折叠时忽略渲染层事件
+    if (edgeHideTimer) clearTimeout(edgeHideTimer);
+    edgeHideTimer = setTimeout(() => {
+      edgeHideTimer = null;
+      if (edgeImeComposing) return; // IME 输入中不折叠，待 compositionend 补偿判定
+      hideEdgeWindow();
+    }, EDGE_HIDE_DELAY_MS);
+  });
+
+  // 输入法组合态：输入中抑制自动折叠；输入结束时补偿判定（失焦且光标在窗外 → 延迟折叠兜底）
+  ipcMain.on('edge-snap:ime-state', (_event, composing) => {
+    edgeImeComposing = !!composing;
+    if (edgeImeComposing || !edgeDockedEdge || edgeHidden || !mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isFocused() || isCursorInsideWindow()) return;
     if (edgeHideTimer) clearTimeout(edgeHideTimer);
     edgeHideTimer = setTimeout(hideEdgeWindow, EDGE_HIDE_DELAY_MS);
   });

@@ -47,17 +47,17 @@ const DraftRecoveryDialog: React.FC<DraftRecoveryDialogProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-[520px] max-w-[92vw] rounded-lg bg-white dark:bg-content-primary shadow-xl">
+      <div className="w-[520px] max-w-[92vw] rounded-lg bg-surface shadow-xl">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-warning" />
-            <h3 className="text-base font-medium text-content-primary dark:text-white">
+            <h3 className="text-base font-medium text-content-primary">
               检测到未提交的草稿
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-content-tertiary hover:text-content-secondary dark:hover:text-gray-200"
+            className="text-content-tertiary hover:text-content-secondary"
             title="关闭"
           >
             <X className="h-4 w-4" />
@@ -127,7 +127,7 @@ const DraftRecoveryDialog: React.FC<DraftRecoveryDialogProps> = ({
           <button
             onClick={handleDiscardAll}
             disabled={busy !== null}
-            className="px-3 py-1.5 text-sm rounded text-gray-600 dark:text-content-secondary hover:bg-surface-secondary dark:hover:bg-content-primary disabled:opacity-50"
+            className="px-3 py-1.5 text-sm rounded text-content-secondary hover:bg-menu-hover disabled:opacity-50"
           >
             全部丢弃
           </button>

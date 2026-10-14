@@ -4,7 +4,7 @@ import {
   Phone, RefreshCw, MessageSquare, Clipboard, CheckSquare, Key,
   FileCode, Globe, Smile, Clock, ArrowUpDown, Hash, Copy,
   Table, Link, Map, QrCode, Code, AtSign, Tag, AlignLeft,
-  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, StickyNote, Home, Download
+  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, StickyNote, Home, Download, Bell
 } from 'lucide-react';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import { HomeToolItem, loadHomeTools, replaceHomeTool } from '../../utils/homeTools';
@@ -49,9 +49,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   StickyNote,
   Home,
   Download,
+  Bell,
 };
 
-const BASE_TOOLS_IDS = ['todo', 'memo', 'quick-reply', 'cloud-clipboard', 'account', 'weather', 'navigation', 'news'];
+const BASE_TOOLS_IDS = ['todo', 'memo', 'quick-reply', 'cloud-clipboard', 'account', 'weather', 'navigation', 'news', 'reminder'];
 
 const ToolsPage = () => {
   const navigate = useNavigate();

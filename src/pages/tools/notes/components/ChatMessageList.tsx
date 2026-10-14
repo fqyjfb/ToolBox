@@ -52,7 +52,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     >
       {messages.length === 0 ? (
         <div className="flex h-full flex-col items-center justify-center text-content-tertiary">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-surface-secondary dark:bg-content-primary">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-surface-secondary">
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M8 21h8a2 2 0 0 0 2-2V9.414a1 1 0 0 0-.293-.707l-5.414-5.414A1 1 0 0 0 11.586 3H4a2 2 0 0 0 2 2v14a2 2 0 0 0 2 2z" />
             </svg>
@@ -79,7 +79,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       className={`chat-message flex cursor-pointer items-start gap-1.5 rounded px-2 py-1.5 text-xs transition-colors ${
                         isSelected
                           ? 'bg-blue-100 dark:bg-blue-500/25'
-                          : 'hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1'
+                          : 'hover:bg-surface-secondary-50'
                       } ${message.done ? 'opacity-60' : ''}`}
                       onClick={(e) => handleMessageClick(e, message.id)}
                       onDoubleClick={() => onToggleDone(message.id)}

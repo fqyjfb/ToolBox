@@ -138,7 +138,7 @@ email: test@example.com
         <div className="flex items-center gap-2">
           <button
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary text-content-primary rounded-md hover:bg-menu-hover transition-colors"
           >
             <FileText className="w-3.5 h-3.5" />
             示例
@@ -183,7 +183,7 @@ email: test@example.com
               className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                 flags.includes(flag.value)
                   ? 'bg-red-500 text-white'
-                  : 'bg-surface-secondary dark:bg-content-primary text-content-primary hover:bg-menu-hover dark:hover:bg-content-hover'
+                  : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
               }`}
               title={flag.desc}
             >
@@ -202,30 +202,30 @@ email: test@example.com
       <div className="flex-1 bg-surface rounded-lg shadow-md overflow-hidden flex flex-col">
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 min-h-0">
           <div className="flex flex-col min-h-0">
-            <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border border-content rounded-t-lg">
+            <div className="px-4 py-2 bg-surface-secondary border border-content rounded-t-lg">
               <span className="text-sm font-medium text-content-secondary">测试文本</span>
             </div>
             <textarea
               value={testString}
               onChange={(e) => setTestString(e.target.value)}
-              className="flex-1 w-full px-4 py-3 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none border border-t-0 border-content rounded-b-lg"
+              className="flex-1 w-full px-4 py-3 bg-surface-secondary text-content-primary font-mono text-sm resize-none outline-none border border-t-0 border-content rounded-b-lg"
               placeholder="在此输入测试文本..."
             />
           </div>
           
           <div className="flex flex-col min-h-0">
-            <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border border-content rounded-t-lg flex items-center justify-between">
+            <div className="px-4 py-2 bg-surface-secondary border border-content rounded-t-lg flex items-center justify-between">
               <span className="text-sm font-medium text-content-secondary">匹配结果</span>
               <span className="text-sm text-content-tertiary">找到 {matches.length} 个匹配</span>
             </div>
-            <div className="flex-1 w-full px-4 py-3 bg-surface-secondary dark:bg-content-primary font-mono text-sm overflow-auto border border-t-0 border-content rounded-b-lg whitespace-pre-wrap break-all">
+            <div className="flex-1 w-full px-4 py-3 bg-surface-secondary font-mono text-sm overflow-auto border border-t-0 border-content rounded-b-lg whitespace-pre-wrap break-all">
               {renderHighlighted()}
             </div>
           </div>
         </div>
 
         {matches.length > 0 && (
-          <div className="px-4 py-3 bg-surface-secondary dark:bg-content-primary">
+          <div className="px-4 py-3 bg-surface-secondary">
             <h4 className="text-sm font-medium text-content-primary mb-2">匹配详情</h4>
             <div className="flex flex-wrap gap-2">
               {matches.map((match, index) => (

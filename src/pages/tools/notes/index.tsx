@@ -332,13 +332,13 @@ const NotesPage: React.FC = () => {
             <div className="flex items-center justify-between px-3 py-2">
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded p-1 text-content-tertiary hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1"
+                  className="rounded p-1 text-content-tertiary hover:bg-surface-secondary-50"
                   onClick={handleToggleSidebar}
                   title={sidebarVisible ? '隐藏列表' : '显示列表'}
                 >
                   <PanelLeft className="h-3.5 w-3.5" />
                 </button>
-                <h2 className="text-xs font-medium text-gray-600 dark:text-content-secondary">快速记录想法，稍后整理</h2>
+                <h2 className="text-xs font-medium text-content-secondary">快速记录想法，稍后整理</h2>
               </div>
               {selectedMessages.length > 0 && (
                 <button

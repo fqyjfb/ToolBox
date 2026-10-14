@@ -90,12 +90,12 @@ const CountryCodePage: React.FC = () => {
                 filteredCodes.map((item: CountryCode, index: number) => (
                   <tr
                     key={`${item.country}-${item.phoneCode}-${index}`}
-                    className="hover:bg-surface-secondary dark:hover:bg-surface/$1 transition-colors cursor-pointer"
+                    className="hover:bg-surface-secondary dark:hover:bg-surface-50 transition-colors cursor-pointer"
                     onClick={() => handleCopy(item.phoneCode)}
                   >
                     <td className="py-1.5 px-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-content-primary dark:text-white">{item.country}</span>
+                        <span className="text-xs text-content-primary">{item.country}</span>
                         <span className={`px-1.5 py-0.5 rounded-full text-2xs font-medium ${regionColors[item.region]}`}>
                           {item.region}
                         </span>

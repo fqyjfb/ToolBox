@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Map, Copy, Download, FileText } from 'lucide-react';
 import { useToolPage } from '../../../hooks/useToolPage';
 import Select from '../../../components/ui/Select';
@@ -159,28 +159,28 @@ const SitemapGeneratorPage: React.FC = () => {
                     value={entry.url}
                     onChange={(e) => updateEntry(index, 'url', e.target.value)}
                     placeholder="https://example.com/path"
-                    className="px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary text-sm"
+                    className="px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   />
                   
                   <Select
                     value={entry.priority}
                     onChange={(v) => updateEntry(index, 'priority', v)}
                     options={priorityOptions.map(opt => ({ value: opt, label: opt }))}
-                    className="px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary text-sm"
+                    className="px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   />
                   
                   <Select
                     value={entry.changefreq}
                     onChange={(v) => updateEntry(index, 'changefreq', v)}
                     options={changefreqOptions}
-                    className="px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary text-sm"
+                    className="px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   />
                   
                   <input
                     type="date"
                     value={entry.lastmod}
                     onChange={(e) => updateEntry(index, 'lastmod', e.target.value)}
-                    className="px-3 py-2 border border-content rounded-lg bg-surface dark:bg-content-primary text-content-primary text-sm"
+                    className="px-3 py-2 border border-content rounded-lg bg-surface text-content-primary text-sm"
                   />
                 </div>
               </div>

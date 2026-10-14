@@ -431,7 +431,7 @@ const Settings: React.FC = () => {
         </div>
         <div className="p-2">
           <button
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg text-content-primary hover:bg-menu-hover dark:hover:bg-content-hover"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg text-content-primary hover:bg-menu-hover"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
           >

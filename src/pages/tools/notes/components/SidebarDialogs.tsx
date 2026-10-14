@@ -33,13 +33,13 @@ export const CreateDialog: React.FC<CreateDialogProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-80 rounded-xl bg-surface p-4 shadow-xl">
-        <h3 className="mb-4 text-lg font-semibold text-content-primary dark:text-white">
+        <h3 className="mb-4 text-lg font-semibold text-content-primary">
           {type === 'folder' ? '新建文件夹' : '新建笔记'}
         </h3>
 
         <input
           type="text"
-          className="mb-4 w-full rounded-lg bg-surface-secondary px-3 py-2 text-sm text-content-primary dark:text-white focus:ring-2 focus:ring-primary/30 focus:outline-none"
+          className="mb-4 w-full rounded-lg bg-surface-secondary px-3 py-2 text-sm text-content-primary focus:ring-2 focus:ring-primary/30 focus:outline-none"
           placeholder={type === 'folder' ? '文件夹名称' : '笔记名称'}
           value={name}
           onChange={(e) => handleNameChange(e.target.value)}
@@ -52,7 +52,7 @@ export const CreateDialog: React.FC<CreateDialogProps> = ({
 
         <div className="flex justify-end gap-2">
           <button
-            className="rounded-lg px-3 py-1.5 text-sm text-gray-600 dark:text-content-secondary hover:bg-menu-hover"
+            className="rounded-lg px-3 py-1.5 text-sm text-content-secondary hover:bg-menu-hover"
             onClick={onCancel}
           >
             取消
@@ -87,10 +87,10 @@ export const ExistsConfirmDialog: React.FC<ExistsConfirmDialogProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-96 rounded-xl bg-surface p-4 shadow-xl">
-        <h3 className="mb-2 text-lg font-semibold text-content-primary dark:text-white">
+        <h3 className="mb-2 text-lg font-semibold text-content-primary">
           {type === 'folder' ? '文件夹已存在' : '文件已存在'}
         </h3>
-        <p className="mb-4 text-sm text-gray-600 dark:text-content-secondary">
+        <p className="mb-4 text-sm text-content-secondary">
           {type === 'folder'
             ? `文件夹 "${name}" 已存在，请选择操作：`
             : `文件 "${name}" 已存在，请选择操作：`}
@@ -110,7 +110,7 @@ export const ExistsConfirmDialog: React.FC<ExistsConfirmDialogProps> = ({
             创建副本
           </button>
           <button
-            className="w-full rounded-lg px-3 py-2 text-sm text-gray-600 dark:text-content-secondary hover:bg-menu-hover"
+            className="w-full rounded-lg px-3 py-2 text-sm text-content-secondary hover:bg-menu-hover"
             onClick={onCancel}
           >
             取消
@@ -142,10 +142,10 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-96 rounded-xl bg-surface p-4 shadow-xl">
-        <h3 className="mb-2 text-lg font-semibold text-content-primary dark:text-white">
+        <h3 className="mb-2 text-lg font-semibold text-content-primary">
           {toTrash ? '确认移入回收站' : '确认删除'}
         </h3>
-        <p className="mb-4 text-sm text-gray-600 dark:text-content-secondary">
+        <p className="mb-4 text-sm text-content-secondary">
           {toTrash
             ? `确定要将${target}移入回收站吗？可在系统回收站中还原。`
             : `确定要删除${target}吗？此操作不可撤销。`}
@@ -153,7 +153,7 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
 
         <div className="flex justify-end gap-2">
           <button
-            className="rounded-lg px-3 py-1.5 text-sm text-gray-600 dark:text-content-secondary hover:bg-menu-hover"
+            className="rounded-lg px-3 py-1.5 text-sm text-content-secondary hover:bg-menu-hover"
             onClick={onCancel}
           >
             取消

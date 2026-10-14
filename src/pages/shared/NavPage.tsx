@@ -662,7 +662,7 @@ const NavPage: React.FC = () => {
                       {favorites.map((bookmark) => renderBookmarkCard(bookmark))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 bg-white/70 dark:bg-content-primary/$1 backdrop-blur-sm rounded-lg">
+                    <div className="text-center py-8 bg-white/70 backdrop-blur-sm rounded-lg">
                       <p className="text-content-secondary">暂无收藏</p>
                       <button
                         onClick={() => setFavoritesView(false)}

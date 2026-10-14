@@ -101,7 +101,7 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
     <div className="flex items-center justify-between p-3">
       <div className="flex items-center gap-1">
         <button
-          className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+          className="rounded p-1 text-content-tertiary hover:bg-menu-hover hover:text-content-secondary"
           onClick={onRefresh}
           disabled={loading}
           title="刷新"
@@ -110,7 +110,7 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
         </button>
         {onRebuildIndex && (
           <button
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+            className="rounded p-1 text-content-tertiary hover:bg-menu-hover hover:text-content-secondary"
             onClick={handleRebuildIndex}
             disabled={isRebuilding}
             title="重建索引"
@@ -119,7 +119,7 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
           </button>
         )}
         <button
-          className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+          className="rounded p-1 text-content-tertiary hover:bg-menu-hover hover:text-content-secondary"
           onClick={onAddPinnedFolder}
           disabled={loading}
           title="添加固定目录"
@@ -127,7 +127,7 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
           <Pin className="w-4 h-4" />
         </button>
         <button
-          className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+          className="rounded p-1 text-content-tertiary hover:bg-menu-hover hover:text-content-secondary"
           onClick={onSetChatPath}
           disabled={loading}
           title={chatPath ? `对话路径: ${chatPath}` : '设置对话路径'}
@@ -135,7 +135,7 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
           <MessageSquare className="w-4 h-4" />
         </button>
         <button
-          className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
+          className="rounded p-1 text-content-tertiary hover:bg-menu-hover hover:text-content-secondary disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           onClick={() => onOpenCreateDialog('folder', currentViewPath)}
           disabled={!currentViewPath}
           title={currentViewPath ? '新建文件夹' : '请先添加固定目录'}

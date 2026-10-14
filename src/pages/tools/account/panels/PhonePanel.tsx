@@ -256,7 +256,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
         ) : (
           <div className="rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-surface-secondary dark:bg-content-primary">
+              <thead className="bg-surface-secondary">
                 <tr>
                   {visibleColumns.includes('phone_number') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">手机号</th>}
                   {visibleColumns.includes('owner') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">机主</th>}
@@ -270,14 +270,14 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
                 {phones.map((phone) => (
                   <tr
                     key={phone.id}
-                    className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
+                    className="bg-surface-secondary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                     onClick={() => handleRowClick(phone)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', phone.id)}
                   >
                     {visibleColumns.includes('phone_number') && (
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm text-content-primary dark:text-white">{phone.phone_number}</span>
+                          <span className="font-medium text-sm text-content-primary">{phone.phone_number}</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleCopyText(phone.phone_number, '手机号已复制'); }}
                             className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
@@ -290,7 +290,7 @@ const PhonePanel = forwardRef<PhonePanelRef, PhonePanelProps>(({ userId }, ref) 
                     )}
                     {visibleColumns.includes('owner') && (
                       <td className="px-4 py-3">
-                        <span className="text-sm text-content-primary dark:text-white">{phone.owner || '-'}</span>
+                        <span className="text-sm text-content-primary">{phone.owner || '-'}</span>
                       </td>
                     )}
                     {visibleColumns.includes('phone_operator') && (

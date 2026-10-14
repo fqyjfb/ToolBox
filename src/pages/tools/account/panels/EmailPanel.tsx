@@ -306,7 +306,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
         ) : (
           <div className="rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-surface-secondary dark:bg-content-primary">
+              <thead className="bg-surface-secondary">
                 <tr>
                   {visibleColumns.includes('platform') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">平台</th>}
                   {visibleColumns.includes('email') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">邮箱</th>}
@@ -321,7 +321,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
                   const platform = getEmailPlatform(email.email);
                   return (<tr
                       key={email.id}
-                      className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
+                      className="bg-surface-secondary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                       onClick={() => handleRowClick(email)}
                       onContextMenu={(e) => handleContextMenu(e, 'item', email.id)}
                     >
@@ -336,7 +336,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
                       {visibleColumns.includes('email') && (
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm text-content-primary dark:text-white">{email.email}</span>
+                            <span className="font-medium text-sm text-content-primary">{email.email}</span>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleCopyText(email.email, '邮箱已复制'); }}
                               className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
@@ -349,7 +349,7 @@ const EmailPanel = forwardRef<EmailPanelRef, EmailPanelProps>(({ userId }, ref) 
                       )}
                       {visibleColumns.includes('phone') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-content-primary dark:text-white">{email.phone || '-'}</span>
+                          <span className="text-sm text-content-primary">{email.phone || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('remark') && (

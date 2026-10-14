@@ -283,14 +283,14 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
             <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleShare}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 text-content-tertiary hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
               title="分享"
             >
               <Share2 className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 text-content-tertiary hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

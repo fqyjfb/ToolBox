@@ -1092,7 +1092,7 @@ const QuickLaunch: React.FC = () => {
               <OverflowMenu items={overflowMenuItems} />
               <button
                 onClick={handleAddCategory}
-                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+                className="p-1.5 text-content-tertiary hover:text-content-secondary transition-colors flex-shrink-0"
                 title="添加分类"
               >
                 <Plus size={16} />
@@ -1451,7 +1451,7 @@ const QuickLaunch: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setHotkeyInput('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-content-tertiary hover:text-content-secondary rounded transition-colors"
                   title="清空"
                 >
                   <X size={14} />

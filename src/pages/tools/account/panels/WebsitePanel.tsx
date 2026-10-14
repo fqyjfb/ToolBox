@@ -602,7 +602,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
   }, [contextMenu.type, contextMenu.targetId, accounts, categories, handleCloseContextMenu, handleOpenConfirmDialog, handleCopyPassword, handleCopyText, handleQuickLogin, handleDeleteCategory, handleDeleteItem, openItemModal, openCategoryModal, handleRowClick]);
 
   const renderAccountItem = (account: WebsiteAccount) => (
-    <div key={account.id} className="bg-surface-secondary dark:bg-content-primary rounded-lg p-3 cursor-pointer hover:bg-menu-hover transition-colors" onClick={() => handleRowClick(account)} onContextMenu={(e) => handleContextMenu(e, 'item', account.id)}>
+    <div key={account.id} className="bg-surface-secondary rounded-lg p-3 cursor-pointer hover:bg-menu-hover transition-colors" onClick={() => handleRowClick(account)} onContextMenu={(e) => handleContextMenu(e, 'item', account.id)}>
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 flex flex-col items-center">
           <svg className="w-5 h-5" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
@@ -616,7 +616,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-content-primary dark:text-white truncate">
+            <h3 className="text-sm font-semibold text-content-primary truncate">
               {account.url ? (
                 <button 
                   onClick={(e) => { e.stopPropagation(); openUrl(account.url); }}
@@ -633,10 +633,10 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-xs text-content-secondary mt-1">
-            {account.username && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">账号:</span><span className="text-content-primary dark:text-white truncate max-w-[100px]">{account.username}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.username, '用户名已复制'); }} className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary p-0.5 rounded hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制用户名"><Copy className="w-3 h-3" /></button></div>}
-            {account.email && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">邮箱:</span><span className="text-content-primary dark:text-white truncate max-w-[120px]">{account.email}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.email, '邮箱已复制'); }} className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary p-0.5 rounded hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制邮箱"><Copy className="w-3 h-3" /></button></div>}
-            {account.phone && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">手机:</span><span className="text-content-primary dark:text-white">{account.phone}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.phone, '手机号已复制'); }} className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary p-0.5 rounded hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制手机号"><Copy className="w-3 h-3" /></button></div>}
-            {account.notes && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">备注:</span><span className="text-content-primary dark:text-white truncate max-w-[120px]">{account.notes}</span></div>}
+            {account.username && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">账号:</span><span className="text-content-primary truncate max-w-[100px]">{account.username}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.username, '用户名已复制'); }} className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary p-0.5 rounded hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制用户名"><Copy className="w-3 h-3" /></button></div>}
+            {account.email && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">邮箱:</span><span className="text-content-primary truncate max-w-[120px]">{account.email}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.email, '邮箱已复制'); }} className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary p-0.5 rounded hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制邮箱"><Copy className="w-3 h-3" /></button></div>}
+            {account.phone && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">手机:</span><span className="text-content-primary">{account.phone}</span><button onClick={(e) => { e.stopPropagation(); handleCopyText(account.phone, '手机号已复制'); }} className="text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary p-0.5 rounded hover:bg-menu-hover dark:hover:bg-surface transition-colors" title="复制手机号"><Copy className="w-3 h-3" /></button></div>}
+            {account.notes && <div className="flex items-center gap-1.5"><span className="font-medium text-content-secondary">备注:</span><span className="text-content-primary truncate max-w-[120px]">{account.notes}</span></div>}
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -848,7 +848,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
               extraButton={
                 <button
                   onClick={generatePassword}
-                  className="text-content-tertiary hover:text-gray-600 dark:text-content-tertiary dark:hover:text-content-secondary transition-colors"
+                  className="text-content-tertiary hover:text-content-secondary transition-colors"
                   title="生成密码"
                 >
                   <RefreshCw className="w-4 h-4" />

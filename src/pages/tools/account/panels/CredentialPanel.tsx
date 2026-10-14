@@ -317,7 +317,7 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
         ) : (
           <div className="rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-surface-secondary dark:bg-content-primary">
+              <thead className="bg-surface-secondary">
                 <tr>
                   {visibleColumns.includes('certificate_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">证件名称</th>}
                   {visibleColumns.includes('id_card_number') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">证件号码</th>}
@@ -335,13 +335,13 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
                 {credentials.map((credential) => (
                   <tr
                     key={credential.id}
-                    className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
+                    className="bg-surface-secondary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                     onClick={() => handleRowClick(credential)}
                     onContextMenu={(e) => handleContextMenu(e, 'item', credential.id)}
                   >
                     {visibleColumns.includes('certificate_name') && (
                       <td className="px-4 py-3">
-                        <span className="font-medium text-sm text-content-primary dark:text-white">{credential.certificate_name}</span>
+                        <span className="font-medium text-sm text-content-primary">{credential.certificate_name}</span>
                       </td>
                     )}
                     {visibleColumns.includes('id_card_number') && (

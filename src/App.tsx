@@ -239,15 +239,22 @@ function App() {
     document.documentElement.classList.toggle('compact-mode', isElectron() && windowMode === 'compact');
   }, [windowMode]);
 
-  // 边缘吸附停靠态：光标跨越窗口边界时通知主进程（mouseleave → 延迟折叠 / mouseenter → 取消折叠、提示条即时展开）
+  // 边缘吸附停靠态：光标跨越窗口边界时通知主进程（mouseleave → 延迟折叠 / mouseenter → 取消折叠、提示条即时展开）；
+  // IME 组合态同步（compositionstart/end）：输入中主进程抑制自动折叠，避免候选窗夺焦或光标在外时窗口被收回
   useEffect(() => {
     if (!isElectron() || !window.electron?.edgeSnapCursorLeft) return undefined;
-    const { edgeSnapCursorLeft, edgeSnapCursorEnter } = window.electron;
+    const { edgeSnapCursorLeft, edgeSnapCursorEnter, edgeSnapImeState } = window.electron;
+    const handleCompositionStart = () => edgeSnapImeState?.(true);
+    const handleCompositionEnd = () => edgeSnapImeState?.(false);
     document.addEventListener('mouseleave', edgeSnapCursorLeft);
     document.addEventListener('mouseenter', edgeSnapCursorEnter);
+    document.addEventListener('compositionstart', handleCompositionStart);
+    document.addEventListener('compositionend', handleCompositionEnd);
     return () => {
       document.removeEventListener('mouseleave', edgeSnapCursorLeft);
       document.removeEventListener('mouseenter', edgeSnapCursorEnter);
+      document.removeEventListener('compositionstart', handleCompositionStart);
+      document.removeEventListener('compositionend', handleCompositionEnd);
     };
   }, []);
 

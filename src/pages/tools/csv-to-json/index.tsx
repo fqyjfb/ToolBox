@@ -79,7 +79,7 @@ const CsvToJsonPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary text-content-primary rounded-md hover:bg-menu-hover transition-colors"
           >
             <FileText className="w-3.5 h-3.5" />
             示例
@@ -123,25 +123,25 @@ const CsvToJsonPage: React.FC = () => {
 
       <div className="flex-1 bg-surface rounded-lg shadow-md overflow-hidden flex">
         <div className="w-1/2 flex flex-col border-r border-content">
-          <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+          <div className="px-4 py-2 bg-surface-secondary border-b border-content">
             <span className="text-sm font-medium text-content-secondary">CSV 输入</span>
           </div>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
+            className="flex-1 w-full p-4 bg-surface-secondary text-content-primary font-mono text-sm resize-none outline-none"
             placeholder="name,age,city&#10;张三,28,北京&#10;李四,32,上海"
           />
         </div>
         
         <div className="w-1/2 flex flex-col">
-          <div className="px-4 py-2 bg-surface-secondary dark:bg-content-primary border-b border-content">
+          <div className="px-4 py-2 bg-surface-secondary border-b border-content">
             <span className="text-sm font-medium text-content-secondary">JSON 输出</span>
           </div>
           <textarea
             value={output}
             readOnly
-            className="flex-1 w-full p-4 bg-surface-secondary dark:bg-content-primary text-content-primary font-mono text-sm resize-none outline-none"
+            className="flex-1 w-full p-4 bg-surface-secondary text-content-primary font-mono text-sm resize-none outline-none"
             placeholder="转换后的 JSON 将显示在这里..."
           />
         </div>

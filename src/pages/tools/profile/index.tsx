@@ -120,7 +120,7 @@ const ProfilePage: React.FC = () => {
     editingField === field || (field === 'password' && editingPassword);
 
   const inputClassName = (field: string) =>
-    `flex-1 px-3 py-2 text-sm bg-surface border rounded text-content-primary dark:text-white focus:outline-none transition-all duration-200 ${
+    `flex-1 px-3 py-2 text-sm bg-surface border rounded text-content-primary focus:outline-none transition-all duration-200 ${
       errors[field]
         ? 'border-red-400 focus:border-red-400'
         : 'border-gray-200 dark:border-content focus:border-gray-400 dark:focus:border-content'
@@ -251,7 +251,7 @@ const ProfilePage: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold text-content-primary dark:text-white">{user.name || '未设置'}</h1>
+              <h1 className="text-lg font-semibold text-content-primary">{user.name || '未设置'}</h1>
               <span
                 className="profile-badge"
                 style={badgeStyle(levelConfig.color)}
@@ -283,15 +283,15 @@ const ProfilePage: React.FC = () => {
         <div className="rounded-lg overflow-hidden" style={{ background: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
 
           <div className="profile-section px-6 py-4">
-            <h2 className="text-sm font-medium text-content-primary dark:text-white flex items-center gap-2">
+            <h2 className="text-sm font-medium text-content-primary flex items-center gap-2">
               <span className="w-1 h-4 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }}></span>
               账户信息
             </h2>
             <div className="mt-3">
               {fieldData[0] && (
                 <div
-                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1 profile-field profile-field-1 ${
-                    isFieldEditing(fieldData[0].key) ? 'bg-surface-secondary/$1 dark:bg-content-primary/$1' : ''
+                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-surface-secondary-50 profile-field profile-field-1 ${
+                    isFieldEditing(fieldData[0].key) ? 'bg-surface-secondary-50' : ''
                   }`}
                 >
                   <span className="w-8 h-8 flex items-center justify-center text-content-tertiary shrink-0 rounded">
@@ -300,7 +300,7 @@ const ProfilePage: React.FC = () => {
                   <span className="text-xs text-content-secondary w-12 shrink-0">
                     {fieldData[0].label}
                   </span>
-                  <span className="flex-1 text-sm font-medium text-content-primary dark:text-white truncate">
+                  <span className="flex-1 text-sm font-medium text-content-primary truncate">
                     {fieldData[0].value}
                   </span>
                 </div>
@@ -309,7 +309,7 @@ const ProfilePage: React.FC = () => {
           </div>
 
           <div className="profile-section px-6 py-4">
-            <h2 className="text-sm font-medium text-content-primary dark:text-white flex items-center gap-2">
+            <h2 className="text-sm font-medium text-content-primary flex items-center gap-2">
               <span className="w-1 h-4 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }}></span>
               基本信息
             </h2>
@@ -317,8 +317,8 @@ const ProfilePage: React.FC = () => {
               {fieldData.slice(1).map((field, idx) => (
                 <div
                   key={field.key}
-                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1 profile-field profile-field-${idx + 2} ${
-                    isFieldEditing(field.key) ? 'bg-surface-secondary/$1 dark:bg-content-primary/$1' : ''
+                  className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-surface-secondary-50 profile-field profile-field-${idx + 2} ${
+                    isFieldEditing(field.key) ? 'bg-surface-secondary-50' : ''
                   }`}
                 >
                   <span className="w-8 h-8 flex items-center justify-center text-content-tertiary shrink-0 rounded">
@@ -352,7 +352,7 @@ const ProfilePage: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <span className="flex-1 text-sm font-medium text-content-primary dark:text-white truncate">
+                      <span className="flex-1 text-sm font-medium text-content-primary truncate">
                         {field.value}
                       </span>
                       {field.editable && (
@@ -371,14 +371,14 @@ const ProfilePage: React.FC = () => {
           </div>
 
           <div className="profile-section px-6 py-4">
-            <h2 className="text-sm font-medium text-content-primary dark:text-white flex items-center gap-2">
+            <h2 className="text-sm font-medium text-content-primary flex items-center gap-2">
               <span className="w-1 h-4 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }}></span>
               修改密码
             </h2>
             <div className="mt-3">
               <div
-                className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-surface-secondary/$1 dark:hover:bg-content-primary/$1 profile-field profile-field-5 ${
-                  editingPassword ? 'bg-surface-secondary/$1 dark:bg-content-primary/$1' : ''
+                className={`flex items-center gap-4 py-3 px-2 rounded transition-colors duration-200 hover:bg-surface-secondary-50 profile-field profile-field-5 ${
+                  editingPassword ? 'bg-surface-secondary-50' : ''
                 }`}
               >
                 <span className="w-8 h-8 flex items-center justify-center text-content-tertiary shrink-0 rounded">

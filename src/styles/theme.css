@@ -1170,6 +1170,9 @@ body.dark {
 .bg-surface-60       { background-color: color-mix(in srgb, var(--color-bg-primary)    60%, transparent); }
 .bg-surface-secondary-50 { background-color: color-mix(in srgb, var(--color-bg-secondary) 50%, transparent); }
 .bg-surface-secondary-60 { background-color: color-mix(in srgb, var(--color-bg-secondary) 60%, transparent); }
+/* 手写类无 Tailwind 变体，hover/dark 需显式定义 */
+.hover\:bg-surface-secondary-50:hover { background-color: color-mix(in srgb, var(--color-bg-secondary) 50%, transparent); }
+.dark .dark\:hover\:bg-surface-50:hover { background-color: color-mix(in srgb, var(--color-bg-primary) 50%, transparent); }
 
 /* 半透明卡片（用于看板/分类卡片背景） */
 .bg-card-50       { background-color: color-mix(in srgb, var(--color-card) 50%, transparent); }

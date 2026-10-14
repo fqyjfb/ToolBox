@@ -66,7 +66,7 @@ const UrlParserPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={loadSample}
-            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
+            className="flex items-center gap-2 px-3 py-1 text-xs font-medium bg-surface-secondary text-content-primary rounded-md hover:bg-menu-hover transition-colors"
           >
             <FileText className="w-3.5 h-3.5" />
             示例
@@ -87,7 +87,7 @@ const UrlParserPage: React.FC = () => {
           />
           <button
             onClick={handleReset}
-            className="px-3 py-1 text-xs font-medium bg-surface-secondary dark:bg-content-primary text-content-primary rounded-md hover:bg-menu-hover dark:hover:bg-content-hover transition-colors"
+            className="px-3 py-1 text-xs font-medium bg-surface-secondary text-content-primary rounded-md hover:bg-menu-hover transition-colors"
           >
             重置
           </button>

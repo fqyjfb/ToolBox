@@ -319,7 +319,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
         ) : (
           <div className="rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-surface-secondary dark:bg-content-primary">
+              <thead className="bg-surface-secondary">
                 <tr>
                   {visibleColumns.includes('platform') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">平台</th>}
                   {visibleColumns.includes('shop_name') && <th className="px-4 py-2 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">店铺名称</th>}
@@ -345,7 +345,7 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
                   return (
                     <tr
                       key={shop.id}
-                      className="bg-surface-secondary dark:bg-content-primary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
+                      className="bg-surface-secondary hover:bg-menu-hover dark:hover:bg-surface cursor-pointer transition-colors"
                       onClick={() => handleRowClick(shop)}
                       onContextMenu={(e) => handleContextMenu(e, 'item', shop.id)}
                     >
@@ -359,13 +359,13 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
                       )}
                       {visibleColumns.includes('shop_name') && (
                         <td className="px-4 py-3">
-                          <div className="font-medium text-sm text-content-primary dark:text-white">{shop.shop_name}</div>
+                          <div className="font-medium text-sm text-content-primary">{shop.shop_name}</div>
                         </td>
                       )}
                       {visibleColumns.includes('account') && (
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-content-primary dark:text-white">{shop.account}</span>
+                            <span className="text-sm text-content-primary">{shop.account}</span>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleCopyText(shop.account || '', '账号已复制'); }}
                               className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary rounded hover:bg-menu-hover transition-colors"
@@ -378,12 +378,12 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
                       )}
                       {visibleColumns.includes('contact_person') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-content-primary dark:text-white">{shop.contact_person || '-'}</span>
+                          <span className="text-sm text-content-primary">{shop.contact_person || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('phone') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-content-primary dark:text-white">{shop.phone || '-'}</span>
+                          <span className="text-sm text-content-primary">{shop.phone || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('email') && (
@@ -403,12 +403,12 @@ const ShopPanel = forwardRef<ShopPanelRef, ShopPanelProps>(({ userId }, ref) => 
                       )}
                       {visibleColumns.includes('shop_type') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-content-primary dark:text-white">{shop.shop_type || '-'}</span>
+                          <span className="text-sm text-content-primary">{shop.shop_type || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('corporation') && (
                         <td className="px-4 py-3">
-                          <span className="text-sm text-content-primary dark:text-white truncate max-w-[150px]">{shop.corporation || '-'}</span>
+                          <span className="text-sm text-content-primary truncate max-w-[150px]">{shop.corporation || '-'}</span>
                         </td>
                       )}
                       {visibleColumns.includes('alipay_account') && (
