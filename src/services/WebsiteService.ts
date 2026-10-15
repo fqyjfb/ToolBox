@@ -2,8 +2,16 @@ import { supabase } from './supabase'
 import type { Category, Bookmark } from '../types/website'
 import { logError, logInfo } from './loggerService'
 import { cacheService } from './cacheService'
+import { localStorageService } from './localStorageService'
 
 const CACHE_TTL = 5 * 60 * 1000
+
+// 网址导航 localStorage 快照 key
+const SNAPSHOT_KEYS = {
+  categories: 'website_snapshot_categories',
+  bookmarks: 'website_snapshot_bookmarks',
+  favorites: 'website_snapshot_favorites',
+} as const;
 
 // 辅助函数：关联分类信息到书签
 async function attachCategoriesToBookmarks(bookmarks: Bookmark[], cachedCategories?: Category[]): Promise<Bookmark[]> {
@@ -86,12 +94,16 @@ export const websiteService = {
       
       if (error) {
         logError('获取分类失败', 'WebsiteService', error as Error)
-        return []
+        // 失败时降级到 localStorage 快照
+        const snapshot = localStorageService.get<Category[]>(SNAPSHOT_KEYS.categories, [])
+        return snapshot.length > 0 ? snapshot : []
       }
 
       const categories = data as Category[] || []
 
       cacheService.set(cacheKey, categories, CACHE_TTL, 'website')
+      // 写入 localStorage 快照，供离线降级
+      localStorageService.set(SNAPSHOT_KEYS.categories, categories)
 
       return categories
     } catch (error) {
@@ -100,7 +112,9 @@ export const websiteService = {
         return []
       }
       logError('获取分类失败', 'WebsiteService', error as Error)
-      return []
+      // 失败时降级到 localStorage 快照
+      const snapshot = localStorageService.get<Category[]>(SNAPSHOT_KEYS.categories, [])
+      return snapshot.length > 0 ? snapshot : []
     }
   },
 
@@ -169,13 +183,19 @@ export const websiteService = {
         this.getCategories()
       ])
       
-      if (bookmarksResult.error) throw bookmarksResult.error
-      
+      if (bookmarksResult.error) {
+        // 失败时降级到 localStorage 快照
+        const snapshot = localStorageService.get<Bookmark[]>(SNAPSHOT_KEYS.bookmarks, [])
+        return snapshot.length > 0 ? snapshot : []
+      }
+
       // 关联分类信息，使用已获取的分类数据
       const bookmarksWithCategories = await attachCategoriesToBookmarks(bookmarksResult.data || [], categoriesResult)
-      
+
       cacheService.set(cacheKey, bookmarksWithCategories, CACHE_TTL, 'website')
-      
+      // 写入 localStorage 快照，供离线降级
+      localStorageService.set(SNAPSHOT_KEYS.bookmarks, bookmarksWithCategories)
+
       return bookmarksWithCategories
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -183,14 +203,10 @@ export const websiteService = {
         return []
       }
       logError('Get public bookmarks error', 'WebsiteService', error as Error)
-      
-      // 如果缓存存在，返回缓存数据
-      const cachedData = cacheService.get<Bookmark[]>(cacheKey)
-      if (cachedData) {
-        return cachedData
-      }
-      
-      return []
+
+      // 失败时降级到 localStorage 快照
+      const snapshot = localStorageService.get<Bookmark[]>(SNAPSHOT_KEYS.bookmarks, [])
+      return snapshot.length > 0 ? snapshot : []
     }
   },
 
@@ -278,33 +294,43 @@ export const websiteService = {
         .select('bookmark_id')
         .eq('user_id', userId)
       
-      if (error) throw error
-      
+      if (error) {
+        // 失败时降级到 localStorage 快照
+        const snapshot = localStorageService.get<Bookmark[]>(SNAPSHOT_KEYS.favorites, [])
+        return snapshot.length > 0 ? snapshot : []
+      }
+
       if (!favorites || favorites.length === 0) {
         cacheService.set(cacheKey, [], CACHE_TTL, 'website')
         return []
       }
-      
+
       // 2. 获取收藏的书签详情
       const bookmarkIds = favorites.map(f => f.bookmark_id)
       const { data: bookmarks, error: bookmarksError } = await supabase
         .from('bookmarks')
         .select('*')
         .in('id', bookmarkIds)
-      
-      if (bookmarksError) throw bookmarksError
-      
+
+      if (bookmarksError) {
+        // 失败时降级到 localStorage 快照
+        const snapshot = localStorageService.get<Bookmark[]>(SNAPSHOT_KEYS.favorites, [])
+        return snapshot.length > 0 ? snapshot : []
+      }
+
       // 3. 关联分类信息
       const bookmarksWithCategories = await attachCategoriesToBookmarks(bookmarks || [], options?.cachedCategories)
-      
+
       // 4. 标记为收藏
       const bookmarksWithFavoriteFlag = bookmarksWithCategories.map(bookmark => ({
         ...bookmark,
         is_favorite: true
       }))
-      
+
       cacheService.set(cacheKey, bookmarksWithFavoriteFlag, CACHE_TTL, 'website')
-      
+      // 写入 localStorage 快照，供离线降级
+      localStorageService.set(SNAPSHOT_KEYS.favorites, bookmarksWithFavoriteFlag)
+
       return bookmarksWithFavoriteFlag
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -312,7 +338,9 @@ export const websiteService = {
         return []
       }
       logError('Get favorites error', 'WebsiteService', error as Error)
-      return []
+      // 失败时降级到 localStorage 快照
+      const snapshot = localStorageService.get<Bookmark[]>(SNAPSHOT_KEYS.favorites, [])
+      return snapshot.length > 0 ? snapshot : []
     }
   },
 

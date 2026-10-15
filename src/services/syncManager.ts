@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { offlineStorage } from './offlineStorage';
 import { getDataAccessLayer } from './dataAccessLayer';
 import { logError, logInfo } from './loggerService';
+import { useSyncStore } from '../store/syncStore';
 import {
   SyncModuleKey,
   SyncModule,
@@ -252,13 +253,37 @@ export const syncManager = {
     await offlineStorage.put('sync_metadata', metadata);
   },
 
-  async addPendingOperation(operation: Omit<PendingOperation, 'id' | 'createdAt'>): Promise<void> {
+  async addPendingOperation(operation: Omit<PendingOperation, 'id' | 'createdAt' | 'user_id'> & { userId: string }): Promise<void> {
+    // 同记录去重：同一 (tableName, recordId) 已有待补偿记录时，合并为最新操作
+    const existingOps = await offlineStorage.queryByUser<PendingOperation>('pending_operations', operation.userId);
+    const duplicate = existingOps.find(op => op.tableName === operation.tableName && op.recordId === operation.recordId);
+
+    if (duplicate) {
+      if (operation.operationType === 'delete') {
+        // create + delete → 直接移除待办（无需上云）
+        await this.removePendingOperation(duplicate.id);
+        return;
+      }
+      if (duplicate.operationType === 'create' && operation.operationType === 'update') {
+        // create + update → 合并为 create + 最新 data
+        await this.removePendingOperation(duplicate.id);
+      } else {
+        // update + update / delete + update → 移除旧记录，以新操作为准
+        await this.removePendingOperation(duplicate.id);
+      }
+    }
+
     const pendingOp: PendingOperation = {
       ...operation,
       id: `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
+      user_id: operation.userId,
       createdAt: new Date().toISOString()
     };
     await offlineStorage.put('pending_operations', pendingOp);
+
+    // 同步更新全局待补偿计数
+    const currentCount = await this.getPendingOperations(operation.userId).then(ops => ops.length).catch(() => 0);
+    useSyncStore.getState().setPendingOperationsCount(currentCount);
   },
 
   async removePendingOperation(operationId: string): Promise<void> {
@@ -600,6 +625,7 @@ export const syncManager = {
 
   async applyPendingOperations(userId: string): Promise<void> {
     const pendingOps = await this.getPendingOperations(userId);
+    if (pendingOps.length === 0) return;
 
     for (const op of pendingOps) {
       try {
@@ -622,6 +648,16 @@ export const syncManager = {
         logError(`Failed to apply operation ${op.id}`, 'syncManager', error as Error);
       }
     }
+
+    // 同步更新全局待补偿计数
+    const remainingCount = await this.getPendingOperations(userId).then(ops => ops.length).catch(() => 0);
+    useSyncStore.getState().setPendingOperationsCount(remainingCount);
+  },
+
+  // 统一「先补偿后同步」入口：恢复在线时先应用离线变更，再走增量同步，避免删除复活
+  async recoverAndSync(userId: string): Promise<void> {
+    await this.applyPendingOperations(userId);
+    await this.syncOnStartup(userId);
   },
 
   async updateSyncTime(userId: string, moduleKey?: SyncModuleKey): Promise<void> {

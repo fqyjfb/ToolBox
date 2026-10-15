@@ -16,6 +16,7 @@ import { useWindowModeStore } from './store/windowModeStore';
 import { useSyncStore } from './store/syncStore';
 import { logError, logInfo } from './services/loggerService';
 import { syncManager } from './services/syncManager';
+import { startNetworkMonitor } from './services/networkMonitor';
 import { validateEncryptionKey, setEncryptionKey } from './utils/crypto';
 import { reinitSupabase } from './services/supabase';
 import { NavSearchProvider } from './contexts/NavSearchContext';
@@ -279,6 +280,9 @@ function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
+        // 启动网络可达性监控
+        startNetworkMonitor();
+
         // 桌面端：优先应用用户自定义的 Supabase 和加密密钥配置
         if (isElectron() && window.electron?.getSettings) {
           try {
@@ -357,12 +361,12 @@ function App() {
     loadSyncMetadata();
 
     const timer = setTimeout(() => {
-      syncManager.syncOnStartup(user.id);
+      syncManager.recoverAndSync(user.id);
     }, 2000);
 
-    // 断网恢复在线时补一次增量同步（仅在离线→在线跃迁时触发，不是轮询）
+    // 断网恢复在线时先补偿离线变更，再走增量同步
     const handleOnline = () => {
-      syncManager.syncOnStartup(user.id);
+      syncManager.recoverAndSync(user.id);
     };
     window.addEventListener('online', handleOnline);
 

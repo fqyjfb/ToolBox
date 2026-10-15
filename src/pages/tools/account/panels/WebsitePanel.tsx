@@ -26,6 +26,7 @@ import { localStorageService, STORAGE_KEYS } from '../../../../services/localSto
 import AutoResizeTextarea from '../../../../components/ui/AutoResizeTextarea';
 import { useIsCompactMode } from '../../../../store/windowModeStore';
 import { useOverflowItems } from '../../../../hooks/useOverflowItems';
+import { useHoverMenu } from '../../../../hooks/useHoverMenu';
 import OverflowMenu, { OverflowMenuItem } from '../../../../components/ui/OverflowMenu';
 import CompactSelector, { CompactSelectorItem } from '../../../../components/ui/CompactSelector';
 import { useConfirmDialog } from '../../../../hooks/useConfirmDialog';
@@ -51,14 +52,15 @@ interface WebsitePanelRef {
   setVisibleColumns: (columns: string[]) => void;
 }
 
-const SortableCategoryItem: React.FC<{ 
-  category: WebsiteAccountCategory; 
-  isActive: boolean; 
+const SortableCategoryItem: React.FC<{
+  category: WebsiteAccountCategory;
+  isActive: boolean;
   isExpanded: boolean;
-  onClick: (e: React.MouseEvent) => void; 
+  onClick: (e: React.MouseEvent) => void;
+  onArrowClick: (e: React.MouseEvent) => void;
   onContextMenu: (e: React.MouseEvent) => void;
   getCategoryColor: (name: string) => { bg: string; text: string; dot: string };
-}> = ({ category, isActive, isExpanded, onClick, onContextMenu, getCategoryColor }) => {
+}> = ({ category, isActive, isExpanded, onClick, onArrowClick, onContextMenu, getCategoryColor }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
 
   const style = {
@@ -89,7 +91,12 @@ const SortableCategoryItem: React.FC<{
         <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(category.name).dot}`}></div>
         <span>{category.name}</span>
         {category.children && category.children.length > 0 && (
-          <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          <button
+            onClick={(e) => { e.stopPropagation(); onArrowClick(e); }}
+            className="ml-0.5 p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+          >
+            <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          </button>
         )}
       </button>
     </div>
@@ -128,13 +135,14 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
   const [emails, setEmails] = useState<Email[]>([]);
   const [phones, setPhones] = useState<Phone[]>([]);
 
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  // 大窗模式主分类的悬浮子菜单：进入即展开、离开延迟关闭，同一时刻只展开一个
+  const { openKey: openCategoryId, closeMenu: closeCategoryMenu, toggleMenu: toggleCategoryMenu, getTriggerProps: getCategoryTriggerProps } = useHoverMenu();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('.category-dropdown-container')) {
-        setExpandedCategories(new Set());
+        closeCategoryMenu();
       }
     };
 
@@ -142,7 +150,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [closeCategoryMenu]);
 
   const sensors = useDndSensors();
 
@@ -659,7 +667,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       <div className={`${isCompact ? 'mb-2' : 'mb-4'} flex-shrink-0`}>
         <div className={`${isCompact ? 'flex flex-col items-stretch gap-1' : 'flex items-center justify-between'}`}>
           <div className="flex-1 min-w-0 category-dropdown-container relative">
-            <div className={isCompact ? 'py-1' : 'rounded-lg px-3 py-2'}>
+            <div className={isCompact ? 'py-1' : 'rounded-lg px-3'}>
               {isCompact ? (
                 <div className="flex items-center gap-1 min-w-0">
                   {/* 「全部」固定为第一个标签，不进下拉 */}
@@ -701,46 +709,49 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
                       >
                         {visible.map((item) =>
                           item.category ? (
-                            <div key={item.key} className="relative">
+                            <div
+                              key={item.key}
+                              className="relative"
+                              {...getCategoryTriggerProps(item.category.id)}
+                            >
                               <SortableCategoryItem
                                 category={item.category}
                                 isActive={selectedCategory === item.category.id}
-                                isExpanded={expandedCategories.has(item.category.id)}
+                                isExpanded={openCategoryId === item.category.id}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (item.category!.children && item.category!.children.length > 0) {
-                                    const isExpanded = expandedCategories.has(item.category!.id);
-                                    const newExpanded = new Set<string>();
-                                    if (!isExpanded) {
-                                      newExpanded.add(item.category!.id);
-                                    }
-                                    setExpandedCategories(newExpanded);
-                                  }
                                   handleCategorySelect(item.category!.id);
+                                }}
+                                onArrowClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleCategoryMenu(item.category!.id);
                                 }}
                                 onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
                                 getCategoryColor={getCategoryColor}
                               />
-                              {item.category.children && item.category.children.length > 0 && expandedCategories.has(item.category.id) && (
-                                <div className="absolute top-full left-0 mt-1 bg-bg-primary rounded-lg shadow-lg border border-border z-10 min-w-[120px] max-w-[180px] py-1">
-                                  {item.category.children.map(child => (
-                                    <button
-                                      key={child.id}
-                                      onClick={() => {
-                                        handleCategorySelect(child.id);
-                                        setExpandedCategories(new Set());
-                                      }}
-                                      onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
-                                      className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
-                                        selectedCategory === child.id
-                                          ? 'bg-surface-secondary text-content-primary'
-                                          : 'text-text-primary hover:bg-bg-secondary'
-                                      }`}
-                                    >
-                                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getCategoryColor(child.name).dot}`}></div>
-                                      <span className="truncate">{child.name}</span>
-                                    </button>
-                                  ))}
+                              {item.category.children && item.category.children.length > 0 && openCategoryId === item.category.id && (
+                                /* 外层 pt-1 负责与分类标签的视觉间距，同时把间距纳入悬浮区域，避免鼠标跨越空隙时菜单关闭 */
+                                <div className="absolute top-full left-0 pt-1 z-20">
+                                  <div className="bg-bg-primary rounded-lg shadow-lg border border-border min-w-[120px] max-w-[180px] py-1">
+                                    {item.category.children.map(child => (
+                                      <button
+                                        key={child.id}
+                                        onClick={() => {
+                                          handleCategorySelect(child.id);
+                                          closeCategoryMenu();
+                                        }}
+                                        onContextMenu={(e) => handleContextMenu(e, 'category', child.id)}
+                                        className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors ${
+                                          selectedCategory === child.id
+                                            ? 'bg-surface-secondary text-content-primary'
+                                            : 'text-text-primary hover:bg-bg-secondary'
+                                        }`}
+                                      >
+                                        <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getCategoryColor(child.name).dot}`}></div>
+                                        <span className="truncate">{child.name}</span>
+                                      </button>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </div>

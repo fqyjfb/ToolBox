@@ -84,7 +84,7 @@ const ColumnSelector: React.FC<ColumnSelectorProps> = ({ columns, visibleColumns
             </div>
           </div>
           
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto scrollbar-5px">
             {columns.map(column => (
               <button
                 key={column.key}

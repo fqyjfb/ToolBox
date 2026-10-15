@@ -247,7 +247,7 @@ const SearchPalette: React.FC<SearchPaletteProps> = ({
         {/* 结果列表 / 空态 / 错误态 */}
         <div
           ref={listRef}
-          className="max-h-[60vh] overflow-y-auto bg-bg-primary"
+          className="max-h-[60vh] overflow-y-auto scrollbar-5px bg-bg-primary"
         >
           {error && (
             <div className="px-4 py-6 text-sm text-error">

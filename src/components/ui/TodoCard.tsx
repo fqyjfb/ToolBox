@@ -151,7 +151,7 @@ const TodoCard: React.FC<TodoCardProps> = ({ board, handlers, activeTab }) => {
         </div>
       </div>
 
-      <div className="space-y-2 overflow-y-auto pr-1 max-h-todo-card">
+      <div className="space-y-2 overflow-y-auto scrollbar-5px pr-1 max-h-todo-card">
         {sortedTodos.map((todo) => {
           const isCompleted = todo.is_completed;
           const timeInfo = formatTime(todo.due_date, isCompleted);

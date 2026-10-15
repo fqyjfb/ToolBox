@@ -35,6 +35,15 @@ class CacheService {
     return item.data as T;
   }
 
+  // 获取过期缓存（stale-if-error）：只读不删，用于离线/失败降级
+  getStale<T>(key: string): T | null {
+    const item = this.cache.get(key);
+    if (!item) {
+      return null;
+    }
+    return item.data as T;
+  }
+
   // 删除缓存
   delete(key: string): void {
     this.cache.delete(key);

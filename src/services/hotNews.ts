@@ -55,6 +55,11 @@ const fetchData = async <T>(url: string, options?: { signal?: AbortSignal; force
     return data;
   } catch (error) {
     logError(`获取热点数据失败: ${url}`, 'hotNews', error as Error);
+    // 失败时返回过期缓存（stale-if-error）
+    const staleData = cacheService.getStale<T>(cacheKey);
+    if (staleData) {
+      return staleData;
+    }
     return null;
   }
 };

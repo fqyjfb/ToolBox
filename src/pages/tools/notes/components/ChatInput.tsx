@@ -51,7 +51,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
         <textarea
           ref={textareaRef}
           rows={1}
-          className="block w-full resize-none overflow-y-auto bg-transparent px-2 pt-1.5 text-xs leading-relaxed text-content-primary placeholder-text-content-tertiary scrollbar-thin focus:outline-none"
+          className="block w-full resize-none overflow-y-auto bg-transparent px-2 pt-1.5 text-xs leading-relaxed text-content-primary placeholder-text-content-tertiary scrollbar-5px focus:outline-none"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}

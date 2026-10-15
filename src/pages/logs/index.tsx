@@ -306,7 +306,7 @@ const LogsPage: React.FC = () => {
               <p className="text-sm text-content-secondary">暂无日志记录</p>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto scrollbar-5px">
               {filteredLogs.map((log) => (
                 <div
                   key={log.id}

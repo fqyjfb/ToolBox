@@ -30,7 +30,7 @@ const SyncConflictModal: React.FC<SyncConflictModalProps> = ({ conflicts, isOpen
       <p className="text-xs text-content-secondary mb-3">
         请选择保留本地版本或云端版本
       </p>
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+      <div className="space-y-3 max-h-[60vh] overflow-y-auto scrollbar-5px pr-1">
         {conflicts.map(conflict => (
           <div
             key={conflict.id}
@@ -53,7 +53,7 @@ const SyncConflictModal: React.FC<SyncConflictModalProps> = ({ conflicts, isOpen
                 <div className="text-xs text-content-secondary mb-1.5">
                   更新于: {getTimeAgo(conflict.local.updated_at)}
                 </div>
-                <pre className="text-xs text-content-secondary bg-surface p-1.5 rounded overflow-x-auto max-h-24 overflow-y-auto">
+                <pre className="text-xs text-content-secondary bg-surface p-1.5 rounded overflow-x-auto max-h-24 overflow-y-auto scrollbar-5px">
                   {JSON.stringify(conflict.local, null, 2)}
                 </pre>
               </div>
@@ -65,7 +65,7 @@ const SyncConflictModal: React.FC<SyncConflictModalProps> = ({ conflicts, isOpen
                 <div className="text-xs text-content-secondary mb-1.5">
                   更新于: {getTimeAgo(conflict.cloud.updated_at)}
                 </div>
-                <pre className="text-xs text-content-secondary bg-surface p-1.5 rounded overflow-x-auto max-h-24 overflow-y-auto">
+                <pre className="text-xs text-content-secondary bg-surface p-1.5 rounded overflow-x-auto max-h-24 overflow-y-auto scrollbar-5px">
                   {JSON.stringify(conflict.cloud, null, 2)}
                 </pre>
               </div>

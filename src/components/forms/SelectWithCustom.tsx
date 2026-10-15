@@ -118,7 +118,7 @@ const SelectWithCustom: React.FC<SelectWithCustomProps> = ({
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto min-h-0 scrollbar-5px">
         {filteredOptions.length > 0 ? (
           <div className="py-1">
             {filteredOptions.map((option) => (

@@ -275,7 +275,7 @@ const TranslatePage: React.FC = () => {
               <span className="text-xs text-content-tertiary">{targetInfo.pronounce}</span>
             )}
           </div>
-          <div className="flex-1 p-3 overflow-y-auto">
+          <div className="flex-1 p-3 overflow-y-auto scrollbar-5px">
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <LoadingSpinner />

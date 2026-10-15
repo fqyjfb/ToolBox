@@ -112,7 +112,7 @@ const DatabasePage: React.FC = () => {
       <div className="p-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-content-primary">数据管理</h1>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto scrollbar-5px p-4">
         <div className="space-y-4">
           <p className="text-sm text-content-secondary">
             备份整个数据库的数据，支持导出为SQL或JSON格式。恢复功能将从备份文件中恢复所有数据。

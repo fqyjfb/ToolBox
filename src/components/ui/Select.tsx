@@ -98,7 +98,7 @@ const Select: React.FC<SelectProps> = ({
       }}
     >
       <div
-        className="scrollbar-thin overflow-y-auto py-1"
+        className="scrollbar-5px overflow-y-auto py-1"
         style={{ maxHeight: dropdownMaxHeight }}
       >
         {options.map((option) => (

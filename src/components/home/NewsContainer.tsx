@@ -238,7 +238,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
             </button>
           </div>
         ) : data ? (
-          <ul className="news-list flex-1 overflow-y-auto space-y-2 min-h-0">
+          <ul className="news-list flex-1 overflow-y-auto scrollbar-5px space-y-2 min-h-0">
             {data.map((item, index) => (
               <li
                 key={index}

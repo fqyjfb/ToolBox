@@ -1,5 +1,6 @@
 import React from 'react';
 import WebNavbar from './WebNavbar';
+import OfflineBanner from './OfflineBanner';
 
 interface WebLayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ const WebLayout: React.FC<WebLayoutProps> = ({ children }) => {
         backgroundAttachment: 'fixed',
       }}
     >
+      <OfflineBanner />
       <WebNavbar />
       <main className="flex-1 overflow-y-auto scrollbar-hide max-w-7xl w-full mx-auto" style={{ padding: 'var(--space-4)', paddingTop: 'var(--space-3)' }}>
         {children}

@@ -27,6 +27,7 @@ export interface SyncMetadata {
 
 export interface PendingOperation {
   id: string;
+  user_id: string;
   tableName: string;
   operationType: 'create' | 'update' | 'delete';
   recordId: string;

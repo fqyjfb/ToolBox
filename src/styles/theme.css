@@ -603,6 +603,31 @@ body.dark {
   background: rgba(100, 116, 139, 0.7);
 }
 
+.scrollbar-5px::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrollbar-5px::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-5px::-webkit-scrollbar-thumb {
+  background-color: rgba(128, 128, 128, 0.4);
+  border-radius: 3px;
+}
+
+.scrollbar-5px::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(128, 128, 128, 0.6);
+}
+
+.dark .scrollbar-5px::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.4);
+}
+
+.dark .scrollbar-5px::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.6);
+}
+
 .shine-text {
   font-weight: 900;
   color: rgba(0, 0, 0, 0.3);

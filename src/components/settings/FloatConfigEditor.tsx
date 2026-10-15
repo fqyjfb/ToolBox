@@ -279,7 +279,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                 暂无已安装的插件，请先前往插件商店安装插件
               </div>
             ) : (
-              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-5px p-1">
                 {installedPlugins.map((plugin) => {
                   const PluginIcon = iconMap[plugin.iconName] || iconMap.Package;
                   return (

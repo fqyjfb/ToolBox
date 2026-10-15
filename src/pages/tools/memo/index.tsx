@@ -708,7 +708,7 @@ const MemoPage: React.FC = () => {
               <div className="mb-2">
                 <AllCategoryButton isSelected={selectedCategory === null} onClick={() => setSelectedCategory(null)} />
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto scrollbar-5px">
                 <div className="space-y-2">
                   {categories.map((category) => (
                     <SortableCategoryButton

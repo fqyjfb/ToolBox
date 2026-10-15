@@ -63,7 +63,7 @@ const DraftRecoveryDialog: React.FC<DraftRecoveryDialogProps> = ({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="px-4 py-3 max-h-72 overflow-y-auto">
+        <div className="px-4 py-3 max-h-72 overflow-y-auto scrollbar-5px">
           <p className="text-sm text-content-secondary mb-3">
             上次退出时存在 {drafts.length} 个未保存的草稿，请选择恢复或丢弃：
           </p>

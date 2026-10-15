@@ -2,6 +2,7 @@ import { AuthResponse, LoginRequest, Admin, RegisterRequest, User } from '../typ
 import { supabase } from './supabase'
 import { logError, logInfo } from './loggerService'
 import { localStorageService, STORAGE_KEYS } from './localStorageService'
+import { useSyncStore } from '../store/syncStore'
 
 const parseStoredUser = (): User | null => {
   const storedUser = localStorageService.get<User>(STORAGE_KEYS.USER, null as unknown as User)
@@ -199,6 +200,11 @@ export const authService = {
   getCurrentUser: async (): Promise<{ success: boolean; data?: User; admin?: Admin }> => {
     try {
       const parsedStoredUser = parseStoredUser()
+
+      // 离线时直接返回本地用户快照，跳过所有网络调用，避免掉登录
+      if ((!useSyncStore.getState().isOnline || !navigator.onLine) && parsedStoredUser) {
+        return { success: true, data: parsedStoredUser }
+      }
 
       let isSessionValid = false
       let authUser: AuthUser | null = null

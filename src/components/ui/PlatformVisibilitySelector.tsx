@@ -97,7 +97,7 @@ const PlatformVisibilitySelector: React.FC<PlatformVisibilitySelectorProps> = ({
             </div>
           </div>
 
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto scrollbar-5px">
             {platforms.map(platform => {
               const Icon = platform.icon;
               return (

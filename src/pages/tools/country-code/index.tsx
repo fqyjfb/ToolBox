@@ -83,7 +83,7 @@ const CountryCodePage: React.FC = () => {
           </thead>
         </table>
         
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-5px">
           <table className="w-full">
             <tbody>
               {filteredCodes.length > 0 ? (

@@ -99,7 +99,7 @@ const ToolDownloadPage: React.FC = () => {
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto scrollbar-5px">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <LoadingSpinner />

@@ -1,13 +1,18 @@
 import { supabase } from './supabase'
 import { offlineStorage } from './offlineStorage'
-import { StorageLocation, SyncMetadata, USER_DATA_TABLES } from '../types/offline'
+import { StorageLocation, SyncMetadata, USER_DATA_TABLES, SyncModuleKey, MODULE_TABLE_MAP } from '../types/offline'
 import { logError, logInfo } from './loggerService'
 import { BaseEntity } from '../types/common'
+import { useSyncStore } from '../store/syncStore'
 
 type CreateInput<T extends BaseEntity> = Omit<T, keyof BaseEntity>
 
 // 同步表清单统一引用 USER_DATA_TABLES，消除重复定义
 const SYNC_TABLES = USER_DATA_TABLES
+
+async function getSyncManager() {
+  return (await import('./syncManager')).syncManager
+}
 
 class StorageContext {
   private userId: string = ''
@@ -105,6 +110,11 @@ class StorageContext {
     const local = await offlineStorage.get<T>(table, id)
     if (local) return local
 
+    // 本地 miss 且离线：短路返回 null，不触网
+    if (!useSyncStore.getState().isOnline) {
+      return null
+    }
+
     try {
       const { data, error } = await supabase
         .from(table)
@@ -158,6 +168,11 @@ class StorageContext {
       const total = localData.length
       if (options?.range) localData = localData.slice(options.range.from, options.range.to + 1)
       return { data: localData, total }
+    }
+
+    // 本地为空且离线：短路返回空结果，不触网
+    if (!useSyncStore.getState().isOnline) {
+      return { data: [], total: 0 }
     }
 
     try {
@@ -241,6 +256,11 @@ class StorageContext {
       return { data: filtered, total }
     }
 
+    // 本地为空且离线：短路返回空结果，不触网
+    if (!useSyncStore.getState().isOnline) {
+      return { data: [], total: 0 }
+    }
+
     try {
       let query = supabase.from(table).select('*', { count: 'exact' }).eq('user_id', this.userId)
       if (searchFields.length > 0) {
@@ -290,16 +310,48 @@ class StorageContext {
     }
 
     if (this.storageLocation === 'cloud') {
+      if (!useSyncStore.getState().isOnline) {
+        // 离线：跳过云端写，记待补偿（立即返回，不假死）
+        const sm = await getSyncManager()
+        await sm.addPendingOperation({
+          userId: this.userId,
+          tableName: table,
+          operationType: 'create',
+          recordId: record.id,
+          data: this.sanitizeForCloud(table, record),
+          module: this.getModuleByTable(table)
+        })
+        return record
+      }
       try {
         const syncedData = this.sanitizeForCloud(table, record)
         const { error } = await supabase.from(table).insert(syncedData)
         if (error) {
           logError(`创建记录同步到云端失败: ${table}`, 'StorageContext', error as Error)
+          // 在线但写失败：同样记待补偿
+          const sm = await getSyncManager()
+          await sm.addPendingOperation({
+            userId: this.userId,
+            tableName: table,
+            operationType: 'create',
+            recordId: record.id,
+            data: syncedData,
+            module: this.getModuleByTable(table)
+          })
         } else {
           logInfo(`创建记录成功: ${table}`, 'StorageContext')
         }
       } catch (error) {
         logError(`创建记录同步到云端失败: ${table}`, 'StorageContext', error as Error)
+        const sm = await getSyncManager()
+        await sm.addPendingOperation({
+          userId: this.userId,
+          tableName: table,
+          operationType: 'create',
+          recordId: record.id,
+          data: this.sanitizeForCloud(table, record),
+          module: this.getModuleByTable(table)
+        })
       }
     }
 
@@ -347,16 +399,47 @@ class StorageContext {
     }
 
     if (this.storageLocation === 'cloud') {
+      if (!useSyncStore.getState().isOnline) {
+        // 离线：跳过云端写，记待补偿
+        const sm = await getSyncManager()
+        await sm.addPendingOperation({
+          userId: this.userId,
+          tableName: table,
+          operationType: 'update',
+          recordId: id,
+          data: this.sanitizeForCloud(table, updated),
+          module: this.getModuleByTable(table)
+        })
+        return updated
+      }
       try {
         const syncedData = this.sanitizeForCloud(table, updated)
         const { error } = await supabase.from(table).update(syncedData).eq('id', id)
         if (error) {
           logError(`更新记录同步到云端失败: ${table}`, 'StorageContext', error as Error)
+          const sm = await getSyncManager()
+          await sm.addPendingOperation({
+            userId: this.userId,
+            tableName: table,
+            operationType: 'update',
+            recordId: id,
+            data: syncedData,
+            module: this.getModuleByTable(table)
+          })
         } else {
           logInfo(`更新记录成功: ${table}`, 'StorageContext')
         }
       } catch (error) {
         logError(`更新记录同步到云端失败: ${table}`, 'StorageContext', error as Error)
+        const sm = await getSyncManager()
+        await sm.addPendingOperation({
+          userId: this.userId,
+          tableName: table,
+          operationType: 'update',
+          recordId: id,
+          data: this.sanitizeForCloud(table, updated),
+          module: this.getModuleByTable(table)
+        })
       }
     }
 
@@ -364,6 +447,14 @@ class StorageContext {
   }
 
   async delete(table: string, id: string): Promise<void> {
+    // 先读快照，用于待补偿记录（离线删除恢复后不复活）
+    let existing: BaseEntity | null = null
+    try {
+      existing = await offlineStorage.get<BaseEntity>(table, id)
+    } catch (error) {
+      logError(`本地读取记录失败，继续删除: ${table}/${id}`, 'StorageContext', error as Error)
+    }
+
     try {
       await offlineStorage.delete(table, id)
     } catch (error) {
@@ -371,15 +462,46 @@ class StorageContext {
     }
 
     if (this.storageLocation === 'cloud') {
+      if (!useSyncStore.getState().isOnline) {
+        // 离线：跳过云端写，记待补偿（data 存删除前完整快照）
+        const sm = await getSyncManager()
+        await sm.addPendingOperation({
+          userId: this.userId,
+          tableName: table,
+          operationType: 'delete',
+          recordId: id,
+          data: existing ? this.sanitizeForCloud(table, existing) : { id },
+          module: this.getModuleByTable(table)
+        })
+        return
+      }
       try {
         const { error } = await supabase.from(table).delete().eq('id', id)
         if (error) {
           logError(`删除记录同步到云端失败: ${table}`, 'StorageContext', error as Error)
+          const sm = await getSyncManager()
+          await sm.addPendingOperation({
+            userId: this.userId,
+            tableName: table,
+            operationType: 'delete',
+            recordId: id,
+            data: existing ? this.sanitizeForCloud(table, existing) : { id },
+            module: this.getModuleByTable(table)
+          })
         } else {
           logInfo(`删除记录成功: ${table}`, 'StorageContext')
         }
       } catch (error) {
         logError(`删除记录同步到云端失败: ${table}`, 'StorageContext', error as Error)
+        const sm = await getSyncManager()
+        await sm.addPendingOperation({
+          userId: this.userId,
+          tableName: table,
+          operationType: 'delete',
+          recordId: id,
+          data: existing ? this.sanitizeForCloud(table, existing) : { id },
+          module: this.getModuleByTable(table)
+        })
       }
     }
   }
@@ -455,6 +577,13 @@ class StorageContext {
       delete result[field]
     }
     return result as T
+  }
+
+  private getModuleByTable(table: string): SyncModuleKey {
+    for (const [module, tables] of Object.entries(MODULE_TABLE_MAP)) {
+      if (tables.includes(table)) return module as SyncModuleKey
+    }
+    return 'account'
   }
 
   private applyFilters<T>(data: T[], filters: Record<string, unknown>): T[] {

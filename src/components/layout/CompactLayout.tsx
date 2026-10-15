@@ -1,12 +1,14 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSidebarStore } from '../../store/sidebarStore';
+import OfflineBanner from './OfflineBanner';
 import { useAuthStore } from '../../store/AuthStore';
 import Sidebar from './Sidebar';
 import WindowModeButton from './WindowModeButton';
 import ThemeToggleButton from './ThemeToggleButton';
 import WindowControls from './WindowControls';
-import HeaderSearchBox, { isSearchRoute } from './HeaderSearchBox';
+import HeaderSearchBox from './HeaderSearchBox';
+import { isSearchRoute } from '../../constants/searchRoutes';
 import PageTransition from './PageTransition';
 import QuickLaunchBar from '../home/QuickLaunchBar';
 import { useHomeQuickLaunch } from '../../hooks/useHomeQuickLaunch';
@@ -121,6 +123,8 @@ const CompactLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     <div className="flex flex-col h-screen overflow-hidden">
       {/* 标题栏：占满窗口宽度 */}
       <CompactTitleBar />
+      {/* 离线横幅 */}
+      <OfflineBanner />
       {/* 标题栏下方：个人信息区域 */}
       <CompactUserInfo />
       {/* 主体：侧栏 + 内容区 */}

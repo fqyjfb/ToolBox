@@ -27,6 +27,7 @@ const SyncTab: React.FC = () => {
     totalSyncedCount,
     lastSyncSummary,
     isOnline,
+    pendingOperationsCount,
     isSwitching,
     showConflictModal,
     conflicts,
@@ -63,6 +64,7 @@ const SyncTab: React.FC = () => {
     totalSyncedCount: s.totalSyncedCount,
     lastSyncSummary: s.lastSyncSummary,
     isOnline: s.isOnline,
+    pendingOperationsCount: s.pendingOperationsCount,
     isSwitching: s.isSwitching,
     showConflictModal: s.showConflictModal,
     conflicts: s.conflicts,
@@ -196,6 +198,11 @@ const SyncTab: React.FC = () => {
       return;
     }
     if (isSwitching) return;
+
+    if (!isOnline) {
+      addToast({ type: 'warning', message: '离线状态无法切换存储位置，请恢复网络后操作' });
+      return;
+    }
 
     setIsSwitching(true);
 
@@ -429,6 +436,11 @@ const SyncTab: React.FC = () => {
               <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <span className="text-sm text-content-primary">数据同步</span>
                 <div className="flex items-center gap-3">
+                  {pendingOperationsCount > 0 && (
+                    <span className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded">
+                      {pendingOperationsCount} 条待同步
+                    </span>
+                  )}
                   <span className="text-xs text-content-secondary">
                     {isOnline ? (
                     <span className="flex items-center">
@@ -487,7 +499,7 @@ const SyncTab: React.FC = () => {
                         {showTableStatusVisible ? '收起详情 ▲' : '展开详情 ▼'}
                       </button>
                       {showTableStatusVisible && (
-                        <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                        <div className="mt-2 space-y-1 max-h-32 overflow-y-auto scrollbar-5px">
                           {tableSyncStatuses.map(status => (
                             <div key={status.tableName} className="flex items-center justify-between text-xs">
                               <span className="text-content-secondary">

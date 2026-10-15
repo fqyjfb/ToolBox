@@ -82,19 +82,29 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    
+
     const encodedCity = encodeURIComponent(city);
-    const data = await baseApi.fetch<WeatherData>(`/weather?query=${encodedCity}`);
+    try {
+      const data = await baseApi.fetch<WeatherData>(`/weather?query=${encodedCity}`);
 
-    if (!data) {
-      throw new Error('获取天气数据失败');
-    }
+      if (!data) {
+        throw new Error('获取天气数据失败');
+      }
 
-    if (data.code === 200) {
-      setCachedWeather(city, 'weather', data);
-      return data;
-    } else {
-      throw new Error(data.message || '获取天气数据失败');
+      if (data.code === 200) {
+        setCachedWeather(city, 'weather', data);
+        return data;
+      } else {
+        throw new Error(data.message || '获取天气数据失败');
+      }
+    } catch (error) {
+      // 失败时返回过期缓存（stale-if-error）
+      const staleCacheKey = `weather_weather_${city}`;
+      const stale = localStorageService.get<WeatherCache<WeatherData>>(staleCacheKey, null as unknown as WeatherCache<WeatherData>);
+      if (stale) {
+        return stale.data;
+      }
+      throw error;
     }
   },
 
@@ -103,19 +113,29 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    
+
     const encodedCity = encodeURIComponent(city);
-    const data = await baseApi.fetch<ForecastData>(`/weather/forecast?query=${encodedCity}&days=${days}`);
+    try {
+      const data = await baseApi.fetch<ForecastData>(`/weather/forecast?query=${encodedCity}&days=${days}`);
 
-    if (!data) {
-      throw new Error('获取天气预报失败');
-    }
+      if (!data) {
+        throw new Error('获取天气预报失败');
+      }
 
-    if (data.code === 200) {
-      setCachedWeather(city, 'forecast', data);
-      return data;
-    } else {
-      throw new Error(data.message || '获取天气预报失败');
+      if (data.code === 200) {
+        setCachedWeather(city, 'forecast', data);
+        return data;
+      } else {
+        throw new Error(data.message || '获取天气预报失败');
+      }
+    } catch (error) {
+      // 失败时返回过期缓存（stale-if-error）
+      const staleCacheKey = `weather_forecast_${city}`;
+      const stale = localStorageService.get<WeatherCache<ForecastData>>(staleCacheKey, null as unknown as WeatherCache<ForecastData>);
+      if (stale) {
+        return stale.data;
+      }
+      throw error;
     }
   }
 };
