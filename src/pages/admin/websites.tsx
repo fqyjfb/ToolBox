@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Edit, Trash2, Search, ExternalLink, X, List, Check, Download, Globe } from 'lucide-react'
+import { Plus, Edit, Trash2, ExternalLink, X, List, Check, Download, Globe } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/AuthStore'
 import { useToastStore } from '../../store/toastStore'
@@ -17,6 +17,7 @@ import CachedIcon from '../../components/ui/CachedIcon'
 import Select from '../../components/ui/Select'
 import { useThemeStore } from '../../store/themeStore'
 import CompactUnsupportedHint from '../../components/ui/CompactUnsupportedHint'
+import { useNavSearch } from '../../contexts/NavSearchContext'
 
 const AdminWebsitesPage: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -26,7 +27,7 @@ const AdminWebsitesPage: React.FC = () => {
   useThemeStore((s) => s.themeKey);
   const queryClient = useQueryClient()
 
-  const [searchQuery, setSearchQuery] = useState('')
+  const { searchQuery } = useNavSearch()
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   
   const [isAddBookmarkModalOpen, setIsAddBookmarkModalOpen] = useState(false)
@@ -199,20 +200,10 @@ const AdminWebsitesPage: React.FC = () => {
     }
   })
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
+  // 搜索词来自头部统一搜索框，变化时回到第一页
+  React.useEffect(() => {
     setPage(1)
-  }
-
-  const handleSearchSubmit = () => {
-    setPage(1)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSearchSubmit()
-    }
-  }
+  }, [searchQuery])
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -507,38 +498,6 @@ const AdminWebsitesPage: React.FC = () => {
             分类管理
           </button>
         </div>
-        {activeTab === 'bookmarks' && (
-          <div className="relative max-w-[200px] w-full">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onKeyDown={handleKeyDown}
-              placeholder="搜索网址..."
-              className="w-full px-2 py-1 pr-20 rounded-md focus:outline-none bg-surface-50 text-content-primary placeholder-text-content-tertiary text-xs"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery('')
-                  setPage(1)
-                }}
-                className="absolute right-8 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary"
-                title="清空搜索"
-              >
-                <X size={12} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handleSearchSubmit}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-content-secondary hover:text-content-primary"
-              title="搜索"
-            >
-              <Search size={14} />
-            </button>
-          </div>
-        )}
       </div>
 
       {activeTab === 'bookmarks' && (

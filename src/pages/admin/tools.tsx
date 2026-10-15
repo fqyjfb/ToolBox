@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Edit, Trash2, X, Check, ExternalLink } from 'lucide-react'
+import { Plus, Edit, Trash2, X, Check, ExternalLink } from 'lucide-react'
 import toolService, { Tool, ToolCategory } from '../../services/ToolService'
 import { queryKeys } from '../../queries/keys'
 import { useToastStore } from '../../store/toastStore'
@@ -15,6 +15,7 @@ import Select from '../../components/ui/Select'
 import { openUrl } from '../../services/browserService'
 import { useThemeStore } from '../../store/themeStore'
 import CompactUnsupportedHint from '../../components/ui/CompactUnsupportedHint'
+import { useNavSearch } from '../../contexts/NavSearchContext'
 
 const isForeignDomain = (url: string): boolean => {
   try {
@@ -106,7 +107,7 @@ const buildCategoryTreeFromData = (categories: ToolCategory[]): CategoryTree[] =
 
 const ToolsPage: React.FC = () => {
   const queryClient = useQueryClient()
-  const [searchTerm, setSearchTerm] = useState('')
+  const { searchQuery } = useNavSearch()
   const [filterCategory, setFilterCategory] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -153,9 +154,14 @@ const ToolsPage: React.FC = () => {
   }
 
   const { data: toolsData, isLoading: toolsLoading } = useQuery({
-    queryKey: [...queryKeys.tool.list(), filterCategory, searchTerm, currentPage, pageSize],
-    queryFn: () => toolService.getTools(filterCategory, searchTerm, currentPage, pageSize),
+    queryKey: [...queryKeys.tool.list(), filterCategory, searchQuery, currentPage, pageSize],
+    queryFn: () => toolService.getTools(filterCategory, searchQuery, currentPage, pageSize),
   })
+
+  // 搜索词来自头部统一搜索框，变化时回到第一页
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
 
   const tools = useMemo(() => toolsData?.data || [], [toolsData?.data])
   const totalItems = useMemo(() => toolsData?.count || 0, [toolsData?.count])
@@ -239,21 +245,6 @@ const ToolsPage: React.FC = () => {
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize)
-    setCurrentPage(1)
-  }
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value)
-    setCurrentPage(1)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      setCurrentPage(1)
-    }
-  }
-
-  const handleSearchSubmit = () => {
     setCurrentPage(1)
   }
 
@@ -443,37 +434,6 @@ const ToolsPage: React.FC = () => {
               分类管理
             </button>
           </div>
-          {activeTab === 'tools' && (
-            <div className="relative max-w-[200px] w-full">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                onKeyDown={handleKeyDown}
-                placeholder="搜索工具..."
-                className="w-full px-2 py-1 pr-20 rounded-md focus:outline-none bg-surface-50 text-content-primary placeholder-text-content-tertiary text-xs"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => {
-                    setSearchTerm('')
-                    setCurrentPage(1)
-                  }}
-                  className="absolute right-8 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary"
-                  title="清空搜索"
-                >
-                  <X size={12} />
-                </button>
-              )}
-              <button
-                onClick={handleSearchSubmit}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-content-secondary hover:text-content-primary"
-                title="搜索"
-              >
-                <Search size={14} />
-              </button>
-            </div>
-          )}
         </div>
 
       {activeTab === 'tools' && !loading && (

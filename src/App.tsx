@@ -419,10 +419,10 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <NavSearchProvider>
-          <QueryProvider>
-            <Router>
-              {isDesktopApp && !isStandaloneWindow() && <TrayNavigationHandler />}
+      <QueryProvider>
+        <Router>
+          <NavSearchProvider>
+          {isDesktopApp && !isStandaloneWindow() && <TrayNavigationHandler />}
               <Routes>
                 <Route
                   path="/*"
@@ -443,9 +443,9 @@ function App() {
                   }
                 />
               </Routes>
-            </Router>
-          </QueryProvider>
-        </NavSearchProvider>
+          </NavSearchProvider>
+        </Router>
+      </QueryProvider>
     </ErrorBoundary>
   );
 }

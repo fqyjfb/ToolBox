@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Edit, Lock, Search, ArrowUpDown, X, RefreshCw } from 'lucide-react'
+import { Edit, Lock, ArrowUpDown, RefreshCw } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { userService } from '../../services/UserService'
 import { queryKeys } from '../../queries/keys'
@@ -12,6 +12,7 @@ import { useContextMenu } from '../../hooks/useContextMenu'
 import Modal from '../../components/ui/Modal'
 import Select from '../../components/ui/Select'
 import CompactUnsupportedHint from '../../components/ui/CompactUnsupportedHint'
+import { useNavSearch } from '../../contexts/NavSearchContext'
 
 interface UserItem {
   id: string
@@ -34,7 +35,7 @@ const UserListPage: React.FC = () => {
   useThemeStore((s) => s.themeKey);
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [searchQuery, setSearchQuery] = useState('')
+  const { searchQuery } = useNavSearch()
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [memberLevelFilter, setMemberLevelFilter] = useState('')
@@ -155,20 +156,10 @@ const UserListPage: React.FC = () => {
     updateUserMutation.mutate({ id: currentUser.id, userData: formData })
   }
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
+  // 搜索词来自头部统一搜索框，变化时回到第一页
+  React.useEffect(() => {
     setCurrentPage(1)
-  }
-
-  const handleSearchSubmit = () => {
-    setCurrentPage(1)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSearchSubmit()
-    }
-  }
+  }, [searchQuery])
 
   const handleSort = (field: string) => {
     const newSortOrder = sortBy === field && sortOrder === 'desc' ? 'asc' : 'desc'
@@ -187,14 +178,8 @@ const UserListPage: React.FC = () => {
   }
 
   const handleResetFilters = () => {
-    setSearchQuery('')
     setMemberLevelFilter('')
     setStatusFilter('')
-    setCurrentPage(1)
-  }
-
-  const handleClearSearch = () => {
-    setSearchQuery('')
     setCurrentPage(1)
   }
 
@@ -249,33 +234,6 @@ const UserListPage: React.FC = () => {
               ]}
               className="px-2 py-1 border border-content rounded-md focus:outline-none focus:border-content bg-surface text-content-primary text-xs"
             />
-          </div>
-          <div className="relative max-w-[200px] w-full">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onKeyDown={handleKeyDown}
-              placeholder="搜索用户..."
-              className="w-full px-2 py-1 pr-20 rounded-md focus:outline-none bg-surface text-content-primary placeholder-text-content-tertiary text-xs"
-            />
-            {searchQuery && (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-8 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary"
-                title="清空搜索"
-              >
-                <X size={12} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handleSearchSubmit}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-content-secondary hover:text-content-primary"
-              title="搜索"
-            >
-              <Search size={14} />
-            </button>
           </div>
         </div>
 

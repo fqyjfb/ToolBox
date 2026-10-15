@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Wrench, RefreshCw, FolderOpen, Search, Play } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 import { useIsCompactMode } from '../../../store/windowModeStore';
+import { useNavSearch } from '../../../contexts/NavSearchContext';
 
 const formatFileSize = (size: number): string => {
   if (size < 1024) return `${size} B`;
@@ -17,14 +18,14 @@ const formatDate = (mtimeMs: number): string => {
 
 const OfflineToolsPage: React.FC = () => {
   const addToast = useToastStore((s) => s.addToast);
-  // 小窗模式：标题与操作区分行、搜索框占满宽度，内容区收窄内边距
+  // 小窗模式：标题与操作区分行，内容区收窄内边距
   const isCompact = useIsCompactMode();
 
   const [dirPath, setDirPath] = useState<string | null>(null);
   const [files, setFiles] = useState<OfflineToolFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { searchQuery } = useNavSearch();
 
   const loadFiles = useCallback(async (targetDir: string | null) => {
     if (!targetDir || !window.electron?.offlineTools) return;
@@ -105,16 +106,6 @@ const OfflineToolsPage: React.FC = () => {
         <div className={`flex items-center ${isCompact ? 'gap-1' : 'gap-2'}`}>
           {dirPath && (
             <>
-              <div className={`relative ${isCompact ? 'flex-1 min-w-0' : ''}`}>
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-tertiary" />
-                <input
-                  type="text"
-                  placeholder="搜索..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`pl-8 pr-3 py-1 text-xs bg-surface border border-gray-200 dark:border-content rounded-md focus:outline-none focus:border-primary text-content-primary placeholder-gray-400 ${isCompact ? 'w-full' : 'w-48'}`}
-                />
-              </div>
               <button
                 onClick={handleRefresh}
                 className="w-6 h-6 flex items-center justify-center rounded-md text-content-tertiary hover:text-content-primary hover:bg-menu-hover dark:hover:text-content-secondary transition-colors"

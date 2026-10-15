@@ -1,15 +1,12 @@
-import { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 /* eslint-disable react-refresh/only-export-components */
-export type SearchPageType = 'cloud-clipboard' | 'quick-reply' | 'todo' | 'account' | 'nav' | null;
-
 interface NavSearchContextType {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   isSearchActive: boolean;
   setIsSearchActive: (active: boolean) => void;
-  currentPage: SearchPageType;
-  setCurrentPage: (page: SearchPageType) => void;
   performSearch: () => void;
   clearSearch: () => void;
   handleSearch: (query: string) => void;
@@ -30,9 +27,14 @@ interface NavSearchProviderProps {
 }
 
 export const NavSearchProvider = ({ children }: NavSearchProviderProps) => {
+  const { pathname } = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [currentPage, setCurrentPage] = useState<SearchPageType>(null);
+
+  useEffect(() => {
+    setSearchQuery('');
+    setIsSearchActive(false);
+  }, [pathname]);
 
   const performSearch = useCallback(() => {
     if (searchQuery.trim()) {
@@ -60,13 +62,11 @@ export const NavSearchProvider = ({ children }: NavSearchProviderProps) => {
       setSearchQuery,
       isSearchActive,
       setIsSearchActive,
-      currentPage,
-      setCurrentPage,
       performSearch,
       clearSearch,
       handleSearch,
     }),
-    [searchQuery, isSearchActive, currentPage, performSearch, clearSearch, handleSearch]
+    [searchQuery, isSearchActive, performSearch, clearSearch, handleSearch]
   );
 
   return <NavSearchContext.Provider value={value}>{children}</NavSearchContext.Provider>;
