@@ -173,8 +173,21 @@ const toSizeObject = (size) => {
 const isValidSize = (size) =>
   !!size && Number.isFinite(size.width) && Number.isFinite(size.height) && size.width > 0 && size.height > 0;
 
+// 校验还原用的窗口尺寸：宽高须为有效正数；小窗模式下还要落进小窗的宽高约束，
+// 否则 setBounds 会被当前的最小/最大尺寸限制改写，记录与实际不一致
+const resolveDockRestoreSize = (bounds) => {
+  if (!isValidSize(bounds)) return null;
+  if (windowMode !== 'compact') return { width: bounds.width, height: bounds.height };
+  return {
+    width: Math.min(Math.max(bounds.width, COMPACT_MIN_SIZE.width), COMPACT_MAX_WIDTH),
+    height: Math.max(bounds.height, COMPACT_MIN_SIZE.height),
+  };
+};
+
 const applyWindowMode = (mode) => {
   if (!mainWindow || (mode !== 'compact' && mode !== 'large') || mode === windowMode) return;
+  // 切模式会重设尺寸并居中，先退出停靠（同步清空吸附记录），避免停靠状态与居中后的位置冲突
+  clearEdgeDock();
 
   try {
     if (mainWindow.isMaximized()) mainWindow.unmaximize();
@@ -253,6 +266,7 @@ const shortcutFunctions = {
   },
   restoreDefaultWindow: () => {
     if (mainWindow) {
+      clearEdgeDock(); // 恢复默认尺寸并居中，先退出停靠（同步清空吸附记录）
       // 小窗模式下仅恢复小窗尺寸并居中，不做默认尺寸判断
       if (windowMode === 'compact') {
         if (mainWindow.isMaximized()) mainWindow.unmaximize();
@@ -456,6 +470,19 @@ let edgeTopmost = false;             // 隐藏态置顶标记：由吸附管理�
 let edgeUserDragging = false;        // 用户拖拽中标记（WM_ENTERSIZEMOVE/EXITSIZEMOVE 维护）：拖拽期间不做吸附判定
 let edgeImeComposing = false;        // 输入法组合态标记：输入中禁止自动折叠（IME 候选窗夺焦/光标在外均不收回）
 
+// 停靠状态落盘：吸附时记录「模式 + 边 + 位置尺寸」，退出吸附即清空，供下次启动还原。
+// 隐藏态窗口位于屏幕外，其坐标不作为还原依据（保留吸附时的展开位记录）；
+// 窗口已销毁（退出应用）时不改写记录，否则退出流程会把上次吸附状态清空，导致重启后无法还原。
+const persistDockState = () => {
+  if (edgeHidden) return;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const settings = loadSettings();
+  settings.windowDockState = edgeDockedEdge
+    ? { mode: windowMode, edge: edgeDockedEdge, bounds: mainWindow.getBounds() }
+    : null;
+  saveSettings(settings);
+};
+
 const stopEdgePoll = () => {
   if (edgePollTimer) {
     clearInterval(edgePollTimer);
@@ -510,6 +537,7 @@ const startEdgeAnimation = (targetX, targetY, easing, onDone) => {
 };
 
 const clearEdgeDock = () => {
+  const wasDocked = !!edgeDockedEdge;
   cancelEdgeAnimation();
   if (edgeHideTimer) {
     clearTimeout(edgeHideTimer);
@@ -531,6 +559,8 @@ const clearEdgeDock = () => {
     clearTimeout(snapTimer);
     snapTimer = null;
   }
+  // 仅在真正退出停靠时落盘（move 事件会高频调用本函数，未停靠时不做无谓写入）
+  if (wasDocked) persistDockState();
 };
 
 const getDisplayForBounds = (bounds) => screen.getDisplayNearestPoint({
@@ -691,6 +721,23 @@ const pollEdgeWindowState = () => {
   }
 };
 
+// 进入停靠管理：按给定边对齐到工作区边缘（只平移单轴，不改尺寸），接管任务栏与折叠轮询
+const dockToEdge = (edge) => {
+  const bounds = mainWindow.getBounds();
+  const workArea = getDisplayForBounds(bounds).workArea;
+  if (edge === 'left') {
+    setEdgeWindowPos(workArea.x, null, bounds);
+  } else if (edge === 'right') {
+    setEdgeWindowPos(workArea.x + workArea.width - bounds.width, null, bounds);
+  } else {
+    setEdgeWindowPos(null, workArea.y, bounds);
+  }
+  edgeDockedEdge = edge;
+  edgeHidden = false; // 停靠从展开态开始
+  mainWindow.setSkipTaskbar(true); // 停靠期不占用任务栏（含 Alt+Tab），由贴边感应与托盘接管唤出
+  startEdgePoll();
+};
+
 // 拖动停止后的吸附判定：贴边则对齐并进入停靠管理，未贴边则保持原位
 const snapWindowToEdge = () => {
   if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMaximized()) return;
@@ -711,17 +758,42 @@ const snapWindowToEdge = () => {
   else if (Math.abs(topDistance) <= threshold) snapEdge = 'top';
   if (!snapEdge) return;
 
-  if (snapEdge === 'left') {
-    setEdgeWindowPos(workArea.x, null, bounds);
-  } else if (snapEdge === 'right') {
-    setEdgeWindowPos(workArea.x + workArea.width - bounds.width, null, bounds);
-  } else {
-    setEdgeWindowPos(null, workArea.y, bounds);
-  }
-  edgeDockedEdge = snapEdge;
-  edgeHidden = false; // 拖动重新吸附时窗口必然处于展开位置，纠正隐藏态标记（停靠必然从展开态开始）
-  mainWindow.setSkipTaskbar(true); // 停靠期不占用任务栏（含 Alt+Tab），由贴边感应与托盘接管唤出
-  startEdgePoll();
+  dockToEdge(snapEdge);
+  persistDockState();
+};
+
+// 还原上次退出的吸附状态：吸附开关开启、模式一致且记录有效时按当前工作区重新对齐；
+// 未吸附 / 记录无效则不处理，窗口按创建时的默认位置（居中）启动
+const restoreDockState = () => {
+  const settings = loadSettings();
+  if (!settings.isWindowEdgeAdsorption) return;
+  const saved = settings.windowDockState;
+  if (!saved || saved.mode !== windowMode) return;
+  if (saved.edge !== 'left' && saved.edge !== 'right' && saved.edge !== 'top') return;
+
+  const bounds = saved.bounds;
+  const size = resolveDockRestoreSize(bounds);
+  if (!size) return;
+
+  // 记录时的显示器可能已变化（分辨率调整 / 外接屏拔除）：按最近显示器的工作区重新夹取，
+  // 保证还原后窗口一定落在可见区域内，再交给 dockToEdge 按边对齐（不直接沿用旧坐标）
+  const workArea = screen.getDisplayNearestPoint({
+    x: (Number.isFinite(bounds.x) ? bounds.x : 0) + size.width / 2,
+    y: (Number.isFinite(bounds.y) ? bounds.y : 0) + size.height / 2,
+  }).workArea;
+  const width = Math.min(size.width, workArea.width);
+  const height = Math.min(size.height, workArea.height);
+  const x = Number.isFinite(bounds.x) ? bounds.x : workArea.x;
+  const y = Number.isFinite(bounds.y) ? bounds.y : workArea.y;
+
+  edgeSelfMoveUntil = Date.now() + 500; // 还原期抑制 move 判定，避免自身 setBounds 被当成用户拖动
+  mainWindow.setBounds({
+    x: Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - width),
+    y: Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - height),
+    width,
+    height,
+  });
+  dockToEdge(saved.edge);
 };
 
 // 主窗口 move 入口：用户拖动即退出停靠，停止拖动后重新判定吸附
@@ -816,6 +888,9 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     mainWindow.setMaximumSize(COMPACT_MAX_WIDTH, 0);
   }
 
+  // 还原上次退出的吸附状态（未吸附或记录不可用时保持默认居中启动）
+  restoreDockState();
+
   let indexPath;
   if (app.isPackaged) {
     const possiblePaths = [
@@ -906,6 +981,11 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
 
   // 边缘吸附与贴边隐藏的入口挂载（核心逻辑见模块级 handleMainWindowMove / snapWindowToEdge）
   mainWindow.on('move', handleMainWindowMove);
+
+  // 停靠态下拖边改尺寸时同步更新吸附记录，保证还原尺寸与退出时一致
+  mainWindow.on('resized', () => {
+    if (edgeDockedEdge) persistDockState();
+  });
 
   // 用户拖拽边界（Windows 窗口消息，程序性 setBounds 不触发，吸附/折叠动画不受影响）：
   // 拖拽开始立即退出停靠并取消进行中的自移动画（修复停靠态拖出时动画/吸附与用户拖拽抢位置导致窗口乱飞）；

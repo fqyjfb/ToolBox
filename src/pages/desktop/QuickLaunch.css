@@ -1,136 +1,8 @@
-.icon-toggle-container {
-  --color: var(--color-text-secondary);
-  --size: 16px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  cursor: pointer;
-  font-size: var(--size);
-  user-select: none;
-  fill: var(--color);
-  padding: 4px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-}
-
-.icon-toggle-container:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.dark .icon-toggle-container:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.icon-toggle-container .expand-icon {
-  position: absolute;
-  animation: keyframes-fill-icon 0.5s;
-  color: var(--color);
-}
-
-.icon-toggle-container .compress-icon {
-  position: absolute;
-  display: none;
-  animation: keyframes-fill-icon 0.5s;
-  color: var(--color);
-}
-
-.icon-toggle-container input:checked ~ .expand-icon {
-  display: none;
-}
-
-.icon-toggle-container input:checked ~ .compress-icon {
-  display: block;
-}
-
-.icon-toggle-container input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
-}
-
-@keyframes keyframes-fill-icon {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.2);
-  }
-}
-
-/* 排序组合框：紧凑尺寸与工具区图标按钮对齐（4px 内边距 + 12px 字号/16px 行高，总高 24px） */
+/* 排序组合框：紧凑尺寸，与工具栏唯一按钮对齐 */
 .quick-launch-sort {
   padding: 4px;
   font-size: 12px;
   line-height: 16px;
-}
-
-/* 应用打开方式切换按钮（勾选=单击启动，未勾选=双击启动），尺寸与 icon-toggle-container 对齐（4px padding + 16px 图标） */
-.launch-mode-toggle {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  cursor: pointer;
-  user-select: none;
-  padding: 4px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-}
-
-.launch-mode-toggle:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.dark .launch-mode-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.launch-mode-toggle input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
-}
-
-.launch-mode-toggle .checkmark {
-  position: relative;
-  height: 16px;
-  width: 16px;
-  background-color: var(--color-text-tertiary);
-  border-bottom-left-radius: 9px;
-  border-top-right-radius: 9px;
-  transition: background-color 0.2s, box-shadow 0.2s;
-}
-
-.launch-mode-toggle input:checked ~ .checkmark {
-  background-color: var(--color-primary);
-  box-shadow: 0 0 10px rgba(24, 24, 27, 0.25);
-}
-
-.dark .launch-mode-toggle input:checked ~ .checkmark {
-  box-shadow: 0 0 10px rgba(234, 241, 248, 0.2);
-}
-
-.launch-mode-toggle .checkmark:after {
-  content: "";
-  position: absolute;
-  display: none;
-  left: 5px;
-  top: 3px;
-  width: 4px;
-  height: 8px;
-  border: solid var(--color-bg-primary);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.launch-mode-toggle input:checked ~ .checkmark:after {
-  display: block;
 }
 
 .auth-popup .popup-menu-window {
@@ -283,15 +155,56 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* 未分类应用角标（仅在"全部"分类下显示）：低饱和中性灰，避免抢视觉焦点 */
-.quick-launch-unassigned-dot {
-  position: absolute;
-  top: -1px;
-  right: -1px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-text-tertiary, #A1A1AA);
-  opacity: 0.65;
-  pointer-events: none;
+/* 分类文件夹磁贴：中性半透明底，与手机桌面文件夹一致，避免多彩方块抢焦点 */
+.ql-folder-tile {
+  background-color: var(--color-bg-secondary);
+  background-color: color-mix(in srgb, var(--color-bg-secondary) 70%, transparent);
+}
+
+.ql-folder-tile:hover {
+  background-color: var(--color-menu-hover);
+}
+
+/* 拖拽应用悬停在文件夹上时高亮，提示「松手归入该文件夹」 */
+.ql-folder-tile.is-drop-target {
+  box-shadow: inset 0 0 0 2px var(--color-secondary);
+}
+
+/* 文件夹磁贴内的 2×2 迷你图标预览 */
+.ql-folder-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  place-items: center;
+}
+
+/* 文件夹展开弹层：遮罩（30）/ 面板（35）
+   必须低于 Modal（z-50），否则弹层内「添加应用」弹出的 Modal 会被本弹层盖住；
+   同时高于扫描进度条（10）、低于右键菜单（100）。 */
+.ql-folder-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.35);
+  animation: ql-folder-fade-in 0.12s ease-out;
+}
+
+.ql-folder-panel {
+  z-index: 35;
+  width: 100%;
+  max-width: 520px;
+  max-height: 80vh;
+  overflow: auto;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+@keyframes ql-folder-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

@@ -19,6 +19,8 @@ export const STORAGE_KEYS = {
   QUICK_LAUNCH_SHOW_TEXT: 'quickLaunchShowText',
   QUICK_LAUNCH_SORT_MODE: 'quickLaunchSortMode',
   QUICK_LAUNCH_SINGLE_CLICK: 'quickLaunchSingleClick',
+  // 桌面磁贴排列顺序（文件夹 + 未分类应用混合排序）
+  QUICK_LAUNCH_DESKTOP_ORDER: 'quickLaunchDesktopOrder',
   HOME_FAVORITES: 'homeFavorites',
   HOME_TOOLS: 'homeTools',
   HOME_QUICK_LAUNCH: 'homeQuickLaunchApps',

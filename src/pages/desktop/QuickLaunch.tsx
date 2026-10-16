@@ -1,10 +1,25 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor, Type, Image as ImageIcon, Copy, Flame, Clock, AppWindow, Shield, FolderOpen, Keyboard, Download, Upload, Wrench, X } from 'lucide-react';
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, rectSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor, Copy, AppWindow, Shield, FolderOpen, Keyboard, Download, Upload, Wrench, X, Check, Settings } from 'lucide-react';
+import { DndContext, closestCenter, pointerWithin, CollisionDetection, DragEndEvent, DragStartEvent, DragOverlay as DndDragOverlay } from '@dnd-kit/core';
+import { arrayMove, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useDndSensors } from '../../hooks/useDndSensors';
-import { QuickLaunchCategory, QuickLaunchItem, QuickLaunchSortMode, addHomeQuickLaunchApp, isAppInHomeQuickLaunch, loadApps, ensureAppIconsCached, generateAppId } from '../../utils/quickLaunch';
+import {
+  QuickLaunchCategory,
+  QuickLaunchItem,
+  QuickLaunchSortMode,
+  addHomeQuickLaunchApp,
+  isAppInHomeQuickLaunch,
+  loadApps,
+  ensureAppIconsCached,
+  generateAppId,
+  loadDesktopOrder,
+  saveDesktopOrder,
+  reconcileDesktopOrder,
+  applySubsetOrder,
+  sortAppsByMode,
+  toAppKey,
+  toFolderKey,
+} from '../../utils/quickLaunch';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useToastStore } from '../../store/toastStore';
 import { useQuickLaunchScanStore } from '../../store/quickLaunchScanStore';
@@ -15,115 +30,22 @@ import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import Select from '../../components/ui/Select';
 import { logDebug, logInfo, logWarn } from '../../services/loggerService';
 import { useIsCompactMode } from '../../store/windowModeStore';
-import { useOverflowItems } from '../../hooks/useOverflowItems';
-import OverflowMenu, { OverflowMenuItem } from '../../components/ui/OverflowMenu';
+import { AppTileVisual, DesktopAppTile } from '../../components/quicklaunch/DesktopAppTile';
+import { DesktopFolderTile, FolderTileVisual } from '../../components/quicklaunch/DesktopFolderTile';
+import FolderPopup, { FOLDER_POPUP_PREFIX } from '../../components/quicklaunch/FolderPopup';
+import { buildDesktopTiles, repositionKey, writeBackSlots } from '../../components/quicklaunch/desktopTiles';
+import { DesktopTile } from '../../components/quicklaunch/types';
 import './QuickLaunch.css';
 
-// 真实分类 id 判断（排除 全部/最常用/最近使用 等虚拟分类）
-const isConcreteCategoryId = (id: string): boolean =>
-  id !== 'all' && id !== 'frequent' && id !== 'recent';
-
-// 分类栏条目：虚拟分类 + 真实分类，统一参与「按宽度收拢」
-type CategoryBarItem = {
+/** 当前展开的文件夹信息 */
+interface OpenFolderInfo {
   key: string;
-  special?: 'all' | 'frequent' | 'recent';
+  title: string;
+  apps: QuickLaunchItem[];
+  /** 智能文件夹无对应分类 */
   category?: QuickLaunchCategory;
-};
-
-const SPECIAL_CATEGORY_LABEL: Record<'all' | 'frequent' | 'recent', string> = {
-  all: '全部',
-  frequent: '最常用',
-  recent: '最近使用',
-};
-
-const SortableAppItem: React.FC<{ app: QuickLaunchItem; iconSize: 'small' | 'medium'; showText: boolean; disabled?: boolean; showUnassignedBadge?: boolean; singleClick?: boolean; onLaunch: (path: string) => void; onContextMenu: (e: React.MouseEvent) => void; }> = ({ app, iconSize, showText, disabled, showUnassignedBadge, singleClick, onLaunch, onContextMenu }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: app.id, disabled });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...(disabled ? {} : listeners)}
-      className={`flex flex-col items-center justify-center rounded-md transition-colors w-full ${
-        disabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
-      } ${iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'} ${isDragging ? 'shadow-lg' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}
-      onClick={() => singleClick && onLaunch(app.path)}
-      onDoubleClick={() => !singleClick && onLaunch(app.path)}
-      onContextMenu={onContextMenu}
-    >
-      <div className="relative">
-        {app.icon ? (
-          <img
-            loading="lazy"
-            draggable={false}
-            src={`data:image/png;base64,${app.icon}`}
-            alt={app.name}
-            className={`object-contain ${showText ? 'mb-1' : ''} ${
-              iconSize === 'small' ? 'w-8 h-8' : 'w-12 h-12'
-            }`}
-          />
-        ) : (
-          <Rocket className={`text-content-secondary ${showText ? 'mb-1' : ''} ${
-            iconSize === 'small' ? 'w-8 h-8' : 'w-12 h-12'
-          }`} />
-        )}
-        {showUnassignedBadge && !app.categoryId && (
-          <span className="quick-launch-unassigned-dot" />
-        )}
-      </div>
-      {showText && (
-        <span className={`font-medium text-content-primary truncate w-full text-center ${
-          iconSize === 'small' ? 'text-4xs' : 'text-2xs'
-        }`}>
-          {app.name}
-        </span>
-      )}
-    </div>
-  );
-};
-
-const SortableCategoryItem: React.FC<{ category: QuickLaunchCategory; isActive: boolean; onClick: () => void; onContextMenu: (e: React.MouseEvent) => void; }> = ({ category, isActive, onClick, onContextMenu }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`cursor-grab active:cursor-grabbing`}
-    >
-      <button
-        className={`px-3 py-1 text-sm font-medium rounded-full transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${
-          isActive
-            ? 'text-white'
-            : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
-        }`}
-        style={isActive ? { backgroundColor: category.color } : {}}
-        onClick={onClick}
-        onContextMenu={onContextMenu}
-      >
-        <Tag size={12} />
-        {category.name}
-      </button>
-    </div>
-  );
-};
+  readOnly: boolean;
+}
 
 const QuickLaunch: React.FC = () => {
   const { searchQuery, isSearchActive } = useNavSearch();
@@ -132,7 +54,10 @@ const QuickLaunch: React.FC = () => {
   const isCompact = useIsCompactMode();
   const [apps, setApps] = useState<QuickLaunchItem[]>([]);
   const [categories, setCategories] = useState<QuickLaunchCategory[]>([]);
-  const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
+  // 桌面磁贴排列顺序（文件夹 cat:<id> 与未分类应用 app:<id> 混合）；渲染前对账，增删/扫描无需维护
+  const [desktopOrder, setDesktopOrder] = useState<string[]>(loadDesktopOrder);
+  // 当前展开的文件夹：真实分类为其 id，智能文件夹为 smart:<key>
+  const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<QuickLaunchSortMode>(() => {
     const saved = localStorageService.getString(STORAGE_KEYS.QUICK_LAUNCH_SORT_MODE) as QuickLaunchSortMode | undefined;
     // 默认按使用频率，历史选择的模式（含自定义）直接沿用
@@ -146,6 +71,8 @@ const QuickLaunch: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [customPath, setCustomPath] = useState('');
+  // 添加应用时归属的文件夹（'' = 未分类）
+  const [addTargetCategory, setAddTargetCategory] = useState('');
   const [editingApp, setEditingApp] = useState<QuickLaunchItem | null>(null);
   const [editingCategory, setEditingCategory] = useState<QuickLaunchCategory | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -182,6 +109,10 @@ const QuickLaunch: React.FC = () => {
   const [invalidApps, setInvalidApps] = useState<QuickLaunchItem[]>([]);
 
   const sensors = useDndSensors();
+  // 拖拽刚结束时浏览器仍会派发 click，用此守卫避免误启动 / 误展开
+  const didDragRef = useRef(false);
+  // 拖拽预览（DragOverlay 复用磁贴展示层，不重复实现）
+  const [activeTile, setActiveTile] = useState<DesktopTile | null>(null);
 
   useEffect(() => {
     const savedApps = localStorageService.get<QuickLaunchItem[]>(STORAGE_KEYS.QUICK_LAUNCH_APPS, []);
@@ -239,6 +170,10 @@ const QuickLaunch: React.FC = () => {
   useEffect(() => {
     localStorageService.set(STORAGE_KEYS.QUICK_LAUNCH_CATEGORIES, categories);
   }, [categories]);
+
+  useEffect(() => {
+    saveDesktopOrder(desktopOrder);
+  }, [desktopOrder]);
 
   // 扫描完成（含扫描期间切换页面后返回）时刷新列表
   useEffect(() => {
@@ -315,15 +250,15 @@ const QuickLaunch: React.FC = () => {
         name: getAppName(customPath),
         path: customPath,
         icon,
-        // 仅在真实分类视图下添加才归类，否则默认无分类（在"全部"下由用户自由归类）
-        categoryId: isConcreteCategoryId(activeCategoryId) ? activeCategoryId : '',
+        // 默认未分类（直接落在桌面），在文件夹弹层内添加时归入该文件夹
+        categoryId: addTargetCategory,
         addedAt: Date.now(),
       };
       setApps(prev => [...prev, newApp]);
       setCustomPath('');
       setShowAddDialog(false);
     }
-  }, [customPath, getAppName, activeCategoryId, apps]);
+  }, [customPath, getAppName, addTargetCategory, apps]);
 
   const handleSelectFile = useCallback(async () => {
     const result = await window.electron?.selectFile();
@@ -332,10 +267,7 @@ const QuickLaunch: React.FC = () => {
     }
   }, []);
 
-  const handleDropFiles = useCallback(async (paths: string[]) => {
-    // 仅在真实分类视图下拖入才归类，否则默认无分类（在"全部"下由用户自由归类）
-    const targetCategoryId = isConcreteCategoryId(activeCategoryId) ? activeCategoryId : '';
-
+  const handleDropFiles = useCallback(async (paths: string[], targetCategoryId = '') => {
     for (const filePath of paths) {
       const lowerPath = filePath.toLowerCase();
       const exists = apps.some(app => app.path.toLowerCase() === lowerPath);
@@ -355,7 +287,7 @@ const QuickLaunch: React.FC = () => {
       };
       setApps(prev => [...prev, newApp]);
     }
-  }, [apps, activeCategoryId, getAppName]);
+  }, [apps, getAppName]);
 
   const dragContainerRef = useRef<HTMLDivElement>(null);
 
@@ -376,6 +308,31 @@ const QuickLaunch: React.FC = () => {
     }
   }, []);
 
+  // 从 dataTransfer 解析出本地路径（桌面网格与文件夹弹层共用）
+  const collectDroppedPaths = useCallback(async (e: React.DragEvent): Promise<string[]> => {
+    logDebug(`[QuickLaunch] 检查 dataTransfer 内容`, 'drag-drop');
+
+    const files = e.dataTransfer.files;
+    const filePaths: string[] = [];
+
+    if (files && files.length > 0) {
+      logDebug(`[QuickLaunch] 处理 dataTransfer.files (数量: ${files.length})`, 'drag-drop');
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        const filePath = await window.electron?.getFileOrFolderPath(file);
+        logDebug(`[QuickLaunch] File ${i}: name=${file.name}, path=${filePath}`, 'drag-drop');
+
+        if (filePath) {
+          filePaths.push(filePath);
+        }
+      }
+    }
+
+    return filePaths;
+  }, []);
+
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -385,28 +342,9 @@ const QuickLaunch: React.FC = () => {
     logDebug(`[QuickLaunch] 开始处理拖拽事件`, 'drag-drop');
 
     try {
-      logDebug(`[QuickLaunch] 检查 dataTransfer 内容`, 'drag-drop');
-
-      const files = e.dataTransfer.files;
-      const filePaths: string[] = [];
-
-      if (files && files.length > 0) {
-        logDebug(`[QuickLaunch] 处理 dataTransfer.files (数量: ${files.length})`, 'drag-drop');
-        
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          
-          const filePath = await window.electron?.getFileOrFolderPath(file);
-          logDebug(`[QuickLaunch] File ${i}: name=${file.name}, path=${filePath}`, 'drag-drop');
-          
-          if (filePath) {
-            filePaths.push(filePath);
-          }
-        }
-      }
-
+      const filePaths = await collectDroppedPaths(e);
       logInfo(`[QuickLaunch] 收集到 ${filePaths.length} 个文件待处理`, 'drag-drop');
-      
+
       if (filePaths.length > 0) {
         handleDropFiles(filePaths);
         logInfo(`[QuickLaunch] 成功添加 ${filePaths.length} 个应用`, 'drag-drop');
@@ -420,7 +358,18 @@ const QuickLaunch: React.FC = () => {
     } catch (error) {
       logWarn(`[QuickLaunch] 拖拽处理异常: ${(error as Error).message}`, 'drag-drop');
     }
-  }, [handleDropFiles]);
+  }, [handleDropFiles, collectDroppedPaths]);
+
+  // 文件夹弹层是 fixed 遮罩层，不在桌面网格的 onDrop 覆盖范围内。
+  // 必须 preventDefault，否则 Electron 下拖入文件会触发浏览器默认导航（页面跳走）。
+  const handlePopupFileDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, []);
+
+
 
   const handleContextMenu = useCallback((e: React.MouseEvent, type: 'app' | 'category' | 'empty', targetId?: string) => {
     e.preventDefault();
@@ -432,7 +381,8 @@ const QuickLaunch: React.FC = () => {
     setContextMenu(prev => ({ ...prev, isOpen: false }));
   }, []);
 
-  const handleAddApp = useCallback(() => {
+  const handleAddApp = useCallback((categoryId = '') => {
+    setAddTargetCategory(categoryId);
     setShowAddDialog(true);
     handleCloseContextMenu();
   }, [handleCloseContextMenu]);
@@ -569,7 +519,7 @@ const QuickLaunch: React.FC = () => {
 
   // P2: 配置导出
   const handleExportConfig = useCallback(async () => {
-    const content = JSON.stringify({ apps, categories }, null, 2);
+    const content = JSON.stringify({ apps, categories, desktopOrder }, null, 2);
     const result = await window.electron?.exportQuickLaunchConfig(content);
     if (!result) {
       handleCloseContextMenu();
@@ -581,7 +531,7 @@ const QuickLaunch: React.FC = () => {
       addToast({ type: 'error', message: `导出失败: ${result.error ?? '未知错误'}` });
     }
     handleCloseContextMenu();
-  }, [apps, categories, addToast, handleCloseContextMenu]);
+  }, [apps, categories, desktopOrder, addToast, handleCloseContextMenu]);
 
   // P2: 配置导入
   const handleImportConfig = useCallback(async () => {
@@ -605,8 +555,13 @@ const QuickLaunch: React.FC = () => {
       // 类型校验后写入
       const newApps = Array.isArray(result.apps) ? result.apps as QuickLaunchItem[] : [];
       const newCategories = Array.isArray(result.categories) ? result.categories : [];
+      // 旧版本导出文件无 desktopOrder：按空处理，由渲染前对账自动生成默认顺序
+      const importedOrder = (result as { desktopOrder?: unknown }).desktopOrder;
+      const newOrder = Array.isArray(importedOrder) ? importedOrder as string[] : [];
       setApps(newApps);
       setCategories(newCategories);
+      setDesktopOrder(newOrder);
+      setOpenFolderId(null);
       addToast({ type: 'success', message: `已导入 ${newApps.length} 个应用、${newCategories.length} 个分类` });
     } catch {
       addToast({ type: 'error', message: '数据格式错误' });
@@ -692,106 +647,205 @@ const QuickLaunch: React.FC = () => {
 
   const handleDeleteCategory = useCallback((categoryId: string) => {
     setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-    // 被删分类下的应用归为无分类（在"全部"下显示，可重新归类），避免指回已删除的分类 id
+    // 被删文件夹下的应用归为未分类（回到桌面，可重新归类），避免指回已删除的分类 id
     setApps(prev => prev.map(app =>
       app.categoryId === categoryId ? { ...app, categoryId: '' } : app
     ));
-    if (activeCategoryId === categoryId) {
-      setActiveCategoryId('all');
+    if (openFolderId === categoryId) {
+      setOpenFolderId(null);
     }
     handleCloseContextMenu();
-  }, [activeCategoryId, handleCloseContextMenu]);
+  }, [openFolderId, handleCloseContextMenu]);
 
-  // P0: 虚拟分类与自动排序
-  const filteredApps = useMemo(() => {
-    let result: QuickLaunchItem[] = apps;
+  // 搜索激活时切换为平铺结果视图（忽略文件夹，等同旧「全部 + 搜索」）
+  const isFlatSearch = isSearchActive && searchQuery.trim().length > 0;
 
-    // 虚拟分类：最常用 / 最近使用
-    if (activeCategoryId === 'frequent') {
-      result = [...result]
-        .sort((a, b) => (b.launchCount ?? 0) - (a.launchCount ?? 0))
-        .slice(0, 8);
-    } else if (activeCategoryId === 'recent') {
-      result = [...result]
-        .sort((a, b) => (b.lastLaunchedAt ?? 0) - (a.lastLaunchedAt ?? 0))
-        .slice(0, 8);
-    } else if (activeCategoryId !== 'all') {
-      result = result.filter(app => app.categoryId === activeCategoryId);
+  const searchMatchedApps = useMemo(() => {
+    if (!isFlatSearch) return [];
+    const query = searchQuery.trim().toLowerCase();
+    return apps.filter(app =>
+      app.name.toLowerCase().includes(query) ||
+      app.path.toLowerCase().includes(query) ||
+      (app.alias?.toLowerCase().includes(query) ?? false) ||
+      (app.keywords?.toLowerCase().includes(query) ?? false)
+    );
+  }, [isFlatSearch, searchQuery, apps]);
+
+  // 顺序对账：丢掉已删除项、补齐新增项（扫描 / 导入 / 新增都不需要维护顺序数组）
+  const orderedKeys = useMemo(
+    () => reconcileDesktopOrder(desktopOrder, categories, apps),
+    [desktopOrder, categories, apps]
+  );
+
+  const { tiles: orderedTiles, slotKeys } = useMemo(
+    () => buildDesktopTiles(orderedKeys, categories, apps, sortMode),
+    [orderedKeys, categories, apps, sortMode]
+  );
+
+  const tiles = useMemo<DesktopTile[]>(() => {
+    if (isFlatSearch) {
+      return searchMatchedApps.map((app): DesktopTile => ({ kind: 'app', app }));
     }
+    return orderedTiles;
+  }, [isFlatSearch, searchMatchedApps, orderedTiles]);
 
-    // 搜索过滤（P0 增强别名与关键词）
-    if (isSearchActive && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(app =>
-        app.name.toLowerCase().includes(query) ||
-        app.path.toLowerCase().includes(query) ||
-        (app.alias?.toLowerCase().includes(query) ?? false) ||
-        (app.keywords?.toLowerCase().includes(query) ?? false)
-      );
+  // 只登记可拖拽磁贴：智能文件夹固定只读，不参与排序
+  const dndItemKeys = useMemo(
+    () => tiles.flatMap((tile) => {
+      if (tile.kind === 'folder') return [toFolderKey(tile.category.id)];
+      if (tile.kind === 'app') return [toAppKey(tile.app.id)];
+      return [];
+    }),
+    [tiles]
+  );
+
+  // 无应用时所有文件夹均为空，直接显示引导空态
+  const hasContent = apps.length > 0;
+
+  // 当前展开的文件夹（可能已失效，失效时视为未展开）
+  const openFolder = useMemo<OpenFolderInfo | null>(() => {
+    if (!openFolderId) return null;
+
+    const category = categories.find(c => c.id === openFolderId);
+    if (!category) return null;
+    const members = apps.filter(app => app.categoryId === category.id);
+    return {
+      key: openFolderId,
+      title: category.name,
+      apps: sortMode === 'custom' ? members : sortAppsByMode(members, sortMode),
+      category,
+      readOnly: false,
+    };
+  }, [openFolderId, apps, categories, sortMode]);
+
+  // 弹层打开时禁用桌面磁贴拖拽：其 droppable 会让 pointerWithin 误命中被遮罩挡住的磁贴
+  const desktopDragDisabled = isFlatSearch || openFolder !== null;
+
+  // 弹层内右键：智能文件夹只读不弹菜单，避免弹出空菜单
+  const handlePopupContextMenu = useCallback((e: React.MouseEvent) => {
+    if (!openFolder?.category) return;
+    handleContextMenu(e, 'category', openFolder.category.id);
+  }, [openFolder, handleContextMenu]);
+
+  const handleFolderFileDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    if (!openFolder?.category) return;
+    const filePaths = await collectDroppedPaths(e);
+    if (filePaths.length > 0) {
+      handleDropFiles(filePaths, openFolder.category.id);
     }
+  }, [collectDroppedPaths, handleDropFiles, openFolder]);
 
-    // 自动排序（虚拟分类已强制排序，跳过）
-    const isVirtualCategory = activeCategoryId === 'frequent' || activeCategoryId === 'recent';
-    if (!isVirtualCategory && sortMode !== 'custom') {
-      const sorted = [...result];
-      switch (sortMode) {
-        case 'name':
-          sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh'));
-          break;
-        case 'addedAt':
-          sorted.sort((a, b) => a.addedAt - b.addedAt);
-          break;
-        case 'launchCount':
-          sorted.sort((a, b) => (b.launchCount ?? 0) - (a.launchCount ?? 0));
-          break;
-        case 'lastLaunchedAt':
-          sorted.sort((a, b) => (b.lastLaunchedAt ?? 0) - (a.lastLaunchedAt ?? 0));
-          break;
-      }
-      result = sorted;
-    }
+  /** 桌面磁贴排序：写回槽位（保留已归入文件夹的隐藏键）并锁定为自定义排序 */
+  const reorderDesktopTiles = useCallback((fromKey: string, toKey: string) => {
+    const from = slotKeys.indexOf(fromKey);
+    const to = slotKeys.indexOf(toKey);
+    if (from === -1 || to === -1) return;
+    const nextOrdered = writeBackSlots(orderedKeys, slotKeys, arrayMove(slotKeys, from, to));
+    setDesktopOrder(nextOrdered);
+    setSortMode('custom');
+  }, [slotKeys, orderedKeys]);
 
-    return result;
-  }, [apps, activeCategoryId, isSearchActive, searchQuery, sortMode]);
+  /** 文件夹内应用排序：只置换该子集在 apps 中的落位，其余应用位置不变 */
+  const reorderFolderApps = useCallback((categoryId: string, activeId: string, overId: string) => {
+    const ids = apps.filter(app => app.categoryId === categoryId).map(app => app.id);
+    const from = ids.indexOf(activeId);
+    const to = ids.indexOf(overId);
+    if (from === -1 || to === -1) return;
+    setApps(prev => applySubsetOrder(prev, arrayMove(ids, from, to)));
+    setSortMode('custom');
+  }, [apps]);
 
-  // P0: 排序模式非自定义时禁用拖拽
-  const isDragDisabled = sortMode !== 'custom' || activeCategoryId === 'frequent' || activeCategoryId === 'recent';
-
-  const handleAppsDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const activeIndex = filteredApps.findIndex(app => app.id === active.id);
-      const overIndex = filteredApps.findIndex(app => app.id === over.id);
-
-      if (activeIndex !== -1 && overIndex !== -1) {
-        const reorderedIds = arrayMove(filteredApps.map(app => app.id), activeIndex, overIndex);
-        
-        setApps(prev => {
-          const sortedApps = [...prev].sort((a, b) => {
-            const indexA = reorderedIds.indexOf(a.id);
-            const indexB = reorderedIds.indexOf(b.id);
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
-            return indexA - indexB;
-          });
-          return sortedApps;
-        });
-      }
-    }
-  }, [filteredApps]);
-
-  const handleCategoriesDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setCategories(prev => {
-        const oldIndex = prev.findIndex(cat => cat.id === active.id);
-        const newIndex = prev.findIndex(cat => cat.id === over.id);
-        return arrayMove(prev, oldIndex, newIndex);
-      });
-    }
+  /** 移动应用到目标容器：'' = 回到桌面（未分类），并把顺序键落到 anchor 之前 */
+  const moveAppToContainer = useCallback((appId: string, categoryId: string, anchorKey: string | null) => {
+    setApps(prev => prev.map(app => (app.id === appId ? { ...app, categoryId } : app)));
+    setDesktopOrder(prev => repositionKey(prev, toAppKey(appId), anchorKey));
   }, []);
+
+  // 桌面态碰撞检测：指针精确停到磁贴内才命中；间隙兜底 closestCenter 时剔除 cat 键，
+  // 避免拖动路径"路过"文件夹时把图标误归入。
+  const desktopCollisionDetection = useCallback<CollisionDetection>((args) => {
+    const within = pointerWithin(args);
+    if (within.length > 0) return within;
+    return closestCenter(args).filter((c) => !String(c.id).startsWith('cat:'));
+  }, []);
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    didDragRef.current = true;
+    const key = String(event.active.id);
+    if (key.startsWith('cat:')) {
+      const id = key.slice(4);
+      setActiveTile(tiles.find(t => t.kind === 'folder' && t.category.id === id) ?? null);
+      return;
+    }
+    const app = apps.find(a => a.id === key.slice(4));
+    setActiveTile(app ? { kind: 'app', app } : null);
+  }, [tiles, apps]);
+
+  const endDrag = useCallback(() => {
+    setActiveTile(null);
+    // click 与 pointerup 同处一个任务，延后一拍复位即可拦截拖拽后的误触发
+    setTimeout(() => { didDragRef.current = false; }, 0);
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    endDrag();
+
+    const { active, over } = event;
+    const activeKey = String(active.id);
+    const overKey = over ? String(over.id) : null;
+
+    // A. 弹层打开且落在面板外（遮罩）→ 移出该文件夹
+    if (overKey === null) {
+      if (openFolder && openFolder.category && activeKey.startsWith('app:')) {
+        moveAppToContainer(activeKey.slice(4), '', null);
+      }
+      return;
+    }
+    if (activeKey === overKey) return;
+
+    const activeApp = activeKey.startsWith('app:')
+      ? apps.find(a => a.id === activeKey.slice(4))
+      : undefined;
+    const overApp = overKey.startsWith('app:')
+      ? apps.find(a => a.id === overKey.slice(4))
+      : undefined;
+
+    // B. 归入文件夹：拖到文件夹磁贴 / 弹层面板
+    if (activeApp) {
+      const targetCategoryId = overKey.startsWith('cat:')
+        ? overKey.slice(4)
+        : overKey.startsWith(FOLDER_POPUP_PREFIX)
+          ? overKey.slice(FOLDER_POPUP_PREFIX.length)
+          : null;
+      if (targetCategoryId) {
+        moveAppToContainer(activeApp.id, targetCategoryId, null);
+        addToast({ type: 'success', message: `已移入「${categories.find(c => c.id === targetCategoryId)?.name ?? '文件夹'}」` });
+        return;
+      }
+    }
+
+    // C. 应用落在应用
+    if (activeApp && overApp) {
+      if (activeApp.categoryId === overApp.categoryId) {
+        if (activeApp.categoryId) {
+          reorderFolderApps(activeApp.categoryId, activeApp.id, overApp.id);
+        } else {
+          reorderDesktopTiles(activeKey, overKey);
+        }
+        return;
+      }
+      // 跨容器：移动到目标应用所在容器，并落到其位置
+      moveAppToContainer(activeApp.id, overApp.categoryId, overKey);
+      return;
+    }
+
+    // D. 磁贴排序（文件夹 / 桌面应用）
+    reorderDesktopTiles(activeKey, overKey);
+  }, [openFolder, apps, categories, addToast, moveAppToContainer, reorderFolderApps, reorderDesktopTiles, endDrag]);
 
   const getContextMenuItems = useCallback((): ContextMenuItem[] => {
     if (contextMenu.type === 'app' && contextMenu.targetId) {
@@ -874,12 +928,22 @@ const QuickLaunch: React.FC = () => {
           id: 'move-to-category',
           label: '移动',
           icon: <Folder className="w-4 h-4" />,
-          subMenu: categories.map((category) => ({
-            id: `category-${category.id}`,
-            label: category.name,
-            icon: <Tag className="w-4 h-4" />,
-            onClick: () => handleMoveToCategory(app.id, category.id)
-          }))
+          subMenu: [
+            ...(app.categoryId
+              ? [{
+                  id: 'category-none',
+                  label: '移出文件夹（未分类）',
+                  icon: <FolderPlus className="w-4 h-4" />,
+                  onClick: () => handleMoveToCategory(app.id, '')
+                }]
+              : []),
+            ...categories.map((category) => ({
+              id: `category-${category.id}`,
+              label: category.name,
+              icon: <Tag className="w-4 h-4" />,
+              onClick: () => handleMoveToCategory(app.id, category.id)
+            }))
+          ]
         },
         { id: 'divider1', divider: true },
         {
@@ -913,6 +977,7 @@ const QuickLaunch: React.FC = () => {
     }
 
     if (contextMenu.type === 'empty') {
+      const anyScanning = isScanningDesktop || isScanningInstalled;
       const items: ContextMenuItem[] = [
         {
           id: 'add-app',
@@ -922,12 +987,73 @@ const QuickLaunch: React.FC = () => {
         },
         {
           id: 'add-category',
-          label: '添加分类',
+          label: '新建文件夹',
           icon: <Plus className="w-4 h-4" />,
-          onClick: handleAddCategory
+          onClick: () => handleAddCategory()
+        },
+        { id: 'divider-scan', divider: true },
+        {
+          id: 'scan-desktop',
+          label: isScanningDesktop ? '正在扫描桌面…' : '扫描桌面应用',
+          icon: <Monitor className="w-4 h-4" />,
+          className: anyScanning ? 'opacity-50 pointer-events-none' : '',
+          onClick: () => { if (!anyScanning) scanDesktop(); }
+        },
+        {
+          id: 'scan-installed',
+          label: isScanningInstalled ? '正在扫描已安装…' : '扫描已安装应用',
+          icon: <AppWindow className="w-4 h-4" />,
+          className: anyScanning ? 'opacity-50 pointer-events-none' : '',
+          onClick: () => { if (!anyScanning) scanInstalled(); }
+        },
+        { id: 'divider-display', divider: true },
+        {
+          id: 'display',
+          label: '显示设置',
+          icon: <Settings className="w-4 h-4" />,
+          subMenu: [
+            {
+              id: 'size-small',
+              label: '小图标',
+              icon: iconSize === 'small' ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+              onClick: () => setIconSize('small')
+            },
+            {
+              id: 'size-medium',
+              label: '大图标',
+              icon: iconSize === 'medium' ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+              onClick: () => setIconSize('medium')
+            },
+            { id: 'divider-text', divider: true },
+            {
+              id: 'text-on',
+              label: '图标 + 文字',
+              icon: showText ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+              onClick: () => setShowText(true)
+            },
+            {
+              id: 'text-off',
+              label: '仅图标',
+              icon: !showText ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+              onClick: () => setShowText(false)
+            },
+            { id: 'divider-launch', divider: true },
+            {
+              id: 'launch-single',
+              label: '单击启动',
+              icon: singleClickLaunch ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+              onClick: () => setSingleClickLaunch(true)
+            },
+            {
+              id: 'launch-double',
+              label: '双击启动',
+              icon: !singleClickLaunch ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+              onClick: () => setSingleClickLaunch(false)
+            }
+          ]
         }
       ];
-      
+
       if (apps.length > 0) {
         items.push({ id: 'divider1', divider: true });
         // P2: 修复失效应用（支持重新定位）
@@ -970,91 +1096,39 @@ const QuickLaunch: React.FC = () => {
     }
 
     return [];
-  }, [contextMenu.type, contextMenu.targetId, apps, categories, addToast, handleLaunch, handleRename, handleSetHotkey, handleMoveToCategory, handleRemove, handleEditCategory, handleDeleteCategory, handleAddApp, handleAddCategory, handleClearAll, handleRemoveInvalidApps, handleRepairInvalidApps, handleExportConfig, handleImportConfig, handleCloseContextMenu]);
+  }, [contextMenu.type, contextMenu.targetId, apps, categories, addToast, handleLaunch, handleRename, handleSetHotkey, handleMoveToCategory, handleRemove, handleEditCategory, handleDeleteCategory, handleAddApp, handleAddCategory, handleClearAll, handleRemoveInvalidApps, handleRepairInvalidApps, handleExportConfig, handleImportConfig, handleCloseContextMenu, isScanningDesktop, isScanningInstalled, scanDesktop, scanInstalled, iconSize, showText, singleClickLaunch]);
 
-  // 小窗：分类栏按可用宽度收拢，放不下的进「更多」下拉（与网址导航页一致）
-  const categoryBarItems = useMemo<CategoryBarItem[]>(
-    () => [
-      { key: 'all', special: 'all' },
-      { key: 'frequent', special: 'frequent' },
-      { key: 'recent', special: 'recent' },
-      ...categories.map((category) => ({ key: category.id, category })),
-    ],
-    [categories]
-  );
-  const { containerRef, visible, overflow } = useOverflowItems(categoryBarItems, (item) => item.key, { enabled: isCompact });
-
-  const isBarItemActive = (item: CategoryBarItem): boolean =>
-    activeCategoryId === (item.special ?? item.category?.id);
-
-  const selectBarItem = (item: CategoryBarItem): void =>
-    setActiveCategoryId(item.special ?? item.category!.id);
-
-  const overflowMenuItems: OverflowMenuItem[] = overflow.map((item) => ({
-    key: item.key,
-    label: item.special ? SPECIAL_CATEGORY_LABEL[item.special] : item.category!.name,
-    active: isBarItemActive(item),
-    onClick: () => selectBarItem(item),
-    onContextMenu: item.special
-      ? undefined
-      : (e: React.MouseEvent) => handleContextMenu(e, 'category', item.category!.id),
-  }));
-
-  const renderBarItem = (item: CategoryBarItem) => {
-    if (item.special === 'all') {
+  const renderTile = (tile: DesktopTile) => {
+    if (tile.kind === 'app') {
       return (
-        <button
-          className={`px-3 py-1 text-sm font-medium rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${
-            activeCategoryId === 'all'
-              ? 'bg-primary text-button-text'
-              : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
-          }`}
-          onClick={() => setActiveCategoryId('all')}
-        >
-          全部
-        </button>
+        <DesktopAppTile
+          key={toAppKey(tile.app.id)}
+          app={tile.app}
+          iconSize={iconSize}
+          showText={showText}
+          disabled={desktopDragDisabled}
+          singleClick={singleClickLaunch}
+          didDragRef={didDragRef}
+          onLaunch={handleLaunch}
+          onContextMenu={(e) => handleContextMenu(e, 'app', tile.app.id)}
+        />
       );
     }
-    if (item.special === 'frequent') {
+    if (tile.kind === 'folder') {
       return (
-        <button
-          className={`flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${
-            activeCategoryId === 'frequent'
-              ? 'bg-primary text-button-text'
-              : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
-          }`}
-          onClick={() => setActiveCategoryId('frequent')}
-          title="按启动次数排序，取前 8"
-        >
-          <Flame size={12} />
-          最常用
-        </button>
+        <DesktopFolderTile
+          key={toFolderKey(tile.category.id)}
+          category={tile.category}
+          apps={tile.apps}
+          iconSize={iconSize}
+          showText={showText}
+          disabled={desktopDragDisabled}
+          didDragRef={didDragRef}
+          onOpen={() => setOpenFolderId(tile.category.id)}
+          onContextMenu={(e) => handleContextMenu(e, 'category', tile.category.id)}
+        />
       );
     }
-    if (item.special === 'recent') {
-      return (
-        <button
-          className={`flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${
-            activeCategoryId === 'recent'
-              ? 'bg-primary text-button-text'
-              : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
-          }`}
-          onClick={() => setActiveCategoryId('recent')}
-          title="按最近启动时间排序，取前 8"
-        >
-          <Clock size={12} />
-          最近使用
-        </button>
-      );
-    }
-    return (
-      <SortableCategoryItem
-        category={item.category!}
-        isActive={activeCategoryId === item.category!.id}
-        onClick={() => setActiveCategoryId(item.category!.id)}
-        onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
-      />
-    );
   };
 
   // 小窗下收窄最小列宽：一行排得下更多应用（小图标 4 个 / 中图标 3 个），减少纵向滚动
@@ -1072,101 +1146,21 @@ const QuickLaunch: React.FC = () => {
         onContextMenu={(e) => handleContextMenu(e, 'empty')}
       >
         
-      <div className={`flex ${isCompact ? 'flex-col items-stretch gap-1 px-1 py-1' : 'items-center justify-between pl-6 pr-0 py-2'}`}>
-        {/* 小窗：分类栏按宽度收拢，放不下的进「更多」下拉，不再横向铺满 */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleCategoriesDragEnd}
-        >
-          <SortableContext items={categories.map(cat => cat.id)} strategy={horizontalListSortingStrategy}>
-            <div className="flex items-center gap-1 min-w-0 flex-1">
-              <div
-                ref={containerRef}
-                className={`flex items-center min-w-0 flex-1 ${isCompact ? 'gap-1 flex-nowrap overflow-hidden' : 'gap-2 flex-wrap'}`}
-              >
-                {visible.map((item) => (
-                  <React.Fragment key={item.key}>{renderBarItem(item)}</React.Fragment>
-                ))}
-              </div>
-              <OverflowMenu items={overflowMenuItems} />
-              <button
-                onClick={handleAddCategory}
-                className="p-1.5 text-content-tertiary hover:text-content-secondary transition-colors flex-shrink-0"
-                title="添加分类"
-              >
-                <Plus size={16} />
-              </button>
-            </div>
-          </SortableContext>
-        </DndContext>
-        {/* 小窗：工具栏单独一行，右侧不再与分类栏挤在同一行 */}
-        <div className={`flex items-center ${isCompact ? 'justify-between gap-1 px-0.5 py-0.5' : 'gap-2 rounded-lg px-2 py-1'}`}>
-          {/* P0: 自动排序模式下拉 */}
-          <Select
-            value={sortMode}
-            onChange={(v) => setSortMode(v as QuickLaunchSortMode)}
-            size="sm"
-            options={[
-              { value: 'custom', label: '自定义' },
-              { value: 'name', label: '按名称' },
-              { value: 'addedAt', label: '按添加时间' },
-              { value: 'launchCount', label: '按使用频率' },
-              { value: 'lastLaunchedAt', label: '按最近使用' },
-            ]}
-            className="!w-fit quick-launch-sort !border-0 !bg-transparent hover:!bg-gray-100 dark:hover:!bg-gray-700"
-          />
-          <button
-            onClick={scanDesktop}
-            disabled={isScanningDesktop || isScanningInstalled}
-            className={`icon-toggle-container ${
-              isScanningDesktop || isScanningInstalled ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            title={isScanningDesktop ? '正在扫描...' : '扫描桌面应用'}
-          >
-            <Monitor size={16} className={isScanningDesktop ? 'text-gray-400' : 'text-content-secondary'} />
-          </button>
-          <button
-            onClick={scanInstalled}
-            disabled={isScanningInstalled || isScanningDesktop}
-            className={`icon-toggle-container ${
-              isScanningInstalled || isScanningDesktop ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            title={isScanningInstalled ? '正在扫描...' : '扫描已安装应用'}
-          >
-            <AppWindow size={16} className={isScanningInstalled ? 'text-gray-400' : 'text-content-secondary'} />
-          </button>
-          <label className="icon-toggle-container" title={iconSize === 'small' ? '当前：小图标' : '当前：中图标'}>
-            <input
-              type="checkbox"
-              checked={iconSize === 'medium'}
-              onChange={(e) => setIconSize(e.target.checked ? 'medium' : 'small')}
-            />
-            <svg viewBox="0 0 448 512" width={16} height={16} className="expand-icon">
-              <path d="M32 32C14.3 32 0 46.3 0 64v96c0 17.7 14.3 32 32 32s32-14.3 32-32V96h64c17.7 0 32-14.3 32-32s-14.3-32-32-32H32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7 14.3 32 32 32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H64V352zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32h64v64c0 17.7 14.3 32 32 32s32-14.3 32-32V64c0-17.7-14.3-32-32-32H320zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32v64H320c-17.7 0-32 14.3-32 32s14.3 32 32 32h96c17.7 0 32-14.3 32-32V352z" />
-            </svg>
-            <svg viewBox="0 0 448 512" width={16} height={16} className="compress-icon">
-              <path d="M160 64c0-17.7-14.3-32-32-32s-32 14.3-32 32v64H32c-17.7 0-32 14.3-32 32s14.3 32 32 32h96c17.7 0 32-14.3 32-32V64zM32 320c-17.7 0-32 14.3-32 32s14.3 32 32 32H96v64c0 17.7 14.3 32 32 32s32-14.3 32-32V352c0-17.7-14.3-32-32-32H32zM352 64c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7 14.3 32 32 32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H352V64zM320 320c-17.7 0-32 14.3-32 32v96c0 17.7 14.3 32 32 32s32-14.3 32-32V384h64c17.7 0 32-14.3 32-32s-14.3-32-32-32H320z" />
-            </svg>
-          </label>
-          <button
-            type="button"
-            className="icon-toggle-container text-content-secondary"
-            title={showText ? '当前：图标+文字' : '当前：仅图标'}
-            onClick={() => setShowText(prev => !prev)}
-          >
-            {showText ? <Type size={16} /> : <ImageIcon size={16} />}
-          </button>
-          {/* 应用打开方式：勾选=单击启动，未勾选=双击启动 */}
-          <label className="launch-mode-toggle" title={singleClickLaunch ? '当前：单击启动' : '当前：双击启动'}>
-            <input
-              type="checkbox"
-              checked={singleClickLaunch}
-              onChange={(e) => setSingleClickLaunch(e.target.checked)}
-            />
-            <span className="checkmark" />
-          </label>
-        </div>
+      <div className={`flex ${isCompact ? 'flex-col items-stretch gap-1 px-1 py-1' : 'items-center justify-end pl-6 pr-0 py-2'}`}>
+        {/* 工具栏：仅保留排序方式选择，其余功能由右键菜单提供（与桌面文件夹交互一致） */}
+        <Select
+          value={sortMode}
+          onChange={(v) => setSortMode(v as QuickLaunchSortMode)}
+          size="sm"
+          options={[
+            { value: 'custom', label: '自定义' },
+            { value: 'name', label: '按名称' },
+            { value: 'addedAt', label: '按添加时间' },
+            { value: 'launchCount', label: '按使用频率' },
+            { value: 'lastLaunchedAt', label: '按最近使用' },
+          ]}
+          className="!w-fit quick-launch-sort !border-0 !bg-transparent hover:!bg-gray-100 dark:hover:!bg-gray-700"
+        />
       </div>
 
       <div
@@ -1178,31 +1172,69 @@ const QuickLaunch: React.FC = () => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {filteredApps.length > 0 ? (
+        {hasContent ? (
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleAppsDragEnd}
+            // 弹层打开时用 pointerWithin：面板空白命中面板，面板外（遮罩）无命中 → 移出文件夹
+            // 桌面态用自定义检测：精确停入才算"归入"，避免路径上路过文件夹时误判
+            collisionDetection={openFolder ? pointerWithin : desktopCollisionDetection}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={endDrag}
           >
-            <SortableContext items={filteredApps.map(app => app.id)} strategy={rectSortingStrategy}>
+            <SortableContext items={dndItemKeys} strategy={rectSortingStrategy}>
               <div className={`grid ${appGridClass} min-h-quick-launch transition-colors duration-200 ${
                 isDragOver ? 'border-2 border-dashed border-green-400 rounded-lg p-4' : ''
               }`}>
-                {filteredApps.map((app) => (
-                  <SortableAppItem
-                    key={app.id}
-                    app={app}
-                    iconSize={iconSize}
-                    showText={showText}
-                    disabled={isDragDisabled}
-                    showUnassignedBadge={activeCategoryId === 'all'}
-                    singleClick={singleClickLaunch}
-                    onLaunch={handleLaunch}
-                    onContextMenu={(e) => handleContextMenu(e, 'app', app.id)}
-                  />
-                ))}
+                {tiles.map(renderTile)}
               </div>
             </SortableContext>
+
+            {openFolder && (
+              <FolderPopup
+                folderKey={openFolder.key}
+                title={openFolder.title}
+                apps={openFolder.apps}
+                iconSize={iconSize}
+                showText={showText}
+                singleClick={singleClickLaunch}
+                readOnly={openFolder.readOnly}
+                didDragRef={didDragRef}
+                onLaunch={handleLaunch}
+                onAppContextMenu={(e, appId) => handleContextMenu(e, 'app', appId)}
+                onFolderContextMenu={handlePopupContextMenu}
+                onAddApp={() => handleAddApp(openFolder.category?.id ?? '')}
+                onClose={() => setOpenFolderId(null)}
+                onFileDragOver={handlePopupFileDragOver}
+                onFileDrop={handleFolderFileDrop}
+              />
+            )}
+
+            <DndDragOverlay>
+              {activeTile && (
+                <div className={`flex flex-col items-center justify-center rounded-md shadow-lg bg-surface-secondary w-full ${
+                  iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'
+                }`}>
+                  {activeTile.kind === 'folder' && (
+                    <FolderTileVisual
+                      category={activeTile.category}
+                      apps={activeTile.apps}
+                      iconSize={iconSize}
+                      showText={showText}
+                    />
+                  )}
+                  {activeTile.kind === 'app' && (
+                    <AppTileVisual app={activeTile.app} iconSize={iconSize} showText={showText} />
+                  )}
+                </div>
+              )}
+            </DndDragOverlay>
+
+            {tiles.length === 0 && (
+              <div className="flex flex-col flex-1 items-center justify-center text-gray-400">
+                <p className="text-sm">未找到匹配的应用</p>
+              </div>
+            )}
           </DndContext>
         ) : (
           <div className={`flex flex-col flex-1 items-center justify-center text-gray-400 transition-all duration-200 ${
@@ -1268,12 +1300,15 @@ const QuickLaunch: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-content-primary mb-2">
-              分类
+              文件夹
             </label>
             <Select
-              value={activeCategoryId === 'all' ? (categories[0]?.id || '') : activeCategoryId}
-              onChange={() => {}}
-              options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
+              value={addTargetCategory}
+              onChange={(v) => setAddTargetCategory(v)}
+              options={[
+                { value: '', label: '未分类（放在桌面）' },
+                ...categories.map((cat) => ({ value: cat.id, label: cat.name })),
+              ]}
               className="w-full px-4 py-2 border border-content rounded-lg bg-surface-secondary text-content-primary focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
@@ -1398,7 +1433,7 @@ const QuickLaunch: React.FC = () => {
       <Modal
         isOpen={showCategoryDialog}
         onClose={() => setShowCategoryDialog(false)}
-        title={editingCategory ? '编辑分类' : '添加分类'}
+        title={editingCategory ? '重命名文件夹' : '新建文件夹'}
         confirmText={editingCategory ? '保存' : '添加'}
         onConfirm={handleSaveCategory}
         confirmDisabled={!newCategoryName.trim()}
@@ -1406,7 +1441,7 @@ const QuickLaunch: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-content-primary mb-2">
-              分类名称
+              文件夹名称
             </label>
             <input
               type="text"

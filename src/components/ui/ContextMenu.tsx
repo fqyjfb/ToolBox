@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom';
 
 export interface SubMenuItem {
   id: string;
-  label: string;
+  label?: string;
   icon?: React.ReactNode;
-  onClick: () => void;
+  onClick?: () => void;
+  divider?: boolean;
 }
 
 export interface ContextMenuItem {
@@ -220,23 +221,27 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
                       }}
                     >
                       <ul className="popup-menu-list">
-                        {item.subMenu.map((subItem) => (
-                          <li key={subItem.id}>
-                            <button
-                              className="popup-menu-item w-full"
-                              onClick={() => {
-                                subItem.onClick();
-                                onClose();
-                                setActiveSubMenu(null);
-                              }}
-                            >
-                              <span className="popup-menu-icon">
-                                {subItem.icon}
-                              </span>
-                              <span>{subItem.label}</span>
-                            </button>
-                          </li>
-                        ))}
+                        {item.subMenu.map((subItem) =>
+                          subItem.divider ? (
+                            <li key={subItem.id} className="popup-menu-divider" />
+                          ) : (
+                            <li key={subItem.id}>
+                              <button
+                                className="popup-menu-item w-full"
+                                onClick={() => {
+                                  subItem.onClick?.();
+                                  onClose();
+                                  setActiveSubMenu(null);
+                                }}
+                              >
+                                <span className="popup-menu-icon">
+                                  {subItem.icon}
+                                </span>
+                                <span>{subItem.label}</span>
+                              </button>
+                            </li>
+                          )
+                        )}
                       </ul>
                     </div>
                   )}

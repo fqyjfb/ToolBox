@@ -31,6 +31,86 @@ export interface QuickLaunchItem {
 export type QuickLaunchSortMode = 'custom' | 'name' | 'addedAt' | 'launchCount' | 'lastLaunchedAt';
 export type QuickLaunchVirtualCategory = 'all' | 'frequent' | 'recent' | string;
 
+// ---------- 桌面磁贴排序（文件夹 cat:<id> / 应用 app:<id> 混合排列） ----------
+
+export const toFolderKey = (categoryId: string): string => `cat:${categoryId}`;
+export const toAppKey = (appId: string): string => `app:${appId}`;
+
+export const loadDesktopOrder = (): string[] =>
+  localStorageService.get<string[]>(STORAGE_KEYS.QUICK_LAUNCH_DESKTOP_ORDER, []);
+
+export const saveDesktopOrder = (order: string[]): void => {
+  localStorageService.set(STORAGE_KEYS.QUICK_LAUNCH_DESKTOP_ORDER, order);
+};
+
+/**
+ * 顺序对账（幂等）：丢弃已失效键、去重，并补齐新增项（分类在前、应用在后）。
+ * 新增 / 删除 / 扫描 / 导入导出都不需要维护顺序数组，渲染前对账即可。
+ */
+export const reconcileDesktopOrder = (
+  order: string[],
+  categories: QuickLaunchCategory[],
+  apps: QuickLaunchItem[]
+): string[] => {
+  const valid = new Set<string>([
+    ...categories.map((c) => toFolderKey(c.id)),
+    ...apps.map((a) => toAppKey(a.id)),
+  ]);
+
+  const kept: string[] = [];
+  const seen = new Set<string>();
+  for (const key of order) {
+    if (valid.has(key) && !seen.has(key)) {
+      kept.push(key);
+      seen.add(key);
+    }
+  }
+
+  const missing = [
+    ...categories.map((c) => toFolderKey(c.id)),
+    ...apps.map((a) => toAppKey(a.id)),
+  ].filter((key) => !seen.has(key));
+
+  return [...kept, ...missing];
+};
+
+/**
+ * 只重排 subsetIds 这个子集的落位，其余元素保持原位。
+ * 用于桌面未分类应用排序与文件夹内应用排序（避免把非目标应用挤到末尾）。
+ */
+export const applySubsetOrder = (
+  all: QuickLaunchItem[],
+  subsetIds: string[]
+): QuickLaunchItem[] => {
+  const byId = new Map(all.map((a) => [a.id, a]));
+  const inSubset = new Set(subsetIds);
+  let cursor = 0;
+  return all.map((item) => (inSubset.has(item.id) ? byId.get(subsetIds[cursor++])! : item));
+};
+
+/** 按排序模式排序（custom 由调用方按用户拖拽顺序处理） */
+export const sortAppsByMode = (
+  list: QuickLaunchItem[],
+  mode: Exclude<QuickLaunchSortMode, 'custom'>
+): QuickLaunchItem[] => {
+  const sorted = [...list];
+  switch (mode) {
+    case 'name':
+      sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh'));
+      break;
+    case 'addedAt':
+      sorted.sort((a, b) => a.addedAt - b.addedAt);
+      break;
+    case 'launchCount':
+      sorted.sort((a, b) => (b.launchCount ?? 0) - (a.launchCount ?? 0));
+      break;
+    case 'lastLaunchedAt':
+      sorted.sort((a, b) => (b.lastLaunchedAt ?? 0) - (a.lastLaunchedAt ?? 0));
+      break;
+  }
+  return sorted;
+};
+
 export const getAppName = (path: string): string => {
   const name = path.split(/[\\/]/).pop() || path;
   return name.replace(/\.(exe|bat|cmd|lnk)$/i, '');

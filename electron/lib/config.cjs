@@ -110,6 +110,8 @@ const defaultSettings = {
   howLinkOpenMethod: 'internal',
   defaultWindowSize: { width: 1024, height: 800 },
   windowMode: 'large', // 窗口模式：'large' 大窗（默认） | 'compact' 小窗
+  // 上次退出时的边缘吸附状态 { mode, edge, bounds } | null：null 表示未吸附，下次按默认方式启动
+  windowDockState: null,
   isFloatWindowEnabled: 0,
   isLockEnabled: 0,
   lockPassword: '',
