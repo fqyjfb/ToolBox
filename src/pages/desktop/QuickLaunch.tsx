@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor, Copy, AppWindow, Shield, FolderOpen, Keyboard, Download, Upload, Wrench, X, Check, Settings } from 'lucide-react';
-import { DndContext, closestCenter, pointerWithin, CollisionDetection, DragEndEvent, DragStartEvent, DragOverlay as DndDragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCenter, pointerWithin, CollisionDetection, DragEndEvent, DragMoveEvent, DragStartEvent, DragOverlay as DndDragOverlay, type ClientRect } from '@dnd-kit/core';
 import { arrayMove, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useDndSensors } from '../../hooks/useDndSensors';
 import {
@@ -36,6 +36,51 @@ import FolderPopup, { FOLDER_POPUP_PREFIX } from '../../components/quicklaunch/F
 import { buildDesktopTiles, repositionKey, writeBackSlots } from '../../components/quicklaunch/desktopTiles';
 import { DesktopTile } from '../../components/quicklaunch/types';
 import './QuickLaunch.css';
+
+/**
+ * 文件夹磁贴中心区域内缩比例：磁贴中心区域松手=归入文件夹；
+ * 边缘区域松手=把应用插入到该文件夹相邻的桌面槽位（可落在两个文件夹之间）。
+ */
+const FOLDER_CORE_INSET_RATIO = 0.25;
+
+type FolderDropIntent = 'group' | 'insert-before' | 'insert-after';
+
+/**
+ * 取拖拽中的指针坐标：activatorEvent 是按下时的初始位置，叠加累计 delta 得到当前位置。
+ * 键盘拖拽等无坐标输入返回 null（此时按归入处理，保持原有行为）。
+ */
+const getDragPointer = (
+  activatorEvent: Event,
+  delta: { x: number; y: number }
+): { x: number; y: number } | null => {
+  if (!('clientX' in activatorEvent)) return null;
+  const { clientX, clientY } = activatorEvent as MouseEvent;
+  return { x: clientX + delta.x, y: clientY + delta.y };
+};
+
+/**
+ * 判定应用落在文件夹磁贴上的意图：
+ * 指针处于磁贴中心区域 → 归入；处于边缘 → 按最近的一条边插入到该文件夹前/后。
+ */
+const resolveFolderDropIntent = (
+  pointer: { x: number; y: number } | null,
+  rect: ClientRect
+): FolderDropIntent => {
+  if (!pointer) return 'group';
+  const insetX = rect.width * FOLDER_CORE_INSET_RATIO;
+  const insetY = rect.height * FOLDER_CORE_INSET_RATIO;
+  const inCore =
+    pointer.x >= rect.left + insetX &&
+    pointer.x <= rect.right - insetX &&
+    pointer.y >= rect.top + insetY &&
+    pointer.y <= rect.bottom - insetY;
+  if (inCore) return 'group';
+  const dLeft = pointer.x - rect.left;
+  const dRight = rect.right - pointer.x;
+  const dTop = pointer.y - rect.top;
+  const dBottom = rect.bottom - pointer.y;
+  return Math.min(dLeft, dTop) <= Math.min(dRight, dBottom) ? 'insert-before' : 'insert-after';
+};
 
 /** 当前展开的文件夹信息 */
 interface OpenFolderInfo {
@@ -113,6 +158,8 @@ const QuickLaunch: React.FC = () => {
   const didDragRef = useRef(false);
   // 拖拽预览（DragOverlay 复用磁贴展示层，不重复实现）
   const [activeTile, setActiveTile] = useState<DesktopTile | null>(null);
+  // 拖拽应用中、指针停在文件夹磁贴中心区域的文件夹键：仅该键高亮提示「松手归入」
+  const [groupArmedKey, setGroupArmedKey] = useState<string | null>(null);
 
   useEffect(() => {
     const savedApps = localStorageService.get<QuickLaunchItem[]>(STORAGE_KEYS.QUICK_LAUNCH_APPS, []);
@@ -749,6 +796,17 @@ const QuickLaunch: React.FC = () => {
     setSortMode('custom');
   }, [slotKeys, orderedKeys]);
 
+  /** 把磁贴插到指定文件夹槽位的前/后（归属不变），用于拖到文件夹边缘时把应用落到两个文件夹之间 */
+  const insertTileAdjacentToFolder = useCallback((tileKey: string, folderKey: string, before: boolean) => {
+    const folderIndex = slotKeys.indexOf(folderKey);
+    if (folderIndex === -1 || !slotKeys.includes(tileKey)) return;
+    const anchorKey = before ? folderKey : slotKeys[folderIndex + 1] ?? null;
+    // 已处于目标位置时不产生无谓写入
+    if (anchorKey === tileKey) return;
+    setDesktopOrder(writeBackSlots(orderedKeys, slotKeys, repositionKey(slotKeys, tileKey, anchorKey)));
+    setSortMode('custom');
+  }, [slotKeys, orderedKeys]);
+
   /** 文件夹内应用排序：只置换该子集在 apps 中的落位，其余应用位置不变 */
   const reorderFolderApps = useCallback((categoryId: string, activeId: string, overId: string) => {
     const ids = apps.filter(app => app.categoryId === categoryId).map(app => app.id);
@@ -765,16 +823,18 @@ const QuickLaunch: React.FC = () => {
     setDesktopOrder(prev => repositionKey(prev, toAppKey(appId), anchorKey));
   }, []);
 
-  // 桌面态碰撞检测：指针精确停到磁贴内才命中；间隙兜底 closestCenter 时剔除 cat 键，
-  // 避免拖动路径"路过"文件夹时把图标误归入。
+  // 桌面态碰撞检测：指针精确停到磁贴内优先命中该磁贴；落在磁贴间隙时兜底取最近磁贴。
+  // 命中文件夹后由 handleDragEnd 按「指针在中心区域=归入 / 在边缘或间隙=插入相邻槽位」分流，
+  // 因此间隙兜底可以包含 cat 键，让「拖到两个文件夹之间」也能落到正确的插入位置。
   const desktopCollisionDetection = useCallback<CollisionDetection>((args) => {
     const within = pointerWithin(args);
     if (within.length > 0) return within;
-    return closestCenter(args).filter((c) => !String(c.id).startsWith('cat:'));
+    return closestCenter(args);
   }, []);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     didDragRef.current = true;
+    setGroupArmedKey(null);
     const key = String(event.active.id);
     if (key.startsWith('cat:')) {
       const id = key.slice(4);
@@ -785,8 +845,20 @@ const QuickLaunch: React.FC = () => {
     setActiveTile(app ? { kind: 'app', app } : null);
   }, [tiles, apps]);
 
+  // 拖拽中仅对「应用落在文件夹磁贴中心区域」高亮该文件夹，边缘区域不提示归入（松手为插入排序）
+  const handleDragMove = useCallback((event: DragMoveEvent) => {
+    const { over } = event;
+    if (!String(event.active.id).startsWith('app:') || !over || !String(over.id).startsWith('cat:')) {
+      setGroupArmedKey(null);
+      return;
+    }
+    const intent = resolveFolderDropIntent(getDragPointer(event.activatorEvent, event.delta), over.rect);
+    setGroupArmedKey(intent === 'group' ? String(over.id) : null);
+  }, []);
+
   const endDrag = useCallback(() => {
     setActiveTile(null);
+    setGroupArmedKey(null);
     // click 与 pointerup 同处一个任务，延后一拍复位即可拦截拖拽后的误触发
     setTimeout(() => { didDragRef.current = false; }, 0);
   }, []);
@@ -814,16 +886,25 @@ const QuickLaunch: React.FC = () => {
       ? apps.find(a => a.id === overKey.slice(4))
       : undefined;
 
-    // B. 归入文件夹：拖到文件夹磁贴 / 弹层面板
+    // B. 归入文件夹 / 插入到文件夹相邻槽位
     if (activeApp) {
-      const targetCategoryId = overKey.startsWith('cat:')
-        ? overKey.slice(4)
-        : overKey.startsWith(FOLDER_POPUP_PREFIX)
-          ? overKey.slice(FOLDER_POPUP_PREFIX.length)
-          : null;
-      if (targetCategoryId) {
-        moveAppToContainer(activeApp.id, targetCategoryId, null);
-        addToast({ type: 'success', message: `已移入「${categories.find(c => c.id === targetCategoryId)?.name ?? '文件夹'}」` });
+      // 弹层面板是显式投放目标，始终归入
+      if (overKey.startsWith(FOLDER_POPUP_PREFIX)) {
+        const categoryId = overKey.slice(FOLDER_POPUP_PREFIX.length);
+        moveAppToContainer(activeApp.id, categoryId, null);
+        addToast({ type: 'success', message: `已移入「${categories.find(c => c.id === categoryId)?.name ?? '文件夹'}」` });
+        return;
+      }
+      // 桌面文件夹磁贴：中心区域归入，边缘区域按相邻槽位插入排序（可落到两个文件夹之间）
+      if (overKey.startsWith('cat:') && over) {
+        const categoryId = overKey.slice(4);
+        const intent = resolveFolderDropIntent(getDragPointer(event.activatorEvent, event.delta), over.rect);
+        if (intent === 'group') {
+          moveAppToContainer(activeApp.id, categoryId, null);
+          addToast({ type: 'success', message: `已移入「${categories.find(c => c.id === categoryId)?.name ?? '文件夹'}」` });
+        } else {
+          insertTileAdjacentToFolder(activeKey, overKey, intent === 'insert-before');
+        }
         return;
       }
     }
@@ -845,7 +926,7 @@ const QuickLaunch: React.FC = () => {
 
     // D. 磁贴排序（文件夹 / 桌面应用）
     reorderDesktopTiles(activeKey, overKey);
-  }, [openFolder, apps, categories, addToast, moveAppToContainer, reorderFolderApps, reorderDesktopTiles, endDrag]);
+  }, [openFolder, apps, categories, addToast, moveAppToContainer, insertTileAdjacentToFolder, reorderFolderApps, reorderDesktopTiles, endDrag]);
 
   const getContextMenuItems = useCallback((): ContextMenuItem[] => {
     if (contextMenu.type === 'app' && contextMenu.targetId) {
@@ -1123,6 +1204,7 @@ const QuickLaunch: React.FC = () => {
           iconSize={iconSize}
           showText={showText}
           disabled={desktopDragDisabled}
+          groupArmed={groupArmedKey === toFolderKey(tile.category.id)}
           didDragRef={didDragRef}
           onOpen={() => setOpenFolderId(tile.category.id)}
           onContextMenu={(e) => handleContextMenu(e, 'category', tile.category.id)}
@@ -1179,6 +1261,7 @@ const QuickLaunch: React.FC = () => {
             // 桌面态用自定义检测：精确停入才算"归入"，避免路径上路过文件夹时误判
             collisionDetection={openFolder ? pointerWithin : desktopCollisionDetection}
             onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
             onDragCancel={endDrag}
           >

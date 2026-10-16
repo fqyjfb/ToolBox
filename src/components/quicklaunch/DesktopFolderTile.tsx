@@ -63,6 +63,8 @@ export const FolderTileVisual: React.FC<FolderTileVisualProps> = ({
 
 interface DesktopFolderTileProps extends FolderTileVisualProps {
   disabled?: boolean;
+  /** 拖拽应用停在磁贴中心区域（松手将归入该文件夹）时为 true，用于高亮提示 */
+  groupArmed?: boolean;
   didDragRef: React.MutableRefObject<boolean>;
   onOpen: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
@@ -75,11 +77,12 @@ export const DesktopFolderTile: React.FC<DesktopFolderTileProps> = ({
   iconSize,
   showText,
   disabled,
+  groupArmed,
   didDragRef,
   onOpen,
   onContextMenu,
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: toFolderKey(category.id), disabled: disabled ? SORTABLE_DISABLED : false });
 
   const style: React.CSSProperties = {
@@ -98,7 +101,7 @@ export const DesktopFolderTile: React.FC<DesktopFolderTileProps> = ({
       className={`ql-folder-tile flex flex-col items-center justify-center rounded-md transition-colors w-full ${
         disabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
       } ${iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'} ${
-        isOver ? 'is-drop-target' : ''
+        groupArmed ? 'is-drop-target' : ''
       }`}
       onClick={() => {
         if (didDragRef.current) return;
