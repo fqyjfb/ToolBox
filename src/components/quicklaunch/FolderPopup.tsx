@@ -78,7 +78,7 @@ const FolderPopup: React.FC<FolderPopupProps> = ({
     >
       <div
         ref={setNodeRef}
-        className="ql-folder-panel p-4"
+        className="ql-folder-panel p-4 scrollbar-hide"
         onClick={(e) => e.stopPropagation()}
         onContextMenu={(e) => {
           e.preventDefault();
