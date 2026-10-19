@@ -98,9 +98,8 @@ export const DesktopFolderTile: React.FC<DesktopFolderTileProps> = ({
       style={style}
       {...attributes}
       {...(disabled ? {} : listeners)}
-      className={`ql-folder-tile flex flex-col items-center justify-center rounded-md transition-colors w-full ${
-        disabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
-      } ${iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'} ${
+      className={`ql-folder-tile flex flex-col items-center justify-center rounded-md transition-colors w-full cursor-pointer active:cursor-grabbing ${
+        iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'} ${
         groupArmed ? 'is-drop-target' : ''
       }`}
       onClick={() => {

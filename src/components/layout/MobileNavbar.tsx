@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, Home, Compass, Wrench, User, LogOut, ClipboardList, Link, Clipboard, MessageSquare, Search } from 'lucide-react';
 import { useAuthStore } from '../../store/AuthStore';
 import { useNavSearch } from '../../contexts/NavSearchContext';
+import CheckInButton from './CheckInButton';
 
 const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/memo', '/tools/quick-reply', '/tools/cloud-clipboard', '/tools/account', '/nav'];
 
@@ -132,14 +133,19 @@ const MobileNavbar: React.FC = () => {
               </div>
             )}
 
-            <div className="relative">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="rounded-lg"
-                style={{ padding: 'var(--space-1-5)', color: 'var(--color-text-secondary)' }}
-              >
-                {isMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-              </button>
+            <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
+              {/* 签到（未登录时不渲染） */}
+              <CheckInButton compact />
+
+              <div className="relative">
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="rounded-lg"
+                  style={{ padding: 'var(--space-1-5)', color: 'var(--color-text-secondary)' }}
+                >
+                  {isMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
 

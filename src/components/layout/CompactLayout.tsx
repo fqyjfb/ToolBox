@@ -5,6 +5,7 @@ import OfflineBanner from './OfflineBanner';
 import { useAuthStore } from '../../store/AuthStore';
 import Sidebar from './Sidebar';
 import WindowModeButton from './WindowModeButton';
+import CheckInButton from './CheckInButton';
 import ThemeToggleButton from './ThemeToggleButton';
 import WindowControls from './WindowControls';
 import HeaderSearchBox from './HeaderSearchBox';
@@ -36,10 +37,9 @@ const CompactTitleBar: React.FC = () => {
 // 容器无边框、无悬浮态、无背景；个人信息行点击跳转个人信息页，快启动行由 QuickLaunchBar 承担
 const CompactUserInfo: React.FC = () => {
   const user = useAuthStore((s) => s.user);
-  const admin = useAuthStore((s) => s.admin);
   const navigate = useNavigate();
   const location = useLocation();
-  // 小窗个人信息区：仅头像 / 姓名 / 邮箱三处可跳转，等级与管理员徽章不参与跳转
+  // 小窗个人信息区：仅头像 / 姓名 / 邮箱三处可跳转，等级徽章与签到按钮不参与跳转
   const goProfile = () => navigate('/tools/profile');
   const { apps, launchApp, removeApp, reorderApps } = useHomeQuickLaunch();
   const showSearch = isSearchRoute(location.pathname);
@@ -90,11 +90,8 @@ const CompactUserInfo: React.FC = () => {
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-semibold text-content-primary truncate cursor-pointer" onClick={goProfile}>{user.name || '未设置'}</span>
           <span className="text-[10px] px-1 py-0.5 rounded font-medium" style={{ backgroundColor: currentLevel.color, color: 'var(--color-bg-primary)' }}>{currentLevel.label}</span>
-          {admin && (
-            <span className="text-[10px] px-1 py-0.5 rounded font-medium" style={{ backgroundColor: 'var(--color-success)', color: 'var(--color-bg-primary)' }}>
-              {admin.role === 'super' ? '超管' : '管理'}
-            </span>
-          )}
+          {/* 小窗签到入口：置于原超管徽章位置（徽章已按需求移除） */}
+          <CheckInButton compact />
         </div>
         <p className="text-xs text-content-secondary truncate cursor-pointer" onClick={goProfile}>{user.email || user.username}</p>
       </div>

@@ -41,4 +41,10 @@ export const queryKeys = {
     /** 未完成待办数量（侧边栏徽标，30s 轮询） */
     pendingCount: (userId: string) => [...queryKeys.todo.all, 'pendingCount', userId] as const,
   },
+
+  checkIn: {
+    all: ['checkIn'] as const,
+    /** 当天签到状态与连续天数（头部签到按钮） */
+    status: (userId: string) => [...queryKeys.checkIn.all, 'status', userId] as const,
+  },
 };

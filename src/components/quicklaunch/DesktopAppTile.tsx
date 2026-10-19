@@ -78,9 +78,8 @@ export const DesktopAppTile: React.FC<DesktopAppTileProps> = ({
       style={style}
       {...attributes}
       {...(disabled ? {} : listeners)}
-      className={`flex flex-col items-center justify-center rounded-md transition-colors w-full ${
-        disabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
-      } ${iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'} ${
+      className={`flex flex-col items-center justify-center rounded-md transition-colors w-full cursor-pointer active:cursor-grabbing ${
+        iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'} ${
         isDragging ? 'shadow-lg' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
       }`}
       onClick={() => {

@@ -1295,7 +1295,7 @@ const QuickLaunch: React.FC = () => {
 
             <DndDragOverlay>
               {activeTile && (
-                <div className={`flex flex-col items-center justify-center rounded-md shadow-lg bg-surface-secondary w-full ${
+                <div className={`flex flex-col items-center justify-center rounded-md shadow-lg bg-surface-secondary w-full cursor-grabbing ${
                   iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'
                 }`}>
                   {activeTile.kind === 'folder' && (

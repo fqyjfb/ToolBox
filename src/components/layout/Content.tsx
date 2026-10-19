@@ -11,6 +11,7 @@ import { isElectron } from '../../utils/environment';
 import Breadcrumb from '../ui/Breadcrumb';
 import Tooltip from '../ui/Tooltip';
 import HeaderWeather from './HeaderWeather';
+import CheckInButton from './CheckInButton';
 import WindowModeButton from './WindowModeButton';
 import ThemeToggleButton from './ThemeToggleButton';
 import WindowControls from './WindowControls';
@@ -56,6 +57,7 @@ const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
               {isDesktop && (
                 <>
                   <HeaderWeather />
+                  <CheckInButton />
                   <WindowModeButton />
                 </>
               )}

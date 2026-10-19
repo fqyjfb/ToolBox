@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, ClipboardList, User, Search } from 'lucide-react';
 import { useAuthStore } from '../../store/AuthStore';
 import { useNavSearch } from '../../contexts/NavSearchContext';
+import CheckInButton from './CheckInButton';
 import './WebNavbar.css';
 
 const SEARCH_ENABLED_PATHS = ['/tools/todo', '/tools/memo', '/tools/quick-reply', '/tools/cloud-clipboard', '/tools/account', '/nav'];
@@ -188,6 +189,9 @@ const WebNavbar: React.FC = () => {
               </button>
             )}
           </nav>
+
+          {/* 签到（未登录时不渲染；桌面与移动端共用同一入口） */}
+          <CheckInButton compact />
 
           {/* Mobile hamburger */}
           <button
