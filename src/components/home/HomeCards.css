@@ -1,0 +1,433 @@
+/* =========================================================
+ * 首页卡片外观（桌面端首页网格 + Web 端首页天气卡片共用）
+ * 配色全部走 theme.css 的 --home-card-* 变量：自定义主题注入 --ct-* 后自动跟随，
+ * 不在组件里写死色值。桌面端网格布局见 pages/desktop/Home.css。
+ * ========================================================= */
+
+.home-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--home-card-radius);
+  background-color: var(--home-card-bg);
+}
+
+/* 只有大卡片做毛玻璃，1×1 图标卡片数量多，避免无谓的合成开销 */
+.home-card--panel {
+  backdrop-filter: var(--home-card-blur);
+}
+
+/* ===== 新闻卡片 ===== */
+.news-card__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+}
+
+/* ===== 工具卡片 ===== */
+.home-tool-card {
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #ffffff;
+  transition: filter var(--transition-fast);
+}
+
+/* 悬浮只做亮度变化：缩放会让卡片压住相邻卡片 */
+.home-tool-card:hover {
+  filter: brightness(1.08);
+}
+
+.home-tool-card__icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.home-tool-card__name {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+/* ===== 1×1 图标卡片（快启动 / 网址收藏 / 网页收藏）===== */
+.home-icon-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--home-icon-radius);
+  background-color: var(--home-icon-card-bg);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.home-icon-card:hover {
+  background-color: var(--home-icon-card-bg-hover);
+}
+
+/* 图标尽量撑满卡片：留白交给 78% 上限，单元尺寸变化时按比例缩放 */
+.home-icon-card__icon {
+  width: 34px;
+  height: 34px;
+  max-width: 78%;
+  max-height: 78%;
+  object-fit: contain;
+}
+
+/* ===== 天气卡片 ===== */
+.weather-card {
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 6px;
+  transition: filter var(--transition-fast);
+}
+
+.weather-card:hover {
+  filter: brightness(1.06);
+}
+
+.weather-card--center {
+  justify-content: center;
+  gap: 4px;
+}
+
+.weather-card__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.weather-card__temp {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+.weather-card__city {
+  max-width: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 14px;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weather-card__meta {
+  max-width: 100%;
+  font-size: 9px;
+  line-height: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weather-card__hint {
+  font-size: 10px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.weather-card__retry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+}
+
+.weather-card__retry:hover {
+  background-color: var(--color-menu-hover);
+  color: var(--color-text-primary);
+}
+
+/* ===== 摸鱼卡片（日历 / 假期 / 进度 / 倒计时）===== */
+.moyu-card {
+  padding: 6px 8px;
+}
+
+.moyu-card--center {
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.moyu-card__head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.moyu-card__title {
+  font-weight: 600;
+}
+
+.moyu-card__refresh {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+}
+
+.moyu-card__refresh:hover {
+  background-color: var(--color-menu-hover);
+  color: var(--color-text-primary);
+}
+
+.moyu-card__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.moyu-card__line {
+  display: block;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--color-text-secondary);
+}
+
+.moyu-card__line--row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.moyu-card__hint {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.moyu-chip {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 9px;
+  line-height: 14px;
+  color: #ffffff;
+}
+
+/* 日历：大号日期做视觉锚点，自上而下依次是公历 / 农历 / 节假日徽章 */
+.moyu-calendar {
+  align-items: center;
+  gap: 2px;
+}
+
+.moyu-calendar__num {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--color-text-primary);
+}
+
+.moyu-calendar__sub {
+  max-width: 100%;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moyu-calendar__lunar {
+  max-width: 100%;
+  font-size: 9px;
+  line-height: 12px;
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 假期：倒计时高亮块 + 徽标块 */
+.moyu-holiday {
+  gap: 3px;
+}
+
+.moyu-holiday__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  width: 100%;
+  padding: 5px 6px;
+  border-radius: 10px;
+  background-color: var(--home-icon-card-bg);
+}
+
+.moyu-holiday__hero-name {
+  max-width: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 14px;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moyu-holiday__hero-countdown {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.moyu-holiday__hero-days {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--color-accent);
+}
+
+.moyu-holiday__hero-unit {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.moyu-holiday__hero-date {
+  max-width: 100%;
+  font-size: 9px;
+  line-height: 12px;
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 徽标与数值纵向堆叠：2 列窄卡里横排会挤掉日期，改为徽标在上、数值在下 */
+.moyu-holiday__block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.moyu-holiday__badge {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  color: #ffffff;
+  background-color: var(--color-secondary);
+}
+
+/* 调休是要补班的提醒，用强调色与「周末」区分 */
+.moyu-holiday__badge--work {
+  background-color: var(--color-accent);
+}
+
+.moyu-holiday__meta {
+  max-width: 100%;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 12px;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 摸鱼名言：独立卡片，无标题，纯居中文本 */
+.moyu-quote-card {
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+}
+
+.moyu-quote {
+  max-width: 100%;
+  font-size: 11px;
+  line-height: 15px;
+  text-align: center;
+  color: var(--color-text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 进度 */
+.moyu-progress {
+  gap: 5px;
+}
+
+.moyu-progress__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.moyu-progress__row .moyu-card__line--row {
+  justify-content: space-between;
+}
+
+.moyu-progress__track {
+  height: 4px;
+  border-radius: 999px;
+  background-color: var(--color-border);
+  overflow: hidden;
+}
+
+.moyu-progress__bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width var(--transition-normal);
+}
+
+/* 倒计时：2×2 排布，保证四项都完整可见 */
+.moyu-countdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 4px;
+}
+
+.moyu-countdown__item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.moyu-countdown__label {
+  font-size: 9px;
+  line-height: 12px;
+  color: var(--color-text-secondary);
+}
+
+.moyu-countdown__value {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 14px;
+  color: var(--color-text-primary);
+}

@@ -4,14 +4,17 @@ import {
   Phone, RefreshCw, MessageSquare, Clipboard, CheckSquare, Key,
   FileCode, Globe, Smile, Clock, ArrowUpDown, Hash, Copy,
   Table, Link, Map, QrCode, Code, AtSign, Tag, AlignLeft,
-  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, StickyNote, Home, Download, Bell
+  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, StickyNote,
+  Home, Download, Bell, ExternalLink, Minus, PanelLeft
 } from 'lucide-react';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
-import { HomeToolItem, loadHomeTools, replaceHomeTool } from '../../utils/homeTools';
+import type { HomeToolItem } from '../../utils/homeTools';
 import { ALL_TOOLS } from '../../constants/tools';
 import { isElectron } from '../../utils/environment';
 import { useShallow } from 'zustand/shallow';
 import { useSidebarStore } from '../../store/sidebarStore';
+import { useHomeToolsStore } from '../../store/homeToolsStore';
+import { useToastStore } from '../../store/toastStore';
 import './ToolsPage.css';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -63,6 +66,13 @@ const ToolsPage = () => {
     removePinnedTool: s.removePinnedTool,
   })));
   
+  const addToast = useToastStore(state => state.addToast);
+  const { homeTools, addHomeTool, removeHomeTool } = useHomeToolsStore(useShallow((s) => ({
+    homeTools: s.homeTools,
+    addHomeTool: s.addTool,
+    removeHomeTool: s.removeTool,
+  })));
+
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuX, setContextMenuX] = useState(0);
   const [contextMenuY, setContextMenuY] = useState(0);
@@ -88,8 +98,7 @@ const ToolsPage = () => {
       }));
   }, [isDesktop]);
 
-  const [homeToolsVersion, setHomeToolsVersion] = useState(0);
-  const homeToolIds = useMemo(() => new Set(loadHomeTools().map(t => t.id)), [homeToolsVersion]);
+  const homeToolIds = useMemo(() => new Set(homeTools.map(tool => tool.id)), [homeTools]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, tool: typeof myTools[0]) => {
     e.preventDefault();
@@ -100,20 +109,28 @@ const ToolsPage = () => {
       name: tool.name,
       path: tool.path,
       color: tool.color,
-      textColor: tool.textColor,
+      // 首页工具卡片文字恒为白色，与工具中心卡片的文字色无关
+      textColor: '#ffffff',
       iconName: tool.iconName,
     });
     setContextMenuOpen(true);
   }, []);
 
-  const handleReplaceHomeTool = useCallback((index: number) => {
-    if (selectedTool) {
-      replaceHomeTool(index, selectedTool);
-      setHomeToolsVersion(v => v + 1);
-      setContextMenuOpen(false);
-      setSelectedTool(null);
+  // 首页工具卡片与工具中心共用 homeToolsStore，这里改完首页立即同步
+  const handleToggleHomeTool = useCallback(() => {
+    if (!selectedTool) return;
+
+    const isOnHome = homeToolIds.has(selectedTool.id);
+    if (isOnHome) {
+      removeHomeTool(selectedTool.id);
+      addToast({ type: 'success', message: `已将「${selectedTool.name}」移出首页` });
+    } else {
+      addHomeTool(selectedTool);
+      addToast({ type: 'success', message: `已将「${selectedTool.name}」加入首页` });
     }
-  }, [selectedTool]);
+    setContextMenuOpen(false);
+    setSelectedTool(null);
+  }, [selectedTool, homeToolIds, addHomeTool, removeHomeTool, addToast]);
 
   const handleToggleSidebarTool = useCallback(() => {
     if (selectedTool) {
@@ -128,14 +145,14 @@ const ToolsPage = () => {
   }, [selectedTool, pinnedToolIds, addPinnedTool, removePinnedTool]);
 
   const getContextMenuItems = (): ContextMenuItem[] => {
-    const homeTools = loadHomeTools();
     const isPinned = selectedTool ? pinnedToolIds.includes(selectedTool.id) : false;
+    const isOnHome = selectedTool ? homeToolIds.has(selectedTool.id) : false;
 
     const items: ContextMenuItem[] = [
-      { id: 'divider-2', divider: true },
       {
         id: 'open',
         label: '打开工具',
+        icon: <ExternalLink className="w-4 h-4" />,
         onClick: () => {
           if (selectedTool) {
             navigate(selectedTool.path);
@@ -147,17 +164,19 @@ const ToolsPage = () => {
     ];
 
     if (isDesktop) {
-      items.splice(0, 0, {
-        id: 'replace-home-tool',
-        label: '加入首页',
-        subMenu: homeTools.map((tool, index) => ({
-          id: `replace-${index}`,
-          label: `${index + 1}. ${tool.name}`,
-          onClick: () => handleReplaceHomeTool(index),
-        })),
-      });
       items.push({ id: 'divider-1', divider: true });
-      items.push({ id: 'toggle-sidebar', label: isPinned ? '移出侧边栏' : '加入侧边栏', onClick: handleToggleSidebarTool });
+      items.push({
+        id: 'toggle-home',
+        label: isOnHome ? '移出首页' : '加入首页',
+        icon: isOnHome ? <Minus className="w-4 h-4" /> : <Home className="w-4 h-4" />,
+        onClick: handleToggleHomeTool,
+      });
+      items.push({
+        id: 'toggle-sidebar',
+        label: isPinned ? '移出侧边栏' : '加入侧边栏',
+        icon: isPinned ? <Minus className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />,
+        onClick: handleToggleSidebarTool,
+      });
     }
 
     return items;

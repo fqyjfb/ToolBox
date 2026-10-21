@@ -23,7 +23,11 @@ export const STORAGE_KEYS = {
   QUICK_LAUNCH_DESKTOP_ORDER: 'quickLaunchDesktopOrder',
   HOME_FAVORITES: 'homeFavorites',
   HOME_TOOLS: 'homeTools',
+  // 天气卡已并入首页工具列表（老数据补一次即不再回填）
+  HOME_TOOLS_WEATHER_SEEDED: 'homeToolsWeatherSeeded',
   HOME_QUICK_LAUNCH: 'homeQuickLaunchApps',
+  // 首页混合网格的卡片排列顺序（工具/快启动/网址收藏/网页收藏/新闻/摸鱼统一排序）
+  HOME_CARD_ORDER: 'homeCardOrder',
 
   NOTES_LAST_OPENED_FILE: 'notes_last_opened_file',
 

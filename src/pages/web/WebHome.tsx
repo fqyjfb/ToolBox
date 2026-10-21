@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Clock, Zap, BookOpen, Sparkles, ChevronRight } from 'lucide-react';
 import { hotNewsApi } from '../../services/hotNews';
-import { loadHomeTools, type HomeToolItem } from '../../utils/homeTools';
+import { loadHomeTools, WEATHER_TOOL_ID, type HomeToolItem } from '../../utils/homeTools';
 import { iconMap } from '../../utils/iconMap';
 import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../../types/hotNews';
 import WeatherCard from '../../components/home/WeatherCard';
@@ -134,7 +134,11 @@ const WebHome: React.FC = () => {
     navigate(path);
   };
 
-  const quickTools = useMemo<HomeToolItem[]>(() => homeTools.slice(0, DISPLAY_LIMITS.WEB_QUICK_TOOLS), [homeTools]);
+  // 天气有独立的天气卡区块，不重复出现在快捷工具里
+  const quickTools = useMemo<HomeToolItem[]>(
+    () => homeTools.filter(tool => tool.id !== WEATHER_TOOL_ID).slice(0, DISPLAY_LIMITS.WEB_QUICK_TOOLS),
+    [homeTools]
+  );
 
   return (
     <div className="web-home p-4">

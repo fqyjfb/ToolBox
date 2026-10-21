@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDndSensors } from '../../hooks/useDndSensors';
 import { useHoverTooltip } from '../../hooks/useHoverTooltip';
@@ -14,18 +14,34 @@ interface QuickLaunchBarProps {
   onLaunch: (path: string) => void;
   onRemove: (appId: string) => void;
   onReorder?: (apps: QuickLaunchItem[]) => void;
-  /** 小窗模式：水平单行布局，横向滚动 */
-  isHorizontal?: boolean;
 }
 
-const SortableQuickLaunchItem: React.FC<{
+export interface QuickLaunchIconProps {
+  app: QuickLaunchItem;
+  className?: string;
+}
+
+/** 快启动图标（小窗横向条与首页网格卡片共用同一份渲染） */
+export const QuickLaunchIcon: React.FC<QuickLaunchIconProps> = ({ app, className }) => {
+  if (!app.icon) return null;
+  return <img src={`data:image/png;base64,${app.icon}`} alt={app.name} className={className} />;
+};
+
+interface SortableQuickLaunchItemProps {
   app: QuickLaunchItem;
   onLaunch: (path: string) => void;
   onContextMenu: (e: React.MouseEvent) => void;
   onMouseEnter: (e: React.MouseEvent) => void;
   onMouseLeave: () => void;
-  isHorizontal?: boolean;
-}> = ({ app, onLaunch, onContextMenu, onMouseEnter, onMouseLeave, isHorizontal }) => {
+}
+
+const SortableQuickLaunchItem: React.FC<SortableQuickLaunchItemProps> = ({
+  app,
+  onLaunch,
+  onContextMenu,
+  onMouseEnter,
+  onMouseLeave,
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: app.id });
 
   const style = {
@@ -48,18 +64,13 @@ const SortableQuickLaunchItem: React.FC<{
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {app.icon ? (
-        <img
-          src={`data:image/png;base64,${app.icon}`}
-          alt={app.name}
-          className={isHorizontal ? 'quicklaunch-icon-x' : 'w-8 h-8 object-contain'}
-        />
-      ) : null}
+      <QuickLaunchIcon app={app} className="quicklaunch-icon-x" />
     </div>
   );
 };
 
-const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemove, onReorder, isHorizontal }) => {
+/** 小窗个人信息区下方的横向快启动条（单行不换行、横向滚动、无滚动条） */
+const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemove, onReorder }) => {
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
     x: number;
@@ -84,23 +95,12 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
     setContextMenu(prev => ({ ...prev, isOpen: false }));
   }, []);
 
-  const handleMoveForward = useCallback(() => {
+  const moveByOffset = useCallback((offset: number) => {
     if (!contextMenu.targetAppId || !onReorder) return;
     const index = apps.findIndex(app => app.id === contextMenu.targetAppId);
-    if (index > 0) {
-      const newApps = arrayMove(apps, index, index - 1);
-      onReorder(newApps);
-    }
-    handleCloseContextMenu();
-  }, [contextMenu.targetAppId, apps, onReorder, handleCloseContextMenu]);
-
-  const handleMoveBackward = useCallback(() => {
-    if (!contextMenu.targetAppId || !onReorder) return;
-    const index = apps.findIndex(app => app.id === contextMenu.targetAppId);
-    if (index < apps.length - 1) {
-      const newApps = arrayMove(apps, index, index + 1);
-      onReorder(newApps);
-    }
+    const targetIndex = index + offset;
+    if (index === -1 || targetIndex < 0 || targetIndex >= apps.length) return;
+    onReorder(arrayMove(apps, index, targetIndex));
     handleCloseContextMenu();
   }, [contextMenu.targetAppId, apps, onReorder, handleCloseContextMenu]);
 
@@ -112,13 +112,13 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
         id: 'move-forward',
         label: '前移',
         icon: <ChevronUp className="w-4 h-4" />,
-        onClick: handleMoveForward,
+        onClick: () => moveByOffset(-1),
       },
       {
         id: 'move-backward',
         label: '后移',
         icon: <ChevronDown className="w-4 h-4" />,
-        onClick: handleMoveBackward,
+        onClick: () => moveByOffset(1),
       },
       { id: 'divider1', divider: true },
       {
@@ -129,11 +129,10 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
           if (contextMenu.targetAppId) {
             onRemove(contextMenu.targetAppId);
           }
-          handleCloseContextMenu();
-        }
+        },
       }
     ];
-  }, [contextMenu.targetAppId, handleMoveForward, handleMoveBackward, onRemove, handleCloseContextMenu]);
+  }, [contextMenu.targetAppId, moveByOffset, onRemove]);
 
   if (apps.length === 0) return null;
 
@@ -145,31 +144,26 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
       const overIndex = apps.findIndex(app => app.id === over.id);
 
       if (activeIndex !== -1 && overIndex !== -1) {
-        const reordered = arrayMove(apps, activeIndex, overIndex);
-        onReorder(reordered);
+        onReorder(arrayMove(apps, activeIndex, overIndex));
       }
     }
   };
 
-  // 小窗横向模式：鼠标滚轮映射为横向滚动
+  // 横向模式：鼠标滚轮映射为横向滚动
   const handleWheel = (e: React.WheelEvent) => {
-    if (!isHorizontal) return;
     e.currentTarget.scrollLeft += e.deltaY;
   };
 
   return (
-    <div
-      className={`w-full relative z-10 ${isHorizontal ? 'quicklaunch-scroll-x' : 'quicklaunch-scroll'}`}
-      onWheel={(e) => { hideTooltip(); handleWheel(e); }}
-    >
+    <div className="w-full relative z-10 quicklaunch-scroll-x" onWheel={(e) => { hideTooltip(); handleWheel(e); }}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={hideTooltip}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={apps.map(app => app.id)} strategy={isHorizontal ? undefined : verticalListSortingStrategy}>
-          <div className={isHorizontal ? 'quicklaunch-bar-x' : 'quicklaunch-bar'}>
+        <SortableContext items={apps.map(app => app.id)}>
+          <div className="quicklaunch-bar-x">
             {apps.map((app) => (
               <SortableQuickLaunchItem
                 key={app.id}
@@ -178,7 +172,6 @@ const QuickLaunchBar: React.FC<QuickLaunchBarProps> = ({ apps, onLaunch, onRemov
                 onContextMenu={(e) => handleContextMenu(e, app.id)}
                 onMouseEnter={(e) => showTooltip(e, app.name)}
                 onMouseLeave={hideTooltip}
-                isHorizontal={isHorizontal}
               />
             ))}
           </div>

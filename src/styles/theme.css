@@ -147,6 +147,16 @@
   --card-height: 280px;
   --card-radius: 8px;
 
+  /* 首页混合网格：1 单元 = 一个 1×1 图标卡片；配色跟随 --color-card，
+     自定义主题（--ct-*）下自动同步，不写死固定色值 */
+  --home-grid-gap: 8px;
+  --home-card-radius: 16px;
+  --home-icon-radius: 10px;
+  --home-card-blur: blur(12px);
+  --home-card-bg: color-mix(in srgb, var(--color-card) 65%, transparent);
+  --home-icon-card-bg: color-mix(in srgb, var(--color-card) 45%, transparent);
+  --home-icon-card-bg-hover: color-mix(in srgb, var(--color-card) 75%, transparent);
+
   --transition-slow: 0.5s ease;
 
   /* 动画时长变量 */

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Droplets, Gauge, Sun, Cloud, Wind } from 'lucide-react';
 import type { WeatherInfo, DailyForecast } from '../../types/weather';
@@ -6,7 +6,9 @@ import { getDayName } from '../../utils/format';
 import { getWeatherIcon } from '../../utils/weatherIcon';
 
 const POPUP_WIDTH = 208;
-const POPUP_MAX_HEIGHT = 260;
+// 与锚点的间距 / 与视口边缘的安全边距
+const GAP = 8;
+const MARGIN = 8;
 
 interface WeatherDetailPopupProps {
   weatherData: WeatherInfo | null;
@@ -15,20 +17,66 @@ interface WeatherDetailPopupProps {
   anchorRect: DOMRect;
 }
 
-/** 天气详情悬浮卡片：渲染到 body，优先贴在锚点右侧，空间不足时改到左侧并做视口收敛 */
+/** 弹层矩形与锚点矩形是否相交 */
+const overlapsAnchor = (x: number, y: number, width: number, height: number, anchor: DOMRect) =>
+  !(x + width <= anchor.left || anchor.right <= x || y + height <= anchor.top || anchor.bottom <= y);
+
+/**
+ * 依次尝试「右侧 → 左侧 → 下方 → 上方」，取第一个既在视口内、又不压住锚点的位置。
+ * 小窗（宽度仅 320 左右）下左右都放不下，会自动落到下方，避免弹层盖住天气卡片本身
+ * —— 盖住会触发 mouseleave → 弹层消失 → mouseenter，表现为不停闪烁。
+ */
+const resolvePosition = (anchor: DOMRect, width: number, height: number) => {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const clampX = (value: number) => Math.min(Math.max(MARGIN, value), Math.max(MARGIN, vw - width - MARGIN));
+  const clampY = (value: number) => Math.min(Math.max(MARGIN, value), Math.max(MARGIN, vh - height - MARGIN));
+
+  const candidates: Array<[number, number]> = [
+    [anchor.right + GAP, anchor.top],
+    [anchor.left - width - GAP, anchor.top],
+    [anchor.left, anchor.bottom + GAP],
+    [anchor.left, anchor.top - height - GAP],
+  ];
+
+  for (const [rawX, rawY] of candidates) {
+    const x = clampX(rawX);
+    const y = clampY(rawY);
+    if (!overlapsAnchor(x, y, width, height, anchor)) return { x, y };
+  }
+
+  return { x: clampX(anchor.right + GAP), y: clampY(anchor.top) };
+};
+
+/** 天气详情悬浮卡片：渲染到 body，贴着锚点展示，全程不接收鼠标事件 */
 const WeatherDetailPopup: React.FC<WeatherDetailPopupProps> = ({ weatherData, forecast, anchorRect }) => {
-  const spaceRight = window.innerWidth - anchorRect.right;
-  const preferLeft = spaceRight < POPUP_WIDTH + 12;
-  const rawX = preferLeft ? anchorRect.left - POPUP_WIDTH - 8 : anchorRect.right + 8;
-  const x = Math.min(Math.max(8, rawX), Math.max(8, window.innerWidth - POPUP_WIDTH - 8));
-  const y = Math.max(8, Math.min(anchorRect.top, window.innerHeight - POPUP_MAX_HEIGHT - 8));
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+
+  // 先挂载量出真实尺寸，再定位置；定好位之前保持隐藏，避免在 (0,0) 闪一帧
+  useLayoutEffect(() => {
+    const el = popupRef.current;
+    if (!el) return;
+
+    const { width, height } = el.getBoundingClientRect();
+    const next = resolvePosition(anchorRect, width, height);
+    setPosition(prev => (prev && prev.x === next.x && prev.y === next.y ? prev : next));
+  }, [anchorRect, weatherData, forecast]);
 
   return createPortal(
     <div
+      ref={popupRef}
       className="fixed z-[1000] pointer-events-none"
-      style={{ left: x, top: y, maxWidth: `${POPUP_WIDTH}px` }}
+      style={{
+        left: position?.x ?? 0,
+        top: position?.y ?? 0,
+        width: POPUP_WIDTH,
+        maxWidth: `calc(100vw - ${MARGIN * 2}px)`,
+        maxHeight: `calc(100vh - ${MARGIN * 2}px)`,
+        visibility: position ? 'visible' : 'hidden',
+      }}
     >
-      <div className="w-52 rounded-lg overflow-hidden shadow-xl transition-all duration-300 pointer-events-auto">
+      <div className="w-full rounded-lg overflow-hidden shadow-xl">
         <div className="bg-sky-500 text-white">
           <div className="p-2.5">
             <div className="grid grid-cols-4 gap-1 rounded-xl bg-white/10 p-1.5 backdrop-blur-sm mb-2">

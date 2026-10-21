@@ -20,8 +20,11 @@ import ExternalChangeDialog from './components/ExternalChangeDialog';
 import { useNotesDraftRecovery, type DraftInfo } from './hooks/useNotesDraftRecovery';
 import DraftRecoveryDialog from './components/DraftRecoveryDialog';
 import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
+import { useIsCompactMode } from '../../../store/windowModeStore';
 
 const NotesPage: React.FC = () => {
+  // 小窗模式只显示对话的输入消息界面，其余区块一律不渲染
+  const isCompact = useIsCompactMode();
   const [sidebarVisible, setSidebarVisible] = useState(() => {
     const stored = localStorageService.getString(STORAGE_KEYS.NOTES_SIDEBAR_VISIBLE);
     return stored === null ? true : stored === 'true';
@@ -89,11 +92,12 @@ const NotesPage: React.FC = () => {
 
 
 
+  // 小窗模式固定走对话视图，即使 isChatMode 为 false 也要把消息读出来
   useEffect(() => {
-    if (isChatMode) {
+    if (isChatMode || isCompact) {
       refreshMessages();
     }
-  }, [isChatMode, refreshMessages]);
+  }, [isChatMode, isCompact, refreshMessages]);
 
   const handleToggleChatMode = () => {
     setIsChatMode(!isChatMode);
@@ -278,6 +282,23 @@ const NotesPage: React.FC = () => {
     return (
       <div className="h-full flex flex-col overflow-hidden">
         <FolderSelectModal onSelect={setChatPath} loading={loading} />
+      </div>
+    );
+  }
+
+  // 小窗模式：只保留对话的输入消息界面（消息列表 + 输入框）。
+  // 侧边栏 / 顶部标题栏 / 页签 / 编辑器 / 搜索与各类弹窗都不渲染，宽度全部留给输入区
+  if (isCompact) {
+    return (
+      <div className="h-full flex flex-col overflow-hidden">
+        <ChatMessageList
+          messages={messages}
+          selectedMessages={selectedMessages}
+          onToggleDone={toggleMessageDone}
+          onToggleSelection={toggleMessageSelection}
+          onMove={moveMessages}
+        />
+        <ChatInput onSend={sendMessage} />
       </div>
     );
   }

@@ -1,20 +1,47 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { RefreshCw, Cloud } from 'lucide-react';
 import { useWeather } from '../../hooks/useWeather';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import { getWeatherIcon } from '../../utils/weatherIcon';
 import WeatherDetailPopup from './WeatherDetailPopup';
+import './HomeCards.css';
 
-const WeatherCard: React.FC = () => {
+interface WeatherCardProps {
+  /** 首页里它就是一张工具卡片：点击打开天气预报工具，右键走工具卡片菜单；不传则为纯展示 */
+  onClick?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
+}
+
+// 天气卡片：桌面端首页网格与 Web 端首页共用；悬浮展示详情卡片（与头部天气入口同一个弹层）
+const WeatherCard: React.FC<WeatherCardProps> = ({ onClick, onContextMenu }) => {
   const { weatherData, forecast, loading, error, currentTime, city, fetchWeather } = useWeather();
   const [showDetail, setShowDetail] = useState(false);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const interactions = { onClick, onContextMenu };
 
-  useEffect(() => {
-    if (showDetail && cardRef.current) {
-      setAnchorRect(cardRef.current.getBoundingClientRect());
-    }
+  // 布局阶段取锚点，避免弹层先在错误位置画一帧；显示期间跟随滚动 / 尺寸变化同步位置。
+  // 位置不变时复用旧对象，防止每帧 setState 造成重渲染抖动
+  useLayoutEffect(() => {
+    if (!showDetail) return;
+
+    const update = () => {
+      const next = cardRef.current?.getBoundingClientRect();
+      if (!next) return;
+      setAnchorRect(prev => (
+        prev && prev.top === next.top && prev.left === next.left && prev.width === next.width
+          ? prev
+          : next
+      ));
+    };
+
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
   }, [showDetail]);
 
   const formatDate = (date: Date) => {
@@ -25,15 +52,11 @@ const WeatherCard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="w-full h-full rounded-lg bg-gray-500 flex flex-col items-center justify-center text-white gap-3 shadow-md">
-        <Cloud className="w-8 h-8 text-white/60" />
-        <p className="text-xs text-white/80">{error}</p>
-        <button
-          onClick={fetchWeather}
-          className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
-          title="重试"
-        >
-          <RefreshCw size={16} />
+      <div className="home-card home-card--panel weather-card weather-card--center" {...interactions}>
+        <Cloud className="w-5 h-5 text-content-secondary" />
+        <p className="weather-card__hint">{error}</p>
+        <button onClick={fetchWeather} className="weather-card__retry" title="重试">
+          <RefreshCw size={14} />
         </button>
       </div>
     );
@@ -41,8 +64,8 @@ const WeatherCard: React.FC = () => {
 
   if (loading && !weatherData) {
     return (
-      <div className="w-full h-full rounded-lg bg-gray-400 flex items-center justify-center shadow-md">
-        <LoadingSpinner />
+      <div className="home-card home-card--panel weather-card weather-card--center" {...interactions}>
+        <LoadingSpinner size="sm" />
       </div>
     );
   }
@@ -53,32 +76,23 @@ const WeatherCard: React.FC = () => {
 
   return (
     <>
-      <div className="relative w-full h-full" ref={cardRef}>
-        <div
-          className="w-full h-full rounded-lg overflow-hidden shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg"
-          style={bgStyle}
-          onMouseEnter={() => setShowDetail(true)}
-          onMouseLeave={() => setShowDetail(false)}
-        >
-          <div className="h-full flex items-center gap-1.5 p-1.5">
-            <div className="flex flex-col items-center">
-              {getWeatherIcon(weatherData?.weather?.condition || '', 'sm', 'text-white')}
-              <div className="text-base font-semibold text-white">
-                {weatherData?.weather?.temperature ?? '--'}°
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-center">
-              <h2 className="text-[10px] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[50px]">
-                {weatherData?.location?.city || city}
-              </h2>
-              <p className="text-[9px] text-white/70">{formatDate(currentTime)}</p>
-              <p className="text-[9px] text-white/70">
-                {weatherData?.weather?.condition || '未知'}
-              </p>
-            </div>
-          </div>
+      <div
+        ref={cardRef}
+        className="home-card weather-card"
+        style={bgStyle}
+        {...interactions}
+        onMouseEnter={() => setShowDetail(true)}
+        onMouseLeave={() => setShowDetail(false)}
+        // 拖拽时收起弹层，避免详情页停在原位遮挡其它卡片
+        onPointerDown={() => setShowDetail(false)}
+      >
+        <div className="weather-card__row">
+          {getWeatherIcon(weatherData?.weather?.condition || '', 'sm', 'text-white')}
+          <span className="weather-card__temp">{weatherData?.weather?.temperature ?? '--'}°</span>
         </div>
+        <span className="weather-card__city">{weatherData?.location?.city || city}</span>
+        <span className="weather-card__meta">{formatDate(currentTime)}</span>
+        <span className="weather-card__meta">{weatherData?.weather?.condition || '未知'}</span>
       </div>
       {showDetail && anchorRect && (
         <WeatherDetailPopup weatherData={weatherData} forecast={forecast} anchorRect={anchorRect} />

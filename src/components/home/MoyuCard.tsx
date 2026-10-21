@@ -1,286 +1,187 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Coffee, Calendar, TrendingUp, Clock, Moon, Sun, Star } from 'lucide-react';
-import { hotNewsApi } from '../../services/hotNews';
-import type { MoyuData } from '../../types/hotNews';
+import React from 'react';
+import { RefreshCw, Calendar, CalendarClock, Clock, TrendingUp } from 'lucide-react';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import type { MoyuData } from '../../types/hotNews';
+
+// 摸鱼日报按区块拆成四张独立卡片，数据由首页统一拉取后传入
+export type MoyuVariant = 'calendar' | 'holiday' | 'quote' | 'progress' | 'countdown';
 
 interface MoyuCardProps {
-  className?: string;
+  variant: MoyuVariant;
+  data: MoyuData | null;
+  loading: boolean;
+  error: string;
+  onRetry: () => void;
 }
 
-const MoyuCard: React.FC<MoyuCardProps> = ({ className = '' }) => {
-  const [moyuData, setMoyuData] = useState<MoyuData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+const PROGRESS_ROWS = [
+  { key: 'year', label: '年度', color: '#3b82f6' },
+  { key: 'month', label: '月度', color: '#22c55e' },
+  { key: 'week', label: '本周', color: '#f59e0b' },
+] as const;
 
-  const fetchMoyuData = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await hotNewsApi.getMoyuData();
-      if (data?.data) {
-        setMoyuData(data.data);
-      } else {
-        setError('获取数据失败');
-      }
-    } catch {
-      setError('网络错误');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const COUNTDOWN_ITEMS = [
+  { key: 'toWeekEnd', label: '周末' },
+  { key: 'toFriday', label: '周五' },
+  { key: 'toMonthEnd', label: '月底' },
+  { key: 'toYearEnd', label: '年终' },
+] as const;
 
-  useEffect(() => {
-    fetchMoyuData();
-  }, [fetchMoyuData]);
+const getHolidayBadge = (data: MoyuData): { text: string; bg: string } | null => {
+  if (data.today.isHoliday) return { text: data.today.holidayName || '假日', bg: '#22c55e' };
+  if (data.today.isWeekend) return { text: '周末', bg: '#3b82f6' };
+  if (data.today.isWorkday) return { text: '工作日', bg: '#f59e0b' };
+  return null;
+};
 
-  const getHolidayBadge = () => {
-    if (!moyuData) return null;
-    if (moyuData.today.isHoliday) {
-      return { text: moyuData.today.holidayName || '假日', bg: 'bg-green-500', textColor: 'text-white' };
-    }
-    if (moyuData.today.isWeekend) {
-      return { text: '周末', bg: 'bg-blue-500', textColor: 'text-white' };
-    }
-    if (moyuData.today.isWorkday) {
-      return { text: '工作日', bg: 'bg-orange-500', textColor: 'text-white' };
-    }
-    return null;
-  };
+/** 2025-10-25 -> 10-25 */
+const shortDate = (date: string) => (date.length >= 10 ? date.slice(5) : date);
 
-  const holidayBadge = getHolidayBadge();
-
+const MoyuCard: React.FC<MoyuCardProps> = ({ variant, data, loading, error, onRetry }) => {
   if (loading) {
     return (
-      <div className={`rounded-lg p-4 flex items-center justify-center h-full min-h-moyu-card ${className}`} style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)', boxShadow: 'var(--shadow-sm)' }}>
+      <div className="home-card home-card--panel moyu-card moyu-card--center">
         <LoadingSpinner size="sm" />
       </div>
     );
   }
 
-  if (error || !moyuData) {
+  if (!data) {
     return (
-      <div className={`rounded-lg p-4 h-full min-h-moyu-card ${className}`} style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)', boxShadow: 'var(--shadow-sm)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Coffee className="w-4 h-4 text-orange-500" />
-            <h3 className="text-sm font-semibold text-content-primary">摸鱼日报</h3>
-          </div>
-          <button
-            onClick={fetchMoyuData}
-            className="p-1 hover:bg-menu-hover rounded transition-colors"
-            title="刷新"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-content-secondary" />
+      <div className="home-card home-card--panel moyu-card moyu-card--center">
+        <span className="moyu-card__hint truncate">{error || '暂无数据'}</span>
+        {variant === 'calendar' && (
+          <button onClick={onRetry} className="moyu-card__refresh" title="重试">
+            <RefreshCw className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (variant === 'calendar') {
+    const badge = getHolidayBadge(data);
+    const [, month, day] = data.date.gregorian.split('-');
+    const festivals = data.today.lunarFestivals.length ? ` · ${data.today.lunarFestivals.join('·')}` : '';
+
+    return (
+      <div className="home-card home-card--panel moyu-card">
+        <div className="moyu-card__head">
+          <Calendar className="w-3 h-3 text-content-secondary" />
+          <span className="moyu-card__title">摸鱼日历</span>
+          <button onClick={onRetry} className="moyu-card__refresh" title="刷新">
+            <RefreshCw className="w-3 h-3" />
           </button>
         </div>
-        <div className="flex items-center justify-center h-48 text-content-secondary text-sm">
-          {error || '暂无数据'}
+        <div className="moyu-card__body moyu-calendar">
+          <span className="moyu-calendar__num">{day}</span>
+          <span className="moyu-calendar__sub">{Number(month)}月 · {data.date.weekday}</span>
+          <span
+            className="moyu-calendar__lunar"
+            title={`${data.date.lunar.monthCN}${data.date.lunar.dayCN} · ${data.date.lunar.zodiac}年${festivals}`}
+          >
+            {data.date.lunar.monthCN}{data.date.lunar.dayCN} · {data.date.lunar.zodiac}年{festivals}
+          </span>
+          {badge && <span className="moyu-chip" style={{ backgroundColor: badge.bg }}>{badge.text}</span>}
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === 'holiday') {
+    const { nextHoliday, nextWeekend } = data;
+    const workdays = nextHoliday?.workdays ?? [];
+
+    return (
+      <div className="home-card home-card--panel moyu-card">
+        <div className="moyu-card__head">
+          <CalendarClock className="w-3 h-3 text-content-secondary" />
+          <span className="moyu-card__title">假期提醒</span>
+        </div>
+        <div className="moyu-card__body moyu-holiday">
+          <div className="moyu-holiday__hero">
+            <span className="moyu-holiday__hero-name" title={nextHoliday?.name}>
+              {nextHoliday?.name ?? '放假安排待公布'}
+            </span>
+            {nextHoliday ? (
+              <span className="moyu-holiday__hero-countdown">
+                <span className="moyu-holiday__hero-days">{nextHoliday.until}</span>
+                <span className="moyu-holiday__hero-unit">天后</span>
+              </span>
+            ) : null}
+            <span className="moyu-holiday__hero-date">
+              {nextHoliday
+                ? `${shortDate(nextHoliday.date)} · 休 ${nextHoliday.duration} 天`
+                : '国务院尚未公布次年安排'}
+            </span>
+          </div>
+          <div className="moyu-holiday__block">
+            <span className="moyu-holiday__badge" title="下个周末">周末</span>
+            <span className="moyu-holiday__meta" title={`${nextWeekend.date} ${nextWeekend.weekday}`}>
+              {shortDate(nextWeekend.date)} · {nextWeekend.daysUntil}天后
+            </span>
+          </div>
+          {workdays.length > 0 && (
+            <div className="moyu-holiday__block">
+              <span className="moyu-holiday__badge moyu-holiday__badge--work" title="调休上班">调休</span>
+              <span className="moyu-holiday__meta" title={workdays.join('、')}>
+                {workdays.map(shortDate).join('、')}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === 'quote') {
+    return (
+      <div className="home-card home-card--panel moyu-card moyu-quote-card">
+        <p className="moyu-quote" title={data.moyuQuote}>{data.moyuQuote}</p>
+      </div>
+    );
+  }
+
+  if (variant === 'progress') {
+    return (
+      <div className="home-card home-card--panel moyu-card">
+        <div className="moyu-card__head">
+          <TrendingUp className="w-3 h-3 text-content-secondary" />
+          <span className="moyu-card__title">今日进度</span>
+        </div>
+        <div className="moyu-card__body moyu-progress">
+          {PROGRESS_ROWS.map(({ key, label, color }) => {
+            const detail = data.progress[key];
+            return (
+              <div key={key} className="moyu-progress__row">
+                <div className="moyu-card__line moyu-card__line--row">
+                  <span>{label}</span>
+                  <span title={`${detail.passed}/${detail.total} 天`}>{detail.percentage}%</span>
+                </div>
+                <div className="moyu-progress__track">
+                  <div className="moyu-progress__bar" style={{ width: `${detail.percentage}%`, backgroundColor: color }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`rounded-lg overflow-hidden h-full flex flex-col ${className}`} style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)', boxShadow: 'var(--shadow-sm)' }}>
-      <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500">
-        <div className="flex items-center gap-2">
-          <Coffee className="w-4 h-4 text-white" />
-          <h3 className="text-sm font-semibold text-white">摸鱼日报</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          {holidayBadge && (
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${holidayBadge.bg} ${holidayBadge.textColor}`}>
-              {holidayBadge.text}
-            </span>
-          )}
-          <button
-            onClick={fetchMoyuData}
-            className="p-1 hover:bg-white/20 rounded transition-colors"
-            title="刷新"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-white" />
-          </button>
-        </div>
+    <div className="home-card home-card--panel moyu-card">
+      <div className="moyu-card__head">
+        <Clock className="w-3 h-3 text-content-secondary" />
+        <span className="moyu-card__title">倒计时</span>
       </div>
-
-      <div className="flex-1 p-3 overflow-y-auto scrollbar-hide">
-        <div className="bg-surface-secondary rounded-xl p-4 mb-3 border border-content-light">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-content-primary tracking-tight">
-                  {moyuData.date.gregorian.split('-')[2]}
-                </span>
-                <span className="text-sm text-content-secondary">
-                  {moyuData.date.gregorian.split('-')[1]}月
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="px-2 py-0.5 text-xs font-medium bg-surface text-content-primary dark:text-content-primary rounded-full">
-                  {moyuData.date.weekday}
-                </span>
-                <span className="text-xs text-content-secondary">
-                  本周第{moyuData.date.dayOfWeek}天
-                </span>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center justify-end gap-1">
-                <Calendar className="w-3.5 h-3.5 text-primary" />
-                <span className="text-sm font-semibold text-content-primary">
-                  {moyuData.date.lunar.monthCN}{moyuData.date.lunar.dayCN}
-                </span>
-              </div>
-              <p className="text-xs text-content-secondary mt-0.5">
-                {moyuData.date.lunar.yearCN} · {moyuData.date.lunar.zodiac}年
-              </p>
-            </div>
+      <div className="moyu-card__body moyu-countdown">
+        {COUNTDOWN_ITEMS.map(({ key, label }) => (
+          <div key={key} className="moyu-countdown__item">
+            <span className="moyu-countdown__label">{label}</span>
+            <span className="moyu-countdown__value">{data.countdown[key]}天</span>
           </div>
-          {moyuData.today.lunarFestivals && moyuData.today.lunarFestivals.length > 0 && (
-            <div className="flex items-center gap-2 pt-2 border-t border-content-light">
-              <Star className="w-3 h-3 text-warning" />
-              <span className="text-xs text-warning font-medium">
-                {moyuData.today.lunarFestivals.join(' · ')}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="bg-surface-secondary-50 rounded-lg p-2 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Moon className="w-3 h-3 text-blue-500" />
-              <span className="text-xs text-content-secondary">下周末</span>
-            </div>
-            <p className="text-lg font-bold text-content-primary">
-              {moyuData.nextWeekend.date}
-            </p>
-            <p className="text-xs text-content-secondary">还有{moyuData.nextWeekend.daysUntil}天</p>
-          </div>
-          <div className="bg-surface-secondary-50 rounded-lg p-2 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Calendar className="w-3 h-3 text-green-500" />
-              <span className="text-xs text-content-secondary">下个假期</span>
-            </div>
-            {moyuData.nextHoliday ? (
-              <>
-                <p className="text-lg font-bold text-content-primary">{moyuData.nextHoliday.name}</p>
-                <p className="text-xs text-content-secondary">
-                  {moyuData.nextHoliday.date} · {moyuData.nextHoliday.duration}天
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-lg font-bold text-content-primary">待定</p>
-                <p className="text-xs text-content-secondary">放假安排等待公布</p>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-2 mb-3">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-3.5 h-3.5 text-content-secondary" />
-            <span className="text-xs text-content-secondary">今日进度</span>
-          </div>
-          <div className="space-y-1.5">
-            <div>
-              <div className="flex justify-between text-xs mb-0.5">
-                <span className="text-content-secondary">年度</span>
-                <span className="text-content-primary">
-                  {moyuData.progress.year.passed}/{moyuData.progress.year.total}天 ({moyuData.progress.year.percentage}%)
-                </span>
-              </div>
-              <div className="h-1.5 bg-border rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 rounded-full transition-all"
-                  style={{ width: `${moyuData.progress.year.percentage}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs mb-0.5">
-                <span className="text-content-secondary">月度</span>
-                <span className="text-content-primary">
-                  {moyuData.progress.month.passed}/{moyuData.progress.month.total}天 ({moyuData.progress.month.percentage}%)
-                </span>
-              </div>
-              <div className="h-1.5 bg-border rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-green-500 rounded-full transition-all"
-                  style={{ width: `${moyuData.progress.month.percentage}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs mb-0.5">
-                <span className="text-content-secondary">本周</span>
-                <span className="text-content-primary">
-                  {moyuData.progress.week.passed}/{moyuData.progress.week.total}天 ({moyuData.progress.week.percentage}%)
-                </span>
-              </div>
-              <div className="h-1.5 bg-border rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-orange-500 rounded-full transition-all"
-                  style={{ width: `${moyuData.progress.week.percentage}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-2 mb-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-3.5 h-3.5 text-content-secondary" />
-            <span className="text-xs text-content-secondary">倒计时</span>
-          </div>
-          <div className="grid grid-cols-4 gap-1 text-center text-xs">
-            <div className="bg-surface-secondary-50 rounded p-1">
-              <p className="text-content-secondary">周末</p>
-              <p className="font-semibold text-content-primary">{moyuData.countdown.toWeekEnd}天</p>
-            </div>
-            <div className="bg-surface-secondary-50 rounded p-1">
-              <p className="text-content-secondary">周五</p>
-              <p className="font-semibold text-content-primary">{moyuData.countdown.toFriday}天</p>
-            </div>
-            <div className="bg-surface-secondary-50 rounded p-1">
-              <p className="text-content-secondary">月底</p>
-              <p className="font-semibold text-content-primary">{moyuData.countdown.toMonthEnd}天</p>
-            </div>
-            <div className="bg-surface-secondary-50 rounded p-1">
-              <p className="text-content-secondary">年终</p>
-              <p className="font-semibold text-content-primary">{moyuData.countdown.toYearEnd}天</p>
-            </div>
-          </div>
-        </div>
-
-        {moyuData.moyuQuote && (
-          <div className="pt-2">
-            <div className="flex items-start gap-2">
-              <Sun className="w-3 h-3 text-yellow-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-content-secondary italic leading-relaxed">
-                "{moyuData.moyuQuote}"
-              </p>
-            </div>
-          </div>
-        )}
-
-        {moyuData.nextHoliday?.workdays && moyuData.nextHoliday.workdays.length > 0 && (
-          <div className="mt-2 pt-2">
-            <p className="text-xs text-content-secondary mb-1">调休上班:</p>
-            <div className="flex flex-wrap gap-1">
-              {moyuData.nextHoliday.workdays.map((day, index) => (
-                <span
-                  key={index}
-                  className="px-1.5 py-0.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded text-xs"
-                >
-                  {day}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );

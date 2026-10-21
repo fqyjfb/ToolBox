@@ -33,7 +33,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ searchTypes }) => {
   };
 
   return (
-    <div className="max-w-[520px] w-full mx-auto">
+    <div className="max-w-[380px] w-full mx-auto">
       <div className="relative">
         <input
           type="text"
@@ -41,7 +41,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ searchTypes }) => {
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && performSearch()}
           placeholder={currentType?.placeholder || '搜索...'}
-          className="w-full px-4 py-1.5 pl-24 pr-10 rounded-full focus:outline-none bg-surface-50 text-content-primary backdrop-blur-sm transition-all duration-300 ease-in-out text-sm"
+          className="w-full px-4 py-1.5 pl-24 pr-10 rounded-full focus:outline-none bg-surface-50 text-content-primary backdrop-blur-md transition-all duration-300 ease-in-out text-sm"
         />
 
         {/* 搜索引擎切换：下拉组合框内嵌到输入框左侧（原搜索图标位置） */}

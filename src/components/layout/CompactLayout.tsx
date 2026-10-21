@@ -106,7 +106,7 @@ const CompactUserInfo: React.FC = () => {
         </div>
       )}
       {/* 快启动：水平一行，图标 18×18px，无背景（QuickLaunchBar 空列表自返回 null） */}
-      <QuickLaunchBar apps={apps} onLaunch={launchApp} onRemove={removeApp} onReorder={reorderApps} isHorizontal />
+      <QuickLaunchBar apps={apps} onLaunch={launchApp} onRemove={removeApp} onReorder={reorderApps} />
     </div>
   );
 };
