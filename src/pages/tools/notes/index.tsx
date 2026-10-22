@@ -21,6 +21,8 @@ import { useNotesDraftRecovery, type DraftInfo } from './hooks/useNotesDraftReco
 import DraftRecoveryDialog from './components/DraftRecoveryDialog';
 import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 import { useIsCompactMode } from '../../../store/windowModeStore';
+import { useChatAIOrganize } from './hooks/useChatAIOrganize';
+import { useAIConfigStore } from '../../../store/aiConfigStore';
 
 const NotesPage: React.FC = () => {
   // 小窗模式只显示对话的输入消息界面，其余区块一律不渲染
@@ -84,11 +86,23 @@ const NotesPage: React.FC = () => {
     selectedMessages,
     sendMessage,
     toggleMessageDone,
+    deleteMessage,
     toggleMessageSelection,
     clearSelection,
     moveMessages,
     refreshMessages,
   } = useChatNotes({ rootPath: chatPath, onRefreshFileTree: refreshFileTree });
+
+  const config = useAIConfigStore((state) => state.config);
+  const setAutoArchiveEnabled = useAIConfigStore((state) => state.setAutoArchiveEnabled);
+  const { aiOrganizing, handleAIOrganize } = useChatAIOrganize({
+    chatPath,
+    messages,
+    selectedMessages,
+    onRefreshFileTree: refreshFileTree,
+    autoArchiveEnabled: config.auto_archive_enabled,
+    onMoveMessages: moveMessages,
+  });
 
 
 
@@ -295,10 +309,11 @@ const NotesPage: React.FC = () => {
           messages={messages}
           selectedMessages={selectedMessages}
           onToggleDone={toggleMessageDone}
+          onDeleteMessage={deleteMessage}
           onToggleSelection={toggleMessageSelection}
           onMove={moveMessages}
         />
-        <ChatInput onSend={sendMessage} />
+        <ChatInput onSend={sendMessage} onAIOrganize={handleAIOrganize} aiOrganizing={aiOrganizing} selectedCount={selectedMessages.length} autoArchiveEnabled={config.auto_archive_enabled} onArchiveChanged={setAutoArchiveEnabled} />
       </div>
     );
   }
@@ -375,11 +390,12 @@ const NotesPage: React.FC = () => {
               messages={messages}
               selectedMessages={selectedMessages}
               onToggleDone={toggleMessageDone}
+              onDeleteMessage={deleteMessage}
               onToggleSelection={toggleMessageSelection}
               onMove={moveMessages}
             />
 
-            <ChatInput onSend={sendMessage} />
+            <ChatInput onSend={sendMessage} onAIOrganize={handleAIOrganize} aiOrganizing={aiOrganizing} selectedCount={selectedMessages.length} autoArchiveEnabled={config.auto_archive_enabled} onArchiveChanged={setAutoArchiveEnabled} />
           </div>
         ) : (
           <div className="flex flex-1 flex-col min-w-0 overflow-hidden">

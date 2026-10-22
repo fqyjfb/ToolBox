@@ -6,6 +6,18 @@ export function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
+export const pad2 = (value: number) => String(value).padStart(2, '0');
+
+export const formatMonthDay = (date: Date) => `${pad2(date.getMonth() + 1)}月${pad2(date.getDate())}日`;
+
+/** MM月DD日 星期X；weekdayStyle='long' 输出「星期日」，默认「周日」 */
+export function formatMonthDayWeek(date: Date, weekdayStyle: 'short' | 'long' = 'short') {
+  const names = weekdayStyle === 'long'
+    ? ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+    : ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  return `${formatMonthDay(date)} ${names[date.getDay()]}`;
+}
+
 export function getDayName(dateStr: string, opts?: { includeAfterTomorrow?: boolean }): string {
   const includeAfterTomorrow = opts?.includeAfterTomorrow ?? true;
   const today = new Date();

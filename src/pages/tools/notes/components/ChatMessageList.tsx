@@ -7,6 +7,7 @@ interface ChatMessageListProps {
   messages: ChatMessage[];
   selectedMessages: string[];
   onToggleDone: (messageId: string) => void;
+  onDeleteMessage: (messageId: string) => void;
   onToggleSelection: (messageId: string, multiSelect?: boolean) => void;
   onMove: (target: string) => void;
 }
@@ -15,6 +16,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   messages,
   selectedMessages,
   onToggleDone,
+  onDeleteMessage,
   onToggleSelection,
   onMove,
 }) => {
@@ -78,7 +80,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       key={message.id}
                       className={`chat-message flex cursor-pointer items-start gap-1.5 rounded px-2 py-1.5 text-xs transition-colors ${
                         isSelected
-                          ? 'bg-blue-100 dark:bg-blue-500/25'
+                          ? 'bg-primary/10'
                           : 'hover:bg-surface-secondary-50'
                       } ${message.done ? 'opacity-60' : ''}`}
                       onClick={(e) => handleMessageClick(e, message.id)}
@@ -87,10 +89,10 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       onMouseLeave={() => setHoveredMessage(null)}
                     >
                       <button
-                        className={`mt-px flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors ${
+                        className={`mt-px flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors ring-1 ring-offset-0.5 ${
                           isSelected
-                            ? 'border-primary bg-primary text-button-text'
-                            : 'border-content hover:border-primary'
+                            ? 'border-primary bg-primary text-button-text ring-primary'
+                            : 'border-content hover:border-primary ring-content'
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -128,7 +130,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                             {message.timestamp}
                           </span>
                         )}
-                        <ChatActionButtons isVisible={showActions} onMove={onMove} />
+                        <ChatActionButtons isVisible={showActions} onMove={onMove} onDelete={onDeleteMessage} messageId={message.id} />
                       </div>
                     </div>
                   );

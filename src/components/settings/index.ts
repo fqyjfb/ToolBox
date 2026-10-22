@@ -10,3 +10,4 @@ export { default as StorageTab } from './StorageTab';
 export { default as SyncTab } from './SyncTab';
 export { default as LogMonitorTab } from './LogMonitorTab';
 export { default as NetworkTab } from './NetworkTab';
+export { default as AITab } from './AITab';

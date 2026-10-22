@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft, Network, Palette } from 'lucide-react';
+import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft, Network, Palette, Sparkles } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -25,6 +25,7 @@ import {
   SyncTab,
   LogMonitorTab,
   NetworkTab,
+  AITab,
 } from '../../components/settings';
 
 import './Settings.css';
@@ -258,6 +259,7 @@ const Settings: React.FC = () => {
           STORAGE_KEYS.WEBSITE_ACCOUNT_CATEGORY_ORDER,
           STORAGE_KEYS.NOTES_SIDEBAR_VISIBLE,
           STORAGE_KEYS.NOTES_LAST_OPENED_FILE,
+          STORAGE_KEYS.AI_CONFIG,
         ]);
         addToast({ type: 'success', message: '缓存已清除，应用将自动重启' });
         if (window.electron?.restart) {
@@ -398,6 +400,7 @@ const Settings: React.FC = () => {
   const tabs = [
     { id: 'theme' as const, label: '主题设置', icon: Palette },
     { id: 'general' as const, label: '通用设置', icon: SettingsIcon },
+    { id: 'ai' as const, label: 'AI 设置', icon: Sparkles },
     { id: 'storage' as const, label: '存储管理', icon: Database },
     { id: 'sync' as const, label: '数据同步', icon: RefreshCw },
     { id: 'shortcuts' as const, label: '快捷键设置', icon: Keyboard },
@@ -506,6 +509,8 @@ const Settings: React.FC = () => {
           )}
 
           {activeTab === 'network' && <NetworkTab />}
+
+          {activeTab === 'ai' && <AITab />}
         </div>
       </main>
     </div>

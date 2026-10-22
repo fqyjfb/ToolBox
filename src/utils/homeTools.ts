@@ -15,6 +15,10 @@ export interface HomeToolItem {
  */
 export const WEATHER_TOOL_ID = 'weather';
 
+/** 首页卡片支持直接新增的工具：与 HomeToolAddModal 复用的各工具页表单一一对应 */
+export const ADDABLE_TOOL_IDS = ['todo', 'memo', 'reminder', 'quick-reply', 'cloud-clipboard'] as const;
+export type AddableToolId = (typeof ADDABLE_TOOL_IDS)[number];
+
 const weatherHomeTool: HomeToolItem = {
   id: WEATHER_TOOL_ID,
   name: '天气预报',

@@ -167,8 +167,6 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
           })) || null,
           onRetry: fetchAiNewsData
         };
-      default:
-        return { loading: false, error: '', data: null, onRetry: () => {} };
     }
   };
 

@@ -11,9 +11,10 @@ import {
 import { arrayMove } from '@dnd-kit/sortable';
 import { Trash2, ExternalLink, Copy, X, Plus, Minus, Cloud } from 'lucide-react';
 import { hotNewsApi } from '../../services/hotNews';
-import { WEATHER_TOOL_ID, type HomeToolItem } from '../../utils/homeTools';
+import { WEATHER_TOOL_ID, ADDABLE_TOOL_IDS, type HomeToolItem, type AddableToolId } from '../../utils/homeTools';
 import { STORAGE_KEYS } from '../../services/localStorageService';
 import { useHomeToolsStore } from '../../store/homeToolsStore';
+import { useAuthStore } from '../../store/AuthStore';
 import { loadHomeBookmarks, removeHomeBookmark, type HomeBookmark } from '../../utils/homeBookmarks';
 import { loadHomeCardOrder, saveHomeCardOrder } from '../../utils/homeCardOrder';
 import { isElectron } from '../../utils/environment';
@@ -34,6 +35,20 @@ import WeatherCard from '../../components/home/WeatherCard';
 import IconCard from '../../components/home/IconCard';
 import SortableCard from '../../components/home/SortableCard';
 import MoyuCard, { type MoyuVariant } from '../../components/home/MoyuCard';
+import ExpandedToolCard from '../../components/home/ExpandedToolCard';
+import ExpandedToolPreviewModal from '../../components/home/ExpandedToolPreviewModal';
+import HomeToolAddModal from '../../components/home/HomeToolAddModal';
+import type { PreviewItem } from '../../components/home/ExpandedToolCard';
+import { todoServiceWrapper } from '../../services/TodoService';
+import { memoService } from '../../services/MemoService';
+import { reminderService } from '../../services/ReminderService';
+import { quickReplyService } from '../../services/QuickReplyService';
+import { clipboardService } from '../../services/ClipboardService';
+import type { Todo } from '../../types/todo';
+import type { Memo } from '../../types/memo';
+import type { Reminder } from '../../types/reminder';
+import type { QuickReply } from '../../types/quickReply';
+import type { ClipboardItem } from '../../types/clipboard';
 import { useHomeFavorites } from '../../hooks/useHomeFavorites';
 import { useHomeQuickLaunch } from '../../hooks/useHomeQuickLaunch';
 import type { QuickLaunchItem } from '../../utils/quickLaunch';
@@ -51,6 +66,9 @@ const MIN_COLUMNS = 4;
 const MAX_COLUMNS = 32;
 // 卡片让位的位移动画时长（FLIP），与松手落位的手感保持一致
 const LAYOUT_TRANSITION_MS = 160;
+// 有预览数据时按「2 倍宽 × 3 行」展示的扩展工具；工具 id 的合法值由 ADDABLE_TOOL_IDS 派生
+const isAddableToolId = (id: string): id is AddableToolId =>
+  (ADDABLE_TOOL_IDS as readonly string[]).includes(id);
 
 interface BaseCard {
   id: string;
@@ -82,6 +100,8 @@ const measureGrid = (width: number): GridMetrics => {
 
 const Home: React.FC = () => {
   const isDesktop = isElectron();
+  const user = useAuthStore(state => state.user);
+  const userId = user?.id ?? '';
 
   const [sixtySecondsData, setSixtySecondsData] = useState<string[] | null>(null);
   const [sixtySecondsLoading, setSixtySecondsLoading] = useState(false);
@@ -90,6 +110,11 @@ const Home: React.FC = () => {
   const [moyuData, setMoyuData] = useState<MoyuData | null>(null);
   const [moyuLoading, setMoyuLoading] = useState(true);
   const [moyuError, setMoyuError] = useState('');
+
+  const [previewData, setPreviewData] = useState<Record<string, { items: PreviewItem[]; total: number }>>({});
+  const [previewItem, setPreviewItem] = useState<{ toolName: string; item: PreviewItem } | null>(null);
+  // 当前打开的新增弹窗对应的工具
+  const [addToolId, setAddToolId] = useState<AddableToolId | null>(null);
 
   const { favorites } = useHomeFavorites();
   const { apps: homeQuickLaunchApps, launchApp: handleLaunchApp, removeApp: handleRemoveHomeQuickLaunch } = useHomeQuickLaunch();
@@ -198,6 +223,61 @@ const Home: React.FC = () => {
     return () => window.removeEventListener('focus', handleFocus);
   }, [fetchHomeBookmarks, isDesktop]);
 
+  // 扩展卡片数据：加载各功能最近条目用于预览（新增成功后复用同一份逻辑刷新）
+  const fetchPreview = useCallback(async () => {
+    if (!isDesktop || !userId) return;
+    const next: typeof previewData = {};
+    try {
+      const [todoRes, memoRes, reminderRes, quickReplyRes, clipboardRes] = await Promise.all([
+        todoServiceWrapper.todo.getTodos(userId, undefined, 1, 10),
+        memoService.getMemos(userId, undefined, 1, 10),
+        reminderService.getReminders(userId),
+        quickReplyService.getQuickReplies(userId, undefined, 1, 10),
+        clipboardService.getItems(userId, undefined, 1, 10),
+      ]);
+      next['tool-todo'] = { items: ((todoRes.data?.data) ?? []).slice(0, 6).map((t: Todo) => ({
+        id: t.id, title: t.title, subtitle: t.status, detail: t.description ?? undefined, type: 'todo' as const,
+      })), total: todoRes.data?.total ?? 0 };
+      next['tool-memo'] = { items: (memoRes.list ?? []).slice(0, 6).map((m: Memo) => ({
+        id: m.id, title: m.title, detail: m.content || undefined, type: 'memo' as const,
+      })), total: memoRes.total ?? 0 };
+      next['tool-reminder'] = { items: (reminderRes.data ?? []).slice(0, 6).map((r: Reminder) => ({
+        id: r.id, title: r.title, subtitle: r.remind_time ? new Date(r.remind_time).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined, detail: r.content || undefined, type: 'reminder' as const,
+      })), total: reminderRes.data?.length ?? 0 };
+      next['tool-quick-reply'] = { items: (quickReplyRes.list ?? []).slice(0, 6).map((q: QuickReply) => ({
+        id: q.id, title: q.content, subtitle: q.category?.name, type: 'quick-reply' as const,
+      })), total: quickReplyRes.total ?? 0 };
+      next['tool-cloud-clipboard'] = { items: (clipboardRes.list ?? []).slice(0, 6).map((c: ClipboardItem) => ({
+        id: c.id, title: c.content, subtitle: c.category?.name, type: 'clipboard' as const,
+      })), total: clipboardRes.total ?? 0 };
+    } catch {
+      // 静默失败：按无数据处理，卡片回落常规尺寸
+      for (const id of ADDABLE_TOOL_IDS) next[`tool-${id}`] = { items: [], total: 0 };
+    }
+    setPreviewData(next);
+  }, [isDesktop, userId]);
+
+  useEffect(() => {
+    void fetchPreview();
+  }, [fetchPreview]);
+
+  const toggleTodo = useCallback(async (itemId: string) => {
+    if (!userId) return;
+    const current = previewData['tool-todo']?.items.find(i => i.id === itemId);
+    if (!current) return;
+    const nextCompleted = current.subtitle !== '已完成';
+    await todoServiceWrapper.todo.updateTodoStatus(userId, itemId, nextCompleted);
+    setPreviewData(prev => {
+      const items = (prev['tool-todo']?.items ?? []).map(i =>
+        i.id === itemId ? { ...i, subtitle: nextCompleted ? '已完成' : '待办' } : i,
+      );
+      return { ...prev, ['tool-todo']: { ...prev['tool-todo'], items } };
+    });
+    if (previewItem?.item.id === itemId) {
+      setPreviewItem(prev => prev ? { ...prev, item: { ...prev.item, subtitle: nextCompleted ? '已完成' : '待办' } } : null);
+    }
+  }, [userId, previewData, previewItem]);
+
   // 挂载时对齐一次磁盘（插件窗口改动过首页工具），并跟随其它窗口的改动
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -231,6 +311,15 @@ const Home: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
+  // 扩展工具只有在「已加载且有内容」时才占用扩展尺寸；无数据时回落到常规工具卡尺寸，
+  // 未加载（undefined）仍保持扩展尺寸，避免数据到达时整页抖动
+  const expandedToolIds = useMemo(() => {
+    if (!isDesktop || !userId) return new Set<string>();
+    return new Set(
+      ADDABLE_TOOL_IDS.filter(id => (previewData[`tool-${id}`]?.items.length ?? -1) !== 0)
+    );
+  }, [isDesktop, userId, previewData]);
+
   // 所有元素（新闻 / 摸鱼 / 工具 / 快启动 / 网址收藏 / 网页收藏）都是独立卡片。
   // 天气卡不再写死在这里，它由首页工具列表里的「天气预报」驱动，与工具中心联动
   const cards = useMemo<HomeCard[]>(() => {
@@ -244,7 +333,8 @@ const Home: React.FC = () => {
     ];
 
     homeTools.forEach(tool => {
-      list.push({ id: `tool-${tool.id}`, type: 'tool', tool, colSpan: 2, rowSpan: 2 });
+      const isExpanded = expandedToolIds.has(tool.id);
+      list.push({ id: `tool-${tool.id}`, type: 'tool', tool, colSpan: isExpanded ? 4 : 2, rowSpan: isExpanded ? 3 : 2 });
     });
     homeQuickLaunchApps.forEach(app => {
       list.push({ id: `ql-${app.id}`, type: 'quicklaunch', app, colSpan: 1, rowSpan: 1 });
@@ -257,7 +347,7 @@ const Home: React.FC = () => {
     });
 
     return list;
-  }, [homeTools, homeQuickLaunchApps, homeBookmarks, favorites]);
+  }, [homeTools, homeQuickLaunchApps, homeBookmarks, favorites, expandedToolIds]);
 
   const cardMap = useMemo(() => new Map(cards.map(card => [card.id, card])), [cards]);
 
@@ -534,6 +624,33 @@ const Home: React.FC = () => {
             />
           );
         }
+        const toolId = card.tool.id;
+        if (isAddableToolId(toolId) && expandedToolIds.has(toolId)) {
+          return (
+            <ExpandedToolCard
+              tool={card.tool}
+              items={previewData[`tool-${toolId}`]?.items ?? []}
+              totalCount={previewData[`tool-${toolId}`]?.total ?? 0}
+              onClick={() => navigateToTool(card.tool.path)}
+              onAdd={() => setAddToolId(toolId)}
+              onItemTap={(item) => {
+                setPreviewItem({ toolName: card.tool.name, item });
+              }}
+              onContextMenu={(e) => openContextMenu(e, card.id)}
+            />
+          );
+        }
+        if (isAddableToolId(toolId)) {
+          // 无数据时回落常规卡片尺寸；已登录时保留新增入口
+          return (
+            <ToolCard
+              tool={card.tool}
+              onClick={() => navigateToTool(card.tool.path)}
+              onAdd={userId ? () => setAddToolId(toolId) : undefined}
+              onContextMenu={(e) => openContextMenu(e, card.id)}
+            />
+          );
+        }
         return (
           <ToolCard
             tool={card.tool}
@@ -650,6 +767,21 @@ const Home: React.FC = () => {
       />
 
       {tooltipNode}
+      {previewItem && (
+        <ExpandedToolPreviewModal
+          isOpen
+          onClose={() => setPreviewItem(null)}
+          toolName={previewItem.toolName}
+          item={previewItem.item}
+          onToggleTodo={previewItem.item.type === 'todo' ? toggleTodo : undefined}
+        />
+      )}
+
+      <HomeToolAddModal
+        toolId={addToolId}
+        onClose={() => setAddToolId(null)}
+        onCreated={() => { void fetchPreview(); }}
+      />
     </div>
   );
 };

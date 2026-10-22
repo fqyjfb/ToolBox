@@ -5,6 +5,7 @@ import App from './App.tsx'
 import { QueryProvider } from './providers/QueryProvider'
 import ErrorBoundary from './components/ui/ErrorBoundary'
 import { isElectron } from './utils/environment'
+import './services/aiApi'
 
 (window as Window & { React?: typeof React }).React = React;
 

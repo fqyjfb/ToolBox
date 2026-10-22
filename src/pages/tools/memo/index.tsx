@@ -31,6 +31,8 @@ import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Select from '../../../components/ui/Select';
 import { modalControlClass } from '../account/shared';
+import MemoFormModal from './MemoFormModal';
+import { getPriorityStyle } from './memoPriority';
 
 const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = ({ url, onCopy }) => {
   return (
@@ -53,18 +55,6 @@ const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = (
       </button>
     </span>
   );
-};
-
-const getPriorityStyle = (priority: string) => {
-  switch (priority) {
-    case 'high':
-      return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
-    case 'medium':
-      return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300';
-    case 'low':
-    default:
-      return 'bg-surface-secondary text-content-secondary';
-  }
 };
 
 const getPriorityLabel = (priority: string) => {
@@ -822,57 +812,20 @@ const MemoPage: React.FC = () => {
           </div>
         </div>
 
-        <Modal
+        <MemoFormModal
           isOpen={showAddMemoModal}
           onClose={handleCloseAddMemoModal}
-          title="添加备忘"
-          confirmText="添加"
+          title={newMemoTitle}
+          content={newMemoContent}
+          priority={newMemoPriority}
+          categoryId={newMemoCategoryId}
+          categories={categories}
+          onTitleChange={setNewMemoTitle}
+          onContentChange={setNewMemoContent}
+          onPriorityChange={setNewMemoPriority}
+          onCategoryChange={setNewMemoCategoryId}
           onConfirm={handleCreateMemo}
-          confirmDisabled={!newMemoTitle.trim()}
-          clickOutsideToClose={false}
-        >
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Select
-                  value={newMemoPriority}
-                  onChange={(v) => setNewMemoPriority(v as 'high' | 'medium' | 'low')}
-                  options={[
-                    { value: 'high', label: '高优先级' },
-                    { value: 'medium', label: '中优先级' },
-                    { value: 'low', label: '低优先级' }
-                  ]}
-                  className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border-none ${getPriorityStyle(newMemoPriority)}`}
-                />
-                <Select
-                  value={newMemoCategoryId || ''}
-                  onChange={(v) => setNewMemoCategoryId(v || null)}
-                  options={[
-                    { value: '', label: '全部' },
-                    ...categories.map((category) => ({ value: category.id, label: category.name }))
-                  ]}
-                  className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface text-content-secondary dark:text-content-secondary"
-                />
-              </div>
-            </div>
-            <input
-              type="text"
-              value={newMemoTitle}
-              onChange={(e) => setNewMemoTitle(e.target.value)}
-              placeholder="标题"
-              className={modalControlClass}
-            />
-            <div className="rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
-              <textarea
-                value={newMemoContent}
-                onChange={(e) => setNewMemoContent(e.target.value)}
-                placeholder="内容"
-                rows={4}
-                className="w-full bg-transparent resize-none focus:outline-none text-sm text-content-primary placeholder-gray-400"
-              />
-            </div>
-          </div>
-        </Modal>
+        />
 
         <Modal
           isOpen={showEditMemoModal}
@@ -885,7 +838,7 @@ const MemoPage: React.FC = () => {
           {editingMemo && (
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <Select
                     value={editingMemoPriority}
                     onChange={(v) => setEditingMemoPriority(v as 'high' | 'medium' | 'low')}
@@ -894,7 +847,7 @@ const MemoPage: React.FC = () => {
                       { value: 'medium', label: '中优先级' },
                       { value: 'low', label: '低优先级' }
                     ]}
-                    className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border-none ${getPriorityStyle(editingMemoPriority)}`}
+                    className={modalControlClass}
                   />
                   <Select
                     value={editingMemoCategoryId || ''}
@@ -903,7 +856,7 @@ const MemoPage: React.FC = () => {
                       { value: '', label: '全部' },
                       ...categories.map((category) => ({ value: category.id, label: category.name }))
                     ]}
-                    className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface text-content-secondary dark:text-content-secondary"
+                    className={modalControlClass}
                   />
                 </div>
               </div>
@@ -914,13 +867,13 @@ const MemoPage: React.FC = () => {
                 placeholder="标题"
                 className={modalControlClass}
               />
-              <div className="rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
+              <div className="rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group scrollbar-5px" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
                 <textarea
                   value={editingMemo.content}
                   onChange={(e) => setEditingMemo({ ...editingMemo, content: e.target.value })}
                   placeholder="内容"
                   rows={4}
-                  className="w-full bg-transparent resize-none focus:outline-none text-sm text-content-primary placeholder-gray-400"
+                  className="w-full bg-transparent resize-none focus:outline-none text-sm text-content-primary placeholder-gray-400 scrollbar-5px"
                 />
               </div>
             </div>

@@ -17,6 +17,7 @@ export interface UseChatNotesReturn {
   selectedMessages: string[];
   sendMessage: (text: string) => Promise<void>;
   toggleMessageDone: (messageId: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
   toggleMessageSelection: (messageId: string, multiSelect?: boolean) => void;
   clearSelection: () => void;
   moveMessages: (target: ChatTarget | string) => Promise<void>;
@@ -88,6 +89,16 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
     const content = generateChatContent(updatedMessages);
     await window.electron?.notes.saveFile(chatFilePath, content);
     setMessages(updatedMessages);
+  }, [messages, rootPath, chatFilePath]);
+
+  const deleteMessage = useCallback(async (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+    if (!message || !rootPath) return;
+    const updatedMessages = messages.filter(m => m.id !== messageId);
+    const content = generateChatContent(updatedMessages);
+    await window.electron?.notes.saveFile(chatFilePath, content);
+    setMessages(updatedMessages);
+    setSelectedMessages(prev => prev.filter(id => id !== messageId));
   }, [messages, rootPath, chatFilePath]);
 
   const toggleMessageSelection = useCallback((messageId: string, multiSelect = false) => {
@@ -215,6 +226,7 @@ export function useChatNotes({ rootPath, onRefreshFileTree }: UseChatNotesProps)
     selectedMessages,
     sendMessage,
     toggleMessageDone,
+    deleteMessage,
     toggleMessageSelection,
     clearSelection,
     moveMessages,

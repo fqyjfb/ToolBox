@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -7,7 +8,7 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   confirmText?: string;
   cancelText?: string;
   onConfirm?: () => void;
@@ -16,6 +17,11 @@ interface ModalProps {
   confirmDisabled?: boolean;
   clickOutsideToClose?: boolean;
   confirmVariant?: 'primary' | 'danger';
+  /** 渲染到 body：父级存在 transform（如首页卡片重排动画）时必须开启，否则 fixed 定位会被该包含块捕获 */
+  portal?: boolean;
+  autoFocus?: boolean;
+  /** 内容区容器类名：默认 p-4，自带容器的内容可传 p-0 */
+  bodyClassName?: string;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -33,6 +39,9 @@ const Modal: React.FC<ModalProps> = ({
   confirmDisabled = false,
   clickOutsideToClose = false,
   confirmVariant = 'primary',
+  portal = false,
+  autoFocus = true,
+  bodyClassName = 'p-4',
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -58,11 +67,11 @@ const Modal: React.FC<ModalProps> = ({
   }, [isOpen, onClose, onConfirm, confirmDisabled]);
 
   useEffect(() => {
-    if (isOpen && modalRef.current) {
+    if (isOpen && autoFocus && modalRef.current) {
       const firstInput = modalRef.current.querySelector('input, textarea, button') as HTMLElement;
       firstInput?.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, autoFocus]);
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (clickOutsideToClose && e.target === e.currentTarget) {
@@ -78,9 +87,10 @@ const Modal: React.FC<ModalProps> = ({
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
+    xl: 'max-w-xl',
   };
 
-  return (
+  const content = (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200"
@@ -109,7 +119,7 @@ const Modal: React.FC<ModalProps> = ({
             </button>
           </div>
         )}
-        <div className="p-4">
+        <div className={bodyClassName}>
           {children}
         </div>
         {(showCancel || showConfirm) && (
@@ -152,6 +162,8 @@ const Modal: React.FC<ModalProps> = ({
       `}</style>
     </div>
   );
+
+  return portal ? createPortal(content, document.body) : content;
 };
 
 export default Modal;

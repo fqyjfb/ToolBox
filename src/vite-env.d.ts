@@ -402,6 +402,9 @@ declare interface Window {
       // type 只可能是 'change'（内容写入）或 'rename'（条目增删/改名）——Node fs.watch 语义
       onFsChanged: (callback: (event: { type: 'change' | 'rename'; path: string; rootPath: string; timestamp: number }) => void) => () => void;
     };
+    ai: {
+      chat: (payload: { url: string; apiKey?: string; body: Record<string, unknown>; timeoutMs?: number }) => Promise<{ success: boolean; content?: string; error?: string; status?: number }>;
+    };
     log: {
       open: () => void;
       addLog: (level: 'error' | 'warn' | 'info' | 'debug', message: string, context?: string, stack?: string) => Promise<boolean>;

@@ -68,6 +68,7 @@ const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = requir
 const { registerQuickLoginIpcHandlers } = require('./window/quickLoginWindow.cjs');
 const { registerOfflineToolsIpc } = require('./ipc/offlineToolsIpc.cjs');
 const { registerReminderIpc } = require('./ipc/reminderIpc.cjs');
+const { registerAIIpc } = require('./ipc/aiIpc.cjs');
 const reminderScheduler = require('./services/reminderScheduler.cjs');
 // 邮箱模块（emailIpc → emailService → nodemailer / imapflow / mailparser）不在顶层 require：
 // 这三个依赖体积大、文件多，一旦打包后有文件缺失（磁盘坏块导致 npm 包文件损坏时就会发生），
@@ -355,6 +356,7 @@ app.whenReady().then(async () => {
   safeRegister('registerOfflineToolsIpc', registerOfflineToolsIpc);
   safeRegister('registerReminderIpc', registerReminderIpc);
   safeRegister('registerEmailIpc', () => require('./ipc/emailIpc.cjs').registerEmailIpc());
+  safeRegister('registerAIIpc', registerAIIpc);
   safeRegister('registerIpcHandlers', registerIpcHandlers);
 
   // 创建任何窗口前完成「全库计划任务对账 + 到期补偿」：失败只记日志，不阻断窗口创建

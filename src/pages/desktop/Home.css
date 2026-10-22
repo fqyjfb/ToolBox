@@ -1,270 +1,10 @@
-.card {
-  width: 100%;
-  min-height: var(--card-height);
-  margin: 0 auto;
-  background-color: var(--color-card);
-  border-radius: var(--card-radius);
-  z-index: 1;
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-normal);
-  display: flex;
-  flex-direction: column;
-}
-
-.card:hover {
-  box-shadow: var(--shadow-lg);
-}
-
-.tools {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2);
-  color: var(--color-text-primary);
-}
-
-.circle {
-  padding: 0 var(--space-1);
-}
-
-.box {
-  display: inline-block;
-  align-items: center;
-  width: 10px;
-  height: 10px;
-  padding: 1px;
-  border-radius: 50%;
-}
-
-.red {
-  background-color: var(--color-window-red);
-}
-
-.yellow {
-  background-color: var(--color-window-yellow);
-}
-
-.green {
-  background-color: var(--color-window-green);
-}
-
-.daily-news-list,
-.daily-history-list {
-  flex: 1;
-  overflow-y: auto;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.daily-news-list li,
-.daily-history-list li {
-  margin-bottom: 0.3rem;
-  font-size: var(--text-xs);
-  line-height: 1.3;
-}
-
-.daily-news-list::-webkit-scrollbar,
-.daily-history-list::-webkit-scrollbar,
 .news-list::-webkit-scrollbar {
   display: none;
 }
 
-.daily-news-list,
-.daily-history-list,
 .news-list {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-.calendar {
-  width: 180px;
-  position: relative;
-  box-shadow: var(--shadow-md);
-  background: var(--color-bg-secondary);
-}
-
-.calendar::after {
-  content: "";
-  display: block;
-  position: absolute;
-  top: -2px;
-  left: -8px;
-  width: 8px;
-  height: 100%;
-  background: var(--color-text-tertiary);
-  transform: skew(0, 20deg);
-  border-left: 1px solid var(--color-border);
-}
-
-.header {
-  padding: 5px 10px;
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-tertiary);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 2;
-}
-
-.header p {
-  margin: 0;
-  font-size: 11px;
-  font-weight: bold;
-}
-
-.pin {
-  width: 15px;
-  height: 15px;
-  background: var(--color-bg-secondary);
-  border-radius: 50%;
-}
-
-.hook {
-  width: 80%;
-  height: 25px;
-  background: linear-gradient(0deg, color-mix(in srgb, var(--color-text-tertiary) 30%, transparent) 0%, var(--color-bg-tertiary) 100%);
-  position: absolute;
-  z-index: 1;
-  left: 7%;
-  top: -28px;
-  border-radius: 4px 4px 0 0;
-}
-
-.hook::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 10px;
-  height: 12px;
-  background: var(--color-bg-secondary);
-  border-radius: 100%;
-}
-
-.body {
-  background: linear-gradient(-30deg, var(--color-bg-secondary) 20%, var(--color-bg-tertiary) 70%);
-  padding: 15px 15px 10px;
-  color: var(--color-text-primary);
-  position: relative;
-  z-index: 3;
-}
-
-.body::before,
-.body::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 4px;
-  height: 10px;
-}
-
-.body::before {
-  background: var(--color-accent);
-  margin-top: -10px;
-}
-
-.body::after {
-  background: var(--color-text-primary);
-}
-
-.month {
-  font-weight: bold;
-  font-size: 11px;
-  text-transform: uppercase;
-}
-
-.month p {
-  margin: 0;
-}
-
-.date {
-  font-size: 110px;
-  font-weight: 700;
-  text-align: center;
-  color: var(--color-accent);
-  font-family: "Anton";
-  margin: -20px 0 0 5px;
-  transform: scale(1, 0.9);
-  letter-spacing: 2px;
-}
-
-.footer {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 5px;
-}
-
-.fullMonth {
-  width: 35%;
-}
-
-.fullMonth .title {
-  font-size: 7px;
-  font-weight: bold;
-  color: var(--color-text-tertiary);
-}
-
-.fullMonth table {
-  font-size: 6px;
-  border-collapse: collapse;
-  transform: scale(0.95);
-  transform-origin: left top;
-  color: var(--color-text-secondary);
-}
-
-.fullMonth th {
-  color: var(--color-accent);
-}
-
-.fullMonth .now {
-  background: var(--color-accent);
-  color: var(--color-text-primary);
-  border-radius: 50%;
-}
-
-.week {
-  text-align: center;
-  flex: 1;
-}
-
-.week .day {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0;
-  color: var(--color-text-primary);
-}
-
-.week .lunar {
-  font-family: "Oswald";
-  font-size: 9px;
-  color: var(--color-text-tertiary);
-}
-
-.icons {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  color: var(--color-text-primary);
-  opacity: 0.6;
-}
-
-.material-icons {
-  font-size: 12px;
-}
-
-.history-item {
-  cursor: pointer;
-  transition: color var(--transition-fast);
-}
-
-.history-item:hover {
-  color: var(--color-secondary);
-}
-
-.sixty-seconds-tip {
-  background-color: var(--color-bg-tertiary);
 }
 
 /* ===== 首页统一网格：新闻 / 天气 / 摸鱼 / 工具 / 快启动 / 网址收藏 / 网页收藏
@@ -275,6 +15,8 @@
   justify-content: center;
   align-content: start;
   width: 100%;
+  /* 密集排布：后续卡片自动回填上方空格，避免混排拖拽后留下基准单元空洞 */
+  grid-auto-flow: row dense;
 }
 
 .home-sortable {
@@ -309,7 +51,7 @@
 
 .home-clock__time {
   font-size: 40px;
-  font-weight: 300;
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
@@ -321,5 +63,3 @@
   line-height: 1.4;
   color: var(--color-text-secondary);
 }
-
-/* 卡片外观（含天气卡片）统一在 components/home/HomeCards.css，桌面端网格与 Web 端共用 */

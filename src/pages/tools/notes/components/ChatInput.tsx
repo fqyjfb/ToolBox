@@ -1,13 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Send } from 'lucide-react';
+import { Loader2, Send, Wand2 } from 'lucide-react';
+import ToggleSwitch from '../../../../components/settings/ToggleSwitch';
 
 interface ChatInputProps {
   onSend: (text: string) => Promise<void>;
+  onAIOrganize: () => void;
+  aiOrganizing: boolean;
+  selectedCount: number;
+  autoArchiveEnabled?: boolean;
+  onArchiveChanged?: (enabled: boolean) => void;
 }
 
 const MAX_INPUT_HEIGHT = 160;
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({
+  onSend,
+  onAIOrganize,
+  aiOrganizing,
+  selectedCount,
+  autoArchiveEnabled = false,
+  onArchiveChanged,
+}) => {
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -18,17 +31,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
     el.style.height = `${Math.min(el.scrollHeight, MAX_INPUT_HEIGHT)}px`;
   }, [text]);
 
+  const handleSend = async () => {
+    if (!text.trim()) return;
+    await onSend(text.trim());
+    setText('');
+  };
+
   const handleKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       await handleSend();
     }
-  };
-
-  const handleSend = async () => {
-    if (!text.trim()) return;
-    await onSend(text.trim());
-    setText('');
   };
 
   const handlePaste = async (e: React.ClipboardEvent) => {
@@ -38,12 +51,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
         e.preventDefault();
         const file = item.getAsFile();
         if (file) {
-          setText(prev => prev + `![${file.name}](media/${file.name})`);
+          setText((prev) => prev + `![${file.name}](media/${file.name})`);
         }
         break;
       }
     }
   };
+
+  const aiTitle = aiOrganizing
+    ? 'AI 正在整理...'
+    : selectedCount === 0
+      ? '请先勾选要整理的想法'
+      : 'AI 整理所选想法';
 
   return (
     <div className="flex justify-center px-3 py-2">
@@ -58,7 +77,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
           onPaste={handlePaste}
           placeholder="输入消息..."
         />
-        <div className="flex justify-end px-1.5 pb-1.5 pt-0.5">
+        <div className="flex justify-end items-center gap-1 px-1.5 pb-1.5 pt-0.5">
+          <label className="flex items-center cursor-pointer select-none" title="整理后自动归档原消息">
+            <ToggleSwitch
+              checked={autoArchiveEnabled}
+              onChange={(v: boolean) => onArchiveChanged?.(v)}
+              checkedLabel=""
+              uncheckedLabel=""
+            />
+          </label>
+
+          <button
+            type="button"
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border border-content text-content-secondary transition-colors hover:border-primary hover:text-content-primary disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={onAIOrganize}
+            disabled={aiOrganizing}
+            title={aiTitle}
+          >
+            {aiOrganizing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Wand2 className="h-3.5 w-3.5" />
+            )}
+          </button>
+
           <button
             className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-primary text-button-text transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
             onClick={handleSend}

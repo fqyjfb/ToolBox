@@ -62,20 +62,6 @@ export const loadHomeBookmarks = async (): Promise<HomeBookmark[]> => {
     .sort((a, b) => (a.homeOrder ?? 0) - (b.homeOrder ?? 0));
 };
 
-// 拖拽排序：按首页中的顺序回写 homeOrder
-export const saveHomeBookmarkOrder = async (orderedIds: string[]): Promise<void> => {
-  const data = await readPluginData();
-  if (!data) return;
-
-  const orderMap = new Map(orderedIds.map((id, index) => [id, index]));
-  data.bookmarks = data.bookmarks!.map(bookmark =>
-    orderMap.has(bookmark.id)
-      ? { ...bookmark, homeOrder: orderMap.get(bookmark.id)! }
-      : bookmark
-  );
-  await writePluginData(data);
-};
-
 // 从首页移除：只取消首页显示标记，插件中的书签保留
 export const removeHomeBookmark = async (id: string): Promise<void> => {
   const data = await readPluginData();

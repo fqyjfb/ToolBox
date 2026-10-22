@@ -307,6 +307,9 @@ contextBridge.exposeInMainWorld('electron', {
     getStats: () => ipcRenderer.invoke('log:getStats'),
     importLogs: (jsonString) => ipcRenderer.invoke('log:importLogs', jsonString),
   },
+  ai: {
+    chat: (payload) => ipcRenderer.invoke('ai-chat', payload),
+  },
   notes: {
     hasRootPath: () => ipcRenderer.invoke('notes-has-root-path'),
     getRootPath: () => ipcRenderer.invoke('notes-get-root-path'),

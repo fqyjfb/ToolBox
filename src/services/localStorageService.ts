@@ -56,6 +56,8 @@ export const STORAGE_KEYS = {
   CUSTOM_THEME: 'toolbox_custom_theme',
   // 自定义主题背景图片库（多图管理）；缓存清理时需保留
   CUSTOM_BG_IMAGES: 'toolbox_custom_bg_images',
+  // AI 模型配置（含 API 密钥）；缓存清理时需保留
+  AI_CONFIG: 'toolbox_ai_config',
 };
 
 export const localStorageService = {

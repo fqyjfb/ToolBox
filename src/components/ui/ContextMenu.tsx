@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback, useState, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { resolveAnchoredPosition } from '../../utils/anchoredPosition';
 
 export interface SubMenuItem {
   id: string;
@@ -25,7 +26,6 @@ export interface ContextMenuProps {
   y: number;
   items: ContextMenuItem[];
   onClose: () => void;
-  containerRef?: React.RefObject<HTMLElement | null>;
 }
 
 const VIEWPORT_PADDING = 8;
@@ -123,26 +123,26 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, x, y, items, onClose 
     };
   }, [isOpen, handleClickOutside]);
 
-  // 绘制前根据菜单实际尺寸将位置约束在视口内（右侧/底部溢出时向左/向上翻转），避免闪烁
+  // 绘制前根据菜单实际尺寸将位置约束在视口内（右侧/底部溢出时向左/向上回收），避免闪烁
   useLayoutEffect(() => {
     if (!isOpen || !menuRef.current) return;
 
     const rect = menuRef.current.getBoundingClientRect();
-    const maxWidth = document.documentElement.clientWidth || window.innerWidth;
-    const maxHeight = document.documentElement.clientHeight || window.innerHeight;
-    const padding = VIEWPORT_PADDING;
+    const { x: nextX, y: nextY } = resolveAnchoredPosition({
+      // 鼠标点视作零尺寸锚点
+      anchor: { left: x, top: y, right: x, bottom: y, width: 0, height: 0 },
+      width: rect.width,
+      height: rect.height,
+      viewport: {
+        width: document.documentElement.clientWidth || window.innerWidth,
+        height: document.documentElement.clientHeight || window.innerHeight,
+      },
+      gap: 0,
+      margin: VIEWPORT_PADDING,
+      placements: ['cursor'],
+    });
 
-    let newX = x;
-    let newY = y;
-
-    if (newX + rect.width > maxWidth - padding) {
-      newX = Math.max(padding, maxWidth - rect.width - padding);
-    }
-    if (newY + rect.height > maxHeight - padding) {
-      newY = Math.max(padding, maxHeight - rect.height - padding);
-    }
-
-    setPosition({ x: newX, y: newY });
+    setPosition({ x: nextX, y: nextY });
   }, [isOpen, x, y, items]);
 
   useEffect(() => {

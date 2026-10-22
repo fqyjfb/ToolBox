@@ -3,6 +3,7 @@ import { RefreshCw, Cloud } from 'lucide-react';
 import { useWeather } from '../../hooks/useWeather';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import { getWeatherIcon } from '../../utils/weatherIcon';
+import { formatMonthDay } from '../../utils/format';
 import WeatherDetailPopup from './WeatherDetailPopup';
 import './HomeCards.css';
 
@@ -43,12 +44,6 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ onClick, onContextMenu }) => 
       window.removeEventListener('resize', update);
     };
   }, [showDetail]);
-
-  const formatDate = (date: Date) => {
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${month}月${day}日`;
-  };
 
   if (error) {
     return (
@@ -91,7 +86,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ onClick, onContextMenu }) => 
           <span className="weather-card__temp">{weatherData?.weather?.temperature ?? '--'}°</span>
         </div>
         <span className="weather-card__city">{weatherData?.location?.city || city}</span>
-        <span className="weather-card__meta">{formatDate(currentTime)}</span>
+        <span className="weather-card__meta">{formatMonthDay(currentTime)}</span>
         <span className="weather-card__meta">{weatherData?.weather?.condition || '未知'}</span>
       </div>
       {showDetail && anchorRect && (

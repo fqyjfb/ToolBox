@@ -363,7 +363,7 @@ export interface MoyuProgressDetail {
 }
 
 export interface MoyuToday {
-  holidayName: null;
+  holidayName: string | null;
   isHoliday: boolean;
   isWeekend: boolean;
   isWorkday: boolean;

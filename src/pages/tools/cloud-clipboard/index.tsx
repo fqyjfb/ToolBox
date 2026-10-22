@@ -24,6 +24,7 @@ import { modalControlClass, modalTextareaClass } from '../account/shared';
 import { useIsCompactMode } from '../../../store/windowModeStore';
 import { useOverflowItems } from '../../../hooks/useOverflowItems';
 import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
+import ClipboardFormModal from './ClipboardFormModal';
 
 const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = ({ url, onCopy }) => {
   return (
@@ -353,16 +354,6 @@ const CloudClipboardPage: React.FC = () => {
     }
   }, [addToast]);
 
-  const handlePasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      setNewItemContent(text);
-    } catch (error) {
-      logError('Error pasting from clipboard', 'CloudClipboardPage', error as Error);
-      addToast({ message: '浏览器权限限制，请手动粘贴', type: 'warning' });
-    }
-  };
-
   const handleQuickPaste = async () => {
     if (!user) return;
     
@@ -665,41 +656,16 @@ const CloudClipboardPage: React.FC = () => {
           />
         </div>
 
-        <Modal
+        <ClipboardFormModal
           isOpen={showAddItemModal}
           onClose={handleCloseAddItemModal}
-          title="添加项目"
-          confirmText="添加"
+          content={newItemContent}
+          categoryId={newItemCategoryId}
+          categories={categories}
+          onContentChange={setNewItemContent}
+          onCategoryChange={setNewItemCategoryId}
           onConfirm={handleCreateItem}
-          confirmDisabled={!newItemContent.trim()}
-        >
-          <div className="space-y-2">
-            <Select
-              value={newItemCategoryId || ''}
-              onChange={(v) => setNewItemCategoryId(v || null)}
-              options={[
-                { value: '', label: '全部' },
-                ...categories.map((category) => ({ value: category.id, label: category.name }))
-              ]}
-              className={modalControlClass}
-            />
-            <div className="relative">
-              <textarea
-                value={newItemContent}
-                onChange={(e) => setNewItemContent(e.target.value)}
-                placeholder="内容"
-                rows={4}
-                className={`${modalTextareaClass} pr-12`}
-              />
-              <button
-                onClick={handlePasteFromClipboard}
-                className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 dark:text-content-tertiary dark:hover:text-gray-200 rounded-md"
-              >
-                <ClipboardPaste className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </Modal>
+        />
 
         <Modal
           isOpen={showEditItemModal}

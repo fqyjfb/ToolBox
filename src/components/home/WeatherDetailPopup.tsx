@@ -4,6 +4,7 @@ import { Droplets, Gauge, Sun, Cloud, Wind } from 'lucide-react';
 import type { WeatherInfo, DailyForecast } from '../../types/weather';
 import { getDayName } from '../../utils/format';
 import { getWeatherIcon } from '../../utils/weatherIcon';
+import { resolveAnchoredPosition } from '../../utils/anchoredPosition';
 
 const POPUP_WIDTH = 208;
 // 与锚点的间距 / 与视口边缘的安全边距
@@ -17,36 +18,22 @@ interface WeatherDetailPopupProps {
   anchorRect: DOMRect;
 }
 
-/** 弹层矩形与锚点矩形是否相交 */
-const overlapsAnchor = (x: number, y: number, width: number, height: number, anchor: DOMRect) =>
-  !(x + width <= anchor.left || anchor.right <= x || y + height <= anchor.top || anchor.bottom <= y);
-
 /**
  * 依次尝试「右侧 → 左侧 → 下方 → 上方」，取第一个既在视口内、又不压住锚点的位置。
  * 小窗（宽度仅 320 左右）下左右都放不下，会自动落到下方，避免弹层盖住天气卡片本身
  * —— 盖住会触发 mouseleave → 弹层消失 → mouseenter，表现为不停闪烁。
  */
-const resolvePosition = (anchor: DOMRect, width: number, height: number) => {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const clampX = (value: number) => Math.min(Math.max(MARGIN, value), Math.max(MARGIN, vw - width - MARGIN));
-  const clampY = (value: number) => Math.min(Math.max(MARGIN, value), Math.max(MARGIN, vh - height - MARGIN));
-
-  const candidates: Array<[number, number]> = [
-    [anchor.right + GAP, anchor.top],
-    [anchor.left - width - GAP, anchor.top],
-    [anchor.left, anchor.bottom + GAP],
-    [anchor.left, anchor.top - height - GAP],
-  ];
-
-  for (const [rawX, rawY] of candidates) {
-    const x = clampX(rawX);
-    const y = clampY(rawY);
-    if (!overlapsAnchor(x, y, width, height, anchor)) return { x, y };
-  }
-
-  return { x: clampX(anchor.right + GAP), y: clampY(anchor.top) };
-};
+const resolvePosition = (anchor: DOMRect, width: number, height: number) =>
+  resolveAnchoredPosition({
+    anchor,
+    width,
+    height,
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+    gap: GAP,
+    margin: MARGIN,
+    placements: ['right', 'left', 'bottom', 'top'],
+    avoidAnchor: true,
+  });
 
 /** 天气详情悬浮卡片：渲染到 body，贴着锚点展示，全程不接收鼠标事件 */
 const WeatherDetailPopup: React.FC<WeatherDetailPopupProps> = ({ weatherData, forecast, anchorRect }) => {

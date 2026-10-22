@@ -43,6 +43,8 @@ const Select: React.FC<SelectProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const selectedRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -79,6 +81,15 @@ const Select: React.FC<SelectProps> = ({
     }
   }, [isOpen]);
 
+  // 展开后把当前选中项滚到列表中部，选项多时不会停在顶部（如年份列表）
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const list = listRef.current;
+    const selected = selectedRef.current;
+    if (!list || !selected) return;
+    list.scrollTop = Math.max(0, selected.offsetTop - list.clientHeight / 2 + selected.offsetHeight / 2);
+  }, [isOpen, dropdownMaxHeight]);
+
   const selectedOption = options.find(opt => opt.value === value);
   const triggerRect = triggerRef.current?.getBoundingClientRect();
   // 向上展开时以 bottom 锚定触发器上沿，保证实际内容高度不一时仍贴合触发器
@@ -98,12 +109,14 @@ const Select: React.FC<SelectProps> = ({
       }}
     >
       <div
+        ref={listRef}
         className="scrollbar-5px overflow-y-auto py-1"
         style={{ maxHeight: dropdownMaxHeight }}
       >
         {options.map((option) => (
           <button
             key={option.value}
+            ref={option.value === value ? selectedRef : undefined}
             onClick={() => {
               onChange(option.value);
               setIsOpen(false);

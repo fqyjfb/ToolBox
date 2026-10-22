@@ -1,6 +1,8 @@
-import React from 'react';
-import { RefreshCw, Calendar, CalendarClock, Clock, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { RefreshCw, CalendarClock, TrendingUp, Quote } from 'lucide-react';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import CalendarModal from './CalendarModal';
+import { useAlmanacHover } from '../../hooks/useAlmanacHover';
 import type { MoyuData } from '../../types/hotNews';
 
 // 摸鱼日报按区块拆成四张独立卡片，数据由首页统一拉取后传入
@@ -38,6 +40,28 @@ const getHolidayBadge = (data: MoyuData): { text: string; bg: string } | null =>
 const shortDate = (date: string) => (date.length >= 10 ? date.slice(5) : date);
 
 const MoyuCard: React.FC<MoyuCardProps> = ({ variant, data, loading, error, onRetry }) => {
+  // 日历变体：点击开月历弹窗、悬浮看今日黄历（其余变体保持纯展示）
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const { show: showAlmanac, hide: hideAlmanac, popover: almanacPopover } = useAlmanacHover(300);
+  const now = new Date();
+  const almanacToday = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+  // 悬浮触发区收窄到「日期数字 + 圆点」；点击仍是整张卡片打开月历
+  const calendarClick: React.DOMAttributes<HTMLDivElement> = variant === 'calendar'
+    ? {
+        onClick: () => {
+          // 弹窗遮罩会立刻盖住卡片，主动收起浮层避免它压在弹窗之上
+          hideAlmanac();
+          setCalendarOpen(true);
+        },
+      }
+    : {};
+  const calendarHover: React.DOMAttributes<HTMLDivElement> = variant === 'calendar'
+    ? {
+        onMouseEnter: event => showAlmanac(event, almanacToday),
+        onMouseLeave: hideAlmanac,
+      }
+    : {};
+
   if (loading) {
     return (
       <div className="home-card home-card--panel moyu-card moyu-card--center">
@@ -48,12 +72,28 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ variant, data, loading, error, onRe
 
   if (!data) {
     return (
-      <div className="home-card home-card--panel moyu-card moyu-card--center">
+      <div
+        className={`home-card home-card--panel moyu-card moyu-card--center${variant === 'calendar' ? ' moyu-card--interactive' : ''}`}
+        {...calendarClick}
+      >
         <span className="moyu-card__hint truncate">{error || '暂无数据'}</span>
         {variant === 'calendar' && (
-          <button onClick={onRetry} className="moyu-card__refresh" title="重试">
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onRetry();
+            }}
+            className="moyu-card__refresh"
+            title="重试"
+          >
             <RefreshCw className="w-3 h-3" />
           </button>
+        )}
+        {variant === 'calendar' && (
+          <>
+            {almanacPopover}
+            <CalendarModal isOpen={calendarOpen} onClose={() => setCalendarOpen(false)} />
+          </>
         )}
       </div>
     );
@@ -65,26 +105,46 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ variant, data, loading, error, onRe
     const festivals = data.today.lunarFestivals.length ? ` · ${data.today.lunarFestivals.join('·')}` : '';
 
     return (
-      <div className="home-card home-card--panel moyu-card">
-        <div className="moyu-card__head">
-          <Calendar className="w-3 h-3 text-content-secondary" />
-          <span className="moyu-card__title">摸鱼日历</span>
-          <button onClick={onRetry} className="moyu-card__refresh" title="刷新">
-            <RefreshCw className="w-3 h-3" />
-          </button>
+      <>
+        <div
+          className="home-card home-card--panel moyu-card moyu-card--bar moyu-card--interactive"
+          {...calendarClick}
+        >
+          <span className="moyu-calendar__dot-bar" aria-hidden="true" />
+          <div className="moyu-card__body moyu-calendar">
+            <span className="moyu-calendar__month">{Number(month)}月</span>
+            <div className="moyu-calendar__day" {...calendarHover}>
+              <span className="moyu-calendar__num">
+                {day}
+                <span className="moyu-calendar__char" aria-hidden="true">日</span>
+              </span>
+            </div>
+            <div className="moyu-calendar__badge-row">
+              <div className="moyu-calendar__badge">
+                {badge && (
+                  <span className="moyu-chip" style={{ backgroundColor: badge.bg }}>{badge.text}</span>
+                )}
+              </div>
+              <span className="moyu-calendar__weekday">{data.date.weekday}</span>
+            </div>
+              <span className="moyu-calendar__lunar">
+                <span className="moyu-calendar__lunar-date">
+                  {data.date.lunar.monthCN}{data.date.lunar.dayCN}
+                </span>
+                <div className="moyu-calendar__lunar-year-row">
+                  <span className="moyu-calendar__lunar-year">
+                    {data.date.lunar.zodiac}年
+                  </span>
+                  {festivals && (
+                    <span className="moyu-calendar__lunar-festivals">{festivals}</span>
+                  )}
+                </div>
+              </span>
+          </div>
         </div>
-        <div className="moyu-card__body moyu-calendar">
-          <span className="moyu-calendar__num">{day}</span>
-          <span className="moyu-calendar__sub">{Number(month)}月 · {data.date.weekday}</span>
-          <span
-            className="moyu-calendar__lunar"
-            title={`${data.date.lunar.monthCN}${data.date.lunar.dayCN} · ${data.date.lunar.zodiac}年${festivals}`}
-          >
-            {data.date.lunar.monthCN}{data.date.lunar.dayCN} · {data.date.lunar.zodiac}年{festivals}
-          </span>
-          {badge && <span className="moyu-chip" style={{ backgroundColor: badge.bg }}>{badge.text}</span>}
-        </div>
-      </div>
+        {almanacPopover}
+        <CalendarModal isOpen={calendarOpen} onClose={() => setCalendarOpen(false)} />
+      </>
     );
   }
 
@@ -115,18 +175,22 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ variant, data, loading, error, onRe
                 : '国务院尚未公布次年安排'}
             </span>
           </div>
-          <div className="moyu-holiday__block">
+          <div className="moyu-holiday__block-row">
             <span className="moyu-holiday__badge" title="下个周末">周末</span>
-            <span className="moyu-holiday__meta" title={`${nextWeekend.date} ${nextWeekend.weekday}`}>
-              {shortDate(nextWeekend.date)} · {nextWeekend.daysUntil}天后
-            </span>
+            <span className="moyu-holiday__meta-date">{shortDate(nextWeekend.date)}</span>
+          </div>
+          <div className="moyu-holiday__info-bottom">
+            <span className="moyu-holiday__meta-when">{nextWeekend.daysUntil}天后</span>
+            <span className="moyu-holiday__weekday">{nextWeekend.weekday}</span>
           </div>
           {workdays.length > 0 && (
-            <div className="moyu-holiday__block">
+            <div className="moyu-holiday__block-row">
               <span className="moyu-holiday__badge moyu-holiday__badge--work" title="调休上班">调休</span>
-              <span className="moyu-holiday__meta" title={workdays.join('、')}>
-                {workdays.map(shortDate).join('、')}
-              </span>
+              <div className="moyu-holiday__meta" title={workdays.join('、')}>
+                {workdays.map(shortDate).map(d => (
+                  <span key={d}>{d}</span>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -137,6 +201,10 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ variant, data, loading, error, onRe
   if (variant === 'quote') {
     return (
       <div className="home-card home-card--panel moyu-card moyu-quote-card">
+        <div className="moyu-card__head">
+          <Quote className="moyu-quote-card__icon" />
+          <span className="moyu-card__title">摸鱼语录</span>
+        </div>
         <p className="moyu-quote" title={data.moyuQuote}>{data.moyuQuote}</p>
       </div>
     );
@@ -171,17 +239,19 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ variant, data, loading, error, onRe
 
   return (
     <div className="home-card home-card--panel moyu-card">
-      <div className="moyu-card__head">
-        <Clock className="w-3 h-3 text-content-secondary" />
-        <span className="moyu-card__title">倒计时</span>
-      </div>
       <div className="moyu-card__body moyu-countdown">
-        {COUNTDOWN_ITEMS.map(({ key, label }) => (
-          <div key={key} className="moyu-countdown__item">
-            <span className="moyu-countdown__label">{label}</span>
-            <span className="moyu-countdown__value">{data.countdown[key]}天</span>
-          </div>
-        ))}
+        {COUNTDOWN_ITEMS.map(({ key, label }) => {
+          const days = data.countdown[key];
+          return (
+            <div key={key} className="moyu-countdown__item">
+              <span className="moyu-countdown__label">{label}</span>
+              <span className="moyu-countdown__value">
+                <span className="moyu-countdown__num">{days}</span>
+                <span className="moyu-countdown__unit">天</span>
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

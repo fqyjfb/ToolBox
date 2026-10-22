@@ -22,6 +22,7 @@ import { modalControlClass, modalTextareaClass } from '../account/shared';
 import { useIsCompactMode } from '../../../store/windowModeStore';
 import { useOverflowItems } from '../../../hooks/useOverflowItems';
 import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
+import QuickReplyFormModal from './QuickReplyFormModal';
 
 const SortableCategoryButton: React.FC<{
   category: QuickReplyCategory;
@@ -308,16 +309,6 @@ const QuickReplyPage: React.FC = () => {
       addToast({ message: '浏览器权限限制，请手动复制', type: 'warning' });
     }
   }, [addToast]);
-
-  const handlePasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      setNewQuickReplyContent(text);
-    } catch (error) {
-      logError('Error pasting from clipboard', 'QuickReplyPage', error as Error);
-      addToast({ message: '浏览器权限限制，请手动粘贴', type: 'warning' });
-    }
-  };
 
   const handleQuickPaste = async () => {
     if (!user) return;
@@ -628,30 +619,13 @@ const QuickReplyPage: React.FC = () => {
           />
         </div>
 
-        <Modal
+        <QuickReplyFormModal
           isOpen={showAddQuickReplyModal}
           onClose={handleCloseAddQuickReplyModal}
-          title="添加快捷回复"
-          confirmText="添加"
+          content={newQuickReplyContent}
+          onContentChange={setNewQuickReplyContent}
           onConfirm={handleCreateQuickReply}
-          confirmDisabled={!newQuickReplyContent.trim()}
-        >
-          <div className="space-y-2 relative">
-            <textarea
-              value={newQuickReplyContent}
-              onChange={(e) => setNewQuickReplyContent(e.target.value)}
-              placeholder="快捷回复内容"
-              rows={4}
-              className={`${modalTextareaClass} pr-12`}
-            />
-            <button
-              onClick={handlePasteFromClipboard}
-              className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 dark:text-content-tertiary dark:hover:text-gray-200 rounded-md"
-            >
-              <ClipboardPaste className="w-4 h-4" />
-            </button>
-          </div>
-        </Modal>
+        />
 
         <Modal
           isOpen={showEditQuickReplyModal}
