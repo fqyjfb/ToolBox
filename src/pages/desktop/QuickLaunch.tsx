@@ -1241,7 +1241,7 @@ const QuickLaunch: React.FC = () => {
       <div
         ref={dragContainerRef}
         className={`quick-launch-scroll flex-1 overflow-auto flex flex-col transition-colors duration-200 ${
-          isDragOver ? 'bg-green-50 dark:bg-green-900/20' : ''
+          isDragOver ? 'bg-toast-success-bg' : ''
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}

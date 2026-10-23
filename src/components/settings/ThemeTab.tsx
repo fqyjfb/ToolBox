@@ -12,42 +12,31 @@ const DARK_BG  = 'url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/20
 interface ThemeOptionProps {
   label: string;
   bg: string;
-  labelColor: string;
   selected: boolean;
   onClick: () => void;
 }
 
-const ThemeOption: React.FC<ThemeOptionProps> = ({ label, bg, labelColor, selected, onClick }) => (
+const ThemeOption: React.FC<ThemeOptionProps> = ({ label, bg, selected, onClick }) => (
   <button
     onClick={onClick}
-    className={`inline-flex relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200 min-w-[120px] max-w-[180px] ${
+    className={`theme-option-bg inline-flex relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200 min-w-[120px] max-w-[180px] aspect-video ${
       selected ? 'shadow-sm' : 'hover:border-gray-300 dark:hover:border-gray-600'
     }`}
-    style={{
-      aspectRatio: '16/9',
-      background: `color-mix(in srgb, var(--color-card) 75%, transparent)`,
-    }}
     title={`切换为${label}`}
   >
     <div
-      className="absolute inset-0"
-      style={{ backgroundImage: bg, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      className="absolute inset-0 bg-cover bg-center"
+      style={{ backgroundImage: bg }}
     />
-    <div
-      className="absolute inset-0 flex flex-col justify-end p-2"
-      style={{
-        background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%)',
-      }}
-    >
+    <div className="theme-option-gradient absolute inset-0 flex flex-col justify-end p-2">
       {selected && (
         <span
-          className="absolute top-1.5 left-1.5 inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full text-[10px] font-semibold text-button-text"
-          style={{ background: 'var(--color-primary)' }}
+          className="absolute top-1.5 left-1.5 inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full text-[10px] font-semibold text-button-text bg-primary"
         >
           <Check size={9} />
         </span>
       )}
-      <span className="text-xs font-semibold" style={{ color: labelColor }}>{label}</span>
+      <span className="text-xs font-semibold text-gray-900 dark:text-white">{label}</span>
     </div>
   </button>
 );
@@ -62,8 +51,6 @@ const ThemeTab: React.FC = () => {
       setCustomTheme: s.setCustomTheme,
     }))
   );
-  // 订阅 themeKey 强制重渲染，确保自定义主题保存后更新
-  useThemeStore((s) => s.themeKey);
 
   // 启用自定义：优先用上次保存的配置（切回预设不会清除它），否则以当前明暗基色默认值起步
   const handleCustomClick = () => {
@@ -81,21 +68,18 @@ const ThemeTab: React.FC = () => {
         <ThemeOption
           label="浅色模式"
           bg={LIGHT_BG}
-          labelColor="#111827"
           selected={!isCustomTheme && !isDark}
           onClick={() => setTheme('light')}
         />
         <ThemeOption
           label="深色模式"
           bg={DARK_BG}
-          labelColor="#FFFFFF"
           selected={!isCustomTheme && isDark}
           onClick={() => setTheme('dark')}
         />
         <ThemeOption
           label="自定义"
           bg={customBg}
-          labelColor={isDark ? '#FFFFFF' : '#111827'}
           selected={isCustomTheme}
           onClick={handleCustomClick}
         />

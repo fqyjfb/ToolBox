@@ -13,3 +13,12 @@
 .settings-section-header {
   background: color-mix(in srgb, var(--color-card) 60%, transparent);
 }
+
+/* 主题卡片（浅色/深色/自定义三选一）静态样式，迁移自 ThemeOption 内联 style */
+.theme-option-bg {
+  background: color-mix(in srgb, var(--color-card) 75%, transparent);
+}
+
+.theme-option-gradient {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 60%);
+}

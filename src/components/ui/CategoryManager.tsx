@@ -122,7 +122,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         <div
           className={`group flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors ${
             selectedCategory === category.id
-              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+              ? 'bg-toast-info-bg text-toast-info-text'
               : 'hover:bg-menu-hover text-content-primary'
           }`}
           style={{ paddingLeft: `${level * 16 + 12}px` }}

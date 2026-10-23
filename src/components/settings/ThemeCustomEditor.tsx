@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Download, ImageOff, Plus, RotateCcw, Save, Trash2, Upload, X } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import ColorPicker from './ColorPicker';
@@ -14,6 +14,8 @@ import {
   THEME_COLOR_GROUPS,
   THEME_PRESETS,
   buildPresetTheme,
+  getPresetSwatch,
+  sanitizeThemeForPreview,
 } from '../../constants/theme';
 import {
   BgImageItem,
@@ -26,6 +28,7 @@ import {
   MAX_BG_IMAGE_BYTES,
   compressImageToDataUrl,
   formatBytesToMB,
+  isBgImageSizeSafe,
 } from '../../utils/imageCompress';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 
@@ -78,20 +81,30 @@ const PercentRow: React.FC<{
  * 避免输入半成品颜色值时页面闪烁。
  */
 const ThemeCustomEditor: React.FC = () => {
-  const { isDark, customTheme, setCustomTheme, setBaseTheme, deleteCustomTheme } = useThemeStore(
+  const {
+    isDark,
+    customTheme,
+    setCustomTheme,
+    setBaseTheme,
+    deleteCustomTheme,
+    previewCustomTheme,
+    restoreSavedTheme,
+  } = useThemeStore(
     useShallow((s) => ({
       isDark: s.isDark,
       customTheme: s.customTheme,
       setCustomTheme: s.setCustomTheme,
       setBaseTheme: s.setBaseTheme,
       deleteCustomTheme: s.deleteCustomTheme,
+      previewCustomTheme: s.previewCustomTheme,
+      restoreSavedTheme: s.restoreSavedTheme,
     }))
   );
-  // 订阅 themeKey 强制重渲染，确保自定义主题保存后更新
-  useThemeStore((s) => s.themeKey);
   const addToast = useToastStore((s) => s.addToast);
 
   const [draft, setDraft] = useState<CustomTheme>(() => customTheme ?? getDefaultTheme(isDark));
+  // 明暗基色同样进草稿：预览态不得落盘，只有点击保存才同步给 store
+  const [draftIsDark, setDraftIsDark] = useState(isDark);
   const [isCompressing, setIsCompressing] = useState(false);
   const [bgImages, setBgImages] = useState<BgImageItem[]>(() =>
     localStorageService.get<BgImageItem[]>(STORAGE_KEYS.CUSTOM_BG_IMAGES, []),
@@ -101,14 +114,25 @@ const ThemeCustomEditor: React.FC = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
-  const baseTheme = getDefaultTheme(isDark);
-  const isDirty = JSON.stringify(draft) !== JSON.stringify(customTheme);
+  const baseTheme = getDefaultTheme(draftIsDark);
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(customTheme) || draftIsDark !== isDark;
+
+  // 草稿 → 全站：预设、取色器、滑块、背景图、导入等所有 draft 变更都由这里统一推送，
+  // 因此未保存时全站即可所见即所得，而 localStorage / 主进程不受影响。
+  useEffect(() => {
+    previewCustomTheme(sanitizeThemeForPreview(draft, draftIsDark), draftIsDark);
+  }, [draft, draftIsDark, previewCustomTheme]);
+
+  // 仅在卸载时回滚，避免未保存的预览残留在 --ct-* 与 .dark 上
+  useEffect(() => () => restoreSavedTheme(), [restoreSavedTheme]);
 
   const update = <K extends keyof CustomTheme>(key: K, value: CustomTheme[K]) =>
     setDraft((prev) => ({ ...prev, [key]: value }));
 
   const handleSave = () => {
     try {
+      // 先落盘基色：setCustomTheme 内部按当前 isDark 兜底未配置字段
+      if (draftIsDark !== isDark) setBaseTheme(draftIsDark);
       setCustomTheme(draft);
       addToast({ type: 'success', message: '自定义主题已保存并生效' });
     } catch (error) {
@@ -123,8 +147,8 @@ const ThemeCustomEditor: React.FC = () => {
   };
 
   const handleReset = () => {
-    setDraft(getDefaultTheme(isDark));
-    addToast({ type: 'info', message: '已恢复为当前明暗预设的默认值，点击保存后生效' });
+    setDraft(getDefaultTheme(draftIsDark));
+    addToast({ type: 'info', message: '已恢复为当前明暗预设的默认值，点击保存后才会保留' });
   };
 
   const handleDelete = () => {
@@ -135,14 +159,14 @@ const ThemeCustomEditor: React.FC = () => {
     addToast({ type: 'info', message: '已删除自定义主题，已切回明暗预设' });
   };
 
-  // 预设模板：基色不一致时先同步明暗基色（保留自定义模式），再填充草稿，
-  // 否则未配置的可选字段会按错误的基色兜底。
+  // 预设模板：基色只进草稿，不直接调 setBaseTheme —— 后者会立即落盘并同步主进程，
+  // 而草稿此时尚未保存，会留下「基色已改、配色未改」的残留状态。
   // 预设只负责配色：背景图 / 图片透明度 / 铺放方式属于个人设置，切换预设时原样保留，
   // 页面底色是配色的一部分，仍跟随预设。
   const handlePresetClick = (presetId: string) => {
     const preset = THEME_PRESETS.find((item) => item.id === presetId);
     if (!preset) return;
-    setBaseTheme(preset.base);
+    setDraftIsDark(preset.base === 'dark');
     setDraft((prev) => ({
       ...buildPresetTheme(preset),
       bgImage: prev.bgImage,
@@ -153,7 +177,7 @@ const ThemeCustomEditor: React.FC = () => {
     }));
     addToast({
       type: 'info',
-      message: `已应用预设「${preset.name}」，背景图设置保留不变，点击保存后生效`,
+      message: `已应用预设「${preset.name}」，背景图设置保留不变，点击保存后才会保留`,
     });
   };
 
@@ -183,7 +207,7 @@ const ThemeCustomEditor: React.FC = () => {
         }
         addToast({
           type: 'success',
-          message: `背景图已就绪（${formatBytesToMB(result.compressedSize)}），点击保存后生效`,
+          message: `背景图已就绪（${formatBytesToMB(result.compressedSize)}），点击保存后才会保留`,
         });
         return;
       }
@@ -228,13 +252,13 @@ const ThemeCustomEditor: React.FC = () => {
       setBgImages(next);
       update('bgImage', url);
       setNetworkUrl('');
-      addToast({ type: 'success', message: '图片地址已添加并应用，点击保存后生效' });
+      addToast({ type: 'success', message: '图片地址已添加并应用，点击保存后才会保留' });
     }
   };
 
   const handleSelectBgImage = (item: BgImageItem) => {
     update('bgImage', item.url);
-    addToast({ type: 'info', message: '已切换背景图，点击保存后生效' });
+    addToast({ type: 'info', message: '已切换背景图，点击保存后才会保留' });
   };
 
   const handleDeleteBgImage = (id: string) => {
@@ -268,8 +292,13 @@ const ThemeCustomEditor: React.FC = () => {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result as string) as Partial<CustomTheme>;
-        setDraft(withThemeDefaults(parsed, isDark));
-        addToast({ type: 'success', message: '主题配置已导入，点击保存后生效' });
+        // 导入前校验背景图体积，避免导入后在保存阶段才触发存储配额错误
+        if (typeof parsed.bgImage === 'string' && parsed.bgImage && !isBgImageSizeSafe(parsed.bgImage)) {
+          addToast({ type: 'error', message: '导入的主题背景图过大，请先压缩或移除背景图后再导入' });
+          return;
+        }
+        setDraft(withThemeDefaults(parsed, draftIsDark));
+        addToast({ type: 'success', message: '主题配置已导入，点击保存后才会保留' });
       } catch {
         addToast({ type: 'error', message: '主题文件解析失败，请确认是本页导出的 JSON' });
       }
@@ -280,7 +309,7 @@ const ThemeCustomEditor: React.FC = () => {
   return (
     <div className="px-4 py-3 space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-2xs text-content-tertiary">调整后需点击「保存主题」才会生效</p>
+        <p className="text-2xs text-content-tertiary">调整会实时预览，点击「保存主题」后才会保留</p>
         {isDirty && (
           <span className="text-2xs px-1.5 py-0.5 rounded bg-menu-hover text-content-secondary">
             有未保存的修改
@@ -295,8 +324,17 @@ const ThemeCustomEditor: React.FC = () => {
             key={preset.id}
             type="button"
             onClick={() => handlePresetClick(preset.id)}
-            className="px-2 py-0.5 text-xs rounded bg-surface text-content-primary hover:bg-menu-hover"
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs rounded bg-surface text-content-primary hover:bg-menu-hover"
           >
+            <span className="flex rounded-sm overflow-hidden ring-1 ring-border" aria-hidden="true">
+              {getPresetSwatch(preset).map((color, index) => (
+                <span
+                  key={`${preset.id}-${index}`}
+                  className="w-2 h-3"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </span>
             {preset.name}
           </button>
         ))}

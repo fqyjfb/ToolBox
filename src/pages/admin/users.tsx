@@ -6,7 +6,6 @@ import { queryKeys } from '../../queries/keys'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import Pagination from '../../components/ui/Pagination'
 import { useToastStore } from '../../store/toastStore'
-import { useThemeStore } from '../../store/themeStore'
 import ContextMenu from '../../components/ui/ContextMenu'
 import { useContextMenu } from '../../hooks/useContextMenu'
 import Modal from '../../components/ui/Modal'
@@ -31,8 +30,6 @@ interface UserItem {
 const UserListPage: React.FC = () => {
   const queryClient = useQueryClient()
   const addToast = useToastStore((s) => s.addToast)
-  // 订阅 themeKey，确保自定义主题保存后强制重渲染
-  useThemeStore((s) => s.themeKey);
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const { searchQuery } = useNavSearch()

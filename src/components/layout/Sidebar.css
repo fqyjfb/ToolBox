@@ -77,12 +77,37 @@
    Tailwind 无法为它生成 hover: 变体，实际不会产出任何 CSS，悬停会完全失效。
    这里统一走语义变量，预设模式与自定义主题都能生效。 */
 .sidebar-nav-item {
-  transition: background-color 0.2s ease, color 0.2s ease;
+  /* 抬升用 back-out 曲线，落位时带一点过冲，避免生硬的线性位移 */
+  transition: background-color 0.2s ease, color 0.2s ease,
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease;
   color: var(--color-sidebar-item-text);
+  position: relative;
 }
 
+/* 悬浮：按钮整体轻微抬起并浮出阴影；按下时回弹，形成完整的按压反馈。
+   激活态已有实心底色，不再叠加抬升，避免与选中态抢视觉重心。 */
 .sidebar-nav-item:hover:not(.sidebar-nav-item--active) {
   background-color: var(--color-sidebar-item);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -4px color-mix(in srgb, currentColor 45%, transparent);
+  z-index: 1;
+}
+
+.sidebar-nav-item:active:not(.sidebar-nav-item--active) {
+  transform: translateY(0) scale(0.96);
+  transition-duration: 0.08s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-nav-item {
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .sidebar-nav-item:hover:not(.sidebar-nav-item--active),
+  .sidebar-nav-item:active:not(.sidebar-nav-item--active) {
+    transform: none;
+    box-shadow: none;
+  }
 }
 
 .sidebar-nav-item--active {

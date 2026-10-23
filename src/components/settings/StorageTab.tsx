@@ -31,6 +31,11 @@ const ICON_CACHE_LABELS: Record<IconCacheClearTarget, string> = {
   all: '全部',
 };
 
+const mergeCacheStat = (a?: { count: number; size: number }, b?: { count: number; size: number }) => ({
+  count: (a?.count ?? 0) + (b?.count ?? 0),
+  size: (a?.size ?? 0) + (b?.size ?? 0),
+});
+
 const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnText }) => {
   const addToast = useToastStore(state => state.addToast);
   const { 
@@ -49,6 +54,13 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
   const [generalCacheStats, setGeneralCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
   const [pluginCacheStats, setPluginCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
   const [appCacheStats, setAppCacheStats] = useState<{ count: number; size: number }>({ count: 0, size: 0 });
+  const [diskCacheStats, setDiskCacheStats] = useState<{
+    count: number;
+    size: number;
+    extractedCount: number;
+    extractedSize: number;
+    byType: Record<IconCacheType, { count: number; size: number }>;
+  }>({ count: 0, size: 0, extractedCount: 0, extractedSize: 0, byType: { general: { count: 0, size: 0 }, plugin: { count: 0, size: 0 }, app: { count: 0, size: 0 } } });
   const [clearingCacheTarget, setClearingCacheTarget] = useState<IconCacheClearTarget | null>(null);
   const [isRefreshingIconCache, setIsRefreshingIconCache] = useState(false);
   const [isClearingUserData, setIsClearingUserData] = useState(false);
@@ -65,16 +77,32 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
 
   const refreshIconCacheStats = useCallback(async () => {
     setIsRefreshingIconCache(true);
-    const [stats, typeStats] = await Promise.all([
+    const [stats, typeStats, diskStats] = await Promise.all([
       iconCacheService.getStats(),
-      iconCacheService.getStatsByType()
+      iconCacheService.getStatsByType(),
+      window.electron?.getIconCacheStats?.() ?? {
+        count: 0,
+        size: 0,
+        extractedCount: 0,
+        extractedSize: 0,
+        byType: { general: { count: 0, size: 0 }, plugin: { count: 0, size: 0 }, app: { count: 0, size: 0 } },
+      },
     ]);
     setIconCacheStats(stats);
     setGeneralCacheStats(typeStats.general);
     setPluginCacheStats(typeStats.plugin);
     setAppCacheStats(typeStats.app);
+    setDiskCacheStats(diskStats);
     setIsRefreshingIconCache(false);
   }, []);
+
+  // 桌面端远程图标只落主进程磁盘缓存（CachedIcon 走 resolveIcons，不写浏览器 Cache API），
+  // 分类统计必须合并两层，否则 Electron 下「通用 / 插件」恒为 0、对应清理按钮也恒禁用。
+  const mergedGeneralStats = mergeCacheStat(generalCacheStats, diskCacheStats.byType?.general);
+  const mergedPluginStats = mergeCacheStat(pluginCacheStats, diskCacheStats.byType?.plugin);
+  const mergedAppStats = mergeCacheStat(appCacheStats, diskCacheStats.byType?.app);
+  const totalCacheCount = iconCacheStats.count + diskCacheStats.count + diskCacheStats.extractedCount;
+  const totalCacheSize = iconCacheStats.size + diskCacheStats.size + diskCacheStats.extractedSize;
 
   const storageUsagePercent = storageQuota > 0 ? (storageUsed / storageQuota) : 0;
   const showWarning = storageUsagePercent >= STORAGE_THRESHOLD_WARNING;
@@ -125,8 +153,8 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
       } else {
         await iconCacheService.clearByType(target);
       }
-      // Electron 下远程图标由主进程统一落盘缓存，同步清理一次，避免"清了但图标还在"
-      await window.electron?.clearIconCache?.('all');
+      // Electron 下远程图标由主进程统一落盘缓存，同步清理对应分类，避免"清了但图标还在"
+      await window.electron?.clearIconCache?.(target);
       addToast({ type: 'success', message: `${ICON_CACHE_LABELS[target]}图标缓存已清除` });
       await refreshIconCacheStats();
     } catch {
@@ -494,7 +522,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
-                  iconCacheStats.count
+                  totalCacheCount
                 )}
               </div>
             </div>
@@ -504,7 +532,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
-                  formatBytes(iconCacheStats.size)
+                  formatBytes(totalCacheSize)
                 )}
               </div>
             </div>
@@ -514,7 +542,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
-                  `${generalCacheStats.count} / ${formatBytes(generalCacheStats.size)}`
+                  `${mergedGeneralStats.count} / ${formatBytes(mergedGeneralStats.size)}`
                 )}
               </div>
             </div>
@@ -524,7 +552,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
-                  `${pluginCacheStats.count} / ${formatBytes(pluginCacheStats.size)}`
+                  `${mergedPluginStats.count} / ${formatBytes(mergedPluginStats.size)}`
                 )}
               </div>
             </div>
@@ -534,7 +562,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
                 {isRefreshingIconCache ? (
                   <Loader2 className="w-4 h-4 inline animate-spin" />
                 ) : (
-                  `${appCacheStats.count} / ${formatBytes(appCacheStats.size)}`
+                  `${mergedAppStats.count} / ${formatBytes(mergedAppStats.size)}`
                 )}
               </div>
             </div>
@@ -543,7 +571,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
           <div className="grid grid-cols-4 gap-2 mb-4">
             <button
               onClick={() => clearIconCache('general')}
-              disabled={clearingCacheTarget !== null || generalCacheStats.count === 0}
+              disabled={clearingCacheTarget !== null || mergedGeneralStats.count === 0}
               className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-surface-secondary text-content-primary hover:bg-menu-hover disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {clearingCacheTarget === 'general' ? (
@@ -555,7 +583,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </button>
             <button
               onClick={() => clearIconCache('plugin')}
-              disabled={clearingCacheTarget !== null || pluginCacheStats.count === 0}
+              disabled={clearingCacheTarget !== null || mergedPluginStats.count === 0}
               className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-surface-secondary text-content-primary hover:bg-menu-hover disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {clearingCacheTarget === 'plugin' ? (
@@ -567,7 +595,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </button>
             <button
               onClick={() => clearIconCache('app')}
-              disabled={clearingCacheTarget !== null || appCacheStats.count === 0}
+              disabled={clearingCacheTarget !== null || mergedAppStats.count === 0}
               className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-surface-secondary text-content-primary hover:bg-menu-hover disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {clearingCacheTarget === 'app' ? (
@@ -579,7 +607,7 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </button>
             <button
               onClick={() => clearIconCache('all')}
-              disabled={clearingCacheTarget !== null || iconCacheStats.count === 0}
+              disabled={clearingCacheTarget !== null || totalCacheCount === 0}
               className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md transition-colors bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {clearingCacheTarget === 'all' ? (
@@ -591,8 +619,29 @@ const StorageTab: React.FC<StorageTabProps> = ({ onClearCache, btnLoading, btnTe
             </button>
           </div>
 
-          <p className="text-xs text-content-secondary mt-2">
-            图标缓存使用浏览器 Cache API 存储，自动保存 7 天。通用缓存用于网址收藏和导航页面，插件缓存支持离线使用，可单独清理。
+          <div className="border-t border-border mt-4 pt-4">
+            <div className="flex items-center gap-1.5 mb-2">
+              <HardDrive className="w-3.5 h-3.5 text-content-secondary" />
+              <span className="text-xs font-medium text-content-secondary">磁盘缓存</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-surface-secondary rounded-lg p-3">
+                <div className="text-xs text-content-secondary mb-1">远程图标（已索引）</div>
+                <div className="text-sm font-bold text-card-value">
+                  {diskCacheStats.count} / {formatBytes(diskCacheStats.size)}
+                </div>
+              </div>
+              <div className="bg-surface-secondary rounded-lg p-3">
+                <div className="text-xs text-content-secondary mb-1">桌面应用图标（提取）</div>
+                <div className="text-sm font-bold text-card-value">
+                  {diskCacheStats.extractedCount} / {formatBytes(diskCacheStats.extractedSize)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-content-secondary mt-3">
+            图标缓存分两层：浏览器 Cache API（Web 端远程图标、快启动图标）+ 主进程磁盘缓存（桌面端远程图标与桌面应用提取图标，桌面端远程图标只落这一层）。上方分类卡片为两层合并统计，按类型清理时两层同时生效；下表是磁盘层的明细。
           </p>
         </div>
       </div>

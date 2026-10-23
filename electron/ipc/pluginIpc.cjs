@@ -454,7 +454,7 @@ function cacheInstalledPluginIcons(plugins) {
       .map((plugin) => plugin?.iconUrl)
       .filter((url) => typeof url === 'string' && url.startsWith('http'));
     if (urls.length > 0) {
-      resolveIconUrls(urls);
+      resolveIconUrls(urls, 'plugin');
     }
   } catch { /* ignore */ }
 }

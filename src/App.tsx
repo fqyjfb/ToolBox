@@ -195,7 +195,7 @@ const isStandaloneWindow = (): boolean => isStandaloneLogWindow() || isStandalon
 
 function App() {
   const queryClient = useQueryClient();
-  const { isDark, setTheme } = useThemeStore(useShallow((s) => ({ isDark: s.isDark, setTheme: s.setTheme })));
+  const { setTheme } = useThemeStore(useShallow((s) => ({ setTheme: s.setTheme })));
   const { setLastSyncTime, setStorageLocation, setSyncEnabled, setSyncModules, setSyncOnStartupEnabled } = useSyncStore(useShallow((s) => ({
     setLastSyncTime: s.setLastSyncTime,
     setStorageLocation: s.setStorageLocation,
@@ -222,16 +222,6 @@ function App() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      document.body.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.classList.remove('dark');
-    }
-  }, [isDark]);
 
   // 小窗模式根节点 class：与 dark class 同款机制，供 P2 页面级 CSS 覆写兜底使用
   const windowMode = useWindowModeStore((s) => s.mode);

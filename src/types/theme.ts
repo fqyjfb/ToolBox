@@ -3,8 +3,9 @@
  *
  * 约定：
  * 1. 所有字段存储的都是「CSS 合法值」，颜色统一用 6 位 hex（input[type=color] 只接受 hex）；
- * 2. 该配置以 localStorage 为唯一持久化载体，不进入 systemTheme 通道
- *    （主进程 nativeTheme.themeSource 只接受 system/light/dark）；
+ * 2. 该配置以 localStorage 为唯一持久化载体，自定义配色不进入 systemTheme 通道
+ *    （systemTheme 只承载明暗基色，主进程 nativeTheme.themeSource 只接受 system/light/dark；
+ *    配色通过 setThemeSnapshot 独立通道同步给锁屏等独立窗口）；
  * 3. 明暗基色（dark class）与自定义配色解耦：主进程 / 托盘 / 悬浮球只感知明暗基色。
  */
 
@@ -137,7 +138,7 @@ export const BACKGROUND_POSITIONS: BackgroundPosition[] = [
 ];
 export const BACKGROUND_REPEATS: BackgroundRepeat[] = ['no-repeat', 'repeat', 'repeat-x', 'repeat-y'];
 
-export const getDefaultLightTheme = (): CustomTheme => ({
+const getDefaultLightTheme = (): CustomTheme => ({
   bgColor: '#F7F8FB',
   bgImage: '',
   bgOpacity: 100,
@@ -196,7 +197,7 @@ export const getDefaultLightTheme = (): CustomTheme => ({
   colorCardValue: '#111827',
 });
 
-export const getDefaultDarkTheme = (): CustomTheme => ({
+const getDefaultDarkTheme = (): CustomTheme => ({
   bgColor: '#0C131A',
   bgImage: '',
   bgOpacity: 100,
@@ -301,7 +302,12 @@ export const withThemeDefaults = (
         return;
       default:
         if (typeof value === typeof base[key]) {
-          merged[key] = value as never;
+          // 空字符串字段（用户清除的颜色 / 背景图）回退到当前基色默认值，
+          // 避免存储与快照中残留空值导致锁屏等场景兜底不一致
+          merged[key] =
+            typeof value === 'string' && value.trim() === ''
+              ? (base[key] ?? '')
+              : (value as never);
         }
     }
   });

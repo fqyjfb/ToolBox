@@ -14,7 +14,6 @@ import { useSidebarInteractions } from './useSidebarInteractions';
 import { VIRTUALIZE_THRESHOLD } from '../constants/limits';
 import NotesSidebarRecents from './NotesSidebarRecents';
 import NotesSidebarFavorites from './NotesSidebarFavorites';
-import { useThemeStore } from '../../../../store/themeStore';
 
 export { CreateDialog };
 
@@ -35,8 +34,6 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
   const ix = useSidebarInteractions(props);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(480);
-  // 订阅 themeKey，确保自定义主题保存后强制重渲染
-  useThemeStore((s) => s.themeKey);
 
   // ResizeObserver 测量 tree 容器高度
   useEffect(() => {

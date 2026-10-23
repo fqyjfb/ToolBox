@@ -1,7 +1,7 @@
 import type { ChatMessage } from '../types/chat';
 import { generateTodayHeader } from './chatParser';
 
-export interface OrganizePrompt {
+interface OrganizePrompt {
   system: string;
   user: string;
 }

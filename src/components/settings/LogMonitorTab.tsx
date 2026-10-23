@@ -136,7 +136,7 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
               onClick={() => handleLevelToggle('error')}
               className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1.5 transition-colors ${
                 settings.levels.error
-                  ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+                  ? 'bg-toast-error-bg border-toast-error-border text-toast-error-text'
                   : 'bg-surface-secondary border-content text-content-secondary'
               }`}
             >
@@ -156,7 +156,7 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
               onClick={() => handleLevelToggle('info')}
               className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1.5 transition-colors ${
                 settings.levels.info
-                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400'
+                  ? 'bg-toast-info-bg border-toast-info-border text-toast-info-text'
                   : 'bg-surface-secondary border-content text-content-secondary'
               }`}
             >

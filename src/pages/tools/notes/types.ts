@@ -46,22 +46,6 @@ export interface NotesSearchResultItem {
   bodyHits?: number;
 }
 
-export interface NotesSearchResult {
-  success: boolean;
-  results: NotesSearchResultItem[];
-  scanned: number;
-  truncated: boolean;
-  elapsedMs: number;
-  error?: string;
-}
-
-export interface NotesSearchOptions {
-  query: string;
-  fileTypes?: NotesFileType[];
-  maxResults?: number;
-  caseSensitive?: boolean;
-}
-
 export interface NotesRecentItem {
   path: string;
   name: string;

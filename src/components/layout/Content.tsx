@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Settings, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
-import { useThemeStore } from '../../store/themeStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/AuthStore';
@@ -27,8 +26,6 @@ interface ContentProps {
 const Content: React.FC<ContentProps> = ({ children, className = '' }) => {
   const isDesktop = isElectron();
   const navigate = useNavigate();
-  // 订阅 themeKey，确保自定义主题保存后 Content 强制重渲染，面包屑/头部按钮颜色同步更新
-  useThemeStore((s) => s.themeKey);
   const { isCollapsed, toggleSidebar } = useSidebarStore(useShallow((s) => ({ isCollapsed: s.isCollapsed, toggleSidebar: s.toggleSidebar })));
   // 待办徽标：与写操作共享 queryKeys.todo.all，待办页增删后 invalidate 即可刷新
   const userId = useAuthStore((s) => s.user?.id ?? '');

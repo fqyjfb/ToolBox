@@ -21,13 +21,13 @@ const Toast: React.FC = () => {
   const getToastTypeStyles = (type: string) => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-800 dark:text-green-200';
+        return 'bg-toast-success-bg border-toast-success-border text-toast-success-text';
       case 'error':
-        return 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200';
+        return 'bg-toast-error-bg border-toast-error-border text-toast-error-text';
       case 'warning':
-        return 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200';
+        return 'bg-toast-warning-bg border-toast-warning-border text-toast-warning-text';
       case 'info':
-        return 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200';
+        return 'bg-toast-info-bg border-toast-info-border text-toast-info-text';
       default:
         return 'bg-surface border-content';
     }
@@ -52,13 +52,13 @@ const Toast: React.FC = () => {
   const getProgressBarColor = (type: string) => {
     switch (type) {
       case 'success':
-        return 'bg-green-600 dark:bg-green-400';
+        return 'bg-toast-success-text';
       case 'error':
-        return 'bg-red-600 dark:bg-red-400';
+        return 'bg-toast-error-text';
       case 'warning':
-        return 'bg-amber-600 dark:bg-amber-400';
+        return 'bg-toast-warning-text';
       case 'info':
-        return 'bg-blue-600 dark:bg-blue-400';
+        return 'bg-toast-info-text';
       default:
         return 'bg-menu-hover';
     }

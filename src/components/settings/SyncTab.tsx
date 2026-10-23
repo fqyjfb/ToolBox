@@ -437,7 +437,7 @@ const SyncTab: React.FC = () => {
                 <span className="text-sm text-content-primary">数据同步</span>
                 <div className="flex items-center gap-3">
                   {pendingOperationsCount > 0 && (
-                    <span className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded">
+                    <span className="text-xs text-toast-warning-text bg-toast-warning-bg px-2 py-0.5 rounded">
                       {pendingOperationsCount} 条待同步
                     </span>
                   )}
@@ -526,39 +526,39 @@ const SyncTab: React.FC = () => {
               )}
 
               {lastSyncSummary && !isSyncing && (
-                <div className="px-4 py-2 bg-green-50 dark:bg-green-900/20">
+                <div className="px-4 py-2 bg-toast-success-bg">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-medium text-green-800 dark:text-green-300">
+                    <span className="text-xs font-medium text-toast-success-text">
                       最近同步结果
                     </span>
-                    <span className="text-xs text-green-600 dark:text-green-400">
+                    <span className="text-xs text-toast-success-text">
                       {getTimeAgo(lastSyncSummary.timestamp)}
                     </span>
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-xs">
                     <div className="text-center">
-                      <div className="text-green-700 dark:text-green-300 font-medium">
+                      <div className="text-toast-success-text font-medium">
                         {lastSyncSummary.pulledCount}
                       </div>
-                      <div className="text-green-600 dark:text-green-400">拉取</div>
+                      <div className="text-toast-success-text">拉取</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-green-700 dark:text-green-300 font-medium">
+                      <div className="text-toast-success-text font-medium">
                         {lastSyncSummary.addedCount}
                       </div>
-                      <div className="text-green-600 dark:text-green-400">新增</div>
+                      <div className="text-toast-success-text">新增</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-green-700 dark:text-green-300 font-medium">
+                      <div className="text-toast-success-text font-medium">
                         {lastSyncSummary.conflictCount}
                       </div>
-                      <div className="text-green-600 dark:text-green-400">冲突</div>
+                      <div className="text-toast-success-text">冲突</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-green-700 dark:text-green-300 font-medium">
+                      <div className="text-toast-success-text font-medium">
                         {(lastSyncSummary.duration / 1000).toFixed(1)}s
                       </div>
-                      <div className="text-green-600 dark:text-green-400">耗时</div>
+                      <div className="text-toast-success-text">耗时</div>
                     </div>
                   </div>
                 </div>

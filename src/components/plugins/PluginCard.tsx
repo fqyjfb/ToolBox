@@ -79,7 +79,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
               {plugin.name}
             </h3>
             {(plugin as InstalledPlugin).isBeta && (
-              <span className="px-1.5 py-0.5 text-xs font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30 rounded">
+              <span className="px-1.5 py-0.5 text-xs font-medium text-toast-warning-text bg-toast-warning-bg rounded">
                 Beta
               </span>
             )}
@@ -102,7 +102,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
               v{(plugin as InstalledPlugin).installedVersion || plugin.version}
             </span>
             {hasUpdate && updateInfo && (
-              <span className="px-1.5 py-0.5 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 rounded flex items-center gap-0.5">
+              <span className="px-1.5 py-0.5 text-xs text-toast-success-text bg-toast-success-bg rounded flex items-center gap-0.5">
                 <RefreshCw className="w-3 h-3" />
                 {updateInfo.availableVersion}
               </span>
@@ -186,7 +186,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
                     e.stopPropagation();
                     onUninstall();
                   }}
-                  className="px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-md hover:bg-red-100 dark:hover:bg-red-800/30 transition-colors"
+                  className="px-2.5 py-1 text-xs font-medium text-toast-error-text bg-toast-error-bg rounded-md hover:brightness-95 transition-all"
                 >
                   卸载
                 </button>

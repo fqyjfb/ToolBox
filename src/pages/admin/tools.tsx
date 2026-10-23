@@ -13,7 +13,6 @@ import ToggleSwitch from '../../components/settings/ToggleSwitch'
 import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager';
 import Select from '../../components/ui/Select'
 import { openUrl } from '../../services/browserService'
-import { useThemeStore } from '../../store/themeStore'
 import CompactUnsupportedHint from '../../components/ui/CompactUnsupportedHint'
 import { useNavSearch } from '../../contexts/NavSearchContext'
 
@@ -134,8 +133,6 @@ const ToolsPage: React.FC = () => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tool: Tool } | null>(null)
 
   const addToast = useToastStore((s) => s.addToast)
-  // 订阅 themeKey，确保自定义主题保存后强制重渲染
-  useThemeStore((s) => s.themeKey);
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: queryKeys.tool.categories(),
@@ -518,7 +515,7 @@ const ToolsPage: React.FC = () => {
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
                           <span className={`px-2 py-0.5 text-xs rounded-full ${
-                            tool.网盘类型 === '夸克' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            tool.网盘类型 === '夸克' ? 'bg-toast-info-bg text-toast-info-text' :
                             tool.网盘类型 === '百度' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
                             'bg-surface-secondary text-content-primary'
                           }`}>

@@ -7,7 +7,6 @@ import type { NotesFavoritePath } from '../types';
 
 export interface UseNotesFavoritesReturn {
   favorites: NotesFavoritePath[];
-  favoritePaths: NotesFavoritePath[];
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -87,7 +86,6 @@ export function useNotesFavorites(): UseNotesFavoritesReturn {
 
   return {
     favorites,
-    favoritePaths: favorites,
     isLoading,
     error,
     refresh,

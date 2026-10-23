@@ -318,6 +318,12 @@ const loadIconCacheIndex = () => {
     if (fs.existsSync(iconCacheIndexPath)) {
       const data = fs.readFileSync(iconCacheIndexPath, 'utf-8');
       iconCacheIndex = JSON.parse(data);
+      // 兼容旧索引：无 type 字段的条目默认归为 general，避免按类型清理时漏掉
+      let needsSave = false;
+      for (const entry of Object.values(iconCacheIndex.icons)) {
+        if (!entry.type) { entry.type = 'general'; needsSave = true; }
+      }
+      if (needsSave) saveIconCacheIndex();
     } else {
       iconCacheIndex = { icons: {} };
     }
@@ -371,7 +377,8 @@ const getCachedIconPath = (url) => {
 
 // cacheKey：写入缓存索引时使用的键。同一图标的多个镜像地址可共用同一个键，
 // 避免渲染层切换镜像后缓存反复失效。不传则与 url 一致（保持原有行为）。
-const downloadIcon = (url, cacheKey) => {
+// type：图标分类（general/plugin/app），用于磁盘缓存按类型清理。
+const downloadIcon = (url, cacheKey, type = 'general') => {
   return new Promise((resolve) => {
     if (!url || !url.startsWith('http')) {
       resolve(null);
@@ -416,7 +423,8 @@ const downloadIcon = (url, cacheKey) => {
           index.icons[indexKey] = {
             file: fileName,
             timestamp: Date.now(),
-            contentType: response.headers['content-type'] || 'image/png'
+            contentType: response.headers['content-type'] || 'image/png',
+            type,
           };
           saveIconCacheIndex();
           
@@ -500,15 +508,15 @@ const buildIconUrlCandidates = (canonicalUrl) => {
   return candidates;
 };
 
-const downloadIconWithMirrors = async (canonicalUrl) => {
+const downloadIconWithMirrors = async (canonicalUrl, type = 'general') => {
   for (const candidate of buildIconUrlCandidates(canonicalUrl)) {
-    const filePath = await downloadIcon(candidate, canonicalUrl);
+    const filePath = await downloadIcon(candidate, canonicalUrl, type);
     if (filePath) return filePath;
   }
   return null;
 };
 
-const resolveSingleIcon = (canonicalUrl) => {
+const resolveSingleIcon = (canonicalUrl, type = 'general') => {
   const cachedPath = getCachedIconPath(canonicalUrl);
   if (cachedPath) return Promise.resolve(toLocalMediaUrl(cachedPath));
 
@@ -519,7 +527,7 @@ const resolveSingleIcon = (canonicalUrl) => {
 
   if (iconResolveTasks.has(canonicalUrl)) return iconResolveTasks.get(canonicalUrl);
 
-  const task = downloadIconWithMirrors(canonicalUrl)
+  const task = downloadIconWithMirrors(canonicalUrl, type)
     .then((filePath) => {
       if (filePath) return toLocalMediaUrl(filePath);
       iconFailures.set(canonicalUrl, Date.now());
@@ -536,7 +544,8 @@ const resolveSingleIcon = (canonicalUrl) => {
 };
 
 // 批量解析：{ 原始url: local-media 地址 | null }。缓存命中时零网络请求。
-const resolveIconUrls = async (urls) => {
+// type 透传至每条下载路径，使落盘索引携带分类信息，供按类型清理使用。
+const resolveIconUrls = async (urls, type = 'general') => {
   const result = {};
   if (!Array.isArray(urls)) return result;
 
@@ -552,7 +561,7 @@ const resolveIconUrls = async (urls) => {
 
   await Promise.all(
     [...rawByCanonical.entries()].map(async ([canonical, raws]) => {
-      const localUrl = await resolveSingleIcon(canonical);
+      const localUrl = await resolveSingleIcon(canonical, type);
       if (localUrl) {
         for (const raw of raws) result[raw] = localUrl;
       }
@@ -570,7 +579,7 @@ const cachePluginIcon = async (pluginDir) => {
     if (!fs.existsSync(manifestPath)) return;
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
     if (manifest && typeof manifest.iconUrl === 'string') {
-      await resolveIconUrls([manifest.iconUrl]);
+      await resolveIconUrls([manifest.iconUrl], 'plugin');
     }
   } catch {
     // 图标缓存失败不影响插件安装
@@ -585,7 +594,7 @@ const loadFloatConfigWithIcons = async () => {
       if (item.type === 'plugin' && item.path && item.path.startsWith('http')) {
         // 与 resolveIconUrls 共用同一份缓存键：插件安装时落盘的图标这里可直接命中
         const canonical = toCanonicalIconUrl(item.path);
-        const iconPath = getCachedIconPath(canonical) || await downloadIconWithMirrors(canonical);
+        const iconPath = getCachedIconPath(canonical) || await downloadIconWithMirrors(canonical, 'plugin');
         const dataUrl = iconPath ? getIconDataUrl(iconPath) : null;
         
         if (dataUrl) {
@@ -599,29 +608,91 @@ const loadFloatConfigWithIcons = async () => {
   return results;
 };
 
-const clearExpiredIconCache = () => {
+const clearIconCacheByType = (type) => {
   try {
     const index = loadIconCacheIndex();
-    const now = Date.now();
-    let cleared = 0;
-    
+    const urlsToDelete = [];
     for (const [url, entry] of Object.entries(index.icons)) {
-      if (now - entry.timestamp > getNetworkConfig().iconCache.ttl) {
+      if (entry.type === type) {
         const filePath = path.join(iconCacheDir, entry.file);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-        delete index.icons[url];
-        cleared++;
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        urlsToDelete.push(url);
       }
     }
-    
-    if (cleared > 0) {
+    // 桌面应用提取的图标没有索引条目（按"未被索引引用"识别），归入 app 分类，
+    // 清理应用缓存时一并删除，否则这一层只能靠「清空全部」才能清掉
+    let extractedDeleted = 0;
+    if (type === 'app') {
+      const referencedFiles = new Set(Object.values(index.icons).map(e => e.file));
+      for (const file of fs.readdirSync(iconCacheDir)) {
+        if (file === 'index.json' || referencedFiles.has(file)) continue;
+        try {
+          fs.unlinkSync(path.join(iconCacheDir, file));
+          extractedDeleted++;
+        } catch { /* ignore */ }
+      }
+    }
+    for (const url of urlsToDelete) delete index.icons[url];
+    if (urlsToDelete.length > 0) {
       saveIconCacheIndex();
-      console.log(`Cleared ${cleared} expired icon cache entries`);
+    }
+    if (urlsToDelete.length > 0 || extractedDeleted > 0) {
+      iconFailures.delete(type); // 清除该类失败标记，允许重新解析
+      console.log(`Cleared ${urlsToDelete.length} indexed + ${extractedDeleted} extracted icon cache entries of type: ${type}`);
     }
   } catch (error) {
-    console.error('Failed to clear expired icon cache:', error);
+    console.error('Failed to clear icon cache by type:', error);
+  }
+};
+
+const emptyIconCacheTypeStats = () => ({
+  general: { count: 0, size: 0 },
+  plugin: { count: 0, size: 0 },
+  app: { count: 0, size: 0 },
+});
+
+/**
+ * 统计磁盘远程图标缓存（index.json 条目，按 type 分类）与桌面应用提取图标（sha1.png，不在索引中）。
+ * byType 供设置页按「通用 / 插件 / 应用」展示与清理 —— 桌面端远程图标只落这一层，
+ * 不进浏览器 Cache API，缺少 byType 时分类卡片在 Electron 下会恒为 0。
+ */
+const getIconCacheStats = () => {
+  try {
+    const index = loadIconCacheIndex();
+    const byType = emptyIconCacheTypeStats();
+    let remoteCount = 0;
+    let remoteSize = 0;
+    for (const entry of Object.values(index.icons)) {
+      remoteCount++;
+      const bucket = byType[entry.type] || byType.general;
+      bucket.count++;
+      const filePath = path.join(iconCacheDir, entry.file);
+      if (fs.existsSync(filePath)) {
+        try {
+          const fileSize = fs.statSync(filePath).size;
+          remoteSize += fileSize;
+          bucket.size += fileSize;
+        } catch { /* ignore */ }
+      }
+    }
+    let extractedCount = 0;
+    let extractedSize = 0;
+    const referencedFiles = new Set(Object.values(index.icons).map(e => e.file));
+    const allFiles = fs.readdirSync(iconCacheDir).filter(f => f !== 'index.json');
+    for (const file of allFiles) {
+      if (!referencedFiles.has(file)) {
+        extractedCount++;
+        const filePath = path.join(iconCacheDir, file);
+        try { extractedSize += fs.statSync(filePath).size; } catch { /* ignore */ }
+      }
+    }
+    // 桌面应用提取的图标无索引条目，按用途归入 app 分类，使其可被统计与清理
+    byType.app.count += extractedCount;
+    byType.app.size += extractedSize;
+    return { count: remoteCount, size: remoteSize, extractedCount, extractedSize, byType };
+  } catch (error) {
+    console.error('Failed to get icon cache stats:', error);
+    return { count: 0, size: 0, extractedCount: 0, extractedSize: 0, byType: emptyIconCacheTypeStats() };
   }
 };
 
@@ -654,10 +725,11 @@ module.exports = {
   loadFloatConfig,
   loadFloatConfigWithIcons,
   saveFloatConfig,
-  clearExpiredIconCache,
+  clearIconCacheByType,
   clearAllIconCache,
   resolveIconUrls,
   cachePluginIcon,
+  getIconCacheStats,
   defaultShortcuts,
   getDefaultFloatConfig,
   getNetworkConfig,

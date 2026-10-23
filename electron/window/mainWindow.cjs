@@ -1034,7 +1034,7 @@ const registerIpcHandlers = () => {
   ipcHandlersRegistered = true;
   
   const { ipcMain } = require('electron');
-  const { loadShortcuts, saveShortcuts, loadFloatConfig, loadFloatConfigWithIcons, saveFloatConfig, getDefaultFloatConfig, clearExpiredIconCache, clearAllIconCache, resolveIconUrls } = require('../lib/config.cjs');
+  const { loadShortcuts, saveShortcuts, loadFloatConfig, loadFloatConfigWithIcons, saveFloatConfig, getDefaultFloatConfig, clearIconCacheByType, clearAllIconCache, resolveIconUrls, getIconCacheStats } = require('../lib/config.cjs');
   
   const { registerPluginIpc } = require('../ipc/pluginIpc.cjs');
   registerPluginIpc();
@@ -1392,7 +1392,7 @@ const registerIpcHandlers = () => {
       if (type === 'all') {
         clearAllIconCache();
       } else {
-        clearExpiredIconCache();
+        clearIconCacheByType(type);
       }
       return { success: true };
     } catch (error) {
@@ -1402,13 +1402,17 @@ const registerIpcHandlers = () => {
 
   // 远程图标统一解析入口：返回 { 原始url: local-media 地址 | null }。
   // 渲染层只用返回的本地地址渲染，拿不到就显示兜底图标，避免国内网络下破图。
-  ipcMain.handle('icon:resolve', async (_event, { urls }) => {
+  ipcMain.handle('icon:resolve', async (_event, { urls, type }) => {
     try {
-      return await resolveIconUrls(urls);
+      return await resolveIconUrls(urls, type);
     } catch (error) {
       console.error('Failed to resolve icons:', error);
       return {};
     }
+  });
+
+  ipcMain.handle('get-icon-cache-stats', () => {
+    return getIconCacheStats();
   });
 
   ipcMain.handle('update-float-config', (event, config) => {

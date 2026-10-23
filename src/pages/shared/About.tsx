@@ -195,7 +195,7 @@ const About: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="text-sm">{webVersion}</span>
               {updateStatus === 'available' && (
-                <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full">
+                <span className="px-2 py-0.5 text-xs bg-toast-info-bg text-toast-info-text rounded-full">
                   有更新
                 </span>
               )}
@@ -322,7 +322,7 @@ const About: React.FC = () => {
             <GitHubButton />
           </div>
           {updateStatus === 'available' && latestVersion && (
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800">
+            <div className="mt-4 p-3 bg-toast-info-bg rounded-md border border-toast-info-border">
               <p className="text-xs text-blue-700 dark:text-blue-400">
                 发现新版本: <span className="font-semibold">{latestVersion}</span>
               </p>

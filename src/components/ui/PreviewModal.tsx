@@ -185,7 +185,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
     if ('status' in item) {
       const status = item.status;
       if (status === 'active') {
-        return { text: '活跃', colorClass: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' };
+        return { text: '活跃', colorClass: 'bg-toast-success-bg text-toast-success-text' };
       } else if (status === 'inactive') {
         return { text: '非活跃', colorClass: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' };
       } else if (status === 'expired') {
@@ -193,9 +193,9 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
       } else if (status === 'abnormal') {
         return { text: '异常', colorClass: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' };
       } else if (status === 'banned') {
-        return { text: '封禁', colorClass: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' };
+        return { text: '封禁', colorClass: 'bg-toast-error-bg text-toast-error-text' };
       } else if (status === '正常') {
-        return { text: '正常', colorClass: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' };
+        return { text: '正常', colorClass: 'bg-toast-success-bg text-toast-success-text' };
       } else if (status === '失效') {
         return { text: '失效', colorClass: 'bg-surface-secondary text-content-primary' };
       } else if (status === '到期') {
@@ -205,19 +205,19 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, item, titl
     if ('account_status' in item && item.account_status) {
       const status = item.account_status;
       if (status === '正常') {
-        return { text: '正常', colorClass: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' };
+        return { text: '正常', colorClass: 'bg-toast-success-bg text-toast-success-text' };
       } else if (status === '异常') {
         return { text: '异常', colorClass: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' };
       } else if (status === '封禁') {
-        return { text: '封禁', colorClass: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' };
+        return { text: '封禁', colorClass: 'bg-toast-error-bg text-toast-error-text' };
       } else if (status === '待验证') {
-        return { text: '待验证', colorClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' };
+        return { text: '待验证', colorClass: 'bg-toast-info-bg text-toast-info-text' };
       }
     }
     if ('certificate_status' in item && item.certificate_status) {
       const status = item.certificate_status;
       if (status === '正常') {
-        return { text: '正常', colorClass: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' };
+        return { text: '正常', colorClass: 'bg-toast-success-bg text-toast-success-text' };
       } else if (status === '异常') {
         return { text: '异常', colorClass: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' };
       } else if (status === '到期') {

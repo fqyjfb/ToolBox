@@ -4,9 +4,9 @@ export type MemoPriority = 'high' | 'medium' | 'low';
 export const getPriorityStyle = (priority: string): string => {
   switch (priority) {
     case 'high':
-      return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
+      return 'bg-toast-error-bg text-toast-error-text';
     case 'medium':
-      return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300';
+      return 'bg-toast-warning-bg text-toast-warning-text';
     case 'low':
     default:
       return 'bg-surface-secondary text-content-secondary';

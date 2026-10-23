@@ -81,7 +81,7 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
                 {plugin.name}
               </h2>
               {(plugin as InstalledPlugin).isBeta && (
-                <span className="px-2 py-0.5 text-xs font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30 rounded">
+                <span className="px-2 py-0.5 text-xs font-medium text-toast-warning-text bg-toast-warning-bg rounded">
                   Beta
                 </span>
               )}
@@ -186,7 +186,7 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
                 {onUninstall && (
                   <button
                     onClick={onUninstall}
-                    className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-md hover:bg-red-100 dark:hover:bg-red-800/30 transition-colors"
+                    className="px-3 py-1.5 text-xs font-medium text-toast-error-text bg-toast-error-bg rounded-md hover:brightness-95 transition-all"
                   >
                     卸载
                   </button>

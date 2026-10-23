@@ -153,7 +153,7 @@ const IPInfoPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
+          <div className="mt-4 p-3 bg-toast-error-bg border border-toast-error-border rounded-lg text-toast-error-text text-sm">
             {error}
           </div>
         )}

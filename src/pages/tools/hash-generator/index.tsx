@@ -93,7 +93,7 @@ const HashGeneratorPage: React.FC = () => {
             <div key={algo.id} className="bg-surface-secondary rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-content-primary">{algo.name}</span>
-                <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full">
+                <span className="text-xs px-2 py-1 bg-toast-info-bg text-toast-info-text rounded-full">
                   {algo.bits}
                 </span>
               </div>

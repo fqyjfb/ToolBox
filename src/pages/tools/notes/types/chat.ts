@@ -8,8 +8,3 @@ export interface ChatMessage {
 
 export type ChatTarget = 'journal' | 'later' | 'read' | 'watch' | 'shop' | 'archive';
 
-export interface ChatState {
-  messages: ChatMessage[];
-  isChatMode: boolean;
-  selectedMessages: string[];
-}

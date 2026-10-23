@@ -17,13 +17,15 @@ interface ThemeStore {
   isCustomTheme: boolean;
   /** 最近一次保存的自定义主题配置；退出自定义模式时保留，便于再次启用 */
   customTheme: CustomTheme | null;
-  /** 主题变更计数器，每次主题状态变更时递增；用于强制订阅组件重渲染 */
-  themeKey: number;
   toggleTheme: () => void;
   /** 切换到明暗预设（会退出自定义模式，但保留 customTheme 配置） */
   setTheme: (dark: boolean | 'light' | 'dark') => void;
   /** 仅切换明暗基色，不改变自定义模式的激活状态（预设模板跨基色时使用） */
   setBaseTheme: (dark: boolean | 'light' | 'dark') => void;
+  /** 预览草稿配色：仅把配色注入 --ct-* 让全站即时生效，不落盘、不修改 customTheme */
+  previewCustomTheme: (theme: CustomTheme, isDark: boolean) => void;
+  /** 放弃草稿：把 --ct-* 恢复成已保存的 customTheme（无自定义主题则清掉覆盖层） */
+  restoreSavedTheme: () => void;
   /** 保存并立即激活自定义主题 */
   setCustomTheme: (theme: CustomTheme) => void;
   /** 删除自定义主题配置并切回当前明暗预设 */
@@ -55,10 +57,13 @@ const syncThemeToMain = (isDark: boolean) => {
 
 /** 补全默认值后取出全部颜色字段（体积最大的背景图不进快照） */
 const buildSnapshot = (theme: CustomTheme, isDark: boolean): CustomThemeColorSnapshot => {
+  const base = getDefaultTheme(isDark);
   const full = withThemeDefaults(theme, isDark);
   const snapshot = {} as CustomThemeColorSnapshot;
   (Object.keys(CUSTOM_THEME_VARS) as (keyof typeof CUSTOM_THEME_VARS)[]).forEach((key) => {
-    snapshot[key] = full[key] ?? '';
+    // 与 applyCustomTheme 保持同一兜底策略：空字段回退到当前基色默认值，
+    // 保证锁屏等独立窗口与主窗口渲染结果一致
+    snapshot[key] = full[key]?.trim() || base[key] || '';
   });
   return snapshot;
 };
@@ -90,6 +95,9 @@ const persistMode = (isCustomTheme: boolean, isDark: boolean) => {
     STORAGE_KEYS.THEME,
     isCustomTheme ? 'custom' : isDark ? 'dark' : 'light',
   );
+  // 自定义模式下 THEME 只记录 'custom'，明暗基色单独落盘，
+  // 供重启时 getInitialTheme 恢复（深色自定义主题不会以浅色基色加载）
+  localStorageService.setString('theme-isDark', String(isDark));
 };
 
 const clearCustomThemeStyles = () => {
@@ -157,19 +165,17 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   isDark: initialIsDark,
   isCustomTheme: initialIsCustom,
   customTheme: initialCustomTheme,
-  // 初始 themeKey：自定义模式启用时为 1（让订阅组件能感知到初始自定义状态），否则为 0
-  themeKey: initialIsCustom ? 1 : 0,
 
   toggleTheme: () => set((state) => {
     const isDark = !state.isDark;
     switchToPreset(isDark);
-    return { isDark, isCustomTheme: false, themeKey: state.themeKey + 1 };
+    return { isDark, isCustomTheme: false };
   }),
 
   setTheme: (dark) => {
     const isDark = toIsDark(dark);
     switchToPreset(isDark);
-    set({ isDark, isCustomTheme: false, themeKey: get().themeKey + 1 });
+    set({ isDark, isCustomTheme: false });
   },
 
   setBaseTheme: (dark) => {
@@ -183,7 +189,21 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     if (isCustomTheme && customTheme) applyCustomTheme(customTheme, isDark);
     persistMode(isCustomTheme, isDark);
     syncThemeSnapshot(isCustomTheme ? customTheme : null, isDark);
-    set({ isDark, themeKey: get().themeKey + 1 });
+    set({ isDark });
+  },
+
+  previewCustomTheme: (theme, isDark) => {
+    // 基色与配色必须同帧生效：只翻 .dark 会让 dark: 变体类抢先于自定义配色变化，出现混搭
+    applyBaseClass(isDark);
+    applyCustomTheme(theme, isDark);
+  },
+
+  // 刻意不回退 syncThemeSnapshot：预览从未同步过快照，无需反向撤销
+  restoreSavedTheme: () => {
+    const { isDark, isCustomTheme, customTheme } = get();
+    applyBaseClass(isDark);
+    if (isCustomTheme && customTheme) applyCustomTheme(customTheme, isDark);
+    else clearCustomThemeStyles();
   },
 
   setCustomTheme: (theme) => {
@@ -196,12 +216,12 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     // 同步明暗基色：保证 systemTheme 原为 'system' 时，插件窗口/原生 UI 也能正确跟随
     syncThemeToMain(isDark);
     syncThemeSnapshot(theme, isDark);
-    set({ customTheme: theme, isCustomTheme: true, themeKey: get().themeKey + 1 });
+    set({ customTheme: theme, isCustomTheme: true });
   },
 
   deleteCustomTheme: () => {
     localStorageService.remove(STORAGE_KEYS.CUSTOM_THEME);
     switchToPreset(get().isDark);
-    set({ customTheme: null, isCustomTheme: false, themeKey: get().themeKey + 1 });
+    set({ customTheme: null, isCustomTheme: false });
   },
 }));

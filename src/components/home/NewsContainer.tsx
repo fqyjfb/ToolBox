@@ -202,7 +202,7 @@ const NewsContainer: React.FC<NewsContainerProps> = ({
               onClick={() => handleTabChange(tab.id)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                  ? 'text-toast-info-text border-b-2 border-toast-info-border bg-toast-info-bg'
                   : 'text-content-secondary hover:text-content-primary'
               }`}
             >

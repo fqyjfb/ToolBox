@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ShortcutItem } from '../../types/settings';
-import { useThemeStore } from '../../store/themeStore';
 
 interface ShortcutRowProps {
   shortcut: ShortcutItem;
@@ -14,8 +13,6 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, allShortcuts, onUpd
   const [conflict, setConflict] = useState<ShortcutItem | null>(null);
 
   const displayKey = currentKey || shortcut.cmd.replace(/CommandOrControl/gi, 'Ctrl');
-  // 订阅 themeKey，确保自定义主题保存后快捷键行强制重渲染
-  useThemeStore((s) => s.themeKey);
 
   const capitalize = (str: string) => {
     if (!str) return str;
@@ -95,7 +92,7 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, allShortcuts, onUpd
             isEditing
               ? 'border-primary bg-surface-secondary outline-none'
               : conflict
-                ? 'border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-900/30 cursor-pointer'
+                ? 'border-toast-error-border bg-toast-error-bg cursor-pointer'
                 : 'border-content bg-surface cursor-pointer'
           } text-content-primary`}
           placeholder="按快捷键"

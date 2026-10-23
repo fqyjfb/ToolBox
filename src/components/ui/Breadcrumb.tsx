@@ -1,7 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { useThemeStore } from '../../store/themeStore';
 
 interface BreadcrumbItem {
   path: string;
@@ -70,8 +69,6 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  // 订阅 themeKey，确保自定义主题保存后面包屑能立即重渲染并应用新颜色
-  useThemeStore((s) => s.themeKey);
 
   const generateBreadcrumbItems = (pathname: string): BreadcrumbItem[] => {
     const items: BreadcrumbItem[] = [];

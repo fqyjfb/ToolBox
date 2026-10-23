@@ -138,10 +138,10 @@ const WeatherPage: React.FC = () => {
 
   const getAQIBgColor = (level: number) => {
     switch (level) {
-      case 1: return 'bg-green-100 dark:bg-green-900/30';
+      case 1: return 'bg-toast-success-bg';
       case 2: return 'bg-yellow-100 dark:bg-yellow-900/30';
       case 3: return 'bg-orange-100 dark:bg-orange-900/30';
-      case 4: return 'bg-red-100 dark:bg-red-900/30';
+      case 4: return 'bg-toast-error-bg';
       case 5: return 'bg-purple-100 dark:bg-purple-900/30';
       default: return 'bg-surface-secondary';
     }
@@ -160,31 +160,31 @@ const WeatherPage: React.FC = () => {
 
   const getLifeIndexLevelColor = (level: string) => {
     const levelMap: Record<string, string> = {
-      '炎热': 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-      '易发': 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-      '不宜': 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-      '较差': 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+      '炎热': 'bg-toast-error-bg text-toast-error-text',
+      '易发': 'bg-toast-error-bg text-toast-error-text',
+      '不宜': 'bg-toast-error-bg text-toast-error-text',
+      '较差': 'bg-toast-error-bg text-toast-error-text',
       '较不舒适': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
       '较不宜': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
       '一般': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
       '部分时间开启': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
-      '良': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-      '少发': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-      '无': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-      '不需要': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-      '弱': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-      '最弱': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-      '防脱水': 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+      '良': 'bg-toast-success-bg text-toast-success-text',
+      '少发': 'bg-toast-success-bg text-toast-success-text',
+      '无': 'bg-toast-success-bg text-toast-success-text',
+      '不需要': 'bg-toast-success-bg text-toast-success-text',
+      '弱': 'bg-toast-success-bg text-toast-success-text',
+      '最弱': 'bg-toast-success-bg text-toast-success-text',
+      '防脱水': 'bg-toast-info-bg text-toast-info-text',
     };
     return levelMap[level] || 'bg-surface-secondary text-content-secondary';
   };
 
   const getAlertLevelStyle = (level: string) => {
     const levelMap: Record<string, string> = {
-      '蓝色': 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-200',
+      '蓝色': 'bg-toast-info-bg border-blue-500 text-toast-info-text',
       '黄色': 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-500 text-yellow-700 dark:text-yellow-200',
       '橙色': 'bg-orange-50 dark:bg-orange-900/30 border-orange-500 text-orange-700 dark:text-orange-200',
-      '红色': 'bg-red-50 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-200',
+      '红色': 'bg-toast-error-bg border-red-500 text-toast-error-text',
     };
     return levelMap[level] || 'bg-surface-secondary-50 border-gray-500 text-content-secondary';
   };

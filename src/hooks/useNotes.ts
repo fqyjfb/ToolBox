@@ -53,7 +53,6 @@ export interface UseNotesReturn extends NotesState {
   importDroppedFiles: (filePaths: string[], targetFolderPath?: string) => Promise<{ success: boolean; imported?: string[]; errors?: string[] }>;
   toggleFolderExpand: (folderPath: string) => void;
   rebuildIndex: () => Promise<void>;
-  clearError: () => void;
   addPinnedFolder: () => Promise<boolean>;
   addPinnedFolderByPath: (folderPath: string) => boolean;
   removePinnedFolder: (folderPath: string) => void;
@@ -63,7 +62,6 @@ export interface UseNotesReturn extends NotesState {
   // 追加字段（不得删改既有字段）
   recents: NotesRecentItem[];
   favorites: NotesFavoritePath[];
-  favoritePaths: NotesFavoritePath[];
   toggleFavorite: (absolutePath: NotesFavoritePath) => Promise<boolean>;
   removeRecent: (absolutePath: NotesFavoritePath) => void;
   clearRecents: () => void;
@@ -235,7 +233,6 @@ export function useNotes(): UseNotesReturn {
     importDroppedFiles: operations.importDroppedFiles,
     toggleFolderExpand: tree.toggleFolderExpand,
     rebuildIndex: tree.rebuildIndex,
-    clearError: tree.clearError,
     addPinnedFolder: pinned.addPinnedFolder,
     addPinnedFolderByPath: pinned.addPinnedFolderByPath,
     removePinnedFolder: pinned.removePinnedFolder,
@@ -245,7 +242,6 @@ export function useNotes(): UseNotesReturn {
     // 追加字段
     recents: recents.recents,
     favorites: favorites.favorites,
-    favoritePaths: favorites.favoritePaths,
     toggleFavorite: favorites.toggle,
     removeRecent: recents.removeRecent,
     clearRecents: recents.clearRecents,

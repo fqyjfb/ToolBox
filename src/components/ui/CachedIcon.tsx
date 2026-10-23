@@ -92,7 +92,7 @@ const CachedIcon: React.FC<CachedIconProps> = ({
       if (!window.electron?.resolveIcons) {
         throw new Error('icon resolve unavailable');
       }
-      const resolved = await window.electron.resolveIcons([trimmedSrc]);
+      const resolved = await window.electron.resolveIcons([trimmedSrc], type);
       const localUrl = resolved?.[trimmedSrc];
       if (!localUrl) {
         throw new Error('icon unavailable');

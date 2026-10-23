@@ -19,7 +19,6 @@
   --color-secondary: #3b82f6;
   --color-secondary-hover: #2563eb;
   --color-accent: #f59e0b;
-  --color-accent-hover: #d97706;
   
   --color-success: #22c55e;
   --color-warning: #f59e0b;
@@ -51,21 +50,24 @@
   --color-sidebar-item-text: #18181B;
   --color-button-text: #FFFFFF;
   
-  --color-toast-success-bg: #edfbd8;
-  --color-toast-success-border: #84d65a;
-  --color-toast-success-text: #2b641e;
-  
-  --color-toast-warning-bg: #fefce8;
-  --color-toast-warning-border: #facc15;
-  --color-toast-warning-text: #ca8a04;
-  
-  --color-toast-error-bg: #fef2f2;
-  --color-toast-error-border: #f87171;
-  --color-toast-error-text: #991b1b;
-  
-  --color-toast-info-bg: #eff6ff;
-  --color-toast-info-border: #1d4ed8;
-  --color-toast-info-text: #1d4ed8;
+  /* 状态色组：Toast 提示条与状态标签 / 状态徽章共用（Toast.tsx、PreviewModal、SyncTab、
+     PluginCard、天气等级等）。明暗取值与原先各组件硬编码的 Tailwind 色板等价，
+     接入变量后默认观感保持不变，自定义主题下才切到 --ct-toast-* */
+  --color-toast-success-bg: #F0FDF4;
+  --color-toast-success-border: #BBF7D0;
+  --color-toast-success-text: #166534;
+
+  --color-toast-warning-bg: #FFFBEB;
+  --color-toast-warning-border: #FDE68A;
+  --color-toast-warning-text: #92400E;
+
+  --color-toast-error-bg: #FEF2F2;
+  --color-toast-error-border: #FECACA;
+  --color-toast-error-text: #991B1B;
+
+  --color-toast-info-bg: #EFF6FF;
+  --color-toast-info-border: #BFDBFE;
+  --color-toast-info-text: #1E40AF;
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -106,7 +108,8 @@
   --text-xl: 24px;
   --text-2xl: 32px;
   
-  --color-scrollbar-track: rgba(255, 255, 255, 0.1);
+  /* 轨道取与底色相反的淡色，保证浅色底上可见（原先的白色轨道在浅色底上等于不可见） */
+  --color-scrollbar-track: rgba(0, 0, 0, 0.1);
   --color-scrollbar-thumb: rgba(59, 130, 246, 0.5);
   --color-scrollbar-thumb-hover: rgba(59, 130, 246, 0.7);
   
@@ -216,7 +219,6 @@
   --color-secondary: #60a5fa;
   --color-secondary-hover: #3b82f6;
   --color-accent: #fbbf24;
-  --color-accent-hover: #f59e0b;
   
   --color-success: #22c55e;
   --color-warning: #fbbf24;
@@ -248,27 +250,28 @@
   --color-sidebar-item-text: #94A3B8;
   --color-button-text: #FFFFFF;
   
-  --color-toast-success-bg: #166534;
-  --color-toast-success-border: #22c55e;
-  --color-toast-success-text: #86efac;
-  
-  --color-toast-warning-bg: #92400e;
-  --color-toast-warning-border: #fbbf24;
-  --color-toast-warning-text: #fde68a;
-  
-  --color-toast-error-bg: #991b1b;
-  --color-toast-error-border: #f87171;
-  --color-toast-error-text: #fca5a5;
-  
-  --color-toast-info-bg: #1e40af;
-  --color-toast-info-border: #60a5fa;
-  --color-toast-info-text: #93c5fd;
+  /* 底色带 alpha，对应原先的 *-900/30 半透明效果 */
+  --color-toast-success-bg: #14532D4D;
+  --color-toast-success-border: #15803D;
+  --color-toast-success-text: #BBF7D0;
+
+  --color-toast-warning-bg: #78350F4D;
+  --color-toast-warning-border: #B45309;
+  --color-toast-warning-text: #FDE68A;
+
+  --color-toast-error-bg: #7F1D1D4D;
+  --color-toast-error-border: #B91C1C;
+  --color-toast-error-text: #FECACA;
+
+  --color-toast-info-bg: #1E3A8A4D;
+  --color-toast-info-border: #1D4ED8;
+  --color-toast-info-text: #BFDBFE;
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
   
-  --color-scrollbar-track: rgba(31, 41, 55, 0.3);
+  --color-scrollbar-track: rgba(255, 255, 255, 0.05);
   --color-scrollbar-thumb: rgba(100, 116, 139, 0.5);
   --color-scrollbar-thumb-hover: rgba(100, 116, 139, 0.7);
   
@@ -567,20 +570,12 @@ body.dark {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: rgba(128, 128, 128, 0.4);
+  background-color: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(128, 128, 128, 0.6);
-}
-
-.dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 116, 139, 0.4);
-}
-
-.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(100, 116, 139, 0.6);
+  background-color: var(--color-scrollbar-thumb-hover);
 }
 
 .scrollbar-visible::-webkit-scrollbar {
@@ -588,29 +583,17 @@ body.dark {
 }
 
 .scrollbar-visible::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--color-scrollbar-track);
   border-radius: 3px;
 }
 
 .scrollbar-visible::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.5);
+  background: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 
 .scrollbar-visible::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.7);
-}
-
-.dark .scrollbar-visible::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.dark .scrollbar-visible::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.5);
-}
-
-.dark .scrollbar-visible::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.7);
+  background: var(--color-scrollbar-thumb-hover);
 }
 
 .scrollbar-5px::-webkit-scrollbar {
@@ -622,20 +605,12 @@ body.dark {
 }
 
 .scrollbar-5px::-webkit-scrollbar-thumb {
-  background-color: rgba(128, 128, 128, 0.4);
+  background-color: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 
 .scrollbar-5px::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(128, 128, 128, 0.6);
-}
-
-.dark .scrollbar-5px::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 116, 139, 0.4);
-}
-
-.dark .scrollbar-5px::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(100, 116, 139, 0.6);
+  background-color: var(--color-scrollbar-thumb-hover);
 }
 
 .shine-text {
@@ -1270,11 +1245,18 @@ body[data-custom-bg]::before {
   --color-border: var(--ct-border);
   --color-border-light: var(--ct-border-light);
 
+  /* 滚动条跟随主色，避免仍按系统明暗基线翻转 */
+  --color-scrollbar-thumb: color-mix(in srgb, var(--ct-primary) 50%, transparent);
+  --color-scrollbar-thumb-hover: color-mix(in srgb, var(--ct-primary) 70%, transparent);
+  --color-scrollbar-track: color-mix(in srgb, var(--ct-border) 30%, transparent);
+
   --color-primary: var(--ct-primary);
   --color-primary-hover: var(--ct-primary-hover);
   --color-button-primary: var(--ct-primary);
   --color-button-primary-hover: var(--ct-primary-hover);
   --color-secondary: var(--ct-secondary);
+  /* 由主色派生，保证 hover 态与自定义 secondary 同源（与明暗预设一致地取加深方向） */
+  --color-secondary-hover: color-mix(in srgb, var(--ct-secondary) 82%, #000);
   --color-accent: var(--ct-accent);
   --color-success: var(--ct-success);
   --color-warning: var(--ct-warning);
@@ -1285,6 +1267,17 @@ body[data-custom-bg]::before {
   --color-toast-warning-bg: var(--ct-toast-warning-bg);
   --color-toast-error-bg: var(--ct-toast-error-bg);
   --color-toast-info-bg: var(--ct-toast-info-bg);
+
+  /* 文字/边框由预设 Toast 底色派生：浅色预设取加深，保证与底色同源且可读，
+     不再回落到系统明暗基线色（深色预设见下方 .dark 段的提亮方向） */
+  --color-toast-success-text: color-mix(in srgb, var(--ct-toast-success-bg) 28%, #000);
+  --color-toast-warning-text: color-mix(in srgb, var(--ct-toast-warning-bg) 28%, #000);
+  --color-toast-error-text: color-mix(in srgb, var(--ct-toast-error-bg) 28%, #000);
+  --color-toast-info-text: color-mix(in srgb, var(--ct-toast-info-bg) 28%, #000);
+  --color-toast-success-border: color-mix(in srgb, var(--ct-toast-success-bg) 62%, #000);
+  --color-toast-warning-border: color-mix(in srgb, var(--ct-toast-warning-bg) 62%, #000);
+  --color-toast-error-border: color-mix(in srgb, var(--ct-toast-error-bg) 62%, #000);
+  --color-toast-info-border: color-mix(in srgb, var(--ct-toast-info-bg) 62%, #000);
 
   --color-switch-bg: var(--ct-switch-bg);
   --color-switch-active-bg: var(--ct-switch-active-bg);
@@ -1307,4 +1300,17 @@ body[data-custom-bg]::before {
   --color-admin-4: #f5a623;
   --color-admin-5: #00bcd4;
   --color-admin-6: #e91e63;
+}
+
+/* 深色预设的 Toast 底色偏暗，文字/边框改朝提亮方向派生。
+   特异性 (0,3,0) 高于上面的覆盖层 (0,2,0)，仅在「自定义主题 + 深色基色」时生效 */
+:root[data-custom-theme="active"].dark {
+  --color-toast-success-text: color-mix(in srgb, var(--ct-toast-success-bg) 28%, #fff);
+  --color-toast-warning-text: color-mix(in srgb, var(--ct-toast-warning-bg) 28%, #fff);
+  --color-toast-error-text: color-mix(in srgb, var(--ct-toast-error-bg) 28%, #fff);
+  --color-toast-info-text: color-mix(in srgb, var(--ct-toast-info-bg) 28%, #fff);
+  --color-toast-success-border: color-mix(in srgb, var(--ct-toast-success-bg) 62%, #fff);
+  --color-toast-warning-border: color-mix(in srgb, var(--ct-toast-warning-bg) 62%, #fff);
+  --color-toast-error-border: color-mix(in srgb, var(--ct-toast-error-bg) 62%, #fff);
+  --color-toast-info-border: color-mix(in srgb, var(--ct-toast-info-bg) 62%, #fff);
 }

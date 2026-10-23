@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from 'lucide-react';
 
 interface ColorPickerProps {
   /** 当前值；空字符串 / undefined 表示「跟随预设默认值」 */
@@ -54,7 +55,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label, defau
           aria-label={`清除${label}`}
           className="text-xs text-content-tertiary hover:text-content-primary"
         >
-          ✕
+          <X size={12} />
         </button>
       )}
       {desc && (

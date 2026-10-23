@@ -127,7 +127,7 @@ const SelectWithCustom: React.FC<SelectWithCustomProps> = ({
                 onClick={() => handleOptionClick(option.label)}
                 className={`w-full px-3 py-2 text-left text-sm transition-colors truncate ${
                   option.label === value
-                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                    ? 'bg-toast-info-bg text-toast-info-text'
                     : 'text-content-primary hover:bg-menu-hover'
                 }`}
               >

@@ -25,7 +25,6 @@ export interface UseNotesTreeReturn {
   toggleFolderExpand: (folderPath: string) => void;
   switchToFolder: (folderPath: string) => Promise<void>;
   rebuildIndex: () => Promise<void>;
-  clearError: () => void;
   scanFolderAsync: (rootPath: string) => Promise<{ success: boolean; fileCount: number; folderCount: number; tree: FileTreeNode[]; error?: string }>;
   getFileTreeAsync: (rootPath: string) => Promise<FileTreeNode[]>;
   init: () => Promise<void>;
@@ -330,10 +329,6 @@ export function useNotesTree(deps: UseNotesTreeDeps): UseNotesTreeReturn {
     });
   }, []);
 
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
-
   const switchToFolder = useCallback(
     async (folderPath: string) => {
       const notes = window.electron?.notes;
@@ -445,7 +440,6 @@ export function useNotesTree(deps: UseNotesTreeDeps): UseNotesTreeReturn {
     toggleFolderExpand,
     switchToFolder,
     rebuildIndex,
-    clearError,
     scanFolderAsync,
     getFileTreeAsync,
     init,

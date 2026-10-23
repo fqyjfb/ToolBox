@@ -220,7 +220,7 @@ const LogsPage: React.FC = () => {
             </button>
             <button
               onClick={handleClear}
-              className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md hover:bg-red-100 dark:hover:bg-red-800/20 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs font-medium text-toast-error-text bg-toast-error-bg rounded-md hover:brightness-95 transition-all flex items-center gap-1.5"
             >
               <Trash2 size={14} />
               清空

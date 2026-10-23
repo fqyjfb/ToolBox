@@ -259,8 +259,16 @@ declare interface Window {
     updateSetting: (setting: { name: string; value: string | number | boolean | object }) => Promise<UpdateResult>;
     setThemeSnapshot: (colors: Record<string, string> | null) => Promise<UpdateResult>;
     clearCache: () => Promise<UpdateResult>;
-    clearIconCache: (type: 'all' | 'expired') => Promise<{ success: boolean; error?: string }>;
-    resolveIcons: (urls: string[]) => Promise<Record<string, string | null>>;
+    clearIconCache: (type: 'all' | 'general' | 'plugin' | 'app') => Promise<{ success: boolean; error?: string }>;
+    resolveIcons: (urls: string[], type?: 'general' | 'plugin' | 'app') => Promise<Record<string, string | null>>;
+    getIconCacheStats: () => Promise<{
+      count: number;
+      size: number;
+      extractedCount: number;
+      extractedSize: number;
+      /** 磁盘缓存按图标类型的拆分，桌面端远程图标只落这一层 */
+      byType: Record<'general' | 'plugin' | 'app', { count: number; size: number }>;
+    }>;
     networkTest: (payload: { url: string; timeout?: number }) => Promise<{ ok: boolean; statusCode: number; latencyMs: number; error: string | null }>;
     getUserDataPath: () => Promise<string>;
     openUserDataFolder: () => Promise<{ success: boolean }>;

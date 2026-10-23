@@ -15,7 +15,6 @@ import ToggleSwitch from '../../components/settings/ToggleSwitch'
 import CategoryManager, { CategoryItem } from '../../components/ui/CategoryManager'
 import CachedIcon from '../../components/ui/CachedIcon'
 import Select from '../../components/ui/Select'
-import { useThemeStore } from '../../store/themeStore'
 import CompactUnsupportedHint from '../../components/ui/CompactUnsupportedHint'
 import { useNavSearch } from '../../contexts/NavSearchContext'
 
@@ -23,8 +22,6 @@ const AdminWebsitesPage: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const getCurrentUser = useAuthStore((s) => s.getCurrentUser)
   const addToast = useToastStore((state) => state.addToast)
-  // 订阅 themeKey，确保自定义主题保存后强制重渲染
-  useThemeStore((s) => s.themeKey);
   const queryClient = useQueryClient()
 
   const { searchQuery } = useNavSearch()
@@ -643,7 +640,7 @@ const AdminWebsitesPage: React.FC = () => {
         size="lg"
       >
         {bookmarkError && (
-          <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-md mb-4">
+          <div className="bg-toast-error-bg text-toast-error-text p-3 rounded-md mb-4">
             {bookmarkError}
           </div>
         )}
@@ -778,7 +775,7 @@ const AdminWebsitesPage: React.FC = () => {
         size="lg"
       >
         {bookmarkError && (
-          <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-md mb-4">
+          <div className="bg-toast-error-bg text-toast-error-text p-3 rounded-md mb-4">
             {bookmarkError}
           </div>
         )}

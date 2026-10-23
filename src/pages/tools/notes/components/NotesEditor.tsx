@@ -82,8 +82,6 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   onCreateFolder,
 }) => {
   const isDark = useThemeStore((s) => s.isDark);
-  // 订阅 themeKey，确保自定义主题保存后 NotesEditor 强制重渲染
-  useThemeStore((s) => s.themeKey);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [htmlViewMode, setHtmlViewMode] = useState<'preview' | 'source'>('preview');

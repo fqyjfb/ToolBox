@@ -4,7 +4,6 @@ import { useShallow } from 'zustand/shallow';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { useIsCompactMode } from '../../store/windowModeStore';
-import { useThemeStore } from '../../store/themeStore';
 import { loadApps, QuickLaunchItem } from '../../utils/quickLaunch';
 import {
   ShortcutItem,
@@ -38,8 +37,6 @@ const Settings: React.FC = () => {
     setVisible: s.setVisible,
     setPosition: s.setPosition,
   })));
-  // 订阅 themeKey，确保自定义主题保存后 Settings 强制重渲染
-  useThemeStore((s) => s.themeKey);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
