@@ -808,6 +808,8 @@
   position: relative;
   width: 100%;
   min-width: 0;
+  /* 容器查询基准：小窗口下按弹窗实际内容宽度等比缩小，避免最右列被裁剪 */
+  container-type: inline-size;
   padding: 8px 34px 12px;
   border-radius: 12px;
   border: 1px solid var(--color-border);
@@ -879,10 +881,33 @@
   right: 4px;
 }
 
+/* 小窗口：收窄左右留白与切月箭头，把宽度让给 7 列日期 */
+.compact-mode .calendar-modal {
+  padding: 6px 20px 10px;
+}
+
+.compact-mode .calendar-modal__nav {
+  width: 20px;
+  height: 20px;
+}
+
+.compact-mode .calendar-modal__nav--prev {
+  left: 1px;
+}
+
+.compact-mode .calendar-modal__nav--next {
+  right: 1px;
+}
+
+.compact-mode .calendar-modal__cell {
+  padding: 2px 0;
+}
+
 .calendar-modal__weekdays,
 .calendar-modal__week {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0, 1fr)：允许列宽压缩到 0，避免农历文字 nowrap 撑破网格 */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
 }
 
@@ -893,7 +918,7 @@
 
 .calendar-modal__weekday {
   text-align: center;
-  font-size: var(--text-xs);
+  font-size: clamp(9px, 3.2cqw, var(--text-xs));
   font-weight: 500;
   color: var(--color-text-secondary);
 }
@@ -916,7 +941,8 @@
   align-items: center;
   justify-content: center;
   gap: 1px;
-  height: 46px;
+  min-width: 0;
+  height: clamp(34px, 12.1cqw, 46px);
   padding: 2px;
   border-radius: 8px;
   color: var(--color-text-primary);
@@ -950,7 +976,7 @@
 }
 
 .calendar-modal__day {
-  font-size: var(--text-base);
+  font-size: clamp(11px, 4.2cqw, var(--text-base));
   font-weight: 600;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
@@ -969,7 +995,7 @@
 .calendar-modal__sub {
   max-width: 100%;
   overflow: hidden;
-  font-size: 10px;
+  font-size: clamp(7px, 2.6cqw, 10px);
   line-height: 1.2;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -994,12 +1020,12 @@
   position: absolute;
   top: 2px;
   right: 2px;
-  min-width: 14px;
-  height: 14px;
+  min-width: clamp(12px, 3.7cqw, 14px);
+  height: clamp(12px, 3.7cqw, 14px);
   padding: 0 3px;
   border-radius: 4px;
-  font-size: 9px;
-  line-height: 14px;
+  font-size: clamp(8px, 2.4cqw, 9px);
+  line-height: clamp(12px, 3.7cqw, 14px);
   text-align: center;
   color: #ffffff;
 }
@@ -1020,8 +1046,8 @@
 .calendar-phase {
   position: relative;
   flex-shrink: 0;
-  width: 10px;
-  height: 10px;
+  width: clamp(7px, 2.6cqw, 10px);
+  height: clamp(7px, 2.6cqw, 10px);
   overflow: hidden;
   border-radius: 999px;
   border: 1px solid var(--color-text-tertiary);

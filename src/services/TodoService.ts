@@ -66,10 +66,17 @@ const categoryService = {
 
 // 待办任务服务
 const todoService = {
-  async getTodos(userId: string, filter?: { category_id?: string }, page: number = 1, pageSize: number = 10) {
+  async getTodos(
+    userId: string,
+    filter?: { category_id?: string; is_completed?: boolean },
+    page: number = 1,
+    pageSize: number = 10,
+  ) {
     const baseService = new BaseService<Todo>('todos', 'TodoService')
-    const filters = filter?.category_id ? { category_id: filter.category_id } : undefined
-    return baseService.getList(userId, { filters }, page, pageSize)
+    const filters: Record<string, unknown> = {}
+    if (filter?.category_id) filters.category_id = filter.category_id
+    if (typeof filter?.is_completed === 'boolean') filters.is_completed = filter.is_completed
+    return baseService.getList(userId, { filters: Object.keys(filters).length ? filters : undefined }, page, pageSize)
   },
 
   async createTodo(userId: string, request: CreateTodoRequest) {

@@ -27,7 +27,10 @@ export const STORAGE_KEYS = {
   HOME_TOOLS_WEATHER_SEEDED: 'homeToolsWeatherSeeded',
   HOME_QUICK_LAUNCH: 'homeQuickLaunchApps',
   // 首页混合网格的卡片排列顺序（工具/快启动/网址收藏/网页收藏/新闻/摸鱼统一排序）
+  // 已升级为坐标布局（HOME_CARD_LAYOUT），此键仅作为老数据的迁移输入
   HOME_CARD_ORDER: 'homeCardOrder',
+  // 首页混合网格的卡片坐标布局（cardId -> 左上角单元格），自由排布的唯一真值
+  HOME_CARD_LAYOUT: 'homeCardLayout',
 
   NOTES_LAST_OPENED_FILE: 'notes_last_opened_file',
 

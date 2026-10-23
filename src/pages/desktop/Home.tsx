@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   DndContext,
   DragOverlay,
-  DragOverEvent,
+  DragMoveEvent,
   DragStartEvent,
-  type Collision,
-  type CollisionDetection,
+  type KeyboardCoordinateGetter,
 } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
 import { Trash2, ExternalLink, Copy, X, Plus, Minus, Cloud } from 'lucide-react';
 import { hotNewsApi } from '../../services/hotNews';
 import { WEATHER_TOOL_ID, ADDABLE_TOOL_IDS, type HomeToolItem, type AddableToolId } from '../../utils/homeTools';
@@ -16,7 +14,16 @@ import { STORAGE_KEYS } from '../../services/localStorageService';
 import { useHomeToolsStore } from '../../store/homeToolsStore';
 import { useAuthStore } from '../../store/AuthStore';
 import { loadHomeBookmarks, removeHomeBookmark, type HomeBookmark } from '../../utils/homeBookmarks';
-import { loadHomeCardOrder, saveHomeCardOrder } from '../../utils/homeCardOrder';
+import { loadHomeCardOrder } from '../../utils/homeCardOrder';
+import {
+  applyMove,
+  loadHomeCardLayout,
+  reconcileLayout,
+  saveHomeCardLayout,
+  sortIdsByPosition,
+  type Cell,
+  type HomeCardLayout,
+} from '../../utils/homeCardLayout';
 import { isElectron } from '../../utils/environment';
 import { openUrl } from '../../services/browserService';
 import { useToastStore } from '../../store/toastStore';
@@ -64,8 +71,12 @@ const MAX_UNIT = 48;
 const MIN_UNIT = 36;
 const MIN_COLUMNS = 4;
 const MAX_COLUMNS = 32;
-// 卡片让位的位移动画时长（FLIP），与松手落位的手感保持一致
+// 卡片让位的位移动画（FLIP），与松手落位的手感保持一致
 const LAYOUT_TRANSITION_MS = 160;
+// 减速曲线：起步快、落位轻，比 ease 更接近桌面图标的手感
+const LAYOUT_TRANSITION_EASING = 'cubic-bezier(0.2, 0, 0, 1)';
+// 落点迟滞：指针要越过格子边界一定比例才换格，避免停在边界上来回抖动
+const SNAP_HYSTERESIS = 0.2;
 // 有预览数据时按「2 倍宽 × 3 行」展示的扩展工具；工具 id 的合法值由 ADDABLE_TOOL_IDS 派生
 const isAddableToolId = (id: string): id is AddableToolId =>
   (ADDABLE_TOOL_IDS as readonly string[]).includes(id);
@@ -98,6 +109,50 @@ const measureGrid = (width: number): GridMetrics => {
   return { columns, unit: Math.max(MIN_UNIT, unit) };
 };
 
+// 键盘拖拽：一次方向键移动一个网格单元，配合坐标吸附实现格子级搬运
+const gridKeyboardCoordinates = (step: number): KeyboardCoordinateGetter =>
+  (event, { currentCoordinates }) => {
+    const offset = { x: 0, y: 0 };
+    switch (event.code) {
+      case 'ArrowRight': offset.x = step; break;
+      case 'ArrowLeft': offset.x = -step; break;
+      case 'ArrowDown': offset.y = step; break;
+      case 'ArrowUp': offset.y = -step; break;
+      default: return undefined;
+    }
+    return { x: currentCoordinates.x + offset.x, y: currentCoordinates.y + offset.y };
+  };
+
+const clampIndex = (value: number, min: number, max: number): number =>
+  Math.min(Math.max(value, min), Math.max(min, max));
+
+// 单轴吸附：previous 是上一次落点，指针没有明确进入新格子时就保持不变（迟滞）
+const snapAxis = (raw: number, previous: number | undefined, min: number, max: number): number => {
+  const nearest = clampIndex(Math.round(raw), min, max);
+  if (previous === undefined || nearest === previous) return nearest;
+  if (Math.abs(raw - previous) < 0.5 + SNAP_HYSTERESIS) return clampIndex(previous, min, max);
+  return nearest;
+};
+
+// 浮层当前矩形 → 最近的网格单元（0-based 左上角）：拖到哪就吸附到哪
+const snapToCell = (
+  rect: { left: number; top: number },
+  box: { left: number; top: number; width: number },
+  grid: GridMetrics,
+  colSpan: number,
+  maxRow: number,
+  previous?: Cell,
+): Cell => {
+  const trackWidth = grid.columns * grid.unit + (grid.columns - 1) * GRID_GAP;
+  // justify-content: center —— 轨道总宽小于容器时整体居中，需要补上左侧留白
+  const originLeft = box.left + (box.width - trackWidth) / 2;
+  const step = grid.unit + GRID_GAP;
+  return {
+    col: snapAxis((rect.left - originLeft) / step, previous?.col, 0, grid.columns - colSpan),
+    row: snapAxis((rect.top - box.top) / step, previous?.row, 0, maxRow),
+  };
+};
+
 const Home: React.FC = () => {
   const isDesktop = isElectron();
   const user = useAuthStore(state => state.user);
@@ -124,12 +179,14 @@ const Home: React.FC = () => {
   const removeHomeTool = useHomeToolsStore(state => state.removeTool);
   const hydrateHomeTools = useHomeToolsStore(state => state.hydrate);
 
-  // 拖拽顺序（HOME_CARD_ORDER）；首次进入为空，按数据源顺序排
-  const [order, setOrder] = useState<string[]>(loadHomeCardOrder);
+  // 卡片坐标布局（HOME_CARD_LAYOUT）；首次进入为空，按老顺序 / 数据源顺序打包出初始坐标
+  const [layout, setLayout] = useState<HomeCardLayout>(loadHomeCardLayout);
   const [grid, setGrid] = useState<GridMetrics>({ columns: MIN_COLUMNS, unit: MIN_UNIT });
   const [activeId, setActiveId] = useState<string | null>(null);
-  // 拖拽中的预览顺序（所见即所得）；null 表示未拖拽或尚未产生位移
-  const [previewIds, setPreviewIds] = useState<string[] | null>(null);
+  // 拖拽中的预览布局（所见即所得）；null 表示未拖拽或尚未产生位移
+  const [previewLayout, setPreviewLayout] = useState<HomeCardLayout | null>(null);
+  // 老版本只存顺序：作为一次性迁移输入，迁移完成后布局以坐标为准
+  const legacyOrder = useMemo(() => loadHomeCardOrder(), []);
   const [contextMenu, setContextMenu] = useState<{ isOpen: boolean; x: number; y: number; cardId: string | null }>({
     isOpen: false,
     x: 0,
@@ -140,7 +197,7 @@ const Home: React.FC = () => {
   const gridRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const addToast = useToastStore(state => state.addToast);
-  const sensors = useDndSensors();
+  const sensors = useDndSensors(gridKeyboardCoordinates(grid.unit + GRID_GAP));
   const { tooltipNode, showTooltip, hideTooltip } = useHoverTooltip();
 
   const searchTypes = [
@@ -229,7 +286,7 @@ const Home: React.FC = () => {
     const next: typeof previewData = {};
     try {
       const [todoRes, memoRes, reminderRes, quickReplyRes, clipboardRes] = await Promise.all([
-        todoServiceWrapper.todo.getTodos(userId, undefined, 1, 10),
+        todoServiceWrapper.todo.getTodos(userId, { is_completed: false }, 1, 10),
         memoService.getMemos(userId, undefined, 1, 10),
         reminderService.getReminders(userId),
         quickReplyService.getQuickReplies(userId, undefined, 1, 10),
@@ -263,15 +320,26 @@ const Home: React.FC = () => {
 
   const toggleTodo = useCallback(async (itemId: string) => {
     if (!userId) return;
-    const current = previewData['tool-todo']?.items.find(i => i.id === itemId);
+    // 预览弹窗内的条目可能已被移出卡片列表（标记完成即移除），优先取弹窗自身的状态
+    const current = previewItem?.item.id === itemId
+      ? previewItem.item
+      : previewData['tool-todo']?.items.find(i => i.id === itemId);
     if (!current) return;
     const nextCompleted = current.subtitle !== '已完成';
     await todoServiceWrapper.todo.updateTodoStatus(userId, itemId, nextCompleted);
     setPreviewData(prev => {
-      const items = (prev['tool-todo']?.items ?? []).map(i =>
-        i.id === itemId ? { ...i, subtitle: nextCompleted ? '已完成' : '待办' } : i,
-      );
-      return { ...prev, ['tool-todo']: { ...prev['tool-todo'], items } };
+      const entry = prev['tool-todo'] ?? { items: [], total: 0 };
+      if (nextCompleted) {
+        // 卡片只展示待办：标记完成后立即移出列表，数量同步减一
+        return {
+          ...prev,
+          ['tool-todo']: { items: entry.items.filter(i => i.id !== itemId), total: Math.max(0, entry.total - 1) },
+        };
+      }
+      const items = entry.items.some(i => i.id === itemId)
+        ? entry.items.map(i => (i.id === itemId ? { ...i, subtitle: '待办' } : i))
+        : [{ ...current, subtitle: '待办' }, ...entry.items].slice(0, 6);
+      return { ...prev, ['tool-todo']: { items, total: entry.total + 1 } };
     });
     if (previewItem?.item.id === itemId) {
       setPreviewItem(prev => prev ? { ...prev, item: { ...prev.item, subtitle: nextCompleted ? '已完成' : '待办' } } : null);
@@ -357,35 +425,22 @@ const Home: React.FC = () => {
     return lunar ? `${lunar.monthCN}${lunar.dayCN}` : undefined;
   }, [moyuData]);
 
-  // 持久化顺序对账：剔除已删除 / 重复的 id，新增元素追加到末尾。
-  // 去重是必须的 —— 重复的 id 会让网格渲染出多张相同的卡片
-  const orderedIds = useMemo(() => {
-    const seen = new Set<string>();
-    const kept: string[] = [];
+  // 坐标布局：持久化坐标 + 当前卡片 + 当前列数 → 一份可直接渲染的完整布局
+  // （剔除失效 id、夹紧越界列、新增卡片补位、冲突就近让位）
+  const renderLayout = useMemo(
+    () => reconcileLayout(cards, legacyOrder, layout, grid.columns),
+    [cards, legacyOrder, layout, grid.columns]
+  );
 
-    for (const id of order) {
-      if (!cardMap.has(id) || seen.has(id)) continue;
-      seen.add(id);
-      kept.push(id);
-    }
-    for (const card of cards) {
-      if (seen.has(card.id)) continue;
-      seen.add(card.id);
-      kept.push(card.id);
-    }
+  // 拖拽中直接渲染预览布局（所见即所得）。预览同样走一次收敛，保证卡片在拖拽中
+  // 增删（数据刷新）也不会漏渲染或残留失效 id
+  const activeLayout = useMemo(
+    () => (previewLayout ? reconcileLayout(cards, legacyOrder, previewLayout, grid.columns) : renderLayout),
+    [previewLayout, cards, legacyOrder, grid.columns, renderLayout]
+  );
 
-    return kept;
-  }, [order, cards, cardMap]);
-
-  // 拖拽中直接渲染预览顺序：网格里卡片尺寸不一，只有真实重排才能让用户
-  // 提前看到最终落点；预览与数据源不一致时（拖拽中卡片被移除）回退到实时顺序
-  const displayIds = useMemo(() => {
-    if (!previewIds) return orderedIds;
-
-    const available = new Set(orderedIds);
-    const kept = previewIds.filter(id => available.has(id));
-    return kept.length === orderedIds.length ? kept : orderedIds;
-  }, [previewIds, orderedIds]);
+  // DOM 顺序跟随坐标：Tab 焦点顺序与视觉阅读顺序保持一致
+  const displayIds = useMemo(() => sortIdsByPosition(activeLayout), [activeLayout]);
 
   const displayCards = useMemo(
     () => displayIds.map(id => cardMap.get(id)).filter((card): card is HomeCard => !!card),
@@ -398,13 +453,19 @@ const Home: React.FC = () => {
     [activeId, displayCards]
   );
 
-  const persistOrder = useCallback((next: string[]) => {
-    setOrder(next);
-    saveHomeCardOrder(next);
-  }, []);
+  // 落点的行上界：已用行数 + 一个最高卡片，避免误拖撑出大片空白
+  const maxDropRow = useMemo(() => {
+    const maxRowSpan = cards.reduce((max, card) => Math.max(max, card.rowSpan), 1);
+    let bottom = 0;
+    for (const [id, cell] of Object.entries(activeLayout)) {
+      const card = cardMap.get(id);
+      if (card) bottom = Math.max(bottom, cell.row + card.rowSpan);
+    }
+    return bottom + maxRowSpan;
+  }, [activeLayout, cards, cardMap]);
 
   // 重排位移动画（FLIP）：把「卡片瞬间换格」补成平滑位移。
-  // 变换只写在卡片内层，网格单元自身不带 transform，命中判定读到的始终是准确位置
+  // 变换只写在卡片内层，网格单元自身不带 transform，读取到的始终是准确位置
   const animateLayoutRef = useRef(false);
   const slotPositionsRef = useRef(new Map<string, { left: number; top: number }>());
 
@@ -444,66 +505,66 @@ const Home: React.FC = () => {
       // 一次强制回流，让「回到旧位置」成为动画起点，而不是直接跳到新位置
       void container.offsetHeight;
       for (const layer of moved) {
-        layer.style.transition = `transform ${LAYOUT_TRANSITION_MS}ms ease`;
+        layer.style.transition = `transform ${LAYOUT_TRANSITION_MS}ms ${LAYOUT_TRANSITION_EASING}`;
         layer.style.transform = '';
       }
     }
 
     slotPositionsRef.current = next;
-  }, [displayIds, activeId]);
+  }, [activeLayout, displayIds]);
 
-  // 命中判定直接读网格单元的实时矩形：预览会真实重排，dnd-kit 缓存的投放区矩形
-  // 仍是拖拽开始时的旧值，用它会把目标算到已经让位的卡片上。
-  // 网格单元彼此不重叠，指针只会命中一张卡片；命中拖拽源自身时视为无目标
-  const collisionDetection = useCallback<CollisionDetection>((args) => {
-    const container = gridRef.current;
-    const point = args.pointerCoordinates;
-    if (!container || !point) return [];
-
-    const hits: Collision[] = [];
-    for (const slot of Array.from(container.querySelectorAll<HTMLElement>('.home-sortable'))) {
-      const id = slot.dataset.cardId;
-      if (!id || id === args.active.id) continue;
-
-      const rect = slot.getBoundingClientRect();
-      if (point.x < rect.left || point.x > rect.right) continue;
-      if (point.y < rect.top || point.y > rect.bottom) continue;
-      hits.push({ id });
-    }
-    return hits;
-  }, []);
+  // 落点以「单元格」为粒度：既是「同一格不重复计算」的依据，也是吸附迟滞的基准
+  const dragTargetRef = useRef<Cell | null>(null);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(String(event.active.id));
+    dragTargetRef.current = null;
     hideTooltip();
   }, [hideTooltip]);
 
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over || over.id === active.id) return;
+  // 自由布局靠指针吸附到单元格，不依赖投放目标，因此用每次移动都会触发的 onDragMove
+  const handleDragMove = useCallback((event: DragMoveEvent) => {
+    const container = gridRef.current;
+    // translated = 起始矩形 + 指针位移，与容器当前的 getBoundingClientRect 同处
+    // 视口坐标系，两者相减即为卡片在网格内容里的偏移（自动滚动时依然成立）
+    const rect = event.active.rect.current.translated ?? event.active.rect.current.initial;
+    const id = String(event.active.id);
+    const card = cardMap.get(id);
+    if (!container || !rect || !card) return;
+
+    const target = snapToCell(
+      rect,
+      container.getBoundingClientRect(),
+      grid,
+      Math.min(card.colSpan, grid.columns),
+      maxDropRow,
+      dragTargetRef.current ?? undefined,
+    );
+
+    if (dragTargetRef.current?.col === target.col && dragTargetRef.current?.row === target.row) return;
+    dragTargetRef.current = target;
 
     animateLayoutRef.current = true;
-    setPreviewIds(prev => {
-      const base = prev ?? orderedIds;
-      const from = base.indexOf(String(active.id));
-      const to = base.indexOf(String(over.id));
-      if (from === -1 || to === -1 || from === to) return prev;
-      return arrayMove(base, from, to);
-    });
-  }, [orderedIds]);
+    setPreviewLayout(applyMove(activeLayout, cards, displayIds, id, target, grid.columns));
+  }, [cardMap, grid, activeLayout, cards, displayIds, maxDropRow]);
 
   const handleDragEnd = useCallback(() => {
-    const next = displayIds;
+    const next = previewLayout;
     setActiveId(null);
-    setPreviewIds(null);
+    setPreviewLayout(null);
+    dragTargetRef.current = null;
     animateLayoutRef.current = false;
-    // 指针停在网格间隙时没有预览顺序，保持原样
-    if (next !== orderedIds) persistOrder(next);
-  }, [displayIds, orderedIds, persistOrder]);
+    // 没产生过落点变化（例如原地按下又松开）时保持原布局
+    if (next) {
+      setLayout(next);
+      saveHomeCardLayout(next);
+    }
+  }, [previewLayout]);
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
-    setPreviewIds(null);
+    setPreviewLayout(null);
+    dragTargetRef.current = null;
     animateLayoutRef.current = false;
   }, []);
 
@@ -724,7 +785,7 @@ const Home: React.FC = () => {
 
       <div
         ref={gridRef}
-        className="home-mixed-grid"
+        className={activeId ? 'home-mixed-grid home-mixed-grid--dragging' : 'home-mixed-grid'}
         style={{
           gridTemplateColumns: `repeat(${grid.columns}, ${grid.unit}px)`,
           gridAutoRows: `${grid.unit}px`,
@@ -733,9 +794,8 @@ const Home: React.FC = () => {
       >
         <DndContext
           sensors={sensors}
-          collisionDetection={collisionDetection}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
+          onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
@@ -743,6 +803,8 @@ const Home: React.FC = () => {
             <SortableCard
               key={card.id}
               id={card.id}
+              col={activeLayout[card.id].col}
+              row={activeLayout[card.id].row}
               colSpan={Math.min(card.colSpan, grid.columns)}
               rowSpan={card.rowSpan}
             >
@@ -750,10 +812,10 @@ const Home: React.FC = () => {
             </SortableCard>
           ))}
 
-          {/* 浮层跟随光标，网格按预览顺序实时让位，松手即落位。
+          {/* 浮层跟随光标，网格按预览布局实时让位，松手即落位。
               关掉落回动画：卡片已在目标位置，动画只会多出一张重影 */}
           <DragOverlay dropAnimation={null}>
-            {activeCard ? renderDragPreview(activeCard) : null}
+            {activeCard ? <div className="home-drag-overlay">{renderDragPreview(activeCard)}</div> : null}
           </DragOverlay>
         </DndContext>
       </div>

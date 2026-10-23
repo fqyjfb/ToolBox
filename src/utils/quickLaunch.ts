@@ -29,7 +29,6 @@ export interface QuickLaunchItem {
 }
 
 export type QuickLaunchSortMode = 'custom' | 'name' | 'addedAt' | 'launchCount' | 'lastLaunchedAt';
-export type QuickLaunchVirtualCategory = 'all' | 'frequent' | 'recent' | string;
 
 // ---------- 桌面磁贴排序（文件夹 cat:<id> / 应用 app:<id> 混合排列） ----------
 

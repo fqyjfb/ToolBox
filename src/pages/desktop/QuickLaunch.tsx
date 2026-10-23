@@ -19,6 +19,7 @@ import {
   sortAppsByMode,
   toAppKey,
   toFolderKey,
+  getAppName,
 } from '../../utils/quickLaunch';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useToastStore } from '../../store/toastStore';
@@ -87,9 +88,7 @@ interface OpenFolderInfo {
   key: string;
   title: string;
   apps: QuickLaunchItem[];
-  /** 智能文件夹无对应分类 */
-  category?: QuickLaunchCategory;
-  readOnly: boolean;
+  category: QuickLaunchCategory;
 }
 
 const QuickLaunch: React.FC = () => {
@@ -101,7 +100,7 @@ const QuickLaunch: React.FC = () => {
   const [categories, setCategories] = useState<QuickLaunchCategory[]>([]);
   // 桌面磁贴排列顺序（文件夹 cat:<id> 与未分类应用 app:<id> 混合）；渲染前对账，增删/扫描无需维护
   const [desktopOrder, setDesktopOrder] = useState<string[]>(loadDesktopOrder);
-  // 当前展开的文件夹：真实分类为其 id，智能文件夹为 smart:<key>
+  // 当前展开的文件夹（分类 id）
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<QuickLaunchSortMode>(() => {
     const saved = localStorageService.getString(STORAGE_KEYS.QUICK_LAUNCH_SORT_MODE) as QuickLaunchSortMode | undefined;
@@ -162,7 +161,7 @@ const QuickLaunch: React.FC = () => {
   const [groupArmedKey, setGroupArmedKey] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedApps = localStorageService.get<QuickLaunchItem[]>(STORAGE_KEYS.QUICK_LAUNCH_APPS, []);
+    const savedApps = loadApps();
     if (savedApps.length > 0) {
       setTimeout(() => setApps(savedApps), 0);
       ensureAppIconsCached(savedApps).catch(() => {});
@@ -235,11 +234,6 @@ const QuickLaunch: React.FC = () => {
     return () => document.removeEventListener('click', handleClick);
   }, []);
 
-  const getAppName = useCallback((path: string): string => {
-    const name = path.split(/[\\/]/).pop() || path;
-    return name.replace(/\.(exe|bat|cmd|lnk)$/i, '');
-  }, []);
-
   const handleLaunch = useCallback((path: string) => {
     const targetApp = apps.find(a => a.path === path);
     const hasOptions = targetApp && (
@@ -305,7 +299,7 @@ const QuickLaunch: React.FC = () => {
       setCustomPath('');
       setShowAddDialog(false);
     }
-  }, [customPath, getAppName, addTargetCategory, apps]);
+  }, [customPath, addTargetCategory, apps]);
 
   const handleSelectFile = useCallback(async () => {
     const result = await window.electron?.selectFile();
@@ -334,7 +328,7 @@ const QuickLaunch: React.FC = () => {
       };
       setApps(prev => [...prev, newApp]);
     }
-  }, [apps, getAppName]);
+  }, [apps]);
 
   const dragContainerRef = useRef<HTMLDivElement>(null);
 
@@ -499,7 +493,7 @@ const QuickLaunch: React.FC = () => {
     ));
     setInvalidApps(prev => prev.filter(a => a.id !== appId));
     addToast({ type: 'success', message: '应用路径已更新' });
-  }, [invalidApps, addToast, getAppName]);
+  }, [invalidApps, addToast]);
 
   // 从失效列表直接移除
   const handleRemoveFromInvalid = useCallback((appId: string) => {
@@ -761,16 +755,15 @@ const QuickLaunch: React.FC = () => {
       title: category.name,
       apps: sortMode === 'custom' ? members : sortAppsByMode(members, sortMode),
       category,
-      readOnly: false,
     };
   }, [openFolderId, apps, categories, sortMode]);
 
   // 弹层打开时禁用桌面磁贴拖拽：其 droppable 会让 pointerWithin 误命中被遮罩挡住的磁贴
   const desktopDragDisabled = isFlatSearch || openFolder !== null;
 
-  // 弹层内右键：智能文件夹只读不弹菜单，避免弹出空菜单
+  // 弹层内右键：交给文件夹专属菜单处理
   const handlePopupContextMenu = useCallback((e: React.MouseEvent) => {
-    if (!openFolder?.category) return;
+    if (!openFolder) return;
     handleContextMenu(e, 'category', openFolder.category.id);
   }, [openFolder, handleContextMenu]);
 
@@ -779,7 +772,7 @@ const QuickLaunch: React.FC = () => {
     e.stopPropagation();
     setIsDragOver(false);
 
-    if (!openFolder?.category) return;
+    if (!openFolder) return;
     const filePaths = await collectDroppedPaths(e);
     if (filePaths.length > 0) {
       handleDropFiles(filePaths, openFolder.category.id);
@@ -872,7 +865,7 @@ const QuickLaunch: React.FC = () => {
 
     // A. 弹层打开且落在面板外（遮罩）→ 移出该文件夹
     if (overKey === null) {
-      if (openFolder && openFolder.category && activeKey.startsWith('app:')) {
+      if (openFolder && activeKey.startsWith('app:')) {
         moveAppToContainer(activeKey.slice(4), '', null);
       }
       return;
@@ -1281,12 +1274,11 @@ const QuickLaunch: React.FC = () => {
                 iconSize={iconSize}
                 showText={showText}
                 singleClick={singleClickLaunch}
-                readOnly={openFolder.readOnly}
                 didDragRef={didDragRef}
                 onLaunch={handleLaunch}
                 onAppContextMenu={(e, appId) => handleContextMenu(e, 'app', appId)}
                 onFolderContextMenu={handlePopupContextMenu}
-                onAddApp={() => handleAddApp(openFolder.category?.id ?? '')}
+                onAddApp={() => handleAddApp(openFolder.category.id)}
                 onClose={() => setOpenFolderId(null)}
                 onFileDragOver={handlePopupFileDragOver}
                 onFileDrop={handleFolderFileDrop}

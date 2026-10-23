@@ -10,16 +10,14 @@ import { AppTileSize } from './types';
 export const FOLDER_POPUP_PREFIX = 'folder-popup:';
 
 interface FolderPopupProps {
-  /** 文件夹标识：真实分类为 categoryId，智能夹为 smart:<key> */
+  /** 文件夹标识（categoryId），用于弹层投放区 id */
   folderKey: string;
-  /** 文件夹名称（智能夹为计算名称） */
+  /** 文件夹名称 */
   title: string;
   apps: QuickLaunchItem[];
   iconSize: AppTileSize;
   showText: boolean;
   singleClick: boolean;
-  /** 智能文件夹只读：不显示添加按钮 */
-  readOnly: boolean;
   didDragRef: React.MutableRefObject<boolean>;
   onLaunch: (path: string) => void;
   onAppContextMenu: (e: React.MouseEvent, appId: string) => void;
@@ -39,7 +37,6 @@ const FolderPopup: React.FC<FolderPopupProps> = ({
   iconSize,
   showText,
   singleClick,
-  readOnly,
   didDragRef,
   onLaunch,
   onAppContextMenu,
@@ -109,38 +106,33 @@ const FolderPopup: React.FC<FolderPopupProps> = ({
                   app={app}
                   iconSize={iconSize}
                   showText={showText}
-                  disabled={readOnly}
                   singleClick={singleClick}
                   didDragRef={didDragRef}
                   onLaunch={onLaunch}
                   onContextMenu={(e) => onAppContextMenu(e, app.id)}
                 />
               ))}
-              {!readOnly && (
-                <button
-                  className={`flex flex-col items-center justify-center rounded-md border border-dashed border-content text-content-tertiary hover:text-content-secondary hover:bg-menu-hover transition-colors w-full ${
-                    iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'
-                  }`}
-                  onClick={onAddApp}
-                  title="添加应用到该文件夹"
-                >
-                  <Plus size={iconSize === 'small' ? 16 : 20} />
-                </button>
-              )}
+              <button
+                className={`flex flex-col items-center justify-center rounded-md border border-dashed border-content text-content-tertiary hover:text-content-secondary hover:bg-menu-hover transition-colors w-full ${
+                  iconSize === 'small' ? 'h-quick-launch-sm' : 'h-quick-launch-lg'
+                }`}
+                onClick={onAddApp}
+                title="添加应用到该文件夹"
+              >
+                <Plus size={iconSize === 'small' ? 16 : 20} />
+              </button>
             </div>
           </SortableContext>
         ) : (
           <div className="flex flex-col items-center justify-center py-6 text-content-tertiary">
-            <p className="text-sm mb-2">{readOnly ? '暂无应用' : '文件夹为空'}</p>
-            {!readOnly && (
-              <button
-                className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-menu-hover text-content-primary hover:opacity-80 transition-opacity"
-                onClick={onAddApp}
-              >
-                <Plus size={14} />
-                添加应用
-              </button>
-            )}
+            <p className="text-sm mb-2">文件夹为空</p>
+            <button
+              className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-menu-hover text-content-primary hover:opacity-80 transition-opacity"
+              onClick={onAddApp}
+            >
+              <Plus size={14} />
+              添加应用
+            </button>
           </div>
         )}
       </div>

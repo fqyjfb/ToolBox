@@ -1,9 +1,13 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { useDraggable, useDroppable } from '@dnd-kit/core';
+import React, { useEffect, useRef } from 'react';
+import { useDraggable } from '@dnd-kit/core';
 
 interface SortableCardProps {
-  /** 卡片在 DndContext 中的唯一 id（同时作为拖拽源与投放目标） */
+  /** 卡片在 DndContext 中的唯一 id */
   id: string;
+  /** 左上角所在列（0-based 网格单元） */
+  col: number;
+  /** 左上角所在行（0-based 网格单元） */
+  row: number;
   /** 占据的列数（已按当前网格列数收敛） */
   colSpan: number;
   /** 占据的行数 */
@@ -12,15 +16,15 @@ interface SortableCardProps {
 }
 
 /**
- * 首页统一网格里的可拖拽卡片壳：负责 span、拖拽状态与重排动画的图层。
+ * 首页统一网格里的可拖拽卡片壳：负责所在网格单元、拖拽状态与重排动画的图层。
  *
- * 拖拽时直接按预览顺序渲染（所见即所得），松手才提交顺序。重排的位移动画由外层
- * （Home）以 FLIP 方式写在这一层的 style 上 —— 网格单元自身始终保持无 transform，
- * 命中判定才能读到准确位置。
+ * 卡片位置由显式的网格坐标决定（坐标来自 homeCardLayout），因此可以自由排布并
+ * 保留空洞。拖拽时直接按预览布局渲染（所见即所得），松手才提交坐标。重排的位移
+ * 动画由外层（Home）以 FLIP 方式写在这一层的 style 上 —— 网格单元自身始终保持
+ * 无 transform，位置读取才是准确的。
  */
-const SortableCard: React.FC<SortableCardProps> = ({ id, colSpan, rowSpan, children }) => {
-  const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({ id });
-  const { setNodeRef: setDropRef } = useDroppable({ id });
+const SortableCard: React.FC<SortableCardProps> = ({ id, col, row, colSpan, rowSpan, children }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id });
 
   // 本次按下是否真的拖动过：拖拽结束后浏览器仍会补发 click，需要吞掉它，
   // 否则拖完工具卡片会立刻跳转到工具页
@@ -29,23 +33,14 @@ const SortableCard: React.FC<SortableCardProps> = ({ id, colSpan, rowSpan, child
     if (isDragging) draggedRef.current = true;
   }, [isDragging]);
 
-  // dnd-kit 的两个 ref setter 均为稳定引用，合并后挂到同一个节点
-  const setRefs = useCallback(
-    (node: HTMLElement | null) => {
-      setDragRef(node);
-      setDropRef(node);
-    },
-    [setDragRef, setDropRef]
-  );
-
   // listeners 里带了 PointerSensor 的 onPointerDown，必须手动串联而不是覆盖
   const sensorPointerDown = listeners?.onPointerDown as ((event: React.PointerEvent) => void) | undefined;
 
   return (
     <div
-      ref={setRefs}
+      ref={setNodeRef}
       data-card-id={id}
-      style={{ gridColumn: `span ${colSpan}`, gridRow: `span ${rowSpan}` }}
+      style={{ gridColumn: `${col + 1} / span ${colSpan}`, gridRow: `${row + 1} / span ${rowSpan}` }}
       className={isDragging ? 'home-sortable home-sortable--dragging' : 'home-sortable'}
       {...attributes}
       {...listeners}

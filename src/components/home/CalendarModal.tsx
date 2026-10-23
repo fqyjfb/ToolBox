@@ -127,6 +127,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
       showCancel={false}
       showConfirm={false}
       bodyClassName=""
+      className="min-w-0"
     >
       <div className="calendar-modal">
         <div className="calendar-modal__head">
