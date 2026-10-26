@@ -4,6 +4,7 @@ import Modal from '../ui/Modal';
 import CachedIcon from '../ui/CachedIcon';
 import { PluginInfo, InstalledPlugin } from '../../types/plugin';
 import { iconMap } from '../../utils/iconMap';
+import { getLocalPluginIcon } from '../../generated/pluginLocalIcons';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { translateTag } from '../../utils';
@@ -37,6 +38,8 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
 
   const Icon = iconMap[plugin.iconName] || iconMap.Package;
   const isInSidebar = pinnedToolIds.includes(plugin.id);
+  // 本地图标优先（public/plugins/icons/{id}/icon.*），缺失时回退到网络图标缓存
+  const pluginIcon = getLocalPluginIcon(plugin.id, plugin.iconUrl) ?? plugin.iconUrl;
 
   const handlePin = () => {
     if (isInSidebar) {
@@ -62,9 +65,9 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
           <div
           className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-surface-secondary"
         >
-          {plugin.iconUrl ? (
+          {pluginIcon ? (
             <CachedIcon
-              url={plugin.iconUrl}
+              url={pluginIcon}
               name={plugin.name}
               type="plugin"
               className="w-full h-full object-contain"

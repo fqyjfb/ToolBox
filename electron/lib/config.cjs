@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { https, http } = require('follow-redirects');
 const { getTargetIconData, getLegacyIconData } = require('./icon-data.cjs');
+const { hasLocalPluginIcon } = require('./pluginLocalIcons.cjs');
 
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 // 自定义主题配色快照：锁屏等独立窗口读不到渲染层的 localStorage，靠这份快照上色
@@ -14,6 +15,11 @@ const iconCacheDir = path.join(app.getPath('userData'), 'icon-cache');
 const iconCacheIndexPath = path.join(iconCacheDir, 'index.json');
 
 const ICON_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
+
+// 同时下载的图标数上限：批量解析时防止几十张卡片瞬间打出几十个连接
+const ICON_MAX_CONCURRENCY = 6;
+// 单批解析的最长等待：超时尚未完成的返回 null 由后台继续下载，避免个别慢图标拖住整批
+const ICON_BATCH_BUDGET = 2500;
 
 let settingsCache = null;
 let shortcutsCache = null;
@@ -39,10 +45,11 @@ const defaultNetworkConfig = {
       'https://raw.fastgit.org/fqyjfb/toolbox-plugins-registry/main/registry.json',
       'https://raw.gitmirror.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
     ],
+    // raw.fastgit.org 已停服，留在清单里只会白白等满超时
     githubRawMirrors: [
       'https://raw.githubusercontent.com',
-      'https://raw.fastgit.org',
       'https://raw.gitmirror.com',
+      'https://raw.kgithub.com',
     ],
     githubApiMirrors: ['https://api.github.com'],
     requestTimeout: 15000,
@@ -353,6 +360,45 @@ const generateIconHash = (url) => {
   return Math.abs(hash).toString(36);
 };
 
+// 图标真实类型按内容判定：既不信任 URL 后缀（无后缀的链接会被当成 .png），
+// 也不信任 Content-Type（GitHub raw 对无后缀文件返回 text/plain，会误杀 SVG）。
+// 判错会让落盘扩展名与内容不符，local-media 按扩展名返回 MIME 时破图。
+const IMAGE_MAGIC = [
+  {
+    ext: '.png',
+    mime: 'image/png',
+    test: (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  },
+  {
+    ext: '.jpg',
+    mime: 'image/jpeg',
+    test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+  },
+  {
+    ext: '.gif',
+    mime: 'image/gif',
+    test: (b) => b.subarray(0, 4).toString('latin1') === 'GIF8',
+  },
+  {
+    ext: '.webp',
+    mime: 'image/webp',
+    test: (b) => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP',
+  },
+  {
+    ext: '.ico',
+    mime: 'image/x-icon',
+    test: (b) => b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x01 && b[3] === 0x00,
+  },
+  {
+    ext: '.svg',
+    mime: 'image/svg+xml',
+    test: (b) => /^\s*(<\?xml|<!--|<svg)/i.test(b.subarray(0, 512).toString('utf8')),
+  },
+];
+
+// HTML 错误页（<!DOCTYPE html>）不在表内 → 与空响应一样被拒，不会写进缓存
+const sniffImage = (buffer) => IMAGE_MAGIC.find((m) => m.test(buffer)) || null;
+
 const getCachedIconPath = (url) => {
   const index = loadIconCacheIndex();
   const entry = index.icons[url];
@@ -375,70 +421,147 @@ const getCachedIconPath = (url) => {
   return iconFilePath;
 };
 
+// 删除索引条目指向的缓存文件，供内容类型变化时替换旧文件（避免留下孤儿文件）
+const removeIconFile = (fileName) => {
+  try {
+    if (!fileName) return;
+    const filePath = path.join(iconCacheDir, fileName);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch { /* 文件已被清理时不重试 */ }
+};
+
+// 按 timestamp 升序淘汰最旧条目，让设置页「最大条目」配置真正生效
+const enforceIconCacheLimits = () => {
+  const maxItems = getNetworkConfig().iconCache.maxItems;
+  if (!maxItems || maxItems <= 0) return;
+
+  const index = loadIconCacheIndex();
+  const entries = Object.entries(index.icons);
+  if (entries.length <= maxItems) return;
+
+  entries.sort((a, b) => (a[1].timestamp || 0) - (b[1].timestamp || 0));
+  for (let i = 0; i < entries.length - maxItems; i++) {
+    removeIconFile(entries[i][1].file);
+    delete index.icons[entries[i][0]];
+  }
+  saveIconCacheIndex();
+};
+
+// 扫描并清理过期条目（TTL 平时只在读取时懒淘汰，长期不被访问的图标会一直留在盘上）
+const pruneExpiredIcons = () => {
+  try {
+    const index = loadIconCacheIndex();
+    const ttl = getNetworkConfig().iconCache.ttl;
+    const now = Date.now();
+    let removed = 0;
+    for (const [url, entry] of Object.entries(index.icons)) {
+      if (now - (entry.timestamp || 0) <= ttl) continue;
+      removeIconFile(entry.file);
+      delete index.icons[url];
+      removed++;
+    }
+    if (removed > 0) saveIconCacheIndex();
+  } catch (error) {
+    console.error('Failed to prune expired icons:', error);
+  }
+};
+
 // cacheKey：写入缓存索引时使用的键。同一图标的多个镜像地址可共用同一个键，
 // 避免渲染层切换镜像后缓存反复失效。不传则与 url 一致（保持原有行为）。
 // type：图标分类（general/plugin/app），用于磁盘缓存按类型清理。
-const downloadIcon = (url, cacheKey, type = 'general') => {
+// onRequest：拿到请求句柄，供外层在竞速落败时真正销毁连接（而非让它挂到超时）。
+const downloadIcon = (url, cacheKey, type = 'general', onRequest) => {
   return new Promise((resolve) => {
     if (!url || !url.startsWith('http')) {
       resolve(null);
       return;
     }
-    
+
     const indexKey = cacheKey || url;
     const protocol = url.startsWith('https') ? https : http;
 
-    const timeout = setTimeout(() => {
-      resolve(null);
-    }, getNetworkConfig().iconCache.requestTimeout);
-    
-    protocol.get(url, (response) => {
+    let settled = false;
+    const settle = (value) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timeout);
-      
+      resolve(value);
+    };
+
+    let req = null;
+
+    const timeout = setTimeout(() => {
+      // 外层竞速已负责 destroy，这里只收口，避免 Promise 悬到连接自然超时
+      if (req) { try { req.destroy(); } catch { /* 已销毁 */ } }
+      settle(null);
+    }, getNetworkConfig().iconCache.requestTimeout);
+
+    const onResponse = (response) => {
       if (response.statusCode !== 200) {
-        resolve(null);
+        response.resume();
+        settle(null);
         return;
       }
-      
+
       const chunks = [];
       response.on('data', (chunk) => chunks.push(chunk));
       response.on('end', () => {
+        clearTimeout(timeout);
         try {
           const buffer = Buffer.concat(chunks);
-          const contentType = response.headers['content-type'] || '';
-          // 只接受非空且非文本响应，避免把 403/404 的 HTML 页面当成图标写进缓存
-          if (buffer.length === 0 || contentType.startsWith('text/')) {
-            resolve(null);
+          // 按内容判定类型：空响应、HTML 错误页、非图片一律不落盘
+          const kind = sniffImage(buffer);
+          if (!kind) {
+            settle(null);
             return;
           }
+
           const hash = generateIconHash(indexKey);
-          const ext = path.extname(url.split('?')[0]) || '.png';
-          const fileName = `${hash}${ext}`;
+          const fileName = `${hash}${kind.ext}`;
           const filePath = path.join(iconCacheDir, fileName);
-          
+
           ensureIconCacheDir();
           fs.writeFileSync(filePath, buffer);
-          
+
           const index = loadIconCacheIndex();
+          // 同一图标的实际类型可能与上次不同（换了格式），先清掉旧文件
+          const previous = index.icons[indexKey];
+          if (previous && previous.file !== fileName) removeIconFile(previous.file);
+
           index.icons[indexKey] = {
             file: fileName,
             timestamp: Date.now(),
-            contentType: response.headers['content-type'] || 'image/png',
+            contentType: kind.mime,
             type,
           };
           saveIconCacheIndex();
-          
-          resolve(filePath);
+          enforceIconCacheLimits();
+
+          settle(filePath);
         } catch (error) {
           console.error('Failed to save icon:', error);
-          resolve(null);
+          settle(null);
         }
       });
-      
-      response.on('error', () => resolve(null));
-    }).on('error', () => resolve(null)).on('timeout', () => {
+
+      response.on('error', () => settle(null));
+    };
+
+    try {
+      req = protocol.get(url, onResponse);
+    } catch {
+      // 非法 URL 等同步抛错直接判定失败，不让 Promise 转为 reject
       clearTimeout(timeout);
-      resolve(null);
+      settle(null);
+      return;
+    }
+
+    if (typeof onRequest === 'function') onRequest(req);
+
+    req.on('error', () => settle(null));
+    req.on('timeout', () => {
+      try { req.destroy(); } catch { /* 已销毁 */ }
+      settle(null);
     });
   });
 };
@@ -508,12 +631,60 @@ const buildIconUrlCandidates = (canonicalUrl) => {
   return candidates;
 };
 
-const downloadIconWithMirrors = async (canonicalUrl, type = 'general') => {
-  for (const candidate of buildIconUrlCandidates(canonicalUrl)) {
-    const filePath = await downloadIcon(candidate, canonicalUrl, type);
-    if (filePath) return filePath;
-  }
-  return null;
+const getUrlOrigin = (url) => {
+  try { return new URL(url).origin; } catch { return ''; }
+};
+
+// 上次成功下载过的源排在前面：国内用户冷启动竞速过一次后，后续直奔可用镜像。
+// 仅进程内记忆，重开回到并发竞速（一次竞速的代价远小于一次串行超时）。
+const iconSourceHits = new Map();
+
+const rankCandidates = (candidates) => {
+  if (candidates.length <= 1) return candidates;
+  return [...candidates].sort(
+    (a, b) => (iconSourceHits.get(getUrlOrigin(b)) || 0) - (iconSourceHits.get(getUrlOrigin(a)) || 0)
+  );
+};
+
+// 候选源全部并发，首个拿到有效图片的胜出，其余立即销毁连接。
+// 串行逐个重试时，国内最坏要等满 N × requestTimeout 才判定失败。
+const downloadIconWithMirrors = (canonicalUrl, type = 'general') => {
+  const candidates = rankCandidates(buildIconUrlCandidates(canonicalUrl));
+  if (candidates.length === 0) return Promise.resolve(null);
+
+  return new Promise((resolve) => {
+    const inflight = new Map();
+    let settled = false;
+    let remaining = candidates.length;
+
+    const finish = (filePath) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(budget);
+      for (const req of inflight.values()) {
+        try { req.destroy(); } catch { /* 已结束 */ }
+      }
+      inflight.clear();
+      resolve(filePath);
+    };
+
+    const budget = setTimeout(() => finish(null), getNetworkConfig().iconCache.requestTimeout);
+
+    for (const candidate of candidates) {
+      downloadIcon(candidate, canonicalUrl, type, (req) => inflight.set(candidate, req))
+        .then((filePath) => {
+          inflight.delete(candidate);
+          remaining -= 1;
+          if (filePath) {
+            const origin = getUrlOrigin(candidate);
+            if (origin) iconSourceHits.set(origin, Date.now());
+            finish(filePath);
+          } else if (remaining === 0) {
+            finish(null);
+          }
+        });
+    }
+  });
 };
 
 const resolveSingleIcon = (canonicalUrl, type = 'general') => {
@@ -543,6 +714,17 @@ const resolveSingleIcon = (canonicalUrl, type = 'general') => {
   return task;
 };
 
+// 受并发上限约束的遍历，避免几十张卡片同时打出几十个连接
+const mapWithConcurrency = async (items, limit, worker) => {
+  let cursor = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      await worker(items[cursor++]);
+    }
+  });
+  await Promise.all(runners);
+};
+
 // 批量解析：{ 原始url: local-media 地址 | null }。缓存命中时零网络请求。
 // type 透传至每条下载路径，使落盘索引携带分类信息，供按类型清理使用。
 const resolveIconUrls = async (urls, type = 'general') => {
@@ -559,14 +741,30 @@ const resolveIconUrls = async (urls, type = 'general') => {
     else rawByCanonical.set(canonical, [raw]);
   }
 
-  await Promise.all(
-    [...rawByCanonical.entries()].map(async ([canonical, raws]) => {
+  // 已落盘的同步返回：这些条目不受下面的批量等待预算影响，必定带回地址
+  const pending = [];
+  for (const [canonical, raws] of rawByCanonical.entries()) {
+    const cachedPath = getCachedIconPath(canonical);
+    if (cachedPath) {
+      const localUrl = toLocalMediaUrl(cachedPath);
+      for (const raw of raws) result[raw] = localUrl;
+    } else {
+      pending.push({ canonical, raws });
+    }
+  }
+  if (pending.length === 0) return result;
+
+  // 未落盘的并发下载，整批最多等 ICON_BATCH_BUDGET：
+  // 超时的那些本次返回 null（不写负缓存），后台任务继续下载落盘，下次命中。
+  await Promise.race([
+    mapWithConcurrency(pending, ICON_MAX_CONCURRENCY, async ({ canonical, raws }) => {
       const localUrl = await resolveSingleIcon(canonical, type);
       if (localUrl) {
         for (const raw of raws) result[raw] = localUrl;
       }
-    })
-  );
+    }),
+    new Promise((resolve) => setTimeout(resolve, ICON_BATCH_BUDGET)),
+  ]);
 
   return result;
 };
@@ -578,7 +776,9 @@ const cachePluginIcon = async (pluginDir) => {
     const manifestPath = path.join(pluginDir, 'manifest.json');
     if (!fs.existsSync(manifestPath)) return;
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-    if (manifest && typeof manifest.iconUrl === 'string') {
+    // 已有随包本地图标的插件不再联网预取：显示时用不到，落盘只会占缓存统计
+    const pluginId = manifest?.id || path.basename(pluginDir);
+    if (manifest && typeof manifest.iconUrl === 'string' && !hasLocalPluginIcon(pluginId, manifest.iconUrl)) {
       await resolveIconUrls([manifest.iconUrl], 'plugin');
     }
   } catch {
@@ -637,7 +837,8 @@ const clearIconCacheByType = (type) => {
       saveIconCacheIndex();
     }
     if (urlsToDelete.length > 0 || extractedDeleted > 0) {
-      iconFailures.delete(type); // 清除该类失败标记，允许重新解析
+      // 负缓存以 URL 为键（不含类型信息），只能整体清除，否则清完仍无法重新解析
+      iconFailures.clear();
       console.log(`Cleared ${urlsToDelete.length} indexed + ${extractedDeleted} extracted icon cache entries of type: ${type}`);
     }
   } catch (error) {
@@ -658,6 +859,8 @@ const emptyIconCacheTypeStats = () => ({
  */
 const getIconCacheStats = () => {
   try {
+    // 顺带清理过期条目：TTL 平时只在读取时懒淘汰，复用这次索引遍历，不额外增加 IO
+    pruneExpiredIcons();
     const index = loadIconCacheIndex();
     const byType = emptyIconCacheTypeStats();
     let remoteCount = 0;

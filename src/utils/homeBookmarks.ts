@@ -73,11 +73,13 @@ export const removeHomeBookmark = async (id: string): Promise<void> => {
   await writePluginData(data);
 };
 
-// 图标：优先用书签自带图标，缺失时回退到公共 favicon 服务
+// 图标：优先用书签自带图标，缺失时直取站点根目录的 favicon。
+// 不接任何第三方 favicon 服务（google / duckduckgo 等在国内同样不可达，只会多一个失败源），
+// 取不到时由 CachedIcon 显示兜底图标。
 export const getHomeBookmarkIcon = (bookmark: HomeBookmark): string => {
   if (bookmark.favicon) return bookmark.favicon;
   try {
-    return `https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=64`;
+    return `${new URL(bookmark.url).origin}/favicon.ico`;
   } catch {
     return '';
   }

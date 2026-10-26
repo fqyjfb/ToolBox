@@ -10,11 +10,15 @@ const ALLOWED_LISTEN_CHANNELS = new Set(['clipboard:changed', 'clipboard:image-c
 let navigateCallback = null;
 let downloadProgressCallback = null;
 let settingChangedCallback = null;
-let openAddTodoCallback = null;
-let openAddMemoCallback = null;
-let openAddReminderCallback = null;
 let showReminderCallback = null;
 let pendingReminder = null;
+
+// 托盘「新建」子菜单的三个动作：回调由目标页面挂载后才注册，而主进程是「先 navigate-to、
+// 紧接着（300ms 后）发 open-add-*」。首次进入时页面还要加载路由模块，往往赶不上，
+// 槽位为空时消息被直接丢弃 —— 表现为「只跳转、不弹窗」，再点一次才正常（页面已挂载）。
+// 与 show-reminder 同样处理：暂存待办动作，等页面注册回调时补发。
+const openAddCallbacks = { todo: null, memo: null, reminder: null };
+const pendingOpenAdd = { todo: false, memo: false, reminder: false };
 
 ipcRenderer.on('navigate-to', (event, path) => {
   if (navigateCallback) {
@@ -22,24 +26,24 @@ ipcRenderer.on('navigate-to', (event, path) => {
   }
 });
 
-ipcRenderer.on('open-add-todo', () => {
-  if (openAddTodoCallback) {
-    openAddTodoCallback();
-  }
+Object.keys(openAddCallbacks).forEach((kind) => {
+  ipcRenderer.on(`open-add-${kind}`, () => {
+    const callback = openAddCallbacks[kind];
+    if (callback) {
+      callback();
+    } else {
+      pendingOpenAdd[kind] = true;
+    }
+  });
 });
 
-ipcRenderer.on('open-add-memo', () => {
-  if (openAddMemoCallback) {
-    openAddMemoCallback();
-  }
-});
-
-// 桌面入口（托盘/悬浮球）触发"新建提醒"：可携带预填数据（标题/内容/来源类型/来源 id）
-ipcRenderer.on('open-add-reminder', () => {
-  if (openAddReminderCallback) {
-    openAddReminderCallback();
-  }
-});
+// 注册回调，并把此前暂存的动作补发一次（页面挂载晚于主进程下发时靠这条兜住）
+const registerOpenAddCallback = (kind, callback) => {
+  openAddCallbacks[kind] = callback;
+  if (!pendingOpenAdd[kind]) return;
+  pendingOpenAdd[kind] = false;
+  callback();
+};
 
 // 主进程 second-instance 收到 --reminder <id> 后，从数据库读取并下发到渲染进程弹窗
 ipcRenderer.on('show-reminder', (event, reminder) => {
@@ -379,15 +383,9 @@ contextBridge.exposeInMainWorld('electron', {
   onSettingChanged: (callback) => {
     settingChangedCallback = callback;
   },
-  onOpenAddTodo: (callback) => {
-    openAddTodoCallback = callback;
-  },
-  onOpenAddMemo: (callback) => {
-    openAddMemoCallback = callback;
-  },
-  onOpenAddReminder: (callback) => {
-    openAddReminderCallback = callback;
-  },
+  onOpenAddTodo: (callback) => registerOpenAddCallback('todo', callback),
+  onOpenAddMemo: (callback) => registerOpenAddCallback('memo', callback),
+  onOpenAddReminder: (callback) => registerOpenAddCallback('reminder', callback),
   onShowReminder: (callback) => {
     showReminderCallback = callback;
     if (pendingReminder) {

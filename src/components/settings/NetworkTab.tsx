@@ -28,10 +28,11 @@ const DEFAULT_CONFIG: NetworkConfig = {
       'https://raw.fastgit.org/fqyjfb/toolbox-plugins-registry/main/registry.json',
       'https://raw.gitmirror.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
     ],
+    // 必须与主进程 config.cjs 的默认值一致，否则设置页的「已改动」判定会失真
     githubRawMirrors: [
       'https://raw.githubusercontent.com',
-      'https://raw.fastgit.org',
       'https://raw.gitmirror.com',
+      'https://raw.kgithub.com',
     ],
     githubApiMirrors: ['https://api.github.com'],
     requestTimeout: 15000,

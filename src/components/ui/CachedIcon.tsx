@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Globe } from 'lucide-react';
-import { iconCacheService, IconCacheType } from '../../services/iconCacheService';
-import { isElectron } from '../../utils/environment';
+import { iconResolver, type IconCacheType } from '../../services/iconResolver';
 
 interface CachedIconProps {
   src?: string | null;
@@ -16,47 +15,8 @@ interface CachedIconProps {
   iconOnly?: boolean;
 }
 
-const activeRequests = new Map<string, Promise<string>>();
-
-// 已解析出的图片地址（src -> 可直接用于 <img> 的地址），跨组件挂载复用：
-// 路由切走再切回时无需重开 Cache API，首帧直接出图
-const resolvedUrls = new Map<string, string>();
-
-const getProxiedUrl = (url: string): string => {
-  const raw = (url || '').trim();
-  if (!raw) return '';
-  if (/^(data|blob):/i.test(raw)) return raw;
-  
-  if (isElectron()) {
-    return raw;
-  }
-  
-  try {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(raw)}`;
-  } catch {
-    return raw;
-  }
-};
-
-const fetchWithFallback = async (url: string): Promise<Response> => {
-  try {
-    const response = await fetch(url, {
-      mode: 'cors',
-      cache: 'force-cache'
-    });
-    if (response.ok) {
-      return response;
-    }
-  } catch {
-    // 直接 fetch 失败（通常是 CORS），继续尝试代理
-  }
-
-  const proxiedUrl = getProxiedUrl(url);
-  return fetch(proxiedUrl, {
-    mode: 'cors',
-    cache: 'force-cache'
-  });
-};
+// 只有远程地址需要解析：本地路径（plugins/icons/...）、data://、blob:、local-media: 均可直接显示
+const REMOTE_SRC = /^https?:\/\//i;
 
 const CachedIcon: React.FC<CachedIconProps> = ({
   src,
@@ -74,44 +34,17 @@ const CachedIcon: React.FC<CachedIconProps> = ({
   const effectiveAlt = alt ?? name ?? '';
   const effectiveFallback = defaultIcon ?? fallbackIcon;
 
-  const requestKey = `${type}:${effectiveSrc}`;
   const trimmedSrc = (effectiveSrc ?? '').trim();
 
-  const [imageSrc, setImageSrc] = useState<string | null>(() => resolvedUrls.get(requestKey) ?? null);
-  const [isLoading, setIsLoading] = useState(() => !resolvedUrls.has(requestKey));
+  // 本地路径（如 plugins/icons/...）与已解析过的图标首帧直接出图，
+  // 路由切走再切回时无需再走一轮解析
+  const isRemote = REMOTE_SRC.test(trimmedSrc);
+  const knownSrc = isRemote ? iconResolver.peek(trimmedSrc, type) : (trimmedSrc || undefined);
+  const [imageSrc, setImageSrc] = useState<string | null>(knownSrc ?? null);
+  const [isLoading, setIsLoading] = useState(!knownSrc);
   const [hasError, setHasError] = useState(false);
   const [isVisible, setIsVisible] = useState(iconOnly);
   const iconRef = React.useRef<HTMLDivElement>(null);
-
-  // Electron：远程图标统一交给主进程解析成本地地址（磁盘缓存），解析不到就抛错走兜底图标；
-  // Web：沿用 weserv 代理 + Cache API。
-  const loadIconUrl = useCallback(async (): Promise<string> => {
-    if (!trimmedSrc) throw new Error('empty icon url');
-
-    if (isElectron()) {
-      if (!window.electron?.resolveIcons) {
-        throw new Error('icon resolve unavailable');
-      }
-      const resolved = await window.electron.resolveIcons([trimmedSrc], type);
-      const localUrl = resolved?.[trimmedSrc];
-      if (!localUrl) {
-        throw new Error('icon unavailable');
-      }
-      return localUrl;
-    }
-
-    const cachedResponse = await iconCacheService.get(trimmedSrc, type);
-    if (cachedResponse) {
-      return URL.createObjectURL(await cachedResponse.blob());
-    }
-
-    const response = await fetchWithFallback(trimmedSrc);
-    if (!response.ok) {
-      throw new Error(`HTTP error ${response.status}`);
-    }
-    await iconCacheService.set(trimmedSrc, response.clone(), type);
-    return URL.createObjectURL(await response.blob());
-  }, [trimmedSrc, type]);
 
   const fetchImage = useCallback(async () => {
     if (!trimmedSrc) {
@@ -121,47 +54,26 @@ const CachedIcon: React.FC<CachedIconProps> = ({
       return;
     }
 
+    // 本地路径等非远程地址无需解析，直接使用
+    if (!REMOTE_SRC.test(trimmedSrc)) {
+      setImageSrc(trimmedSrc);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setHasError(false);
     setImageSrc(null);
 
-    const applyUrl = (objUrl: string) => {
-      resolvedUrls.set(requestKey, objUrl);
-      setImageSrc(objUrl);
-      setIsLoading(false);
-    };
+    // 解析由统一调度器负责：Electron 走主进程批量 IPC，Web 走 Cache API + 候选竞速。
+    // 拿不到地址一律走兜底图标，绝不回退裸远程 URL（国内网络下必然破图）。
+    await iconResolver.ensure([trimmedSrc], type);
+    const resolvedUrl = iconResolver.peek(trimmedSrc, type);
 
-    // data:/blob:/local-media: 等非远程地址无需解析，直接使用
-    if (!/^https?:\/\//i.test(trimmedSrc)) {
-      applyUrl(trimmedSrc);
-      return;
-    }
-
-    try {
-      if (activeRequests.has(requestKey)) {
-        applyUrl(await activeRequests.get(requestKey)!);
-        return;
-      }
-
-      const requestPromise = loadIconUrl().finally(() => {
-        activeRequests.delete(requestKey);
-      });
-
-      activeRequests.set(requestKey, requestPromise);
-      applyUrl(await requestPromise);
-    } catch {
-      if (isElectron()) {
-        // 主进程解析不出本地地址就用兜底图标，绝不回退裸远程 URL（国内网络下必然破图）
-        setImageSrc(null);
-        setHasError(true);
-        setIsLoading(false);
-        return;
-      }
-      // Web 端 fetch 失败（通常是浏览器 CORS 限制）时回退 <img> 直接加载
-      // <img> 标签加载跨域图片不受 CORS 限制，仍可正常显示
-      applyUrl(trimmedSrc);
-    }
-  }, [trimmedSrc, requestKey, loadIconUrl]);
+    setImageSrc(resolvedUrl ?? null);
+    setHasError(!resolvedUrl);
+    setIsLoading(false);
+  }, [trimmedSrc, type]);
 
   useEffect(() => {
     if (iconOnly) return;

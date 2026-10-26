@@ -88,28 +88,33 @@ const refreshTrayMenu = () => {
 
   const newContextMenu = Menu.buildFromTemplate([
     {
-      label: '新建待办',
-      click: () => {
-        checkLockAndShow(() => {
-          showMainAndNavigate('/tools/todo', (mw) => mw.webContents.send('open-add-todo'));
-        });
-      },
-    },
-    {
-      label: '新建备忘',
-      click: () => {
-        checkLockAndShow(() => {
-          showMainAndNavigate('/tools/memo', (mw) => mw.webContents.send('open-add-memo'));
-        });
-      },
-    },
-    {
-      label: '新建提醒',
-      click: () => {
-        checkLockAndShow(() => {
-          showMainAndNavigate('/tools/reminder', (mw) => mw.webContents.send('open-add-reminder'));
-        });
-      },
+      label: '新建',
+      submenu: [
+        {
+          label: '新建待办',
+          click: () => {
+            checkLockAndShow(() => {
+              showMainAndNavigate('/tools/todo', (mw) => mw.webContents.send('open-add-todo'));
+            });
+          },
+        },
+        {
+          label: '新建备忘',
+          click: () => {
+            checkLockAndShow(() => {
+              showMainAndNavigate('/tools/memo', (mw) => mw.webContents.send('open-add-memo'));
+            });
+          },
+        },
+        {
+          label: '新建提醒',
+          click: () => {
+            checkLockAndShow(() => {
+              showMainAndNavigate('/tools/reminder', (mw) => mw.webContents.send('open-add-reminder'));
+            });
+          },
+        },
+      ],
     },
     { type: 'separator' },
     {

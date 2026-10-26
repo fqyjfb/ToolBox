@@ -11,6 +11,7 @@ import { ALL_TOOLS } from '../../constants/tools';
 import { lucideIconToDataUrl, getTargetIcon } from '../../utils/floatIconRenderer';
 import { usePluginStore } from '../../store/pluginStore';
 import CachedIcon from '../ui/CachedIcon';
+import { getLocalPluginIcon } from '../../generated/pluginLocalIcons';
 import FloatIconView from '../ui/FloatIconView';
 import Select from '../ui/Select';
 import { iconMap } from '../../utils/iconMap';
@@ -282,6 +283,8 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
               <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-5px p-1">
                 {installedPlugins.map((plugin) => {
                   const PluginIcon = iconMap[plugin.iconName] || iconMap.Package;
+                  // 与插件商店一致：优先用包内本地图标，没有再走网络图标缓存
+                  const pluginIcon = getLocalPluginIcon(plugin.id, plugin.iconUrl) ?? plugin.iconUrl;
                   return (
                     <button
                       key={plugin.id}
@@ -292,9 +295,9 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                           : 'bg-surface text-content-primary hover:bg-menu-hover'
                       }`}
                     >
-                      {plugin.iconUrl ? (
+                      {pluginIcon ? (
                         <CachedIcon
-                          url={plugin.iconUrl}
+                          url={pluginIcon}
                           name={plugin.name}
                           type="plugin"
                           className="w-4 h-4"

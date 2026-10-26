@@ -100,19 +100,6 @@ class IconCacheService {
     }
   }
 
-  async getOrFetch(url: string, type: IconCacheType = 'general', fetchFn: () => Promise<Response>): Promise<Response> {
-    const cached = await this.get(url, type);
-    if (cached) {
-      return cached;
-    }
-
-    const response = await fetchFn();
-    if (response.ok) {
-      await this.set(url, response.clone(), type);
-    }
-    return response;
-  }
-
   private async getAllCacheKeys(cache: Cache): Promise<string[]> {
     const requests = await cache.keys();
     return requests.map(req => req.url);
@@ -136,32 +123,6 @@ class IconCacheService {
         const oldest = sortedKeys.shift();
         if (oldest) {
           await cache.delete(oldest.key);
-        }
-      }
-    } catch {
-      // Cache API may not be available in some environments
-    }
-  }
-
-  async clearExpired(): Promise<void> {
-    if (!this.isCacheApiAvailable()) {
-      return;
-    }
-
-    try {
-      const cache = await caches.open(IconCacheService.CACHE_NAME);
-      const keys = await this.getAllCacheKeys(cache);
-
-      for (const key of keys) {
-        const response = await cache.match(key);
-        if (response) {
-          const timestamp = response.headers.get('X-Cache-Timestamp');
-          if (timestamp) {
-            const age = Date.now() - parseInt(timestamp, 10);
-            if (age > IconCacheService.TTL) {
-              await cache.delete(key);
-            }
-          }
         }
       }
     } catch {

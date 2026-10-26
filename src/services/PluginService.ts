@@ -1,4 +1,6 @@
 import { logError, logInfo } from './loggerService';
+import { iconResolver } from './iconResolver';
+import { getLocalPluginIcon } from '../generated/pluginLocalIcons';
 import { PluginInfo, InstalledPlugin, PluginServiceResponse } from '../types/plugin';
 import type { NetworkConfig } from '../types/network';
 
@@ -58,18 +60,19 @@ const DEFAULT_PLUGIN_REGISTRY_URLS = [
   'https://raw.gitmirror.com/fqyjfb/toolbox-plugins-registry/main/registry.json',
 ];
 
-const DEFAULT_GITHUB_RAW_MIRRORS = [
-  'https://raw.githubusercontent.com',
-  'https://raw.fastgit.org',
-  'https://raw.gitmirror.com',
-];
-
 const DEFAULT_GITHUB_API_MIRRORS = [
   'https://api.github.com',
 ];
 
+// 本服务只需要这三项：githubRawMirrors 由主进程统一用于图标候选源，
+// 渲染层不再自行改写图标地址（改了也会被主进程归一回规范地址，等于白做）
+type PluginStoreRuntimeConfig = Pick<
+  NetworkConfig['pluginStore'],
+  'registryUrls' | 'githubApiMirrors' | 'requestTimeout'
+>;
+
 // 模块级缓存：首次调用时从主进程读 networkConfig.pluginStore，setting-changed 时置 null
-let cachedPluginStore: NetworkConfig['pluginStore'] | null = null;
+let cachedPluginStore: PluginStoreRuntimeConfig | null = null;
 
 const loadPluginStoreConfig = async (): Promise<void> => {
   if (cachedPluginStore) return;
@@ -81,7 +84,6 @@ const loadPluginStoreConfig = async (): Promise<void> => {
         const ps = nc.pluginStore;
         cachedPluginStore = {
           registryUrls: ps.registryUrls && ps.registryUrls.length ? ps.registryUrls : DEFAULT_PLUGIN_REGISTRY_URLS,
-          githubRawMirrors: ps.githubRawMirrors && ps.githubRawMirrors.length ? ps.githubRawMirrors : DEFAULT_GITHUB_RAW_MIRRORS,
           githubApiMirrors: ps.githubApiMirrors && ps.githubApiMirrors.length ? ps.githubApiMirrors : DEFAULT_GITHUB_API_MIRRORS,
           requestTimeout: ps.requestTimeout || 15000,
         };
@@ -91,7 +93,6 @@ const loadPluginStoreConfig = async (): Promise<void> => {
   }
   cachedPluginStore = {
     registryUrls: DEFAULT_PLUGIN_REGISTRY_URLS,
-    githubRawMirrors: DEFAULT_GITHUB_RAW_MIRRORS,
     githubApiMirrors: DEFAULT_GITHUB_API_MIRRORS,
     requestTimeout: 15000,
   };
@@ -104,7 +105,6 @@ if (window.electron) {
 }
 
 const getRegistryUrls = () => cachedPluginStore?.registryUrls || DEFAULT_PLUGIN_REGISTRY_URLS;
-const getGithubRawMirrors = () => cachedPluginStore?.githubRawMirrors || DEFAULT_GITHUB_RAW_MIRRORS;
 const getGithubApiMirrors = () => cachedPluginStore?.githubApiMirrors || DEFAULT_GITHUB_API_MIRRORS;
 const getPluginRequestTimeout = () => cachedPluginStore?.requestTimeout || 15000;
 
@@ -143,14 +143,6 @@ async function fetchWithMirrors(urls: string[], options: RequestInit = {}, timeo
   }
 
   throw lastError || new Error('所有镜像源均无法访问');
-}
-
-function getMirrorUrls(originalUrl: string): string[] {
-  if (originalUrl.startsWith('https://raw.githubusercontent.com/')) {
-    const path = originalUrl.slice('https://raw.githubusercontent.com'.length);
-    return getGithubRawMirrors().map(mirror => mirror + path);
-  }
-  return [originalUrl];
 }
 
 const RELEASE_URL_CACHE_KEY = 'plugin_release_url_cache';
@@ -240,6 +232,16 @@ async function fetchLatestReleaseUrl(githubRepo: string): Promise<string | undef
   return undefined;
 }
 
+// 提前触发图标解析，不 await：卡片挂载时与调度器内同批合并，不重复发起
+const prefetchPluginIcons = (plugins: PluginInfo[]) => {
+  // 已有本地图标的插件直接跳过：显示时根本用不到远程地址，预取只会白白下载
+  const urls = plugins
+    .filter((plugin) => !getLocalPluginIcon(plugin.id, plugin.iconUrl))
+    .map((plugin) => plugin.iconUrl)
+    .filter((url): url is string => !!url);
+  if (urls.length > 0) void iconResolver.ensure(urls, 'plugin');
+};
+
 export default class PluginService {
   async fetchAvailablePlugins(): Promise<PluginInfo[]> {
     clearReleaseUrlCache();
@@ -252,8 +254,9 @@ export default class PluginService {
         name: ext.name,
         description: ext.description || '',
         iconName: ext.icon || 'Package',
-        iconUrl: ext.iconUrl ? getMirrorUrls(ext.iconUrl)[0] : undefined,
-        image: ext.image ? getMirrorUrls(ext.image)[0] : undefined,
+        // 图标地址原样透传：选哪个源由主进程按网络状况竞速决定
+        iconUrl: ext.iconUrl,
+        image: ext.image,
         color: ext.color || '#3b82f6',
         textColor: ext.textColor || '#ffffff',
         version: ext.version || '1.0.0',
@@ -266,6 +269,8 @@ export default class PluginService {
         entry: ext.entry,
         isBeta: ext.isBeta === true,
       }));
+
+      prefetchPluginIcons(plugins);
 
       const pluginsWithoutReleaseUrl = plugins.filter(p => !p.releaseUrl && p.githubRepo);
       

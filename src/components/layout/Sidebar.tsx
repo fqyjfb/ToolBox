@@ -11,6 +11,7 @@ import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { ALL_TOOLS, ToolInfo } from '../../constants/tools';
 import CachedIcon from '../ui/CachedIcon';
+import { getLocalPluginIcon } from '../../generated/pluginLocalIcons';
 import Tooltip from '../ui/Tooltip';
 import { isElectron } from '../../utils/environment';
 import { iconMap } from '../../utils/iconMap';
@@ -68,14 +69,16 @@ const Sidebar: React.FC<{ forceCollapsed?: boolean; hideLogo?: boolean }> = ({ f
     { id: 'offline-tools', title: '离线工具', icon: <Wrench className="w-4 h-4 flex-shrink-0" />, path: '/tools/offline-tools', active: isActive('/tools/offline-tools') },
   ];
 
-  // 插件图标是远程地址，统一走 CachedIcon（主进程本地缓存），避免国内网络下破图
+  // 插件图标优先取本地（public/plugins/icons），其余远程地址走 CachedIcon（主进程本地缓存），
+  // 避免国内网络下破图
   const renderToolIcon = (tool: ToolInfo & { iconUrl?: string }) => {
     const Icon = iconMap[tool.iconName] || iconMap.Package;
     const fallbackIcon = <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} />;
-    if (!tool.iconUrl) return fallbackIcon;
+    const toolIcon = getLocalPluginIcon(tool.id, tool.iconUrl) ?? tool.iconUrl;
+    if (!toolIcon) return fallbackIcon;
     return (
       <CachedIcon
-        url={tool.iconUrl}
+        url={toolIcon}
         name={tool.name}
         type="plugin"
         iconOnly

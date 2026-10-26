@@ -3,6 +3,7 @@ import { Download, Pin, PinOff, ExternalLink, ChevronRight, Play, RefreshCw } fr
 import { PluginInfo, InstalledPlugin } from '../../types/plugin';
 import { iconMap } from '../../utils/iconMap';
 import CachedIcon from '../ui/CachedIcon';
+import { getLocalPluginIcon } from '../../generated/pluginLocalIcons';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { pluginApi } from '../../services/pluginApi';
@@ -34,6 +35,8 @@ const PluginCard: React.FC<PluginCardProps> = ({
   onViewDetail,
 }) => {
   const Icon = iconMap[plugin.iconName] || iconMap.Package;
+  // 本地图标优先（public/plugins/icons/{id}/icon.*），缺失时回退到网络图标缓存
+  const pluginIcon = getLocalPluginIcon(plugin.id, plugin.iconUrl) ?? plugin.iconUrl;
   const pinnedToolIds = useSidebarStore((state) => state.pinnedToolIds);
   const isInSidebar = pinnedToolIds.includes(plugin.id);
   const addPinnedTool = useSidebarStore((state) => state.addPinnedTool);
@@ -59,9 +62,9 @@ const PluginCard: React.FC<PluginCardProps> = ({
         <div
         className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-surface-secondary"
       >
-        {plugin.iconUrl ? (
+        {pluginIcon ? (
           <CachedIcon
-            url={plugin.iconUrl}
+            url={pluginIcon}
             name={plugin.name}
             type="plugin"
             className="w-full h-full object-contain"

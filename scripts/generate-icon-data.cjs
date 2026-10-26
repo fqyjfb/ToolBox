@@ -67,6 +67,80 @@ const parseToolTargets = (source) =>
     })
     .filter(Boolean);
 
+// 插件本地图标目录（public/plugins/icons/{图标目录名}/icon.*）
+// 构建期扫描一次，运行期就能直接查表：省掉对每个插件的本地文件探测请求，
+// 也避免图标缺失时对每个插件都白等一次网络往返
+const LOCAL_ICON_ROOT = path.join(__dirname, '../public/plugins/icons');
+const LOCAL_ICON_FILE = /^icon\.(png|jpe?g|svg|webp)$/i;
+
+// 图标目录名（screenshot-plugin）与插件 id（plugin-screenshot）命名规则不一致，
+// 两边唯一可靠的对应关系是 iconUrl 尾部的 /icons/{目录名}/{文件名}
+const ICON_DIR_IN_URL_SOURCE = String.raw`/\/icons\/([^/]+)\/[^/]+$/`;
+
+const writeLocalIconData = () => {
+  // { 图标目录名: 相对路径 }；相对路径可同时适配桌面端 file:// 与 Web 端子路径部署
+  const localIcons = {};
+
+  const dirs = fs.existsSync(LOCAL_ICON_ROOT)
+    ? fs.readdirSync(LOCAL_ICON_ROOT, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .sort()
+    : [];
+
+  for (const dir of dirs) {
+    const file = fs.readdirSync(path.join(LOCAL_ICON_ROOT, dir)).find((name) => LOCAL_ICON_FILE.test(name));
+    if (file) localIcons[dir] = `plugins/icons/${dir}/${file}`;
+  }
+
+  const tsContent = `// 自动生成的插件本地图标清单 - 请勿手动修改
+// 由 scripts/generate-icon-data.cjs 扫描 public/plugins/icons 生成
+
+// 已有本地图标的插件：图标目录名 → 图标相对路径
+const LOCAL_PLUGIN_ICONS: Record<string, string> = ${JSON.stringify(localIcons, null, 2)};
+
+// iconUrl 尾部的 /icons/{目录名}/{文件名}
+const ICON_DIR_IN_URL = ${ICON_DIR_IN_URL_SOURCE};
+
+// 取插件的本地图标路径；没有本地图标时返回 undefined，由调用方回退到网络图标缓存。
+// 插件 id 与图标目录名命名规则不一致（plugin-screenshot ↔ screenshot-plugin），
+// 只能以 iconUrl 中的目录名为准；id 仅用于没有 iconUrl 的插件兜底。
+const getLocalPluginIcon = (id?: string, iconUrl?: string): string | undefined => {
+  const key = (iconUrl ? ICON_DIR_IN_URL.exec(iconUrl)?.[1] : undefined) ?? id;
+  return key ? LOCAL_PLUGIN_ICONS[key] : undefined;
+};
+
+export { LOCAL_PLUGIN_ICONS, getLocalPluginIcon };
+`;
+
+  const tsPath = path.join(__dirname, '../src/generated/pluginLocalIcons.ts');
+  fs.mkdirSync(path.dirname(tsPath), { recursive: true });
+  fs.writeFileSync(tsPath, tsContent);
+  console.log(`✓ 已生成 src/generated/pluginLocalIcons.ts（${Object.keys(localIcons).length} 个本地插件图标）`);
+
+  // 主进程同样要判断「该插件有没有本地图标」：有就不必再联网预取远程图标，
+  // 否则「插件图标缓存」会一直统计着一批永远不会被显示的图标
+  const cjsContent = `// 自动生成的插件本地图标清单（主进程用）- 请勿手动修改
+// 由 scripts/generate-icon-data.cjs 扫描 public/plugins/icons 生成
+
+const LOCAL_PLUGIN_ICON_DIRS = new Set(${JSON.stringify(Object.keys(localIcons), null, 2)});
+
+// iconUrl 尾部的 /icons/{目录名}/{文件名}
+const ICON_DIR_IN_URL = ${ICON_DIR_IN_URL_SOURCE};
+
+// 该插件是否已有随包分发的本地图标
+const hasLocalPluginIcon = (id, iconUrl) => {
+  const key = (iconUrl ? ICON_DIR_IN_URL.exec(iconUrl)?.[1] : undefined) || id;
+  return !!key && LOCAL_PLUGIN_ICON_DIRS.has(key);
+};
+
+module.exports = { hasLocalPluginIcon };
+`;
+
+  const cjsPath = path.join(__dirname, '../electron/lib/pluginLocalIcons.cjs');
+  fs.writeFileSync(cjsPath, cjsContent);
+};
+
 const buildDataUri = (lucide, iconName) => {
   const Icon = lucide[iconName] || lucide.Package;
   if (!lucide[iconName]) {
@@ -107,6 +181,8 @@ const buildDataUri = (lucide, iconName) => {
   Object.entries(LEGACY_ICON_NAMES).forEach(([legacyName, iconName]) => {
     legacyIcons[legacyName] = buildDataUri(lucide, iconName);
   });
+
+  writeLocalIconData();
 
   const jsContent = `// 自动生成的悬浮窗图标数据 - 请勿手动修改
 // 由 scripts/generate-icon-data.cjs 依据设置常量与工具定义生成

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import {
   DndContext,
   DragOverlay,
@@ -813,10 +814,17 @@ const Home: React.FC = () => {
           ))}
 
           {/* 浮层跟随光标，网格按预览布局实时让位，松手即落位。
-              关掉落回动画：卡片已在目标位置，动画只会多出一张重影 */}
-          <DragOverlay dropAnimation={null}>
-            {activeCard ? <div className="home-drag-overlay">{renderDragPreview(activeCard)}</div> : null}
-          </DragOverlay>
+              关掉落回动画：卡片已在目标位置，动画只会多出一张重影。
+              浮层必须挂到 body：页面被 PageTransition 包了一层 transform 动画，
+              该层会成为 position: fixed 的包含块，而浮层的 top/left 用的是视口坐标，
+              于是整体被平移了「内容区左上角的偏移量」——正好约一个网格单元，
+              表现为卡片拖到光标右下方一格。挂到 body 才能按视口锚定，与光标对齐。 */}
+          {createPortal(
+            <DragOverlay dropAnimation={null}>
+              {activeCard ? <div className="home-drag-overlay">{renderDragPreview(activeCard)}</div> : null}
+            </DragOverlay>,
+            document.body,
+          )}
         </DndContext>
       </div>
 

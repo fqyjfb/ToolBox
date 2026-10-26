@@ -10,8 +10,8 @@
   },
   "main": "electron/main.cjs",
   "scripts": {
-    "dev": "vite",
-    "dev:electron": "vite --mode electron",
+    "dev": "node scripts/generate-icon-data.cjs && vite",
+    "dev:electron": "node scripts/generate-icon-data.cjs && vite --mode electron",
     "build": "node scripts/generate-icon-data.cjs && node scripts/generate-app-icon.cjs && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

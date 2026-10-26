@@ -6,6 +6,7 @@ const { getMimeType } = require('../services/fileTypeUtils.cjs');
 // 安装成功后把插件图标落盘到本地缓存，保证已安装插件的图标展示不再依赖网络
 const { cachePluginIcon, resolveIconUrls, isDarkTheme } = require('../lib/config.cjs');
 const { getAppIcon } = require('../lib/appIcon.cjs');
+const { hasLocalPluginIcon } = require('../lib/pluginLocalIcons.cjs');
 
 let pluginIpcRegistered = false;
 const { app } = require('electron');
@@ -451,6 +452,9 @@ function saveConfig(config) {
 function cacheInstalledPluginIcons(plugins) {
   try {
     const urls = (plugins || [])
+      // 已有本地图标的插件显示时用包内文件，再预取远程图标只会白下载一份，
+      // 还会让设置页「插件图标缓存」一直统计着这些永远不会被显示的图标
+      .filter((plugin) => !hasLocalPluginIcon(plugin?.id, plugin?.iconUrl))
       .map((plugin) => plugin?.iconUrl)
       .filter((url) => typeof url === 'string' && url.startsWith('http'));
     if (urls.length > 0) {
