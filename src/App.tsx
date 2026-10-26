@@ -21,7 +21,6 @@ import { validateEncryptionKey, setEncryptionKey } from './utils/crypto';
 import { reinitSupabase } from './services/supabase';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes, RouteConfig } from './config/routes';
-import { QueryProvider } from './providers/QueryProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { websiteBookmarksQuery, websiteCategoriesQuery } from './services/websiteQueries';
 const LogsPage = React.lazy(() => import('./pages/logs/index'));
@@ -260,10 +259,14 @@ function App() {
       }
     };
 
-    window.electron?.onSettingChanged(handleSettingChanged);
+    const unsubscribeSettingChanged = window.electron?.onSettingChanged(handleSettingChanged);
 
     return () => {
-      window.electron?.onSettingChanged(() => {});
+      // 正确退订：原先注册一个空函数会把 baseApi / PluginService 的回调一起顶掉，
+      // 导致改了 networkConfig 后它们的缓存失效回调从未生效。
+      if (typeof unsubscribeSettingChanged === 'function') {
+        unsubscribeSettingChanged();
+      }
     };
   }, [setVisible, setPosition, setTheme]);
 
@@ -303,12 +306,13 @@ function App() {
           logError('初始化认证状态失败', 'App');
         });
 
+        // 该调用的作用仅是让主进程扫描一次已安装插件目录；返回值在此处并不使用：
+        // 侧边栏插件项由 pluginStore 从 localStorage 恢复首帧内容，插件商店页会自行刷新 store。
+        // 因此不 await —— 避免一次目录扫描阻塞首屏初始化。
         if (isElectron() && window.electron?.plugin?.getInstalled) {
-          try {
-            await window.electron.plugin.getInstalled();
-          } catch (error) {
+          window.electron.plugin.getInstalled().catch((error: unknown) => {
             logError('获取插件列表失败', 'App', error as Error);
-          }
+          });
         }
 
         // 预加载网址导航数据：走 React Query 预取，与 NavPage 共用 queryKey，
@@ -413,33 +417,31 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <QueryProvider>
-        <Router>
-          <NavSearchProvider>
+      <Router>
+        <NavSearchProvider>
           {isDesktopApp && !isStandaloneWindow() && <TrayNavigationHandler />}
-              <Routes>
-                <Route
-                  path="/*"
-                  element={
-                    <>
-                      {isStandaloneLogWindow() ? (
-                        <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
-                          <Routes>
-                            <Route path="/logs" element={<LogsPage />} />
-                          </Routes>
-                        </Suspense>
-                      ) : (
-                        renderRoutes(currentRoutes, isAuthenticated, isAdmin || false, LayoutComponent, isLoading)
-                      )}
-                      <Toast />
-                      <PluginPanels />
-                    </>
-                  }
-                />
-              </Routes>
-          </NavSearchProvider>
-        </Router>
-      </QueryProvider>
+          <Routes>
+            <Route
+              path="/*"
+              element={
+                <>
+                  {isStandaloneLogWindow() ? (
+                    <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
+                      <Routes>
+                        <Route path="/logs" element={<LogsPage />} />
+                      </Routes>
+                    </Suspense>
+                  ) : (
+                    renderRoutes(currentRoutes, isAuthenticated, isAdmin || false, LayoutComponent, isLoading)
+                  )}
+                  <Toast />
+                  <PluginPanels />
+                </>
+              }
+            />
+          </Routes>
+        </NavSearchProvider>
+      </Router>
     </ErrorBoundary>
   );
 }

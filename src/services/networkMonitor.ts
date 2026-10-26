@@ -32,7 +32,7 @@ function updateOnlineStatus(isOnline: boolean): void {
   }
 }
 
-// 真实离线由 navigator.onLine 事件权威判定（见 syncStore）。
+// 真实离线由 navigator.onLine 事件权威判定（本文件是本应用唯一的注册点）。
 // 连通性探测只用于「确认真在线」：探测成功才置为在线；
 // 探测失败（端点不可达/超时/CORS 等）时不下探为离线，避免误判导致横幅常驻。
 async function probe(): Promise<void> {
@@ -60,9 +60,4 @@ export function startNetworkMonitor(): void {
   window.addEventListener('offline', handleOffline);
   // 启动后 1s 探测一次，确认真在线状态（失败不影响在线判定）
   setTimeout(probe, 1000);
-}
-
-export function stopNetworkMonitor(): void {
-  window.removeEventListener('online', handleOnline);
-  window.removeEventListener('offline', handleOffline);
 }

@@ -1,5 +1,12 @@
-import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { AlmanacPopover, type AlmanacDate } from '../components/home/AlmanacPanel';
+import { type MouseEvent, useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
+import type { AlmanacDate } from '../components/home/AlmanacPanel';
+
+// 黄历浮层按需加载：AlmanacPanel -> utils/almanac -> tyme4ts。
+// 静态导入会把 tyme4ts 带进首屏包体，而浮层只在悬浮/打开日历时才需要，
+// 改为 lazy 后 tyme4ts 只在用户真正看到黄历时才加载。
+const AlmanacPopover = lazy(() =>
+  import('../components/home/AlmanacPanel').then((m) => ({ default: m.AlmanacPopover })),
+);
 
 interface AlmanacHoverTarget {
   rect: DOMRect;
@@ -39,11 +46,13 @@ export const useAlmanacHover = (delay = 200) => {
     hide,
     // 按日期做 key：切换日期时重新挂载浮层，保证每次都以真实尺寸重新定位
     popover: target ? (
-      <AlmanacPopover
-        key={`${target.date.year}-${target.date.month}-${target.date.day}`}
-        rect={target.rect}
-        date={target.date}
-      />
+      <Suspense fallback={null}>
+        <AlmanacPopover
+          key={`${target.date.year}-${target.date.month}-${target.date.day}`}
+          rect={target.rect}
+          date={target.date}
+        />
+      </Suspense>
     ) : null,
   };
 };

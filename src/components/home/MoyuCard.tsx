@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { RefreshCw, CalendarClock, TrendingUp, Quote } from 'lucide-react';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import CalendarModal from './CalendarModal';
 import { useAlmanacHover } from '../../hooks/useAlmanacHover';
+
+// 月历弹窗按需加载：CalendarModal -> utils/almanac -> tyme4ts（另含 201 项年份选项常量）。
+// 它只在用户点击日历卡后才需要，静态导入会把这些一并塞进首屏包体。
+// Modal 在 isOpen 为 false 时直接 return null（无关闭动画），
+// 因此改为条件渲染不会改变任何可见行为。
+const CalendarModal = lazy(() => import('./CalendarModal'));
 import type { MoyuData } from '../../types/hotNews';
 
 // 摸鱼日报按区块拆成四张独立卡片，数据由首页统一拉取后传入
@@ -92,7 +97,11 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ variant, data, loading, error, onRe
         {variant === 'calendar' && (
           <>
             {almanacPopover}
-            <CalendarModal isOpen={calendarOpen} onClose={() => setCalendarOpen(false)} />
+            {calendarOpen && (
+              <Suspense fallback={null}>
+                <CalendarModal isOpen onClose={() => setCalendarOpen(false)} />
+              </Suspense>
+            )}
           </>
         )}
       </div>
@@ -143,7 +152,11 @@ const MoyuCard: React.FC<MoyuCardProps> = ({ variant, data, loading, error, onRe
           </div>
         </div>
         {almanacPopover}
-        <CalendarModal isOpen={calendarOpen} onClose={() => setCalendarOpen(false)} />
+        {calendarOpen && (
+          <Suspense fallback={null}>
+            <CalendarModal isOpen onClose={() => setCalendarOpen(false)} />
+          </Suspense>
+        )}
       </>
     );
   }

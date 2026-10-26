@@ -16,8 +16,20 @@ const HomeClock: React.FC<HomeClockProps> = ({ lunar }) => {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
+    // 时间只显示到分钟（formatTime 输出 HH:MM，formatMonthDayWeek 输出日期+星期），
+    // 因此对齐到下一个分钟边界再更新，而不是每秒 setState。
+    // 跨零点正好落在分钟边界上，日期与星期照常自动跟随，UI 表现与每秒刷新完全一致。
+    let timer = 0;
+    const scheduleNextMinute = () => {
+      const current = new Date();
+      const delay = 60000 - (current.getSeconds() * 1000 + current.getMilliseconds());
+      timer = window.setTimeout(() => {
+        setNow(new Date());
+        scheduleNextMinute();
+      }, delay);
+    };
+    scheduleNextMinute();
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (

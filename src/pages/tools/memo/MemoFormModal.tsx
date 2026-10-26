@@ -2,7 +2,7 @@ import React from 'react';
 import Modal from '../../../components/ui/Modal';
 import Select from '../../../components/ui/Select';
 import type { MemoCategory } from '../../../types/memo';
-import { modalControlClass, modalTextareaClass } from '../account/shared';
+import { modalControlClass, modalTextareaScrollClass } from '../account/shared';
 import type { MemoPriority } from './memoPriority';
 
 interface MemoFormModalProps {
@@ -18,18 +18,23 @@ interface MemoFormModalProps {
   onPriorityChange: (value: MemoPriority) => void;
   onCategoryChange: (value: string | null) => void;
   onConfirm: () => void;
+  /** 弹窗标题，默认「添加备忘」（首页卡片编辑场景传入「编辑备忘」） */
+  modalTitle?: string;
+  /** 确认按钮文案，默认「添加」 */
+  confirmText?: string;
 }
 
 /** 备忘录新增表单：工具页与首页卡片新增入口共用 */
 const MemoFormModal: React.FC<MemoFormModalProps> = ({
   isOpen, onClose, title, content, priority, categoryId, categories,
   onTitleChange, onContentChange, onPriorityChange, onCategoryChange, onConfirm,
+  modalTitle = '添加备忘', confirmText = '添加',
 }) => (
   <Modal
     isOpen={isOpen}
     onClose={onClose}
-    title="添加备忘"
-    confirmText="添加"
+    title={modalTitle}
+    confirmText={confirmText}
     onConfirm={onConfirm}
     confirmDisabled={!title.trim()}
     clickOutsideToClose={false}
@@ -68,7 +73,7 @@ const MemoFormModal: React.FC<MemoFormModalProps> = ({
         onChange={(e) => onContentChange(e.target.value)}
         placeholder="内容"
         rows={5}
-        className={`${modalTextareaClass} scrollbar-5px`}
+        className={modalTextareaScrollClass}
       />
     </div>
   </Modal>

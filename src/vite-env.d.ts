@@ -470,7 +470,7 @@ declare interface Window {
     };
     onDownloadProgress: (callback: (progress: number) => void) => void;
     onNavigate: (callback: (path: string) => void) => void;
-    onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean | object }) => void) => void;
+    onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean | object }) => void) => () => void;
     onOpenAddTodo: (callback: () => void) => void;
     onOpenAddMemo: (callback: () => void) => void;
     // 定时提醒：托盘/悬浮球触发新建（data 可选预填数据）；主进程 show-reminder 事件下发弹窗内容

@@ -9,6 +9,11 @@ export const modalControlClass =
 export const modalTextareaClass =
   'w-full px-3 py-2 text-sm border border-content rounded-lg focus:outline-none focus:border-content bg-surface text-content-primary resize-none';
 
+// 多行文本框 + 5px 细滚动条：内容超出时用细滚动条替代浏览器默认宽条。
+// 首页卡片的「备忘录 / 定时提醒 / 快捷回复 / 云剪贴板」新增弹窗统一使用这一份，
+// 单独成常量是为了不波及账号面板等仍用 modalTextareaClass 的控件。
+export const modalTextareaScrollClass = `${modalTextareaClass} scrollbar-5px`;
+
 // 模态框表单容器的行间距（减少行间距，统一为 8px）
 export const modalFormSpacingClass = 'space-y-2';
 

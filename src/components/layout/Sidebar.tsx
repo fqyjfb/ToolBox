@@ -8,6 +8,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDndSensors } from '../../hooks/useDndSensors';
 import { useAuthStore } from '../../store/AuthStore';
 import { useSidebarStore } from '../../store/sidebarStore';
+import { useIsCompactMode } from '../../store/windowModeStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { ALL_TOOLS, ToolInfo } from '../../constants/tools';
 import CachedIcon from '../ui/CachedIcon';
@@ -23,15 +24,18 @@ const Sidebar: React.FC<{ forceCollapsed?: boolean; hideLogo?: boolean }> = ({ f
   const navigate = useNavigate();
   const isDesktop = isElectron();
 
-  const { isCollapsed, isVisible, pinnedToolIds, removePinnedTool, reorderPinnedTools } = useSidebarStore(useShallow((s) => ({
+  const { isCollapsed, isVisible, compactHidden, pinnedToolIds, removePinnedTool, reorderPinnedTools } = useSidebarStore(useShallow((s) => ({
     isCollapsed: s.isCollapsed,
     isVisible: s.isVisible,
+    compactHidden: s.compactHidden,
     pinnedToolIds: s.pinnedToolIds,
     removePinnedTool: s.removePinnedTool,
     reorderPinnedTools: s.reorderPinnedTools,
   })));
   // 小窗（CompactLayout）强制折叠：只影响读取、不写回 store，不污染大窗的折叠/展开偏好
   const collapsed = forceCollapsed || isCollapsed;
+  // 小窗隐藏态由标题栏按钮控制；大窗下 isCompact 为 false，该标记不生效
+  const isCompact = useIsCompactMode();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isAdmin = useAuthStore((s) => s.isAdmin);
   const installedPlugins = usePluginStore((s) => s.installedPlugins);
@@ -119,7 +123,7 @@ const Sidebar: React.FC<{ forceCollapsed?: boolean; hideLogo?: boolean }> = ({ f
     }
   };
 
-  if (!isVisible) return null;
+  if (!isVisible || (isCompact && compactHidden)) return null;
 
   return (
     <aside className={`sidebar-root ${collapsed ? 'collapsed' : 'expanded'}`} style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>

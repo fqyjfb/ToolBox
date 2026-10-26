@@ -19,8 +19,7 @@ import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Pagination from '../../../components/ui/Pagination';
-import Select from '../../../components/ui/Select';
-import { modalControlClass, modalTextareaClass } from '../account/shared';
+import { modalControlClass } from '../account/shared';
 import { useIsCompactMode } from '../../../store/windowModeStore';
 import { useOverflowItems } from '../../../hooks/useOverflowItems';
 import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
@@ -667,34 +666,19 @@ const CloudClipboardPage: React.FC = () => {
           onConfirm={handleCreateItem}
         />
 
-        <Modal
+        {/* 编辑复用与新增/首页同一个表单组件，避免两套 UI 各自演进 */}
+        <ClipboardFormModal
           isOpen={showEditItemModal}
           onClose={handleCloseEditItemModal}
-          title="编辑项目"
-          confirmText="保存"
+          content={editingItem?.content ?? ''}
+          categoryId={editingItemCategoryId}
+          categories={categories}
+          onContentChange={(v) => setEditingItem((prev) => (prev ? { ...prev, content: v } : prev))}
+          onCategoryChange={setEditingItemCategoryId}
           onConfirm={handleUpdateItem}
-        >
-          {editingItem && (
-            <div className="space-y-2">
-              <Select
-                value={editingItemCategoryId || ''}
-                onChange={(v) => setEditingItemCategoryId(v || null)}
-                options={[
-                  { value: '', label: '全部' },
-                  ...categories.map((category) => ({ value: category.id, label: category.name }))
-                ]}
-                className={modalControlClass}
-              />
-              <textarea
-                value={editingItem.content}
-                onChange={(e) => setEditingItem({ ...editingItem, content: e.target.value })}
-                placeholder="内容"
-                rows={4}
-                className={modalTextareaClass}
-              />
-            </div>
-          )}
-        </Modal>
+          modalTitle="编辑项目"
+          confirmText="保存"
+        />
 
         <Modal
           isOpen={showAddCategoryModal}

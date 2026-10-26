@@ -4,7 +4,7 @@ import Modal from '../../../components/ui/Modal';
 import Select from '../../../components/ui/Select';
 import type { Reminder, CreateReminderRequest, UpdateReminderRequest, ReminderRepeatType, ReminderNotifyMethod } from '../../../types/reminder';
 import { REPEAT_TYPES, NOTIFY_METHODS } from '../../../constants/reminder';
-import { modalControlClass, modalTextareaClass } from '../account/shared';
+import { modalControlClass, modalTextareaScrollClass } from '../account/shared';
 import { formatDateTimeForInput, toLocalDateTimeString } from '../../../utils';
 
 interface ReminderFormModalProps {
@@ -90,7 +90,7 @@ const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
             onChange={(e) => onFormDataChange({ ...formData, content: e.target.value })}
             placeholder="输入提醒内容（可选）"
             rows={3}
-            className={modalTextareaClass}
+            className={modalTextareaScrollClass}
           />
         </div>
         <div className="grid grid-cols-2 gap-2">

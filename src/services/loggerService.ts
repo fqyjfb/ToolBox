@@ -70,7 +70,10 @@ class LoggerService {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener([...this.logs]));
+    // logs 始终以不可变方式整体替换（addLogEntry / clearLogs 都是赋新数组），
+    // 订阅者只读取渲染、不修改数组（日志页 setLogs 后仅做 filter，设置页回调为空），
+    // 因此直接共享当前引用即可，无需给每个订阅者各拷贝一份（上限 500 条）。
+    this.listeners.forEach(listener => listener(this.logs));
   }
 
   public async getSettings(): Promise<LoggerSettings> {

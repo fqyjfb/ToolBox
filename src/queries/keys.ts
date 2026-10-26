@@ -47,4 +47,12 @@ export const queryKeys = {
     /** 当天签到状态与连续天数（头部签到按钮） */
     status: (userId: string) => [...queryKeys.checkIn.all, 'status', userId] as const,
   },
+
+  weather: {
+    all: ['weather'] as const,
+    /** 实时天气（首页天气卡与顶栏天气入口共用同一份缓存） */
+    current: (city: string) => [...queryKeys.weather.all, 'current', city] as const,
+    /** 多日预报（同上，与实时天气按同一城市去重） */
+    forecast: (city: string) => [...queryKeys.weather.all, 'forecast', city] as const,
+  },
 };

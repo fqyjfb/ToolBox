@@ -77,6 +77,9 @@ const reminderScheduler = require('./services/reminderScheduler.cjs');
 
 const DELAY_CREATE_TRAY = 500;
 const DELAY_CREATE_FLOAT_WINDOW = 1000;
+// 提醒对账延后执行的兜底时限：主页面加载失败时 did-finish-load 永不触发，
+// 仍需保证对账最终执行一次，不能因为窗口没加载出来就永久跳过。
+const DELAY_RECONCILE_FALLBACK = 30000;
 
 let cachedSettings = null;
 
@@ -322,7 +325,32 @@ async function stopBackendServices() {
   }
 }
 
+// 提醒对账（全库扫描 + 到期补偿 + 重新武装计划任务）的执行状态。
+// 普通冷启动不阻塞建窗：等主窗口页面加载完成后再跑；但必须保证「最终一定跑一次」。
+let reminderReconcileDone = false;
+let reminderReconcileFallbackTimer = null;
+
+function runReminderReconcile() {
+  if (reminderReconcileDone) return Promise.resolve();
+  reminderReconcileDone = true;
+  if (reminderReconcileFallbackTimer) {
+    clearTimeout(reminderReconcileFallbackTimer);
+    reminderReconcileFallbackTimer = null;
+  }
+  return reconcileReminderTasks().catch((err) => logFatal('[Main] 提醒对账异常:', err));
+}
+
+function scheduleReminderReconcile() {
+  if (reminderReconcileDone) return;
+  if (!reminderReconcileFallbackTimer) {
+    reminderReconcileFallbackTimer = setTimeout(() => { runReminderReconcile(); }, DELAY_RECONCILE_FALLBACK);
+  }
+}
+
 function onWindowReady() {
+  // 页面已加载完成，此时执行对账不再与首屏争抢（计划任务唤醒路径在启动时已同步跑过）
+  runReminderReconcile();
+
   setTimeout(() => createTray(), DELAY_CREATE_TRAY);
 
   setTimeout(() => {
@@ -359,11 +387,21 @@ app.whenReady().then(async () => {
   safeRegister('registerAIIpc', registerAIIpc);
   safeRegister('registerIpcHandlers', registerIpcHandlers);
 
-  // 创建任何窗口前完成「全库计划任务对账 + 到期补偿」：失败只记日志，不阻断窗口创建
-  try {
-    await reconcileReminderTasks();
-  } catch (err) {
-    logFatal('[Main] 提醒对账异常:', err);
+  // 计划任务唤醒的若是本实例（应用原先未运行），second-instance 事件不会触发，
+  // 必须在此主动消费一次启动参数，否则提醒到时间毫无反应。
+  const startupReminderId = getScheduledReminderId(process.argv);
+
+  // 异步预热 sql.js WASM（不 await）：提醒对账要用到它，提前加载可省去延后执行时的等待。
+  sqliteService.warmup().catch(() => { /* 预热失败不影响后续按需初始化 */ });
+
+  if (startupReminderId) {
+    // 由计划任务唤醒：保持「创建任何窗口前完成全库对账 + 到期补偿」的原语义，
+    // 确保到期补偿先于下面的 fireReminder 兜底执行。失败只记日志，不阻断窗口创建。
+    await runReminderReconcile();
+  } else {
+    // 普通冷启动：对账不再阻塞建窗（WASM 加载 + 全库扫描 + 每任务一次 schtasks），
+    // 改为页面加载完成后由 onWindowReady 触发，并带兜底定时器防止页面加载失败时永久跳过。
+    scheduleReminderReconcile();
   }
 
   let isLocked = false;
@@ -372,10 +410,6 @@ app.whenReady().then(async () => {
   } catch (err) {
     logFatal('[Main] 锁定窗口创建失败，改为直接打开主窗口:', err);
   }
-
-  // 计划任务唤醒的若是本实例（应用原先未运行），second-instance 事件不会触发，
-  // 必须在此主动消费一次启动参数，否则提醒到时间毫无反应。
-  const startupReminderId = getScheduledReminderId(process.argv);
 
   if (!isLocked) {
     try {
@@ -421,6 +455,13 @@ app.on('before-quit', () => {
   stopBackendServices();
   stopMemoryOptimization();
   cleanupQuickLaunchHotkeys();
+  try {
+    // 退出前补写落盘：写入走 2s 去抖，close() 只关闭连接不会触发去抖，
+    // 不补这一步会丢掉最后 2s 内的写入。
+    sqliteService.flushPersist();
+  } catch (e) {
+    console.error('[Main] SQLite 落盘失败:', e.message);
+  }
   try {
     sqliteService.close();
   } catch (e) {

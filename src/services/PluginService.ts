@@ -3,6 +3,7 @@ import { iconResolver } from './iconResolver';
 import { getLocalPluginIcon } from '../generated/pluginLocalIcons';
 import { PluginInfo, InstalledPlugin, PluginServiceResponse } from '../types/plugin';
 import type { NetworkConfig } from '../types/network';
+import { subscribeNetworkConfigInvalidate } from './networkConfigCache';
 
 interface RegistryPlugin {
   id: string;
@@ -98,11 +99,11 @@ const loadPluginStoreConfig = async (): Promise<void> => {
   };
 };
 
-if (window.electron) {
-  window.electron.onSettingChanged((setting) => {
-    if (setting.name === 'networkConfig') cachedPluginStore = null;
-  });
-}
+// 复用统一的缓存失效订阅：原先此处与 baseApi 各自复制一份注册，
+// preload 改为多播后两者才都能生效（此前会被 App 的空函数注册顶掉）。
+subscribeNetworkConfigInvalidate(() => {
+  cachedPluginStore = null;
+});
 
 const getRegistryUrls = () => cachedPluginStore?.registryUrls || DEFAULT_PLUGIN_REGISTRY_URLS;
 const getGithubApiMirrors = () => cachedPluginStore?.githubApiMirrors || DEFAULT_GITHUB_API_MIRRORS;

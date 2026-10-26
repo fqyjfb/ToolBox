@@ -9,7 +9,9 @@ const ALLOWED_LISTEN_CHANNELS = new Set(['clipboard:changed', 'clipboard:image-c
 
 let navigateCallback = null;
 let downloadProgressCallback = null;
-let settingChangedCallback = null;
+// setting-changed 有多个订阅方（App / baseApi / PluginService 各自按 networkConfig 缓存），
+// 单槽赋值会让后注册者把前者顶掉，改为多播并支持退订。
+const settingChangedCallbacks = new Set();
 let showReminderCallback = null;
 let pendingReminder = null;
 
@@ -61,9 +63,14 @@ ipcRenderer.on('update-download-progress', (event, progress) => {
 });
 
 ipcRenderer.on('setting-changed', (event, setting) => {
-  if (settingChangedCallback) {
-    settingChangedCallback(setting);
-  }
+  // 单个订阅方抛错不应影响其余订阅方（原先单槽时只有一个回调，不存在该问题）
+  settingChangedCallbacks.forEach((callback) => {
+    try {
+      callback(setting);
+    } catch (error) {
+      console.error('[Preload] setting-changed 回调执行失败:', error && error.message ? error.message : error);
+    }
+  });
 });
 
 const s3Api = {
@@ -381,7 +388,11 @@ contextBridge.exposeInMainWorld('electron', {
     navigateCallback = callback;
   },
   onSettingChanged: (callback) => {
-    settingChangedCallback = callback;
+    settingChangedCallbacks.add(callback);
+    // 返回退订函数：调用方卸载时正确退订，而不是再注册一个空函数把别人顶掉
+    return () => {
+      settingChangedCallbacks.delete(callback);
+    };
   },
   onOpenAddTodo: (callback) => registerOpenAddCallback('todo', callback),
   onOpenAddMemo: (callback) => registerOpenAddCallback('memo', callback),

@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 远程字体改异步加载：原先写在 theme.css 首行 @import，会阻塞 CSS 解析与首次绘制。
+         此处用 media="print" + onload 切换为 all，字体请求与首屏渲染并行，字形与 display=swap 行为不变。 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
     <title>ToolBox</title>
   </head>
   <body>

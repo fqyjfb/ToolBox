@@ -29,7 +29,6 @@ import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
-import Select from '../../../components/ui/Select';
 import { modalControlClass } from '../account/shared';
 import MemoFormModal from './MemoFormModal';
 import { getPriorityStyle } from './memoPriority';
@@ -827,58 +826,23 @@ const MemoPage: React.FC = () => {
           onConfirm={handleCreateMemo}
         />
 
-        <Modal
+        {/* 编辑复用与新增/首页同一个表单组件，避免两套 UI 各自演进 */}
+        <MemoFormModal
           isOpen={showEditMemoModal}
           onClose={handleCloseEditMemoModal}
-          title="编辑备忘录"
-          confirmText="保存"
+          title={editingMemo?.title ?? ''}
+          content={editingMemo?.content ?? ''}
+          priority={editingMemoPriority}
+          categoryId={editingMemoCategoryId}
+          categories={categories}
+          onTitleChange={(v) => setEditingMemo((prev) => (prev ? { ...prev, title: v } : prev))}
+          onContentChange={(v) => setEditingMemo((prev) => (prev ? { ...prev, content: v } : prev))}
+          onPriorityChange={setEditingMemoPriority}
+          onCategoryChange={setEditingMemoCategoryId}
           onConfirm={handleUpdateMemo}
-          clickOutsideToClose={false}
-        >
-          {editingMemo && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Select
-                    value={editingMemoPriority}
-                    onChange={(v) => setEditingMemoPriority(v as 'high' | 'medium' | 'low')}
-                    options={[
-                      { value: 'high', label: '高优先级' },
-                      { value: 'medium', label: '中优先级' },
-                      { value: 'low', label: '低优先级' }
-                    ]}
-                    className={modalControlClass}
-                  />
-                  <Select
-                    value={editingMemoCategoryId || ''}
-                    onChange={(v) => setEditingMemoCategoryId(v || null)}
-                    options={[
-                      { value: '', label: '全部' },
-                      ...categories.map((category) => ({ value: category.id, label: category.name }))
-                    ]}
-                    className={modalControlClass}
-                  />
-                </div>
-              </div>
-              <input
-                type="text"
-                value={editingMemo.title}
-                onChange={(e) => setEditingMemo({ ...editingMemo, title: e.target.value })}
-                placeholder="标题"
-                className={modalControlClass}
-              />
-              <div className="rounded-lg p-3 min-h-[120px] max-h-64 overflow-auto relative group scrollbar-5px" style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}>
-                <textarea
-                  value={editingMemo.content}
-                  onChange={(e) => setEditingMemo({ ...editingMemo, content: e.target.value })}
-                  placeholder="内容"
-                  rows={4}
-                  className="w-full bg-transparent resize-none focus:outline-none text-sm text-content-primary placeholder-gray-400 scrollbar-5px"
-                />
-              </div>
-            </div>
-          )}
-        </Modal>
+          modalTitle="编辑备忘录"
+          confirmText="保存"
+        />
 
         <Modal
           isOpen={showAddCategoryModal}

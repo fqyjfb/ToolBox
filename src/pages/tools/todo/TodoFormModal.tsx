@@ -2,7 +2,7 @@ import React from 'react'
 import Modal from '../../../components/ui/Modal'
 import Select from '../../../components/ui/Select'
 import { Todo, TodoCategory, CreateTodoRequest } from '../../../services/TodoService'
-import { modalControlClass, modalTextareaClass } from '../account/shared'
+import { modalControlClass, modalTextareaScrollClass } from '../account/shared'
 import { formatDateTimeForInput } from '../../../utils'
 
 interface TodoFormModalProps {
@@ -89,7 +89,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
             onChange={(e) => onNewTodoChange({ ...newTodo, description: e.target.value })}
             placeholder="输入任务描述"
             rows={2}
-            className={modalTextareaClass}
+            className={modalTextareaScrollClass}
           />
         </div>
       </div>

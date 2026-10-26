@@ -1,4 +1,4 @@
-const { BrowserWindow, dialog, screen, shell, nativeTheme } = require('electron');
+const { BrowserWindow, dialog, screen, shell, nativeTheme, powerMonitor } = require('electron');
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
@@ -400,7 +400,6 @@ const startAutoLock = () => {
 
   const threshold = (settings.autoLockTimeout || 600) * 1000;
   const checkInterval = Math.max(5000, threshold / 10);
-  const { execFile } = require('child_process');
 
   autoLockTimer = setInterval(() => {
     const currentSettings = loadSettings();
@@ -415,20 +414,14 @@ const startAutoLock = () => {
     }
 
     if (process.platform === 'win32') {
-      execFile('powershell.exe', [
-        '-ExecutionPolicy', 'Bypass',
-        '-Command',
-        'Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public static class User32 { [StructLayout(LayoutKind.Sequential)] public struct LASTINPUTINFO { public uint cbSize; public uint dwTime; } [DllImport(`\"user32.dll`\")] public static extern bool GetLastInputInfo(ref LASTINPUTINFO plii); }"; $lastInputInfo = New-Object User32+LASTINPUTINFO; $lastInputInfo.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf($lastInputInfo); [User32]::GetLastInputInfo([ref]$lastInputInfo) | Out-Null; [Environment]::TickCount - $lastInputInfo.dwTime'
-      ], (error, stdout) => {
-        if (error || !stdout) return;
-        
-        const idleMs = parseInt(stdout.trim(), 10);
-        const currentThreshold = (currentSettings.autoLockTimeout || 600) * 1000;
-        
-        if (idleMs >= 0 && idleMs >= currentThreshold) {
-          require('./lockWindow.cjs').lock();
-        }
-      });
+      // 系统级空闲时长（秒）。powerMonitor.getSystemIdleTime() 内部同样取 GetLastInputInfo，
+      // 与原先 spawn PowerShell 读 LASTINPUTINFO 的语义完全一致，但不再每个 tick 拉起子进程。
+      const idleMs = powerMonitor.getSystemIdleTime() * 1000;
+      const currentThreshold = (currentSettings.autoLockTimeout || 600) * 1000;
+
+      if (idleMs >= 0 && idleMs >= currentThreshold) {
+        require('./lockWindow.cjs').lock();
+      }
     } else {
       const elapsed = Date.now() - lastActivityTime;
       const currentThreshold = (currentSettings.autoLockTimeout || 600) * 1000;
@@ -875,7 +868,6 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     ].join('\n');
     execFile('powershell.exe', ['-NoProfile', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], () => {});
   };
-  applyWin11RoundedCorners();
 
   // T09 / Phase 4：文件监听的事件推送目标 = 主窗口（notes-fs-changed 走 webContents.send）。
   // 必须在建窗之后注入：registerIpcHandlers 先于 createWindow 执行，那时主窗口还不存在；
@@ -919,6 +911,9 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   }
 
   mainWindow.webContents.on('did-finish-load', () => {
+    // 圆角设置放在页面加载完成后执行：属性一次设置持续有效，且仍早于下面的 show()，
+    // 视觉与原先在建窗时同步调用完全一致，但不再与 loadURL 争抢启动关键路径。
+    applyWin11RoundedCorners();
     setTimeout(() => {
       if (showOnReady) {
         mainWindow.show();

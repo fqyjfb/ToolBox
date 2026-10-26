@@ -11,6 +11,12 @@ export interface PreviewItem {
   subtitle?: string;
   detail?: string;
   type?: PreviewItemType;
+  /**
+   * 原始实体（Todo / Memo / Reminder / QuickReply / ClipboardItem）。
+   * 卡片数据行的「编辑」要回填完整字段（优先级、分类、提醒时间等），
+   * 仅靠预览用的 title / subtitle 无法还原，故一并携带。
+   */
+  raw?: unknown;
 }
 
 interface ExpandedToolCardProps {
@@ -21,6 +27,8 @@ interface ExpandedToolCardProps {
   onAdd: () => void;
   onItemTap?: (item: PreviewItem) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
+  /** 数据行右键：提供「新增 / 编辑 / 删除」菜单 */
+  onItemContextMenu?: (e: React.MouseEvent, item: PreviewItem) => void;
 }
 
 /**
@@ -28,7 +36,7 @@ interface ExpandedToolCardProps {
  * 标题行右侧为新增按钮，内容列表支持滚动（隐藏滚动条），点击行弹出详情预览。
  */
 const ExpandedToolCard: React.FC<ExpandedToolCardProps> = ({
-  tool, items, totalCount, onClick, onAdd, onItemTap, onContextMenu,
+  tool, items, totalCount, onClick, onAdd, onItemTap, onContextMenu, onItemContextMenu,
 }) => {
   const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
 
@@ -66,6 +74,7 @@ const ExpandedToolCard: React.FC<ExpandedToolCardProps> = ({
               key={item.id}
               className="expanded-tool-card__row"
               onClick={(e) => { e.stopPropagation(); onItemTap?.(item); }}
+              onContextMenu={onItemContextMenu ? (e) => onItemContextMenu(e, item) : undefined}
             >
               <span className="expanded-tool-card__title">{item.title}</span>
               {item.subtitle && (

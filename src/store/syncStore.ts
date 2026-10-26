@@ -116,12 +116,5 @@ export const useSyncStore = create<SyncStore>((set) => ({
   setTableDataCounts: (counts) => set({ tableDataCounts: counts }),
   setTotalDataCount: (count) => set({ totalDataCount: count }),
 }));
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => {
-    useSyncStore.getState().setIsOnline(true);
-  });
-  window.addEventListener('offline', () => {
-    useSyncStore.getState().setIsOnline(false);
-  });
-}
+// online/offline 事件统一由 services/networkMonitor 监听（含可达性探测与日志记录）。
+// 此处不再重复注册：store 文件回归纯状态定义，避免两处实现语义不一致。

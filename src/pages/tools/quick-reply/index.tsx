@@ -18,7 +18,7 @@ import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Pagination from '../../../components/ui/Pagination';
-import { modalControlClass, modalTextareaClass } from '../account/shared';
+import { modalControlClass } from '../account/shared';
 import { useIsCompactMode } from '../../../store/windowModeStore';
 import { useOverflowItems } from '../../../hooks/useOverflowItems';
 import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
@@ -627,23 +627,17 @@ const QuickReplyPage: React.FC = () => {
           onConfirm={handleCreateQuickReply}
         />
 
-        <Modal
+        {/* 编辑复用与新增/首页同一个表单组件，避免两套 UI 各自演进。
+            提交仍走 handleUpdateQuickReply，分类归属规则与原先一致。 */}
+        <QuickReplyFormModal
           isOpen={showEditQuickReplyModal}
           onClose={handleCloseEditQuickReplyModal}
-          title="编辑快捷回复"
-          confirmText="保存"
+          content={editingQuickReply?.content ?? ''}
+          onContentChange={(v) => setEditingQuickReply((prev) => (prev ? { ...prev, content: v } : prev))}
           onConfirm={handleUpdateQuickReply}
-        >
-          {editingQuickReply && (
-            <textarea
-              value={editingQuickReply.content}
-              onChange={(e) => setEditingQuickReply({ ...editingQuickReply, content: e.target.value })}
-              placeholder="快捷回复内容"
-              rows={4}
-              className={modalTextareaClass}
-            />
-          )}
-        </Modal>
+          modalTitle="编辑快捷回复"
+          confirmText="保存"
+        />
 
         <Modal
           isOpen={showAddCategoryModal}

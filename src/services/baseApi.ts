@@ -1,5 +1,6 @@
 import type { NetworkConfig } from '../types/network';
 import { isElectron } from '../utils/environment';
+import { subscribeNetworkConfigInvalidate } from './networkConfigCache';
 
 // 60s 新闻 API 默认值（同时也是 web/手机端硬编码使用的地址）
 const DEFAULT_PRIMARY_URL = 'https://60s.fqy-jfb.workers.dev/v2';
@@ -37,11 +38,11 @@ const loadDesktopConfig = async (): Promise<{ primaryUrl: string; fallbackUrl: s
   return { primaryUrl: DEFAULT_PRIMARY_URL, fallbackUrl: DEFAULT_FALLBACK_URL };
 };
 
-if (window.electron) {
-  window.electron.onSettingChanged((setting) => {
-    if (setting.name === 'networkConfig') cachedHotNews = null;
-  });
-}
+// 复用统一的缓存失效订阅：原先此处与 PluginService 各自复制一份注册，
+// preload 改为多播后两者才都能生效（此前会被 App 的空函数注册顶掉）。
+subscribeNetworkConfigInvalidate(() => {
+  cachedHotNews = null;
+});
 
 // 请求超时（ms）：避免主源挂起导致备源切换延迟
 const REQUEST_TIMEOUT = 10000;

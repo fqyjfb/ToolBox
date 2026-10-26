@@ -8,7 +8,7 @@ import {
   DragStartEvent,
   type KeyboardCoordinateGetter,
 } from '@dnd-kit/core';
-import { Trash2, ExternalLink, Copy, X, Plus, Minus, Cloud } from 'lucide-react';
+import { Trash2, ExternalLink, Copy, X, Plus, Minus, Cloud, Edit } from 'lucide-react';
 import { hotNewsApi } from '../../services/hotNews';
 import { WEATHER_TOOL_ID, ADDABLE_TOOL_IDS, type HomeToolItem, type AddableToolId } from '../../utils/homeTools';
 import { STORAGE_KEYS } from '../../services/localStorageService';
@@ -28,10 +28,13 @@ import {
 import { isElectron } from '../../utils/environment';
 import { openUrl } from '../../services/browserService';
 import { useToastStore } from '../../store/toastStore';
+import { logError } from '../../services/loggerService';
 import { useDndSensors } from '../../hooks/useDndSensors';
 import { useHoverTooltip } from '../../hooks/useHoverTooltip';
 import { DISPLAY_LIMITS } from '../../constants/timers';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import SearchBar from '../../components/home/SearchBar';
 import HomeClock from '../../components/home/HomeClock';
 import FavoriteCard from '../../components/home/FavoriteCard';
@@ -81,6 +84,15 @@ const SNAP_HYSTERESIS = 0.2;
 // 有预览数据时按「2 倍宽 × 3 行」展示的扩展工具；工具 id 的合法值由 ADDABLE_TOOL_IDS 派生
 const isAddableToolId = (id: string): id is AddableToolId =>
   (ADDABLE_TOOL_IDS as readonly string[]).includes(id);
+
+/** 各工具一条数据的称呼，用于新增 / 删除菜单与提示文案 */
+const TOOL_ITEM_LABEL: Record<AddableToolId, string> = {
+  todo: '任务',
+  memo: '备忘录',
+  reminder: '提醒',
+  'quick-reply': '快捷回复',
+  'cloud-clipboard': '项目',
+};
 
 interface BaseCard {
   id: string;
@@ -171,6 +183,8 @@ const Home: React.FC = () => {
   const [previewItem, setPreviewItem] = useState<{ toolName: string; item: PreviewItem } | null>(null);
   // 当前打开的新增弹窗对应的工具
   const [addToolId, setAddToolId] = useState<AddableToolId | null>(null);
+  // 当前打开的编辑弹窗对应的工具与条目（来自卡片数据行右键的「编辑」）
+  const [editingItem, setEditingItem] = useState<{ toolId: AddableToolId; item: PreviewItem } | null>(null);
 
   const { favorites } = useHomeFavorites();
   const { apps: homeQuickLaunchApps, launchApp: handleLaunchApp, removeApp: handleRemoveHomeQuickLaunch } = useHomeQuickLaunch();
@@ -188,11 +202,21 @@ const Home: React.FC = () => {
   const [previewLayout, setPreviewLayout] = useState<HomeCardLayout | null>(null);
   // 老版本只存顺序：作为一次性迁移输入，迁移完成后布局以坐标为准
   const legacyOrder = useMemo(() => loadHomeCardOrder(), []);
-  const [contextMenu, setContextMenu] = useState<{ isOpen: boolean; x: number; y: number; cardId: string | null }>({
+  // itemId / toolId：右键命中卡片内某条预览数据时携带，用于该条数据的「新增 / 编辑 / 删除」
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    x: number;
+    y: number;
+    cardId: string | null;
+    itemId: string | null;
+    toolId: AddableToolId | null;
+  }>({
     isOpen: false,
     x: 0,
     y: 0,
     cardId: null,
+    itemId: null,
+    toolId: null,
   });
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -294,19 +318,19 @@ const Home: React.FC = () => {
         clipboardService.getItems(userId, undefined, 1, 10),
       ]);
       next['tool-todo'] = { items: ((todoRes.data?.data) ?? []).slice(0, 6).map((t: Todo) => ({
-        id: t.id, title: t.title, subtitle: t.status, detail: t.description ?? undefined, type: 'todo' as const,
+        id: t.id, title: t.title, subtitle: t.status, detail: t.description ?? undefined, type: 'todo' as const, raw: t,
       })), total: todoRes.data?.total ?? 0 };
       next['tool-memo'] = { items: (memoRes.list ?? []).slice(0, 6).map((m: Memo) => ({
-        id: m.id, title: m.title, detail: m.content || undefined, type: 'memo' as const,
+        id: m.id, title: m.title, detail: m.content || undefined, type: 'memo' as const, raw: m,
       })), total: memoRes.total ?? 0 };
       next['tool-reminder'] = { items: (reminderRes.data ?? []).slice(0, 6).map((r: Reminder) => ({
-        id: r.id, title: r.title, subtitle: r.remind_time ? new Date(r.remind_time).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined, detail: r.content || undefined, type: 'reminder' as const,
+        id: r.id, title: r.title, subtitle: r.remind_time ? new Date(r.remind_time).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined, detail: r.content || undefined, type: 'reminder' as const, raw: r,
       })), total: reminderRes.data?.length ?? 0 };
       next['tool-quick-reply'] = { items: (quickReplyRes.list ?? []).slice(0, 6).map((q: QuickReply) => ({
-        id: q.id, title: q.content, subtitle: q.category?.name, type: 'quick-reply' as const,
+        id: q.id, title: q.content, subtitle: q.category?.name, type: 'quick-reply' as const, raw: q,
       })), total: quickReplyRes.total ?? 0 };
       next['tool-cloud-clipboard'] = { items: (clipboardRes.list ?? []).slice(0, 6).map((c: ClipboardItem) => ({
-        id: c.id, title: c.content, subtitle: c.category?.name, type: 'clipboard' as const,
+        id: c.id, title: c.content, subtitle: c.category?.name, type: 'clipboard' as const, raw: c,
       })), total: clipboardRes.total ?? 0 };
     } catch {
       // 静默失败：按无数据处理，卡片回落常规尺寸
@@ -584,19 +608,91 @@ const Home: React.FC = () => {
     if (!card || (card.type !== 'tool' && card.type !== 'quicklaunch' && card.type !== 'bookmark')) return;
     e.preventDefault();
     e.stopPropagation();
-    setContextMenu({ isOpen: true, x: e.clientX, y: e.clientY, cardId });
+    setContextMenu({ isOpen: true, x: e.clientX, y: e.clientY, cardId, itemId: null, toolId: null });
   }, [cardMap]);
 
+  /** 卡片内某条预览数据的右键：stopPropagation 避免同时弹出卡片自身的菜单 */
+  const openItemContextMenu = useCallback((e: React.MouseEvent, toolId: AddableToolId, item: PreviewItem) => {
+    if (!userId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ isOpen: true, x: e.clientX, y: e.clientY, cardId: null, itemId: item.id, toolId });
+  }, [userId]);
+
   const closeContextMenu = useCallback(() => {
-    setContextMenu(prev => ({ ...prev, isOpen: false, cardId: null }));
+    setContextMenu(prev => ({ ...prev, isOpen: false, cardId: null, itemId: null, toolId: null }));
   }, []);
 
+  const { confirmDialog, handleOpenConfirmDialog, handleCloseConfirmDialog } = useConfirmDialog(closeContextMenu);
+
+  /** 删除卡片数据行：与各工具页一样走同一个 service（提醒的删除会连带注销计划任务） */
+  const handleDeleteItem = useCallback(async (toolId: AddableToolId, itemId: string) => {
+    if (!userId) return;
+    try {
+      switch (toolId) {
+        case 'todo':
+          await todoServiceWrapper.todo.deleteTodo(userId, itemId);
+          break;
+        case 'memo':
+          await memoService.deleteMemo(userId, itemId);
+          break;
+        case 'reminder':
+          await reminderService.deleteReminder(userId, itemId);
+          break;
+        case 'quick-reply':
+          await quickReplyService.deleteQuickReply(userId, itemId);
+          break;
+        case 'cloud-clipboard':
+          await clipboardService.deleteItem(userId, itemId);
+          break;
+      }
+      addToast({ type: 'success', message: `${TOOL_ITEM_LABEL[toolId]}已删除` });
+      void fetchPreview();
+    } catch (error) {
+      logError('删除首页卡片条目失败', 'Home', error as Error);
+      addToast({ type: 'error', message: '删除失败' });
+    }
+  }, [userId, addToast, fetchPreview]);
+
   const getContextMenuItems = useCallback((): ContextMenuItem[] => {
+    // 卡片内某条数据右键：新增 / 编辑 / 删除，功能与各工具页内的一致
+    if (contextMenu.itemId && contextMenu.toolId) {
+      const toolId = contextMenu.toolId;
+      const item = previewData[`tool-${toolId}`]?.items.find(i => i.id === contextMenu.itemId);
+      if (!item) return [];
+      return [
+        {
+          id: 'item-add',
+          label: '新增',
+          icon: <Plus className="w-4 h-4" />,
+          onClick: () => setAddToolId(toolId),
+        },
+        {
+          id: 'item-edit',
+          label: '编辑',
+          icon: <Edit className="w-4 h-4" />,
+          onClick: () => setEditingItem({ toolId, item }),
+        },
+        { id: 'item-divider', divider: true },
+        {
+          id: 'item-delete',
+          label: '删除',
+          icon: <Trash2 className="w-4 h-4" />,
+          onClick: () => handleOpenConfirmDialog(
+            '删除确认',
+            `确定要删除这条${TOOL_ITEM_LABEL[toolId]}吗？`,
+            () => void handleDeleteItem(toolId, item.id),
+          ),
+        },
+      ];
+    }
+
     const card = contextMenu.cardId ? cardMap.get(contextMenu.cardId) : undefined;
     if (!card) return [];
 
     // 工具卡片：与工具中心共用同一份数据源，移出首页后工具中心的角标同步消失
     if (card.type === 'tool') {
+      const toolId = card.tool.id;
       return [
         {
           id: 'open',
@@ -604,6 +700,15 @@ const Home: React.FC = () => {
           icon: <ExternalLink className="w-4 h-4" />,
           onClick: () => navigateToTool(card.tool.path),
         },
+        // 支持直接新增的工具：与卡片右上角「+」按钮走同一个入口
+        ...(isAddableToolId(toolId) && userId
+          ? [{
+              id: 'add-item',
+              label: `新增${TOOL_ITEM_LABEL[toolId]}`,
+              icon: <Plus className="w-4 h-4" />,
+              onClick: () => setAddToolId(toolId),
+            }]
+          : []),
         {
           id: 'add',
           label: '添加工具',
@@ -663,7 +768,11 @@ const Home: React.FC = () => {
     }
 
     return [];
-  }, [contextMenu.cardId, cardMap, copyUrl, navigateToTool, addToast, removeHomeTool, handleRemoveHomeQuickLaunch, handleRemoveHomeBookmark]);
+  }, [
+    contextMenu.cardId, contextMenu.itemId, contextMenu.toolId, previewData, cardMap, copyUrl,
+    navigateToTool, addToast, removeHomeTool, handleRemoveHomeQuickLaunch, handleRemoveHomeBookmark,
+    userId, handleDeleteItem, handleOpenConfirmDialog,
+  ]);
 
   const renderCardContent = (card: HomeCard) => {
     switch (card.type) {
@@ -699,6 +808,7 @@ const Home: React.FC = () => {
                 setPreviewItem({ toolName: card.tool.name, item });
               }}
               onContextMenu={(e) => openContextMenu(e, card.id)}
+              onItemContextMenu={(e, item) => openItemContextMenu(e, toolId, item)}
             />
           );
         }
@@ -848,9 +958,21 @@ const Home: React.FC = () => {
       )}
 
       <HomeToolAddModal
-        toolId={addToolId}
-        onClose={() => setAddToolId(null)}
+        toolId={editingItem ? editingItem.toolId : addToolId}
+        editingItem={editingItem ? editingItem.item : null}
+        onClose={() => {
+          setAddToolId(null);
+          setEditingItem(null);
+        }}
         onCreated={() => { void fetchPreview(); }}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={handleCloseConfirmDialog}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
       />
     </div>
   );

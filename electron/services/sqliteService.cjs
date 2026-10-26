@@ -81,7 +81,9 @@ async function init(userDataPath, username) {
       db.run(schema);
     }
 
-    persist();
+    // 建表后立即落盘会做一次全库序列化，落在 init 的同步路径上。
+    // 延后一个 tick：库文件仍会立刻写入，只是不再阻塞 init 返回（首屏 sqlite:init 更快）。
+    setImmediate(() => persist());
   })();
 
   try {
@@ -453,15 +455,32 @@ function getStoredUsers() {
   return Array.from(users);
 }
 
+// sql.js WASM 运行时预热：加载并实例化 WASM 是本模块最重的一步。
+// 启动期提前异步调用（不 await）可让后续的对账/查询省去这段等待。
+// 与 init()、readAllReminders()、findReminderInOwningDb() 共享同一个模块级 SQL 实例，不会重复加载。
+let warmupPromise = null;
+
+function warmup() {
+  if (SQL) return Promise.resolve(SQL);
+  if (!warmupPromise) {
+    warmupPromise = (async () => {
+      if (!initSqlJs) initSqlJs = require('sql.js');
+      SQL = await initSqlJs();
+      return SQL;
+    })().catch((err) => {
+      warmupPromise = null; // 失败则允许后续调用方重试
+      throw err;
+    });
+  }
+  return warmupPromise;
+}
+
 // 启动期提醒对账专用：以「独立只读连接」遍历数据目录下全部 ToolBox*.db，
 // 汇总 reminders 表记录（id 去重）。绝不使用/切换全局单例连接 db，
 // 避免与渲染进程抢在登录前发出的空用户名 sqlite:init 互相抢连接。
 // 单个库损坏或被写盘覆盖只跳过该库，不影响其余库与启动流程。
 async function readAllReminders(userDataPath) {
-  if (!SQL) {
-    if (!initSqlJs) initSqlJs = require('sql.js');
-    SQL = await initSqlJs();
-  }
+  await warmup();
 
   const dir = loadSettingsSafe().dbPath || getDefaultDbDir(userDataPath);
   const byId = new Map();
@@ -502,10 +521,7 @@ async function readAllReminders(userDataPath) {
 // updatedRecord 可选：传入时在归属库就地回写（写盘后立即关闭独立连接）。
 // 返回 { reminder, updated }；未找到返回 null。
 async function findReminderInOwningDb(userDataPath, reminderId, updatedRecord) {
-  if (!SQL) {
-    if (!initSqlJs) initSqlJs = require('sql.js');
-    SQL = await initSqlJs();
-  }
+  await warmup();
 
   const dir = loadSettingsSafe().dbPath || getDefaultDbDir(userDataPath);
   let files = [];
@@ -599,6 +615,7 @@ function close() {
 }
 
 module.exports = {
+  warmup,
   init,
   get,
   queryByUser,

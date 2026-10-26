@@ -84,7 +84,9 @@ const createFloatWindow = () => {
 
   floatWindow.setIgnoreMouseEvents(false);
 
-  const POLL_INTERVAL = 150;
+  // 命中判定只依赖光标是否落在悬浮球矩形内，250ms 仍远快于人手移动，
+  // 相比 150ms 可减少约 40% 的主进程唤醒，hover 展开/移出收起的手感不变。
+  const POLL_INTERVAL = 250;
   const pollTimer = setInterval(() => {
     if (!floatWindow || floatWindow.isDestroyed()) return;
     const cursor = screen.getCursorScreenPoint();
@@ -108,6 +110,8 @@ const createFloatWindow = () => {
       }
     }
   }, POLL_INTERVAL);
+  // 与 mainWindow 中其它定时器保持一致：定时器不阻止主进程退出
+  if (pollTimer && typeof pollTimer.unref === 'function') pollTimer.unref();
 
   const floatHtmlPath = path.join(__dirname, './float/float.html');
   const packagedPath = path.join(process.resourcesPath, 'app', 'electron', 'window', 'float', 'float.html');

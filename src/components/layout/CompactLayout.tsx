@@ -8,19 +8,24 @@ import WindowModeButton from './WindowModeButton';
 import CheckInButton from './CheckInButton';
 import ThemeToggleButton from './ThemeToggleButton';
 import WindowControls from './WindowControls';
+import CompactSidebarToggle from './CompactSidebarToggle';
 import HeaderSearchBox from './HeaderSearchBox';
 import { isSearchRoute } from '../../constants/searchRoutes';
 import PageTransition from './PageTransition';
 import QuickLaunchBar from '../home/QuickLaunchBar';
 import { useHomeQuickLaunch } from '../../hooks/useHomeQuickLaunch';
 
-// 小窗紧凑标题栏：隐藏清单 = 面包屑、Logo、侧栏开关、设置按钮、待办铃铛、最大化按钮
+// 小窗紧凑标题栏：左侧保留侧栏显隐开关，隐藏清单 = 面包屑、Logo、设置按钮、待办铃铛、最大化按钮
 // （Logo 与设置入口由折叠侧栏承担；搜索框移至个人信息区，均直接不渲染而非 CSS 隐藏）
 const CompactTitleBar: React.FC = () => {
   return (
     <div className="flex flex-col flex-shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
-      <div className="pl-4 pr-0 py-0 flex items-center justify-between">
-        <div className="flex-1 min-w-0" />
+      {/* 左右均不设内边距：侧栏显隐开关贴左边，窗口控制按钮贴右边 */}
+      <div className="pr-0 py-0 flex items-center justify-between">
+        <div className="flex items-center" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+          {/* 最左侧：小窗侧边栏显隐开关（小窗空间有限，可整条侧栏收掉让位内容区） */}
+          <CompactSidebarToggle />
+        </div>
         <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <div className="flex items-center overflow-hidden rounded-lg">
             <WindowModeButton />
@@ -39,7 +44,9 @@ const CompactUserInfo: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const location = useLocation();
-  // 小窗个人信息区：仅头像 / 姓名 / 邮箱三处可跳转，等级徽章与签到按钮不参与跳转
+  // 小窗个人信息区：头像回首页（小窗下 Logo 已隐藏，由头像承担原 Logo 的入口作用）；
+  // 姓名 / 邮箱跳个人信息页，等级徽章与签到按钮不参与跳转
+  const goHome = () => navigate('/');
   const goProfile = () => navigate('/tools/profile');
   const { apps, launchApp, removeApp, reorderApps } = useHomeQuickLaunch();
   const showSearch = isSearchRoute(location.pathname);
@@ -59,7 +66,7 @@ const CompactUserInfo: React.FC = () => {
         <div className="flex items-center gap-2">
           {user && currentLevel && (
             <div className="flex items-center gap-2 min-w-0 flex-1">
-      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border border-content-light bg-bg-primary flex-shrink-0 cursor-pointer" onClick={goProfile}>
+      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border border-content-light bg-bg-primary flex-shrink-0 cursor-pointer" onClick={goHome}>
         <svg viewBox="0 0 1088 1024" preserveAspectRatio="xMidYMid meet" className="w-6 h-6">
           <path d="M972.298912 790.448083c-31.060997 45.726663-76.791953 32.988092-76.791952 32.988093 9.171943 27.429989-5.07311 65.113498-5.07311 65.113498-31.400063 62.950345-26.97504 101.711139-26.975041 101.711139-43.91116-21.906222-50.108766-110.930293-36.005348-139.205801s-16.193608-48.452065-16.193608-48.452065l23.66593-74.19531s42.675072 70.027806 105.136132 16.708644c52.332007-44.662255 108.260687-26.42996 108.260687-26.42996s-30.829231 5.223329-76.02369 71.761762z" fill="#B1CFE0"/>
           <path d="M856.158166 762.872167c55.327804 67.735893 94.57359 12.64844 94.57359 12.64844 33.430165-50.50792 97.582262-56.834285 97.582262-56.834286-18.103535 6.05168-40.889612 23.095098-73.409879 73.598726-21.361142 33.176939-81.33715 38.09983-81.33715 38.099831s26.75615 6.425081-3.137431 58.164796c-29.902165 51.735423-26.979332 101.711139-26.979333 101.711139-35.855129-17.888937-58.490986-89.058407-40.456122-125.213974s-40.314487-85.337268-40.314488-85.337268c48.383394-0.639504 73.478551-16.837404 73.478551-16.837404z" fill="#88ADC2"/>

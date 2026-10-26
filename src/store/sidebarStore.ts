@@ -32,10 +32,13 @@ const initial = coerce(localStorageService.get<unknown>(STORAGE_KEYS.SIDEBAR, nu
 interface SidebarStore {
   isCollapsed: boolean;
   isVisible: boolean;
+  /** 小窗模式下的侧边栏隐藏态：仅小窗生效、仅存于内存，不污染大窗的显隐偏好 */
+  compactHidden: boolean;
   position: 'left' | 'right';
   pinnedToolIds: string[];
 
   toggleSidebar: () => void;
+  toggleCompactSidebar: () => void;
   setVisible: (visible: boolean) => void;
   setPosition: (position: 'left' | 'right') => void;
 
@@ -47,6 +50,7 @@ interface SidebarStore {
 export const useSidebarStore = create<SidebarStore>((set) => ({
   isCollapsed: initial.isCollapsed,
   isVisible: true,
+  compactHidden: false,
   position: 'left',
   pinnedToolIds: initial.pinnedToolIds,
 
@@ -55,6 +59,8 @@ export const useSidebarStore = create<SidebarStore>((set) => ({
     persist({ pinnedToolIds: state.pinnedToolIds, isCollapsed });
     return { isCollapsed };
   }),
+
+  toggleCompactSidebar: () => set((state) => ({ compactHidden: !state.compactHidden })),
 
   setVisible: (visible) => set({ isVisible: visible }),
   setPosition: (position) => set({ position }),
