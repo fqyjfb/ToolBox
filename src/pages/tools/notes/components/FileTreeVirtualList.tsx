@@ -92,7 +92,10 @@ export const FileTreeVirtualList: React.FC<FileTreeVirtualListProps> = ({
   };
 
   return (
+    // className 落在 react-window 的可滚动外层 div 上（其自带 overflow:auto），
+    // 虚拟列表的滚动条由它产生，与外层容器的 5px 细滚动条保持一致。
     <FixedSizeList
+      className="scrollbar-5px"
       height={height}
       width={width}
       itemCount={rows.length}

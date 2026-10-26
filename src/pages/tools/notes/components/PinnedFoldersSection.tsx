@@ -129,7 +129,7 @@ export const PinnedFoldersSection: React.FC<PinnedFoldersSectionProps> = ({
         </div>
       )}
       {open && pinnedFolders.length > 0 && (
-        <div className="mt-1 max-h-48 overflow-y-auto scrollbar-hide space-y-0.5">
+        <div className="mt-1 max-h-48 overflow-y-auto scrollbar-5px space-y-0.5">
           {pinnedFolders.map((pinned, index) => (
             <div
               key={pinned.path}

@@ -63,6 +63,7 @@ const { createTray } = require('./window/tray.cjs');
 const { registerLogIpcHandlers } = require('./logs/window.cjs');
 const { initLogger } = require('./logs/logger.cjs');
 const { loadSettings } = require('./lib/config.cjs');
+const notesService = require('./services/notesService.cjs');
 const sqliteService = require('./services/sqliteService.cjs');
 const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = require('./window/lockWindow.cjs');
 const { registerQuickLoginIpcHandlers } = require('./window/quickLoginWindow.cjs');
@@ -119,6 +120,19 @@ app.commandLine.appendSwitch('js-flags', '--expose-gc');
 function resolveLocalMediaRoots() {
   const roots = [path.join(app.getPath('userData'), 'icon-cache')];
   try {
+    // 笔记的三个根（主根 / 视图根 / 对话根）写在 <userData>/notes_settings.json，
+    // 由 notesService 持有；这里必须复用同一份 getAllowedRoots，不能各自维护白名单——
+    // 之前本函数改读 settings.json 的 notes_view_path（该文件从不写这个键），
+    // 结果白名单退化成只剩 icon-cache，笔记里的图片全部被判越界返回 403，右侧一片空白。
+    const notesRoots = notesService.getAllowedRoots();
+    if (Array.isArray(notesRoots)) {
+      for (const root of notesRoots) {
+        if (root && typeof root === 'string') roots.push(path.resolve(root));
+      }
+    }
+  } catch { /* ignore */ }
+  try {
+    // 兼容：settings.json 里若也配了笔记视图根，同样放行（历史配置，非主路径）
     const s = loadSettings() || {};
     const vp = s.notesViewPath || s.notes_view_path;
     if (vp) roots.push(path.resolve(vp));

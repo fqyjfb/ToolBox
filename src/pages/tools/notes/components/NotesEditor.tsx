@@ -304,6 +304,20 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     return `local-media://host/${encodeURIComponent(selectedFile.path.replace(/\\/g, '/'))}`;
   }, [selectedFile]);
 
+  // 图片加载策略：优先 local-media://（流式返回，不整读文件），
+  // 协议失败（越界 403 / 文件缺失 / 协议未注册等）时自动降级到 useNotesSelection
+  // 已读好的 blob URL；两者都失败才显式提示，避免只表现成「右侧空白」却无任何反馈。
+  const [imageStage, setImageStage] = useState<'protocol' | 'blob' | 'failed'>('protocol');
+
+  // 换图时复位，避免上一张的降级状态带到新图上
+  useEffect(() => {
+    setImageStage('protocol');
+  }, [localMediaUrl]);
+
+  const handleImageError = useCallback(() => {
+    setImageStage((stage) => (stage === 'protocol' ? 'blob' : 'failed'));
+  }, []);
+
   // 视频直连
   const videoFileUrl = useMemo(() => {
     if (!selectedFile) return null;
@@ -377,9 +391,25 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   const renderEditor = () => {
     const fileType = fileMetadata?.fileType;
 
-    // image 走 local-media://
-    if (fileType === 'image' && localMediaUrl) {
-      return <NotesImageViewer src={localMediaUrl} alt={selectedFile?.name || ''} />;
+    // image 走 local-media://，加载失败后自动降级为 blob URL，再失败才提示
+    if (fileType === 'image') {
+      const imageSrc = imageStage === 'protocol' ? localMediaUrl : filePreviewUrl;
+      if (!imageSrc) {
+        return (
+          <div className="flex flex-1 min-h-0 items-center justify-center px-6 text-center text-sm text-content-tertiary">
+            {imageStage === 'failed'
+              ? '图片加载失败，文件可能已损坏或不在笔记目录内。'
+              : '正在加载图片…'}
+          </div>
+        );
+      }
+      return (
+        <NotesImageViewer
+          src={imageSrc}
+          alt={selectedFile?.name || ''}
+          onError={handleImageError}
+        />
+      );
     }
 
     if (fileType === 'video') {
@@ -441,7 +471,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
       return (
         <div
           ref={previewContainerRef}
-          className="flex flex-1 min-h-0 overflow-auto"
+          className="flex flex-1 min-h-0 overflow-auto scrollbar-5px"
         >
           {previewVisible ? (
             <FileViewer
@@ -490,7 +520,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
             </button>
           </div>
           {htmlViewMode === 'preview' ? (
-            <div className="flex flex-1 min-h-0 overflow-auto">
+            <div className="flex flex-1 min-h-0 overflow-auto scrollbar-5px">
               <iframe
                 key={`${selectedFile?.path}-${!!content}`}
                 srcDoc={content}
@@ -500,7 +530,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
               />
             </div>
           ) : (
-            <div className="flex flex-1 min-h-0 overflow-auto">
+            <div className="flex flex-1 min-h-0 overflow-auto scrollbar-5px">
               <WMarkdownEditor
                 value={content}
                 onChange={handleContentChange}
@@ -518,7 +548,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     }
 
     return (
-      <div className="flex flex-1 min-h-0 overflow-auto">
+      <div className="flex flex-1 min-h-0 overflow-auto scrollbar-5px">
         <WMarkdownEditor
           value={content}
           onChange={handleContentChange}
@@ -706,7 +736,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
       </div>
 
       {/* 内容区唯一滚动容器：min-h-0 内部滚动，overscroll-contain 防带滚外层 */}
-      <div className="relative flex flex-1 flex-col min-h-0 min-w-0 overflow-auto overscroll-contain">
+      <div className="relative flex flex-1 flex-col min-h-0 min-w-0 overflow-auto overscroll-contain scrollbar-5px">
         {renderEditor()}
       </div>
     </section>

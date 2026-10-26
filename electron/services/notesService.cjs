@@ -917,4 +917,7 @@ module.exports = {
   saveSetting,
   loadSettings,
   saveSettings,
+  // 供 local-media 协议白名单复用：与 rejectOutsideRoots 保持同源，
+  // 否则协议层与 IPC 层两套白名单会不一致（曾经导致笔记内图片一律 403）。
+  getAllowedRoots,
 };

@@ -86,7 +86,7 @@ export const ChatOrganizeSection: React.FC<ChatOrganizeSectionProps> = ({
               </span>
             </button>
             {isOrganizeExpanded && organizeChildren.length > 0 && (
-              <div className="mt-1 max-h-48 overflow-y-auto scrollbar-hide space-y-0.5">
+              <div className="mt-1 max-h-48 overflow-y-auto scrollbar-5px space-y-0.5">
                 {organizeChildren.map((child) => (
                   <FileTreeItem
                     key={child.id}

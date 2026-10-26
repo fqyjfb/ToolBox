@@ -121,7 +121,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
       />
       <div
         ref={containerRef}
-        className={`flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide transition-colors ${
+        className={`flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-5px transition-colors ${
           ix.treeAreaDragOver ? 'bg-blue-50 ring-2 ring-inset ring-blue-500/60 dark:bg-blue-500/10' : ''
         }`}
         onContextMenu={(e) => {

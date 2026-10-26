@@ -103,7 +103,7 @@ export const CreateNoteMenu: React.FC<CreateNoteMenuProps> = ({
           用模板新建笔记
         </div>
 
-        <div className="max-h-64 overflow-y-auto scrollbar-hide">
+        <div className="max-h-64 overflow-y-auto scrollbar-5px">
           {/* 内置模板恒非空，故无需「整体加载中」骨架；用户模板刷新态见下方 footer */}
           <TemplateGroup
             title="内置模板"

@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 export interface NotesImageViewerProps {
   src: string;
   alt?: string;
+  // 加载失败回调：交给上层决定降级策略（如从 local-media:// 回退到 blob URL / 提示错误）
+  onError?: () => void;
 }
 
 const MIN_SCALE = 0.2;
@@ -15,7 +17,7 @@ function clampScale(v: number): number {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, v));
 }
 
-const NotesImageViewer: React.FC<NotesImageViewerProps> = ({ src, alt }) => {
+const NotesImageViewer: React.FC<NotesImageViewerProps> = ({ src, alt, onError }) => {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -107,6 +109,7 @@ const NotesImageViewer: React.FC<NotesImageViewerProps> = ({ src, alt }) => {
         alt={alt || ''}
         draggable={false}
         decoding="async"
+        onError={onError}
         className="m-auto max-h-full max-w-full object-contain"
         style={{
           transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
