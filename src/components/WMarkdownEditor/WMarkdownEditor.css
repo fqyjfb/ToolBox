@@ -40,6 +40,60 @@
   width: 100% !important;
 }
 
+/* 滚动条（纵向 + 横向）统一为全局 .scrollbar-5px（首页卡片新增弹窗的内容输入框、记事本侧边栏同一套）。
+   Markdown 内容区的滚动由 vditor 内部元素承担——.vditor-content 带 overflow-y:auto，
+   ir / sv / wysiwyg 下的 pre.vditor-reset 自身也带 overflow:auto——无法用 className 挂载，
+   故在此复用同一组颜色变量与 5px 尺寸，避免出现浏览器默认的宽滚动条。 */
+.w-markdown-editor .vditor-content::-webkit-scrollbar,
+.w-markdown-editor .vditor-ir::-webkit-scrollbar,
+.w-markdown-editor .vditor-sv::-webkit-scrollbar,
+.w-markdown-editor .vditor-wysiwyg::-webkit-scrollbar,
+.w-markdown-editor .vditor-reset::-webkit-scrollbar,
+.w-markdown-editor .vditor-preview::-webkit-scrollbar {
+  /* width 管纵向、height 管横向，与 .scrollbar-5px 一致 */
+  display: block;
+  width: 5px;
+  height: 5px;
+}
+
+/* 纵横同时出现时交界的角落，默认是一块白底，这里与轨道一样透明 */
+.w-markdown-editor .vditor-content::-webkit-scrollbar-corner,
+.w-markdown-editor .vditor-ir::-webkit-scrollbar-corner,
+.w-markdown-editor .vditor-sv::-webkit-scrollbar-corner,
+.w-markdown-editor .vditor-wysiwyg::-webkit-scrollbar-corner,
+.w-markdown-editor .vditor-reset::-webkit-scrollbar-corner,
+.w-markdown-editor .vditor-preview::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.w-markdown-editor .vditor-content::-webkit-scrollbar-track,
+.w-markdown-editor .vditor-ir::-webkit-scrollbar-track,
+.w-markdown-editor .vditor-sv::-webkit-scrollbar-track,
+.w-markdown-editor .vditor-wysiwyg::-webkit-scrollbar-track,
+.w-markdown-editor .vditor-reset::-webkit-scrollbar-track,
+.w-markdown-editor .vditor-preview::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.w-markdown-editor .vditor-content::-webkit-scrollbar-thumb,
+.w-markdown-editor .vditor-ir::-webkit-scrollbar-thumb,
+.w-markdown-editor .vditor-sv::-webkit-scrollbar-thumb,
+.w-markdown-editor .vditor-wysiwyg::-webkit-scrollbar-thumb,
+.w-markdown-editor .vditor-reset::-webkit-scrollbar-thumb,
+.w-markdown-editor .vditor-preview::-webkit-scrollbar-thumb {
+  background-color: var(--color-scrollbar-thumb);
+  border-radius: 3px;
+}
+
+.w-markdown-editor .vditor-content::-webkit-scrollbar-thumb:hover,
+.w-markdown-editor .vditor-ir::-webkit-scrollbar-thumb:hover,
+.w-markdown-editor .vditor-sv::-webkit-scrollbar-thumb:hover,
+.w-markdown-editor .vditor-wysiwyg::-webkit-scrollbar-thumb:hover,
+.w-markdown-editor .vditor-reset::-webkit-scrollbar-thumb:hover,
+.w-markdown-editor .vditor-preview::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-scrollbar-thumb-hover);
+}
+
 .w-markdown-editor .vditor-ir,
 .w-markdown-editor .vditor-sv,
 .w-markdown-editor .vditor-wysiwyg {

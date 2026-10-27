@@ -595,7 +595,10 @@ body.dark {
 }
 
 .scrollbar-5px::-webkit-scrollbar {
+  /* width 管纵向、height 管横向：两个方向用同一套 5px 细滚动条，
+     避免容器内同时出现细纵条 + 浏览器默认宽横条的不一致外观 */
   width: 5px;
+  height: 5px;
 }
 
 .scrollbar-5px::-webkit-scrollbar-track {
