@@ -1,0 +1,35 @@
+/* PlainTextEditor（.pte 作用域）：HTML / JSON / TXT 源码编辑。
+   颜色消费 --color-*，等宽字体，为大文本承载优化。 */
+
+.pte {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pte-area {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 12px 16px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+
+.pte-area::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.pte-area:focus-visible {
+  outline: none;
+}

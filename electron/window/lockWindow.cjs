@@ -268,6 +268,15 @@ const registerLockIpcHandlers = () => {
   // 主题：锁屏是独立窗口，读不到渲染层的 localStorage，由渲染层把自定义配色同步到主进程
   ipcMain.handle('theme:set-snapshot', (event, colors) => {
     saveThemeSnapshot(colors || null);
+    // 翻译浮层同样是独立入口，主题变化时一并广播
+    const { getTranslateWindow } = require('./translateWindow.cjs');
+    const translateWindow = getTranslateWindow();
+    if (translateWindow && !translateWindow.isDestroyed()) {
+      translateWindow.webContents.send('theme-changed', {
+        isDark: isDarkTheme(),
+        snapshot: loadThemeSnapshot(),
+      });
+    }
     return { code: 0 };
   });
 

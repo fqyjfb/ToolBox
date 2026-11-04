@@ -18,8 +18,12 @@ class ShortcutManager {
     if (globalShortcut.isRegistered(accelerator)) {
       globalShortcut.unregister(accelerator);
     }
-    if (globalShortcut.register(accelerator, callback)) {
+    const ok = globalShortcut.register(accelerator, callback);
+    if (ok) {
       this.globalShortcuts.set(accelerator, callback);
+      console.info('[ShortcutManager] 全局快捷键已注册:', accelerator);
+    } else {
+      console.error('[ShortcutManager] 全局快捷键注册失败（可能被其他应用占用）:', accelerator);
     }
   }
 

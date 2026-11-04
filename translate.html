@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>翻译</title>
+    <style>
+      /* 关键：Tailwind base 给 html/body 加了 !important 背景色，
+         会盖在 transparent BrowserWindow 上让 CSS border-radius 无法透出。
+         这里在 html 解析阶段就设透明，确保 BrowserWindow 底层的
+         #00000000 背景能穿过 DOM 层显示圆角。 */
+      html, body, #root {
+        margin: 0;
+        padding: 0;
+        background: transparent !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/translate-main.tsx"></script>
+  </body>
+</html>

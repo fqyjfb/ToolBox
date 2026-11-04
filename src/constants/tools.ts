@@ -20,7 +20,6 @@ export const ALL_TOOLS: ToolInfo[] = [
   { id: 'exchange', name: '汇率换算', path: '/tools/exchange', color: '#f5a623', iconName: 'RefreshCw' },
   { id: 'translate', name: '在线翻译', path: '/tools/translate', color: '#3b82f6', iconName: 'Languages' },
   { id: 'country-code', name: '区号查询', path: '/tools/country-code', color: '#9c27b0', iconName: 'Phone' },
-  { id: 'markdown-to-wechat', name: 'Markdown', path: '/tools/markdown-to-wechat', color: '#3b82f6', iconName: 'FileCode' },
   { id: 'ip-info', name: 'IP地址查询', path: '/tools/ip-info', color: '#06b6d4', iconName: 'Globe' },
   { id: 'emoji-remover', name: 'Emoji清理器', path: '/tools/emoji-remover', color: '#14b8a6', iconName: 'Smile' },
   { id: 'json-formatter', name: 'JSON格式化', path: '/tools/json-formatter', color: '#8b5cf6', iconName: 'Braces' },

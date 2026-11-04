@@ -40,7 +40,7 @@ export const defaultHomeTools: HomeToolItem[] = [
 ];
 
 // 已废弃的快捷工具 ID（从首页移除）：旧版本 localStorage 中可能仍存在，加载时过滤
-const DEPRECATED_TOOL_IDS = new Set(['notes']);
+const DEPRECATED_TOOL_IDS = new Set(['notes', 'markdown-to-wechat']);
 
 // 导航工具旧 id 与 ALL_TOOLS 不一致，统一成 'navigation'，
 // 否则工具中心再加一次导航就会在首页出现两张同样的卡片

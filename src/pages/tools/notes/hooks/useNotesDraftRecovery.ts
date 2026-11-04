@@ -48,6 +48,21 @@ export function useNotesDraftRecovery(): UseNotesDraftRecoveryReturn {
     try {
       const read = await api.readDraft(target);
       if (!read?.success || typeof read.content !== 'string') return null;
+
+      // 文件内容已与草稿一致（上次其实保存成功了、只是草稿没删掉）→ 无需回写，直接清草稿。
+      // 这是"恢复把已保存的新内容回滚成旧草稿"最常见的成因，必须在写盘前拦掉。
+      if (api.readFile) {
+        try {
+          const current = await api.readFile(target);
+          if (current?.success && current.content === read.content) {
+            await api.deleteDraft(target);
+            return null;
+          }
+        } catch {
+          /* 读不到就当文件不存在，继续走正常恢复 */
+        }
+      }
+
       const saved = await api.saveFile(target, read.content);
       if (!saved?.success) return null;
       // 写回成功后才删草稿；删除失败只 warn（内容已安全落盘，草稿残留只是下次再提示一次）。

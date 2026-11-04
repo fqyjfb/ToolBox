@@ -29,7 +29,6 @@ const routeLabelMap: Record<string, string> = {
   '/tools/account': '账号管理',
   '/tools/weather': '天气预报',
   '/tools/translate': '在线翻译',
-  '/tools/markdown-to-wechat': 'Markdown转微信',
   '/tools/ip-info': 'IP地址查询',
   '/tools/emoji-remover': 'Emoji清理器',
   '/tools/json-formatter': 'JSON格式化',

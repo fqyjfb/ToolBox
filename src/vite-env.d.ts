@@ -31,6 +31,7 @@ interface ShortcutItem {
   cmd: string;
   isOpen: number;
   isGlobal: number;
+  name?: string;
 }
 
 interface AppVersionInfo {
@@ -189,28 +190,46 @@ interface OcrResult {
   error?: string;
 }
 
-interface PythonServiceStatus {
-  status: 'stopped' | 'starting' | 'running' | 'stopping' | 'error';
-  pid: number | null;
-  port: number | null;
-  httpPort: number | null;
-  startedAt: number | null;
-  uptime: number | null;
-  restartCount: number;
-  lastError: string | null;
+interface TranslatePopupPayload {
+  visible: boolean;
+  text?: string;
+  autoTranslate?: boolean;
+  trigger?: import('./types/translate').TranslateTrigger;
+  fallback?: boolean;
+  error?: string;
+  pinned?: boolean;
 }
 
-interface OcrStatus {
-  available: boolean;
-  message: string;
-  status?: string;
-  lastError?: string | null;
-  canManualStart?: boolean;
-  pid?: number;
-  uptime?: number;
+interface TranslateThemeSnapshot {
+  isDark: boolean;
+  snapshot: import('./types/theme').CustomThemeColorSnapshot | null;
+}
+
+interface TranslateHistoryAPI {
+  list: (payload?: { limit?: number; offset?: number }) => Promise<import('./types/translate').TranslateRecord[]>;
+  save: (record: import('./types/translate').TranslateRecord) => Promise<{ success?: boolean; skipped?: boolean }>;
+  remove: (id: string) => Promise<{ success?: boolean }>;
+  clear: () => Promise<{ success?: boolean }>;
+}
+
+/** 翻译浮层专用窄权限桥（translate-preload.cjs 暴露） */
+interface TranslateAPI {
+  close: () => Promise<{ success: boolean }>;
+  resize: (height: number, historyOpen?: boolean) => Promise<{ success: boolean }>;
+  copy: (text: string) => Promise<{ success: boolean }>;
+  setPinned: (pinned: boolean) => Promise<{ success: boolean; pinned: boolean }>;
+  getThemeSnapshot: () => Promise<TranslateThemeSnapshot>;
+  getAIConfig: () => Promise<import('./types/ai').AIConfig | null>;
+  onThemeChanged: (callback: (payload: TranslateThemeSnapshot) => void) => () => void;
+  onAIConfigChanged: (callback: (payload: import('./types/ai').AIConfig | null) => void) => () => void;
+  onVisible: (callback: (payload: TranslatePopupPayload) => void) => () => void;
+  history: TranslateHistoryAPI;
+  /** 截图翻译错误态：打开主窗口 OCR 设置页 */
+  openOcrSettings: () => Promise<{ success: boolean; error?: string }>;
 }
 
 declare interface Window {
+  translateAPI?: TranslateAPI;
   electron?: {
     minimize: () => void;
     maximize: () => void;
@@ -258,6 +277,7 @@ declare interface Window {
     getSettings: () => Promise<SettingItem[]>;
     updateSetting: (setting: { name: string; value: string | number | boolean | object }) => Promise<UpdateResult>;
     setThemeSnapshot: (colors: Record<string, string> | null) => Promise<UpdateResult>;
+    setAIConfigSnapshot: (config: import('./types/ai').AIConfig) => Promise<{ success: boolean }>;
     clearCache: () => Promise<UpdateResult>;
     clearIconCache: (type: 'all' | 'general' | 'plugin' | 'app') => Promise<{ success: boolean; error?: string }>;
     resolveIcons: (urls: string[], type?: 'general' | 'plugin' | 'app') => Promise<Record<string, string | null>>;
@@ -285,14 +305,26 @@ declare interface Window {
     ocr: {
       recognize: (imageBase64: string) => Promise<OcrResult>;
       recognizeFile: (filePath: string) => Promise<OcrResult>;
-      status: () => Promise<OcrStatus>;
-      start: () => Promise<{ success: boolean; message: string; pid?: number; error?: string }>;
+      status: () => Promise<{ available: boolean; ready: boolean; message: string }>;
+      start: () => Promise<{ success: boolean; message: string; error?: string }>;
       stop: () => Promise<{ success: boolean; message: string; error?: string }>;
-      serviceInfo: () => Promise<PythonServiceStatus>;
-      diagnose: () => Promise<{ success: boolean; output: string; error?: string; exitCode?: number }>;
-      installDeps: () => Promise<{ success: boolean; output: string; error?: string; exitCode?: number }>;
-      checkPort: (port: number) => Promise<{ success: boolean; inUse: boolean; port: number; error?: string }>;
-      selectPythonPath: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
+      serviceInfo: () => Promise<{ available: boolean; ready: boolean; modelCacheDir: string }>;
+      runtimeInfo: () => Promise<{ source: string; dir: string; available: boolean; ready: boolean }>;
+    };
+    screenshot: {
+      startCapture: () => Promise<{ success: boolean; error?: string }>;
+      translate: (dataUrl: string) => Promise<{ success: boolean; text?: string; error?: string }>;
+      cancel: () => void;
+      save: (data: { buffer: string; format: string; destinationPath?: string }) => Promise<{ success: boolean; path?: string; reason?: string }>;
+      copyToClipboard: (dataUrl: string) => void;
+      complete: () => void;
+    };
+    translate: {
+      open: (payload?: Partial<TranslatePopupPayload>) => Promise<{ success: boolean; locked?: boolean }>;
+      selection: () => Promise<{ success: boolean; text?: string; fallback?: boolean; hidden?: boolean; busy?: boolean }>;
+      close: () => Promise<{ success: boolean }>;
+      copy: (text: string) => Promise<{ success: boolean }>;
+      history: TranslateHistoryAPI;
     };
     fileManager: {
       getSystemPaths: () => Promise<Array<{
@@ -350,6 +382,10 @@ declare interface Window {
       readFileAsBuffer: (filePath: string) => Promise<{ success: boolean; base64?: string; mimeType?: string; error?: string }>;
       /** 视频内嵌播放前置探测：只取 size/mtime，不读文件内容 */
       statFile: (filePath: string) => Promise<{ success: boolean; size?: number; mtime?: number; isDirectory?: boolean; error?: string }>;
+      /** 导出 PDF：传已构建的 HTML（图片已内联），主进程打印并弹保存对话框落盘 */
+      exportPdf: (payload: { html: string; defaultPath?: string }) => Promise<{ success: boolean; canceled?: boolean; filePath?: string; error?: string }>;
+      /** 导出独立 HTML（图片已内联为 data-uri，单文件可分发） */
+      exportHtml: (payload: { html: string; defaultPath?: string }) => Promise<{ success: boolean; canceled?: boolean; filePath?: string; error?: string }>;
       saveFile: (filePath: string, content: string) => Promise<NotesSaveResult>;
       renameItem: (oldPath: string, newName: string) => Promise<NotesRenameResult>;
       deleteItem: (itemPath: string) => Promise<NotesDeleteResult>;

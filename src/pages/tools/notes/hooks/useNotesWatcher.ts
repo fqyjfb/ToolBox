@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNotesTabsStore } from '../../../../store/notesTabsStore';
+import { isSelfWriteEcho } from '../utils/selfWriteTracker';
 import type { FileTreeNode, NotesFsChangeEvent } from '../types';
 
 const AGGREGATE_WINDOW_MS = 300;
@@ -17,8 +18,13 @@ export interface UseNotesWatcherDeps {
   onExternalChange: (event: NotesFsChangeEvent) => void;
   selectedFile: FileTreeNode | null;
   fileContent: string;
-  updateFileContent: (content: string) => void;
-  saveFile: (content: string) => Promise<boolean>;
+  /** 派生脏态（内容与磁盘基线是否一致）：不再依赖界面的 dirtyMap，避免脏点被清后冲突静默 */
+  isDirty: boolean;
+  /** 采纳外部内容：同时推进内容与基线 */
+  applyExternalContent: (path: string, content: string) => void;
+  saveFile: (content: string, path?: string) => Promise<boolean>;
+  /** 保存成功后清理该文件的草稿（草稿是兜底，文件已是最新就没必要留） */
+  deleteDraft?: (path: string) => Promise<boolean>;
 }
 
 export interface UseNotesWatcherReturn {
@@ -66,8 +72,11 @@ export function useNotesWatcher(deps: UseNotesWatcherDeps): UseNotesWatcherRetur
     }
     const editing = depsRef.current.selectedFile;
     if (!editing || !changedPaths.has(editing.path)) return;
-    // 脏态必须非响应式读：订阅 dirtyMap 会让监听反复 stop/start
-    if (useNotesTabsStore.getState().dirtyMap[editing.path] !== true) return;
+    // 自我写入回声：应用自身保存触发的 change 不算外部修改
+    //（否则自动保存后继续输入 → dirty 复归 true → 误弹冲突窗）
+    if (isSelfWriteEcho(editing.path)) return;
+    // 脏态必须非响应式读：订阅会让监听反复 stop/start（depsRef 每次渲染同步，取到的仍是最新值）
+    if (!depsRef.current.isDirty) return;
     if (pendingRef.current?.path === editing.path) return;
     applyPending({ path: editing.path, name: editing.name });
   }, [applyPending]);
@@ -112,8 +121,10 @@ export function useNotesWatcher(deps: UseNotesWatcherDeps): UseNotesWatcherRetur
       }
       try {
         if (action === 'keep-mine') {
-          const ok = await depsRef.current.saveFile(depsRef.current.fileContent);
+          const ok = await depsRef.current.saveFile(depsRef.current.fileContent, current.path);
           if (ok) {
+            // 文件已是最新，兜底草稿没有存在意义（否则下次启动会用它把文件回滚）
+            void depsRef.current.deleteDraft?.(current.path).catch(() => undefined);
             useNotesTabsStore.getState().setDirty(current.path, false);
             applyPending(null);
           }
@@ -126,7 +137,8 @@ export function useNotesWatcher(deps: UseNotesWatcherDeps): UseNotesWatcherRetur
           typeof result.content === 'string' &&
           depsRef.current.selectedFile?.path === current.path
         ) {
-          depsRef.current.updateFileContent(result.content);
+          // 同时推进内容与基线，否则采纳外部内容后仍显示"未保存"，再被自动保存写回去
+          depsRef.current.applyExternalContent(current.path, result.content);
           useNotesTabsStore.getState().setDirty(current.path, false);
         }
         applyPending(null);

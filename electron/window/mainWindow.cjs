@@ -325,26 +325,63 @@ const shortcutFunctions = {
       require('./lockWindow.cjs').lockOrPrompt();
     }
   },
+  translateSelection: () => {
+    checkLockAndShowMain(() => {
+      require('../ipc/translateIpc.cjs').triggerSelectionTranslate().catch((error) => {
+        console.error('[Shortcut] 划词翻译失败:', error);
+      });
+    });
+  },
+  translateScreenshot: () => {
+    checkLockAndShowMain(() => {
+      require('../ipc/pluginIpc.cjs').startScreenshotCapture({ mode: 'translate' }).catch((error) => {
+        console.error('[Shortcut] 截图翻译失败:', error);
+      });
+    });
+  },
+  translatePopup: () => {
+    // 打开翻译弹窗：showTranslateWindow 内部自带锁屏守卫，无需先唤起主窗口
+    require('./translateWindow.cjs').showTranslateWindow({});
+  },
 };
 
+/** 翻译功能相关快捷键：总开关关闭时整体释放 */
+const TRANSLATE_SHORTCUT_NAMES = new Set(['translateSelection', 'translateScreenshot', 'translatePopup']);
+
 const initShortcuts = () => {
-  const { loadShortcuts } = require('../lib/config.cjs');
+  const { loadShortcuts, loadSettings } = require('../lib/config.cjs');
   shortcutManager.unregisterAll();
   const shortcuts = loadShortcuts();
+  console.info('[MainWindow] initShortcuts 开始，共', shortcuts.length, '条快捷键');
   shortcuts.forEach((shortcut) => {
-    if (shortcut.isOpen === 0) return;
+    if (shortcut.isOpen === 0) {
+      console.info('[MainWindow] 跳过（已关闭）:', shortcut.name, shortcut.cmd);
+      return;
+    }
+    if (loadSettings().translateEnabled === 0 && TRANSLATE_SHORTCUT_NAMES.has(shortcut.name)) {
+      console.info('[MainWindow] 跳过（翻译功能已关闭）:', shortcut.name, shortcut.cmd);
+      return;
+    }
+    // 缺映射时跳过：直接 .bind 会抛 TypeError，中断后续 startAutoLock / startMemoryOptimization
+    const handler = shortcutFunctions[shortcut.name];
+    if (typeof handler !== 'function') {
+      console.error('[MainWindow] 跳过（无 handler 映射）:', shortcut.name, shortcut.cmd);
+      return;
+    }
     if (!shortcutManager.isRegistered(shortcut.cmd)) {
-      shortcutManager.register(shortcut.cmd, shortcutFunctions[shortcut.name].bind(this), shortcut.isGlobal === 1);
+      shortcutManager.register(shortcut.cmd, handler.bind(this), shortcut.isGlobal === 1);
     }
   });
 };
 
 const updateShortcut = (shortcut, oldShortcut) => {
+  const handler = shortcutFunctions[shortcut.name];
+  if (typeof handler !== 'function') return false;
   if (shortcutManager.isRegistered(shortcut.cmd)) {
     return false;
   }
   shortcutManager.unregister(oldShortcut.cmd);
-  shortcutManager.register(shortcut.cmd, shortcutFunctions[shortcut.name].bind(this), shortcut.isGlobal === 1);
+  shortcutManager.register(shortcut.cmd, handler.bind(this), shortcut.isGlobal === 1);
   return true;
 };
 
@@ -354,7 +391,9 @@ const isDisableShortcuts = (shortcut) => {
     return true;
   }
   if (shortcut.isOpen === 1 && !shortcutManager.isRegistered(shortcut.cmd)) {
-    shortcutManager.register(shortcut.cmd, shortcutFunctions[shortcut.name].bind(this), shortcut.isGlobal === 1);
+    const handler = shortcutFunctions[shortcut.name];
+    if (typeof handler !== 'function') return true;
+    shortcutManager.register(shortcut.cmd, handler.bind(this), shortcut.isGlobal === 1);
     return true;
   }
   return true;
@@ -1449,6 +1488,17 @@ const registerIpcHandlers = () => {
       }
     }
 
+    // 翻译功能总开关：重新注册/释放翻译快捷键；关闭时收起翻译浮层并停止 OCR 服务
+    if (setting.name === 'translateEnabled') {
+      initShortcuts();
+      if (!setting.value) {
+        require('./translateWindow.cjs').hideTranslateWindow();
+        void require('../services/ocrService.cjs').terminate().catch((error) => {
+          console.error('[MainWindow] 停止 OCR 服务失败:', error);
+        });
+      }
+    }
+
     if (setting.name === 'networkConfig') {
       invalidateNetworkConfigCache();
     }
@@ -1537,6 +1587,10 @@ const registerIpcHandlers = () => {
   ipcMain.handle('get-shortcuts', () => { return loadShortcuts(); });
 
   ipcMain.handle('update-shortcut', (event, shortcut) => {
+    // 翻译功能关闭时，翻译快捷键的增删改一律拒绝，保持释放状态
+    if (TRANSLATE_SHORTCUT_NAMES.has(shortcut.name) && loadSettings().translateEnabled === 0) {
+      return { code: -1, msg: '翻译功能已关闭，请先启用后再修改快捷键' };
+    }
     const shortcuts = loadShortcuts();
     const index = shortcuts.findIndex(s => s.id === shortcut.id);
     if (index !== -1) {
@@ -1547,12 +1601,14 @@ const registerIpcHandlers = () => {
       let success = true;
       let message = '快捷键已更新';
 
-      if (shortcut.flag) {
-        success = isDisableShortcuts(shortcuts[index]);
-        if (success) { message = '快捷键状态已更新'; }
-      } else {
+      if (shortcuts[index].cmd !== oldShortcut.cmd) {
+        // 组合键变化：注销旧快捷键并注册新快捷键（兼容改回默认键位）
         success = updateShortcut(shortcuts[index], oldShortcut);
         if (!success) { message = '快捷键已被占用'; }
+      } else {
+        // 仅开关状态变化：沿用原有注册/注销逻辑
+        success = isDisableShortcuts(shortcuts[index]);
+        if (success) { message = '快捷键状态已更新'; }
       }
       return { code: success ? 0 : -1, msg: message, data: shortcuts[index] };
     }
@@ -1909,5 +1965,6 @@ module.exports = {
   isWindowEdgeDocked: () => isWindowEdgeDocked(),
   toggleEdgeDockWindow: () => toggleEdgeDockWindow(),
   setIsQuitting: (val) => { isQuitting = val; },
+  checkLockAndShowMain,
   cleanupQuickLaunchHotkeys,
 };

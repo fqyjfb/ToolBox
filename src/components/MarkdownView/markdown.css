@@ -1,0 +1,350 @@
+/* ==========================================================================
+   Markdown 排版（.md 作用域）
+   --------------------------------------------------------------------------
+   规则：
+   1. 颜色一律消费 --color-*（自定义主题下已被 --ct-* 重定向，见 theme.css）
+   2. 不写任何 dark: 变体 —— 明暗由 :root 变量切换，这里只消费变量
+   3. 字号统一走 calc(Xpx * var(--md-font-scale))，便于整体缩放
+   4. 全部选择器限定在 .md 内，不污染全局
+   ========================================================================== */
+
+.md {
+  /* 整体字号缩放：由编辑器/预览的「字号」设置注入，默认 1 */
+  --md-font-scale: 1;
+
+  /* 排版用色（只引用主题变量，不硬编码具体色值） */
+  --md-text: var(--color-text-primary);
+  --md-text-muted: var(--color-text-secondary);
+  --md-text-faint: var(--color-text-tertiary);
+  --md-accent: var(--color-accent);
+  --md-border: var(--color-border);
+  --md-border-light: var(--color-border-light);
+  --md-surface: var(--color-bg-primary);
+  --md-surface-alt: var(--color-bg-secondary);
+  --md-surface-code: var(--color-bg-secondary);
+  --md-quote-bar: var(--color-border);
+
+  color: var(--md-text);
+  font-size: calc(16px * var(--md-font-scale));
+  line-height: 1.75;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.md > *:first-child {
+  margin-top: 0;
+}
+
+.md > *:last-child {
+  margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------- 标题 --- */
+
+.md h1,
+.md h2,
+.md h3,
+.md h4,
+.md h5,
+.md h6 {
+  margin: calc(1.6em * var(--md-font-scale)) 0 calc(0.6em * var(--md-font-scale));
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--md-text);
+  scroll-margin-top: 4rem; /* 锚点跳转时不被吸顶栏遮挡 */
+}
+
+.md h1 {
+  font-size: calc(28px * var(--md-font-scale, 1));
+  padding-bottom: calc(0.3em * var(--md-font-scale, 1));
+  border-bottom: 1px solid var(--md-border);
+}
+
+.md h2 {
+  font-size: calc(23px * var(--md-font-scale, 1));
+  padding-bottom: calc(0.25em * var(--md-font-scale, 1));
+  border-bottom: 1px solid var(--md-border-light);
+}
+
+.md h3 {
+  font-size: calc(19px * var(--md-font-scale, 1));
+}
+
+.md h4 {
+  font-size: calc(17px * var(--md-font-scale, 1));
+}
+
+.md h5 {
+  font-size: calc(15px * var(--md-font-scale, 1));
+}
+
+.md h6 {
+  font-size: calc(14px * var(--md-font-scale, 1));
+  color: var(--md-text-muted);
+}
+
+/* ------------------------------------------------------- 段落与行内 --- */
+
+.md p {
+  margin: calc(0.85em * var(--md-font-scale)) 0;
+}
+
+.md strong {
+  font-weight: 600;
+  color: var(--md-text);
+}
+
+.md em {
+  font-style: italic;
+}
+
+.md del {
+  color: var(--md-text-faint);
+}
+
+.md mark {
+  background: var(--md-accent);
+  color: var(--md-surface);
+  padding: 0 0.2em;
+  border-radius: var(--radius-sm, 0.25rem);
+}
+
+.md a {
+  color: var(--md-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.md a:hover {
+  border-bottom-color: currentColor;
+}
+
+.md abbr[title] {
+  cursor: help;
+  text-decoration: underline dotted;
+}
+
+/* --------------------------------------------------------------- 列表 --- */
+
+.md ul,
+.md ol {
+  margin: calc(0.8em * var(--md-font-scale)) 0;
+  padding-left: calc(1.5em * var(--md-font-scale));
+}
+
+.md li {
+  margin: calc(0.25em * var(--md-font-scale)) 0;
+}
+
+.md li > ul,
+.md li > ol {
+  margin: calc(0.2em * var(--md-font-scale)) 0;
+}
+
+.md ul {
+  list-style: disc;
+}
+
+.md ul ul {
+  list-style: circle;
+}
+
+.md ol {
+  list-style: decimal;
+}
+
+.md ol ol {
+  list-style: lower-alpha;
+}
+
+/* 任务列表：markdown-it 默认渲染成 <li> 内首个子元素为 input */
+.md li input[type='checkbox'] {
+  margin-right: 0.5em;
+  vertical-align: middle;
+  accent-color: var(--md-accent);
+}
+
+.md .task-list-item {
+  list-style: none;
+  margin-left: calc(-1.2em * var(--md-font-scale));
+}
+
+/* --------------------------------------------------------------- 引用 --- */
+
+.md blockquote {
+  margin: calc(1em * var(--md-font-scale)) 0;
+  padding: calc(0.2em * var(--md-font-scale)) calc(1em * var(--md-font-scale));
+  border-left: 3px solid var(--md-quote-bar);
+  color: var(--md-text-muted);
+  background: var(--md-surface-alt);
+  border-radius: 0 var(--radius-md, 0.375rem) var(--radius-md, 0.375rem) 0;
+}
+
+.md blockquote > *:first-child {
+  margin-top: 0;
+}
+
+.md blockquote > *:last-child {
+  margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------- 代码 --- */
+
+.md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: calc(0.9em * var(--md-font-scale));
+  padding: 0.15em 0.4em;
+  background: var(--md-surface-code);
+  border: 1px solid var(--md-border-light);
+  border-radius: var(--radius-sm, 0.25rem);
+  color: var(--md-text);
+}
+
+.md pre {
+  margin: calc(1em * var(--md-font-scale)) 0;
+  padding: calc(0.9em * var(--md-font-scale)) calc(1em * var(--md-font-scale));
+  background: var(--md-surface-code);
+  border: 1px solid var(--md-border-light);
+  border-radius: var(--radius-md, 0.375rem);
+  overflow-x: auto;
+  line-height: 1.6;
+}
+
+.md pre code {
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-size: calc(14px * var(--md-font-scale));
+  white-space: pre;
+}
+
+/* --------------------------------------------------------------- 表格 --- */
+
+/* 表格不再走横向滚动：让 table-layout:fixed 按容器宽度分配列，
+   td/th 用 word-break 自然换行。外层保留 overflow-x:hidden 兜底。 */
+.md .table-scroll {
+  margin: calc(1em * var(--md-font-scale)) 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.md table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: calc(15px * var(--md-font-scale));
+}
+
+.md thead {
+  background: var(--md-surface-alt);
+}
+
+.md th,
+.md td {
+  padding: calc(0.5em * var(--md-font-scale)) calc(0.75em * var(--md-font-scale));
+  border: 1px solid var(--md-border);
+  text-align: left;
+  vertical-align: top;
+  /* 让长单词/URL/中文混排时换行：table-layout:fixed + 这条 → 不再产生横向滚动 */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.md th {
+  font-weight: 600;
+  color: var(--md-text);
+  white-space: nowrap;
+  background: var(--md-surface-alt);
+}
+
+.md tbody tr:nth-child(even) {
+  background: var(--md-surface-alt);
+}
+
+/* --------------------------------------------------------------- 图片 --- */
+
+.md img,
+.md .document-image {
+  max-width: 100%;
+  height: auto;
+  margin: calc(0.6em * var(--md-font-scale)) 0;
+  border-radius: var(--radius-md, 0.375rem);
+  background: var(--md-surface-alt);
+}
+
+/* 图片未解析时的占位（render.ts 返回 null 时输出） */
+.md .blocked-media {
+  display: inline-block;
+  padding: 0.1em 0.5em;
+  border: 1px dashed var(--md-border);
+  border-radius: var(--radius-sm, 0.25rem);
+  color: var(--md-text-faint);
+  font-size: calc(13px * var(--md-font-scale));
+}
+
+/* ----------------------------------------------------------- 分隔线 --- */
+
+.md hr {
+  margin: calc(1.6em * var(--md-font-scale)) 0;
+  border: 0;
+  border-top: 1px solid var(--md-border);
+}
+
+/* ------------------------------------------------------------- 脚注 --- */
+
+.md .footnotes {
+  margin-top: calc(2em * var(--md-font-scale));
+  padding-top: calc(0.8em * var(--md-font-scale));
+  border-top: 1px solid var(--md-border);
+  font-size: calc(14px * var(--md-font-scale));
+  color: var(--md-text-muted);
+}
+
+.md .footnotes-sep {
+  display: none;
+}
+
+.md .footnote-ref a,
+.md .footnote-backref {
+  color: var(--md-accent);
+  text-decoration: none;
+}
+
+.md .footnote-extra {
+  margin: calc(0.5em * var(--md-font-scale)) 0;
+}
+
+.md .footnote-label {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--md-text-faint);
+}
+
+/* 编辑态的脚注原子（行内编辑用，只读渲染下不出现） */
+.md .footnote-atom {
+  color: var(--md-accent);
+}
+
+/* --------------------------------------------------------- 渲染失败 --- */
+
+.md .md-render-error {
+  margin: 0;
+  padding: calc(1em * var(--md-font-scale));
+  background: var(--md-surface-code);
+  border: 1px solid var(--md-border);
+  border-radius: var(--radius-md, 0.375rem);
+  font-size: calc(14px * var(--md-font-scale));
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ----------------------------------------------------------- 无障碍 --- */
+
+@media (prefers-reduced-motion: reduce) {
+  .md a {
+    transition: none;
+  }
+}

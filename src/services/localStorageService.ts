@@ -34,12 +34,13 @@ export const STORAGE_KEYS = {
 
   NOTES_LAST_OPENED_FILE: 'notes_last_opened_file',
 
+  // 划词翻译偏好（翻译源 / 语言 / 自动翻译等）
+  TRANSLATE_CONFIG: 'toolbox_translate_config',
+
   ACCOUNT_COLUMNS: 'account_columns_visible',
   PLATFORM_VISIBILITY: 'account_platform_visibility',
   PLATFORM_ORDER: 'account_platform_order',
   WEBSITE_ACCOUNT_CATEGORY_ORDER: 'websiteAccountCategoryOrder',
-
-  MARKDOWN_WECHAT_CONTENT: 'markdown-wechat-content',
 
   NOTES_SIDEBAR_VISIBLE: 'notes_sidebar_visible',
   NOTES_PINNED_FOLDERS: 'notes_pinned_folders',

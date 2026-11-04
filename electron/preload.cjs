@@ -166,6 +166,7 @@ contextBridge.exposeInMainWorld('electron', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   updateSetting: (setting) => ipcRenderer.invoke('update-setting', setting),
   setThemeSnapshot: (colors) => ipcRenderer.invoke('theme:set-snapshot', colors),
+  setAIConfigSnapshot: (config) => ipcRenderer.invoke('ai-config:set-snapshot', config),
   clearCache: () => ipcRenderer.invoke('clear-cache'),
   clearIconCache: (type) => ipcRenderer.invoke('clear-icon-cache', { type }),
   resolveIcons: (urls, type) => ipcRenderer.invoke('icon:resolve', { urls, type }),
@@ -184,44 +185,13 @@ contextBridge.exposeInMainWorld('electron', {
   updateFloatConfig: (config) => ipcRenderer.invoke('update-float-config', config),
   resetFloatConfig: () => ipcRenderer.invoke('reset-float-config'),
   ocr: {
-    recognize: (imageBase64, serviceDir, config) => {
-      const payload = { imageBase64: String(imageBase64 || ''), serviceDir: String(serviceDir || '') };
-      if (config) {
-        if (config.httpPort) payload.httpPort = Number(config.httpPort);
-        if (config.wsPort) payload.wsPort = Number(config.wsPort);
-        if (config.pythonPath) payload.pythonPath = String(config.pythonPath);
-      }
-      return ipcRenderer.invoke('ocr:recognize', payload);
-    },
-    recognizeFile: (filePath, serviceDir, config) => {
-      const payload = { filePath: String(filePath || ''), serviceDir: String(serviceDir || '') };
-      if (config) {
-        if (config.httpPort) payload.httpPort = Number(config.httpPort);
-        if (config.wsPort) payload.wsPort = Number(config.wsPort);
-        if (config.pythonPath) payload.pythonPath = String(config.pythonPath);
-      }
-      return ipcRenderer.invoke('ocr:recognizeFile', payload);
-    },
+    recognize: (imageBase64) => ipcRenderer.invoke('ocr:recognize', { imageBase64: String(imageBase64 || '') }),
+    recognizeFile: (filePath) => ipcRenderer.invoke('ocr:recognizeFile', { filePath: String(filePath || '') }),
     status: () => ipcRenderer.invoke('ocr:status'),
-    start: (serviceDir, config) => {
-      const safeConfig = {};
-      if (config) {
-        if (config.httpPort !== undefined) safeConfig.httpPort = Number(config.httpPort);
-        if (config.wsPort !== undefined) safeConfig.wsPort = Number(config.wsPort);
-        if (config.pythonPath !== undefined) safeConfig.pythonPath = String(config.pythonPath || '');
-        if (config.autoRestart !== undefined) safeConfig.autoRestart = Boolean(config.autoRestart);
-        if (config.maxRestarts !== undefined) safeConfig.maxRestarts = Number(config.maxRestarts);
-      }
-      return ipcRenderer.invoke('ocr:start', { serviceDir: String(serviceDir || ''), ...safeConfig });
-    },
+    start: () => ipcRenderer.invoke('ocr:start'),
     stop: () => ipcRenderer.invoke('ocr:stop'),
     serviceInfo: () => ipcRenderer.invoke('ocr:serviceInfo'),
-    diagnose: (serviceDir) => ipcRenderer.invoke('ocr:diagnose', { serviceDir: String(serviceDir || '') }),
-    installDeps: (serviceDir, force) => ipcRenderer.invoke('ocr:installDeps', { serviceDir: String(serviceDir || ''), force: Boolean(force) }),
-    getInstallProgress: () => ipcRenderer.invoke('ocr:getInstallProgress'),
-    checkPort: (port) => ipcRenderer.invoke('ocr:checkPort', Number(port)),
-    selectPythonPath: () => ipcRenderer.invoke('ocr:selectPythonPath'),
-    killStaleProcess: (port) => ipcRenderer.invoke('ocr:killStaleProcess', Number(port)),
+    runtimeInfo: () => ipcRenderer.invoke('ocr:runtimeInfo'),
   },
   fileManager: {
     getSystemPaths: () => ipcRenderer.invoke('fileManager:getSystemPaths'),
@@ -291,10 +261,28 @@ contextBridge.exposeInMainWorld('electron', {
   email: emailApi,
   screenshot: {
     startCapture: () => ipcRenderer.invoke('start-screenshot-capture'),
+    translate: (dataUrl) => ipcRenderer.invoke('screenshot:translate', dataUrl),
     cancel: () => ipcRenderer.send('cancel-screenshot'),
     save: (data) => ipcRenderer.invoke('save-screenshot', data),
     copyToClipboard: (dataUrl) => ipcRenderer.send('copy-screenshot-to-clipboard', dataUrl),
     complete: () => ipcRenderer.send('screenshot-session-complete'),
+    onData: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('screenshot:data', handler);
+      return () => ipcRenderer.removeListener('screenshot:data', handler);
+    },
+  },
+  translate: {
+    open: (payload) => ipcRenderer.invoke('translate:open', payload),
+    selection: () => ipcRenderer.invoke('translate:selection'),
+    close: () => ipcRenderer.invoke('translate:close'),
+    copy: (text) => ipcRenderer.invoke('translate:copy', { text }),
+    history: {
+      list: (payload) => ipcRenderer.invoke('translate:history:list', payload),
+      save: (record) => ipcRenderer.invoke('translate:history:save', record),
+      remove: (id) => ipcRenderer.invoke('translate:history:delete', { id }),
+      clear: () => ipcRenderer.invoke('translate:history:clear'),
+    },
   },
   log: {
     open: () => ipcRenderer.send('log:open'),
@@ -347,6 +335,8 @@ contextBridge.exposeInMainWorld('electron', {
     openFileInFolder: (filePath) => ipcRenderer.invoke('notes-open-file-in-folder', filePath),
     readFileAsBuffer: (filePath) => ipcRenderer.invoke('notes-read-file-as-buffer', filePath),
     statFile: (filePath) => ipcRenderer.invoke('notes-stat', filePath),
+    exportPdf: (payload) => ipcRenderer.invoke('notes-export-pdf', payload),
+    exportHtml: (payload) => ipcRenderer.invoke('notes-export-html', payload),
     moveItem: (itemPath, targetFolderPath) => ipcRenderer.invoke('notes-move-item', itemPath, targetFolderPath),
     copyItem: (sourcePath) => ipcRenderer.invoke('notes-copy-item', sourcePath),
     sendItem: (sourcePath, target) => ipcRenderer.invoke('notes-send-item', sourcePath, target),

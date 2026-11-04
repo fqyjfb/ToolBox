@@ -32,7 +32,6 @@ const MemoPage = React.lazy(() => import('../pages/tools/memo'));
 const ReminderPage = React.lazy(() => import('../pages/tools/reminder'));
 const ProfilePage = React.lazy(() => import('../pages/tools/profile'));
 const AccountManagerPage = React.lazy(() => import('../pages/tools/account'));
-const MarkdownToWechatPage = React.lazy(() => import('../pages/tools/markdown-to-wechat'));
 const IPInfoPage = React.lazy(() => import('../pages/tools/ip-info'));
 const EmojiRemoverPage = React.lazy(() => import('../pages/tools/emoji-remover'));
 const JsonFormatterPage = React.lazy(() => import('../pages/tools/json-formatter'));
@@ -87,7 +86,6 @@ const authRequiredRoutes: RouteConfig[] = [
   { path: '/tools/profile', element: <ProfilePage />, requiresAuth: true },
   { path: '/tools/account', element: <AccountManagerPage />, requiresAuth: true },
   { path: '/tools/country-code', element: <CountryCodePage />, requiresAuth: true },
-  { path: '/tools/markdown-to-wechat', element: <MarkdownToWechatPage />, requiresAuth: true },
   { path: '/tools/ip-info', element: <IPInfoPage />, requiresAuth: true },
   { path: '/tools/emoji-remover', element: <EmojiRemoverPage />, requiresAuth: true },
   { path: '/tools/json-formatter', element: <JsonFormatterPage />, requiresAuth: true },

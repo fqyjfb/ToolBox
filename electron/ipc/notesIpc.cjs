@@ -9,6 +9,7 @@ const notesFavoritesService = require('../services/notesFavoritesService.cjs');
 const notesTemplateService = require('../services/notesTemplateService.cjs');
 const notesAttachmentService = require('../services/notesAttachmentService.cjs');
 const notesWatcherService = require('../services/notesWatcherService.cjs');
+const notesExportService = require('../services/notesExportService.cjs');
 
 const CHANNELS = [
   'notes-scan-folder-async',
@@ -27,6 +28,8 @@ const CHANNELS = [
   'notes-start-watching',
   'notes-stop-watching',
   'notes-stat',
+  'notes-export-pdf',
+  'notes-export-html',
 ];
 
 let registered = false;
@@ -105,6 +108,15 @@ function registerNotesIpc() {
   // 只 stat、不读内容：渲染层据此在挂载 <video> 前判断体积。
   ipcMain.handle('notes-stat', async (_event, filePath) => {
     return notesService.statFile(filePath);
+  });
+
+  // 导出：渲染层负责构建 HTML（含内联图片），主进程只管打印与落盘。
+  ipcMain.handle('notes-export-pdf', async (_event, payload) => {
+    return notesExportService.exportPdf(payload || {});
+  });
+
+  ipcMain.handle('notes-export-html', async (_event, payload) => {
+    return notesExportService.exportHtml(payload || {});
   });
 }
 

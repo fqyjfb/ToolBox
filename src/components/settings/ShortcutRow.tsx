@@ -38,6 +38,9 @@ const ShortcutRow: React.FC<ShortcutRowProps> = ({ shortcut, allShortcuts, onUpd
     e.preventDefault();
     e.stopPropagation();
 
+    // 中文输入法组合态（keyCode 229）不参与快捷键采集
+    if (e.keyCode === 229 || e.nativeEvent.isComposing) return;
+
     const modifiers: string[] = [];
     if (e.ctrlKey || e.metaKey) modifiers.push('Ctrl');
     if (e.altKey) modifiers.push('Alt');

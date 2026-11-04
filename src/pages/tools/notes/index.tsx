@@ -16,6 +16,7 @@ import SearchPalette from './components/SearchPalette';
 import { ChatMessageList } from './components/ChatMessageList';
 import { ChatInput } from './components/ChatInput';
 import { useNotesWatcher } from './hooks/useNotesWatcher';
+import { useNotesDrafts } from './hooks/useNotesDrafts';
 import ExternalChangeDialog from './components/ExternalChangeDialog';
 import { useNotesDraftRecovery, type DraftInfo } from './hooks/useNotesDraftRecovery';
 import DraftRecoveryDialog from './components/DraftRecoveryDialog';
@@ -41,12 +42,15 @@ const NotesPage: React.FC = () => {
     fileTree,
     selectedFile,
     fileContent,
+    savedContent,
+    isDirty,
     fileMetadata,
     filePreviewUrl,
     loading,
     selectFile,
     updateFileContent,
     saveFile,
+    markSaved,
     createFolder,
     createFolderForce,
     createNote,
@@ -249,6 +253,8 @@ const NotesPage: React.FC = () => {
   // 外部文件变更监听 + 冲突裁决（挂页面，须早于 early return 以保证 hooks 顺序稳定）。
   // 监听范围跟随当前查看的固定目录：文件列表与编辑器只处理固定目录内的文件；
   // 未配置固定目录时退回监听对话目录（对话记录本身仍在读写）
+  // 草稿写入器：全页面唯一实例（编辑器不自建，否则切文件时的取消/清理会各管一套定时器）
+  const drafts = useNotesDrafts();
   const watchPath = currentViewPath || rootPath;
   const watcher = useNotesWatcher({
     rootPath: watchPath,
@@ -256,8 +262,10 @@ const NotesPage: React.FC = () => {
     onExternalChange: refreshFileTree,
     selectedFile,
     fileContent,
-    updateFileContent,
+    isDirty,
+    applyExternalContent: markSaved,
     saveFile,
+    deleteDraft: drafts.deleteDraftNow,
   });
 
   // 启动时清点上一次会话残留的未保存草稿；只解构引用稳定的 useCallback（整个 hook 对象进 deps 会无限循环）。
@@ -276,12 +284,15 @@ const NotesPage: React.FC = () => {
   const handleRecoverDraft = useCallback(
     async (draft: DraftInfo) => {
       const content = await recoverDraft(draft);
-      if (content !== null && selectedFile?.path === draft.absolutePath) {
-        updateFileContent(content);
+      if (content !== null) {
+        // 恢复本身已经写盘：内容与基线一起推进（path 守卫在 markSaved 内部），
+        // 否则恢复完仍显示"未保存"，随即被自动保存再写一遍。
+        markSaved(draft.absolutePath, content);
+        void drafts.deleteDraftNow(draft.absolutePath).catch(() => undefined);
       }
       await scanDrafts();
     },
-    [recoverDraft, scanDrafts, selectedFile, updateFileContent]
+    [drafts, markSaved, recoverDraft, scanDrafts]
   );
 
   const handleDiscardDraft = useCallback(
@@ -403,10 +414,13 @@ const NotesPage: React.FC = () => {
             <NotesEditor
               selectedFile={selectedFile}
               content={fileContent}
+              savedContent={savedContent}
               fileMetadata={fileMetadata}
               filePreviewUrl={filePreviewUrl}
               onContentChange={updateFileContent}
               onSave={saveFile}
+              drafts={drafts}
+              autoSavePaused={Boolean(watcher.pendingExternalChange) || pendingDrafts.length > 0}
               onRenameFile={handleRenameFile}
               sidebarVisible={sidebarVisible}
               onToggleSidebar={handleToggleSidebar}
@@ -442,15 +456,18 @@ const NotesPage: React.FC = () => {
         onClose={handleSearchPaletteClose}
       />
 
-      <DraftRecoveryDialog
-        isOpen={pendingDrafts.length > 0}
-        drafts={pendingDrafts}
-        onRecover={handleRecoverDraft}
-        onDiscard={handleDiscardDraft}
-        onClose={clearDrafts}
-      />
+      {/* 草稿恢复弹窗：只在没有外部修改冲突时显示（两者 z-index 相同，同时出现会叠加互相遮挡） */}
+      {!watcher.pendingExternalChange && pendingDrafts.length > 0 && (
+        <DraftRecoveryDialog
+          isOpen
+          drafts={pendingDrafts}
+          onRecover={handleRecoverDraft}
+          onDiscard={handleDiscardDraft}
+          onClose={clearDrafts}
+        />
+      )}
 
-      {/* 外部修改冲突裁决：有 pending 时才挂载，层级高于草稿弹窗 */}
+      {/* 外部修改冲突裁决：有 pending 时才挂载，层级高于草稿弹窗（z-60），互斥条件已在上方处理 */}
       {watcher.pendingExternalChange && (
         <ExternalChangeDialog
           fileName={watcher.pendingExternalChange.name}

@@ -4,11 +4,11 @@ import {
   CUSTOM_THEME_STORAGE_FULL,
   CustomTheme,
   CustomThemeColorSnapshot,
-  clampPercent,
   getDefaultTheme,
   withThemeDefaults,
 } from '../types/theme';
-import { CUSTOM_THEME_EFFECT_VARS, CUSTOM_THEME_VARS } from '../constants/theme';
+import { CUSTOM_THEME_VARS } from '../constants/theme';
+import { applyBaseClass, applyCustomTheme, clearCustomThemeStyles } from '../utils/themeInject';
 
 interface ThemeStore {
   /** 明暗基色（true = dark），自定义模式下仍然有效：主进程 / 托盘 / 悬浮球只感知它 */
@@ -85,11 +85,6 @@ const syncThemeSnapshot = (theme: CustomTheme | null, isDark: boolean) => {
   void window.electron.setThemeSnapshot(snapshot);
 };
 
-const applyBaseClass = (isDark: boolean) => {
-  document.documentElement.classList.toggle('dark', isDark);
-  document.body.classList.toggle('dark', isDark);
-};
-
 const persistMode = (isCustomTheme: boolean, isDark: boolean) => {
   localStorageService.setString(
     STORAGE_KEYS.THEME,
@@ -98,43 +93,6 @@ const persistMode = (isCustomTheme: boolean, isDark: boolean) => {
   // 自定义模式下 THEME 只记录 'custom'，明暗基色单独落盘，
   // 供重启时 getInitialTheme 恢复（深色自定义主题不会以浅色基色加载）
   localStorageService.setString('theme-isDark', String(isDark));
-};
-
-const clearCustomThemeStyles = () => {
-  const root = document.documentElement;
-  for (const prop of Array.from(root.style)) {
-    if (prop.startsWith('--ct-')) root.style.removeProperty(prop);
-  }
-  root.removeAttribute('data-custom-theme');
-  document.body.removeAttribute('data-custom-bg');
-};
-
-/** 向 :root 注入全部 --ct-* 变量并激活覆盖层；未配置的可选字段回退到当前基色默认值 */
-const applyCustomTheme = (theme: CustomTheme, isDark: boolean) => {
-  const base = getDefaultTheme(isDark);
-  const root = document.documentElement;
-
-  (Object.keys(CUSTOM_THEME_VARS) as (keyof typeof CUSTOM_THEME_VARS)[]).forEach((key) => {
-    // 绝不注入空字符串：空值会让对应的 var() 解析失败，整条声明失效
-    root.style.setProperty(CUSTOM_THEME_VARS[key], theme[key]?.trim() || base[key] || '');
-  });
-
-  root.style.setProperty(
-    CUSTOM_THEME_EFFECT_VARS.bgImage,
-    theme.bgImage ? `url("${theme.bgImage}")` : 'none',
-  );
-  root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgOpacity, String(clampPercent(theme.bgOpacity, 100) / 100));
-  root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgSize, theme.bgSize);
-  root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgPosition, theme.bgPosition);
-  root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgRepeat, theme.bgRepeat);
-  // color-mix() 的百分比必须带 %
-  root.style.setProperty(
-    CUSTOM_THEME_EFFECT_VARS.surfaceOpacity,
-    `${clampPercent(theme.surfaceOpacity, 100)}%`,
-  );
-
-  root.setAttribute('data-custom-theme', 'active');
-  document.body.setAttribute('data-custom-bg', 'true');
 };
 
 /** 切回明暗预设：清理自定义注入，但保留已保存的配置，允许用户再次启用 */

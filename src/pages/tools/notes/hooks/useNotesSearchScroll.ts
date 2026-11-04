@@ -1,43 +1,24 @@
-// useNotesSearchScroll —— 监听 notes:navigate-to-match 事件，跳行到目标行（Vditor 无 gotoLine API，退化为 DOM 操作 + 重试）。
+// useNotesSearchScroll —— 监听 notes:navigate-to-match 事件，跳到目标行所在块。
+//
+// 编辑器已换成自研块编辑器：块在 DOM 上带 `data-source-line`，
+// 因此不再需要「IR → SV → WYSIWYG 三级猜测 + 800ms 周期重试」。
+// React 渲染是同步的，事件到达时 DOM 已是最新，直接定位即可（无抖动）。
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { NOTES_NAVIGATE_EVENT } from './useNotesSearch';
 import type { NavigateToMatchDetail } from './useNotesSearch';
 
-const RETRY_INTERVAL_MS = 150;
-const RETRY_WINDOW_MS = 800;
-
 export function useNotesSearchScroll(): void {
-  const pendingScrollRef = useRef<{ line: number; ts: number } | null>(null);
-
   useEffect(() => {
     const onNavigate = (evt: Event) => {
       const ce = evt as CustomEvent<NavigateToMatchDetail>;
       const detail = ce?.detail;
       if (!detail || typeof detail.line !== 'number') return;
-      pendingScrollRef.current = { line: detail.line, ts: Date.now() };
-      tryScrollToLine(detail.line, false);
+      tryScrollToLine(detail.line);
     };
     window.addEventListener(NOTES_NAVIGATE_EVENT, onNavigate);
     return () => {
       window.removeEventListener(NOTES_NAVIGATE_EVENT, onNavigate);
-    };
-  }, []);
-
-  // 周期重试：Vditor 渲染新内容异步，800ms 窗口内每 150ms 重试。
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      const pending = pendingScrollRef.current;
-      if (!pending) return;
-      const elapsed = Date.now() - pending.ts;
-      if (elapsed > RETRY_WINDOW_MS) {
-        pendingScrollRef.current = null;
-        return;
-      }
-      tryScrollToLine(pending.line, true);
-    }, RETRY_INTERVAL_MS);
-    return () => {
-      window.clearInterval(intervalId);
     };
   }, []);
 }
@@ -58,73 +39,63 @@ function scrollWithinOwnScroller(target: HTMLElement): boolean {
   return false;
 }
 
-// 按 IR → SV → WYSIWYG 优先级尝试定位；isRetry=true 时仅滚动不设选区（避免抖动）。
-function tryScrollToLine(line: number, isRetry: boolean): boolean {
+/** 行号落在哪一行区间，就定位到对应块：取最后一个起始行 ≤ line 的块。 */
+function findBlockForLine(line: number): HTMLElement | null {
+  const blocks = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-source-line]'),
+  );
+  if (blocks.length === 0) return null;
+  let target: HTMLElement = blocks[0]!;
+  for (const block of blocks) {
+    const start = Number(block.getAttribute('data-source-line'));
+    if (!Number.isFinite(start)) continue;
+    if (start <= line) target = block;
+    else break;
+  }
+  return target;
+}
+
+/** 源码模式（HTML / JSON / TXT）没有块，退化为 textarea 按行定位。 */
+function scrollTextareaToLine(line: number): boolean {
+  const area = document.querySelector<HTMLTextAreaElement>('.pte-area');
+  if (!area) return false;
+  const lines = area.value.split('\n');
+  const lineHeight = area.scrollHeight / Math.max(1, lines.length) || 20;
+  area.scrollTop = Math.max(0, (line - 1) * lineHeight);
+  let offset = 0;
+  for (let i = 0; i < Math.min(line - 1, lines.length); i += 1) {
+    offset += lines[i]!.length + 1;
+  }
+  try {
+    area.focus();
+    area.setSelectionRange(offset, offset);
+  } catch {
+    /* ignore */
+  }
+  return true;
+}
+
+function tryScrollToLine(line: number): boolean {
   if (typeof window === 'undefined') return false;
 
-  const irRoot = document.querySelector<HTMLElement>('.vditor-ir');
-  if (irRoot) {
-    const blocks = Array.from(
-      irRoot.querySelectorAll<HTMLElement>('.vditor-ir__node')
-    );
-    if (blocks.length > 0) {
-      const idx = Math.max(0, Math.min(blocks.length - 1, line - 1));
-      const target = blocks[idx];
-      scrollWithinOwnScroller(target);
-      if (!isRetry) {
-        try {
-          const range = document.createRange();
-          range.selectNodeContents(target);
-          range.collapse(true);
-          const sel = window.getSelection();
-          if (sel) {
-            sel.removeAllRanges();
-            sel.addRange(range);
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-      try {
-        irRoot.focus();
-      } catch {
-        /* ignore */
-      }
-      return true;
-    }
-  }
-
-  const svTextarea = document.querySelector<HTMLTextAreaElement>(
-    '.vditor-sv__textarea'
-  );
-  if (svTextarea) {
-    const lineCount = Math.max(1, svTextarea.value.split('\n').length);
-    const lineH = svTextarea.scrollHeight / lineCount || 20;
-    svTextarea.scrollTop = Math.max(0, (line - 1) * lineH);
-    svTextarea.focus();
-    const lines = svTextarea.value.split('\n');
-    let offset = 0;
-    for (let i = 0; i < Math.min(line - 1, lines.length); i++) {
-      offset += lines[i].length + 1;
-    }
+  const block = findBlockForLine(line);
+  if (block) {
+    scrollWithinOwnScroller(block);
     try {
-      svTextarea.setSelectionRange(offset, offset);
+      const range = document.createRange();
+      range.selectNodeContents(block);
+      range.collapse(true);
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     } catch {
       /* ignore */
     }
+    block.scrollIntoView({ block: 'nearest' });
     return true;
   }
 
-  const fallback = document.querySelector<HTMLElement>('.vditor-content');
-  if (fallback) {
-    scrollWithinOwnScroller(fallback);
-    try {
-      fallback.focus();
-    } catch {
-      /* ignore */
-    }
-    return true;
-  }
-
-  return false;
+  return scrollTextareaToLine(line);
 }

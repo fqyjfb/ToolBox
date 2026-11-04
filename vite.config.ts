@@ -44,6 +44,11 @@ export default defineConfig(({ mode }) => {
       target: 'esnext',
       cssMinify: 'lightningcss',
       rollupOptions: {
+        // 多入口：主窗口 index.html + 划词翻译浮层 translate.html
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          translate: path.resolve(__dirname, 'translate.html'),
+        },
         external: [
           '@aws-sdk/client-s3',
           '@aws-sdk/s3-request-presigner',
@@ -63,7 +68,12 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules')) {
               // 文件预览相关（@open-file-viewer / pdfjs-dist）不做强制分组：
               // 交由 Rollup 自动分割，避免 Vite 的 __vitePreload 辅助块落在这里而被首屏依赖
-              if (id.includes('node_modules/vditor')) {
+              // 编辑器内核（markdown-it / dompurify）单独成块
+              if (
+                /node_modules\/(markdown-it|markdown-it-footnote|dompurify)/u.test(
+                  id,
+                )
+              ) {
                 return 'vendor-editor';
               }
               if (id.includes('node_modules/lucide-react')) {

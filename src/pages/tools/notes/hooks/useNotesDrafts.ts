@@ -1,7 +1,8 @@
 // useNotesDrafts —— 防抖草稿写入：1s 防抖落盘 / 立即 flush / 保存后清理；只与主进程草稿服务打交道。
 
-import { useCallback, useEffect, useRef } from 'react';
-import { DRAFT_DEBOUNCE_MS } from '../constants/limits';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { logError } from '../../../../services/loggerService';
+import { DRAFT_DEBOUNCE_MS, DRAFT_MAX_WAIT_MS } from '../constants/limits';
 
 export interface UseNotesDraftsReturn {
   scheduleDraft: (path: string, content: string) => void;
@@ -12,6 +13,8 @@ export interface UseNotesDraftsReturn {
 export function useNotesDrafts(): UseNotesDraftsReturn {
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const pendingContentRef = useRef<Map<string, string>>(new Map());
+  // 首次变脏时刻：用于"最长等待"，否则连续输入会把防抖无限重置、草稿永远写不出来
+  const pendingSinceRef = useRef<Map<string, number>>(new Map());
   const flushingRef = useRef<Set<string>>(new Set());
 
   // 卸载兜底：把所有待触发的写 flush 一次。
@@ -44,6 +47,7 @@ export function useNotesDrafts(): UseNotesDraftsReturn {
       timersRef.current.delete(path);
     }
     pendingContentRef.current.delete(path);
+    pendingSinceRef.current.delete(path);
   }, []);
 
   const flushNow = useCallback(
@@ -61,11 +65,12 @@ export function useNotesDrafts(): UseNotesDraftsReturn {
         const result = await window.electron.notes.writeDraft(path, body);
         if (result && result.success) {
           pendingContentRef.current.delete(path);
+          pendingSinceRef.current.delete(path);
           return true;
         }
         return false;
       } catch (err) {
-        console.warn('[useNotesDrafts] flushNow failed:', err);
+        logError('立即写入草稿失败', 'useNotesDrafts', err as Error);
         return false;
       } finally {
         flushingRef.current.delete(path);
@@ -78,24 +83,35 @@ export function useNotesDrafts(): UseNotesDraftsReturn {
     (path: string, content: string) => {
       if (!path) return;
       pendingContentRef.current.set(path, content);
+
+      const now = Date.now();
+      if (!pendingSinceRef.current.has(path)) pendingSinceRef.current.set(path, now);
+      const elapsed = now - (pendingSinceRef.current.get(path) ?? now);
+      // 防抖 + 最长等待：连续输入 10s 也必须落一次草稿
+      const delay = Math.max(0, Math.min(DRAFT_DEBOUNCE_MS, DRAFT_MAX_WAIT_MS - elapsed));
+
       const existing = timersRef.current.get(path);
       if (existing) clearTimeout(existing);
       const handle = setTimeout(() => {
         timersRef.current.delete(path);
         if (flushingRef.current.has(path)) return;
+        // 取"此刻"的内容而非排期时的内容：最长等待触发时排期内容可能已过期
+        const body = pendingContentRef.current.get(path);
+        if (body === undefined) return;
         window.electron?.notes
-          ?.writeDraft?.(path, content)
+          ?.writeDraft?.(path, body)
           .then((result) => {
             if (result && result.success) {
-              if (pendingContentRef.current.get(path) === content) {
+              if (pendingContentRef.current.get(path) === body) {
                 pendingContentRef.current.delete(path);
+                pendingSinceRef.current.delete(path);
               }
             }
           })
           .catch((err) => {
-            console.warn('[useNotesDrafts] scheduleDraft write failed:', err);
+            logError('写入草稿失败', 'useNotesDrafts', err as Error);
           });
-      }, DRAFT_DEBOUNCE_MS);
+      }, delay);
       timersRef.current.set(path, handle);
     },
     []
@@ -114,9 +130,10 @@ export function useNotesDrafts(): UseNotesDraftsReturn {
     [cancelDraft]
   );
 
-  return {
-    scheduleDraft,
-    flushNow,
-    deleteDraftNow,
-  };
+  // identity 必须稳定：NotesEditor 的自动保存 effect 依赖整个对象，
+  // 每次渲染返回新字面量会让 2s 定时器被无限重排，自动保存时机不可预期。
+  return useMemo(
+    () => ({ scheduleDraft, flushNow, deleteDraftNow }),
+    [scheduleDraft, flushNow, deleteDraftNow]
+  );
 }

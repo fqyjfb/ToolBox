@@ -5,6 +5,13 @@ export const VIRTUALIZE_THRESHOLD = 200;
 
 export const DRAFT_DEBOUNCE_MS = 1000;
 
+// 草稿最长等待：连续输入时防抖会被无限重置，必须定期落一次草稿兜底。
+export const DRAFT_MAX_WAIT_MS = 10000;
+
+// 自动保存：空闲 2s 落盘；最长等待 30s，保证长文连续输入也有落盘点。
+export const AUTOSAVE_DEBOUNCE_MS = 2000;
+export const AUTOSAVE_MAX_WAIT_MS = 30000;
+
 // 搜索跳过单文件大小上限（字节）：超过则整包 readFile 会显著占用主进程内存/IO。
 export const SEARCH_MAX_FILE_BYTES = 50 * 1024 * 1024;
 

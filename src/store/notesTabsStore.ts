@@ -1,5 +1,5 @@
 // notesTabsStore —— 打开的笔记标签页。标签只记路径，同一时刻仍只挂载一个编辑器
-//（切标签 = selectFile），故不存在「多 Vditor 实例泄漏」。容量 20，超出淘汰最久未激活者
+//（切标签 = selectFile），故不存在「多编辑器实例泄漏」。容量 20，超出淘汰最久未激活者
 //（LRU 时刻表仅运行时维护，不落盘）。persist 到 NOTES_TABS，恢复发生在模块初始化
 //（`initial = coerce(...)`），因此没有独立 hydrate()：store 一被 import 就是恢复后的状态。
 // dirtyMap 不落盘；不引入 zustand persist 中间件。

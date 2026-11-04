@@ -17,8 +17,7 @@
     "preview": "vite preview",
     "electron:dev": "node scripts/generate-icon-data.cjs && electron .",
     "electron:build": "node scripts/generate-icon-data.cjs && node scripts/generate-app-icon.cjs && node scripts/write-env-secrets.cjs && electron-builder --publish never",
-    "copy:vditor": "node scripts/copy-vditor-assets.cjs",
-    "postinstall": "electron-builder install-app-deps && npm run copy:vditor",
+    "postinstall": "electron-builder install-app-deps",
     "generate-icons": "node scripts/generate-icon-data.cjs"
   },
   "dependencies": {
@@ -33,15 +32,21 @@
     "@tanstack/react-query": "^5.100.10",
     "adm-zip": "^0.6.0",
     "chrono-node": "^2.10.2",
+    "dompurify": "3.4.14",
     "electron-log": "^5.4.4",
     "follow-redirects": "^1.16.0",
     "imapflow": "^1.7.8",
+    "koffi": "^3.3.4",
     "lucide-react": "^1.8.0",
     "mailparser": "^3.9.20",
+    "markdown-it": "15.0.1",
+    "markdown-it-footnote": "4.0.0",
     "node-notifier": "^10.0.1",
+    "node-screenshots": "^0.2.8",
     "nodemailer": "^6.9.16",
     "pdfjs-dist": "^4.10.38",
     "qrcode": "^1.5.4",
+    "rapidocr-node": "^0.3.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.1",
@@ -49,7 +54,6 @@
     "rrule": "^2.8.1",
     "sql.js": "^1.12.0",
     "tyme4ts": "^1.5.3",
-    "vditor": "^3.11.2",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
@@ -96,7 +100,6 @@
       "public/**/*",
       "package.json",
       "!**/*.map",
-      "!public/vditor/**",
       "!node_modules/react/**",
       "!node_modules/react-dom/**",
       "!node_modules/react-router/**",
@@ -108,7 +111,6 @@
       "!node_modules/@supabase/**",
       "!node_modules/lucide-react/**",
       "!node_modules/qrcode/**",
-      "!node_modules/vditor/**",
       "!node_modules/@open-file-viewer/**",
       "!node_modules/pdfjs-dist/**",
       "!node_modules/mermaid/**",
@@ -128,6 +130,11 @@
     ],
     "asarUnpack": [
       "node_modules/node-notifier/vendor/**",
+      "node_modules/rapidocr-node/**",
+      "node_modules/onnxruntime-node/**",
+      "node_modules/@img/sharp-win32-x64/**",
+      "node_modules/node-screenshots/**",
+      "node_modules/node-screenshots-*/**",
       "public/favicon.ico"
     ],
     "win": {

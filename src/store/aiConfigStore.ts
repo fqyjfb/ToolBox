@@ -91,6 +91,8 @@ function readConfig(): AIConfig {
 function persistConfig(config: AIConfig): AIConfig {
   const next = { ...config, updated_at: new Date().toISOString() };
   localStorageService.set(STORAGE_KEYS.AI_CONFIG, next);
+  // 同步给主进程生成 ai.json 快照（api_key 在主进程用 safeStorage 加密落盘），供翻译浮层读取
+  void window.electron?.setAIConfigSnapshot?.(next);
   return next;
 }
 
@@ -109,6 +111,8 @@ interface AIConfigState {
   setDefaultModel: (id: string) => void;
   setAutoMatchEnabled: (enabled: boolean) => void;
   setAutoArchiveEnabled: (enabled: boolean) => void;
+  /** 用主进程快照整体替换配置；persist=false 时只更新内存（翻译浮层使用） */
+  replaceConfig: (config: AIConfig) => void;
 }
 
 export const useAIConfigStore = create<AIConfigState>((set, get) => ({
@@ -188,5 +192,9 @@ export const useAIConfigStore = create<AIConfigState>((set, get) => ({
   setAutoArchiveEnabled: (enabled) => {
     const current = get().config;
     set({ config: persistConfig({ ...current, auto_archive_enabled: enabled }) });
+  },
+
+  replaceConfig: (config) => {
+    set({ config: normalizeAIConfig(config) });
   },
 }));

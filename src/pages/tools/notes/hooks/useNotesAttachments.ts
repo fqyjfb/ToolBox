@@ -1,6 +1,6 @@
 // useNotesAttachments —— 图片附件上传：File → 主进程落盘 → 返回 markdown 相对引用路径。
-// 约束：不用 FileReader（避免 base64 峰值）；upload 引用须恒定（否则 WMarkdownEditor 会重建 Vditor）。
-// 不自己 insertValue：WMarkdownEditor 拿到 url 后会自行插入，否则会插图两次。
+// 约束：不用 FileReader（避免 base64 峰值）；upload 引用须恒定（否则编辑器会重建）。
+// 不自己 insertValue：MarkdownEditor 拿到 url 后会自行插入，否则会插图两次。
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToastStore } from '@/store/toastStore';

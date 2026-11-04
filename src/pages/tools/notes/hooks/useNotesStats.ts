@@ -1,10 +1,11 @@
 // useNotesStats —— 文档统计：字数 / 阅读时长 / 大纲。切文件时 reset，新内容由 recompute(content) 主动更新。
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+// 复用内核的大纲提取：它已正确跳过代码围栏，且带 1-based 行号可直接用于点击跳转
+import { deriveOutline } from '@/lib/markdown';
 import type { NotesOutlineItem, NotesStats } from '../types';
 
 const READING_CHARS_PER_MINUTE = 400;
-const HEADING_REGEX = /^(#{1,6})\s+(.+?)\s*#*\s*$/;
 
 // markdown → 统计结果（纯函数）
 export function computeStats(content: string): NotesStats {
@@ -12,20 +13,14 @@ export function computeStats(content: string): NotesStats {
   const wordCount = trimmed.length;
   const readingMinutes = wordCount === 0 ? 0 : Math.max(1, Math.ceil(wordCount / READING_CHARS_PER_MINUTE));
 
-  const outline: NotesOutlineItem[] = [];
-  if (trimmed.length > 0) {
-    const lines = content.split(/\r?\n/);
-    for (let i = 0; i < lines.length; i++) {
-      const raw = lines[i];
-      const match = HEADING_REGEX.exec(raw);
-      if (!match) continue;
-      outline.push({
-        level: match[1].length,
-        text: match[2].trim(),
-        line: i + 1,
-      });
-    }
-  }
+  const outline: NotesOutlineItem[] =
+    trimmed.length > 0
+      ? deriveOutline(content).map((item) => ({
+          level: item.level,
+          text: item.text,
+          line: item.line,
+        }))
+      : [];
 
   return { wordCount, readingMinutes, outline };
 }

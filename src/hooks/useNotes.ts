@@ -37,7 +37,13 @@ export interface UseNotesReturn extends NotesState {
   refreshFileTree: () => Promise<void>;
   selectFile: (file: FileTreeNode) => Promise<void>;
   updateFileContent: (content: string) => void;
-  saveFile: (content: string) => Promise<boolean>;
+  saveFile: (content: string, path?: string) => Promise<boolean>;
+  /** 磁盘基线（与 fileContent 比较即得 isDirty） */
+  savedContent: string;
+  /** 派生脏态：内容与磁盘基线不一致 */
+  isDirty: boolean;
+  /** 内容已与磁盘一致时同步内容与基线（外部覆盖 / 草稿恢复） */
+  markSaved: (path: string, content: string) => void;
   createFolder: (parentPath: string | null, name: string) => Promise<{ success: boolean; exists?: boolean }>;
   createFolderForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy') => Promise<boolean>;
   createNote: (parentPath: string | null, name: string, content?: string) => Promise<{ success: boolean; exists?: boolean }>;
@@ -220,6 +226,9 @@ export function useNotes(): UseNotesReturn {
     selectFile: selection.selectFile,
     updateFileContent: selection.updateFileContent,
     saveFile: selection.saveFile,
+    savedContent: selection.savedContent,
+    isDirty: selection.isDirty,
+    markSaved: selection.markSaved,
     createFolder: operations.createFolder,
     createFolderForce: operations.createFolderForce,
     createNote: operations.createNote,

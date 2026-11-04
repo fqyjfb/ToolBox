@@ -110,7 +110,7 @@ const Select: React.FC<SelectProps> = ({
     >
       <div
         ref={listRef}
-        className="scrollbar-5px overflow-y-auto py-1"
+        className="modal-detail-scroll overflow-y-auto py-1"
         style={{ maxHeight: dropdownMaxHeight }}
       >
         {options.map((option) => (

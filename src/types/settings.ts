@@ -9,6 +9,7 @@ export interface ShortcutItem {
   cmd: string;
   isOpen: number;
   isGlobal: number;
+  /** 主进程侧的功能映射名（如 translateSelection），渲染层用于定位特定快捷键 */
   name?: string;
 }
 
@@ -24,7 +25,7 @@ export interface FloatConfigItem {
   path?: string;
 }
 
-export type SettingsTab = 'theme' | 'general' | 'ai' | 'storage' | 'sync' | 'shortcuts' | 'floatWindow' | 'logMonitor' | 'network';
+export type SettingsTab = 'theme' | 'general' | 'ai' | 'translate' | 'storage' | 'sync' | 'shortcuts' | 'floatWindow' | 'logMonitor' | 'network';
 
 export interface NotificationSettings {
   errors: boolean;

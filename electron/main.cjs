@@ -51,7 +51,7 @@ const fs = require('node:fs');
 const { Readable } = require('node:stream');
 const path = require('node:path');
 const { getMimeType } = require('./services/fileTypeUtils.cjs');
-const { stopPythonService } = require('./services/pythonProcessService.cjs');
+const { terminate: stopOcrService } = require('./services/ocrService.cjs');
 const { registerOcrIpc } = require('./ipc/ocrIpc.cjs');
 const { registerFileManagerIpc } = require('./ipc/fileManagerIpc.cjs');
 const { registerSqliteIpc } = require('./ipc/sqliteIpc.cjs');
@@ -70,6 +70,9 @@ const { registerQuickLoginIpcHandlers } = require('./window/quickLoginWindow.cjs
 const { registerOfflineToolsIpc } = require('./ipc/offlineToolsIpc.cjs');
 const { registerReminderIpc } = require('./ipc/reminderIpc.cjs');
 const { registerAIIpc } = require('./ipc/aiIpc.cjs');
+const { registerTranslateIpc } = require('./ipc/translateIpc.cjs');
+const translateHistoryService = require('./services/translateHistoryService.cjs');
+const { disposeTranslateWindow } = require('./window/translateWindow.cjs');
 const reminderScheduler = require('./services/reminderScheduler.cjs');
 // 邮箱模块（emailIpc → emailService → nodemailer / imapflow / mailparser）不在顶层 require：
 // 这三个依赖体积大、文件多，一旦打包后有文件缺失（磁盘坏块导致 npm 包文件损坏时就会发生），
@@ -332,10 +335,10 @@ if (!gotTheLock) {
 
 async function stopBackendServices() {
   try {
-    await stopPythonService();
-    console.log('[Main] Python 服务已停止');
+    await stopOcrService();
+    console.log('[Main] OCR 引擎已停止');
   } catch (error) {
-    console.warn('[Main] Python 服务停止异常:', error);
+    console.warn('[Main] OCR 引擎停止异常:', error);
   }
 }
 
@@ -399,6 +402,7 @@ app.whenReady().then(async () => {
   safeRegister('registerReminderIpc', registerReminderIpc);
   safeRegister('registerEmailIpc', () => require('./ipc/emailIpc.cjs').registerEmailIpc());
   safeRegister('registerAIIpc', registerAIIpc);
+  safeRegister('registerTranslateIpc', registerTranslateIpc);
   safeRegister('registerIpcHandlers', registerIpcHandlers);
 
   // 计划任务唤醒的若是本实例（应用原先未运行），second-instance 事件不会触发，
@@ -469,6 +473,18 @@ app.on('before-quit', () => {
   stopBackendServices();
   stopMemoryOptimization();
   cleanupQuickLaunchHotkeys();
+  try {
+    // 翻译记录写入走 2s 去抖，退出前必须补写，否则会丢掉最后 2s 的记录
+    translateHistoryService.flushNow();
+  } catch (e) {
+    console.error('[Main] 翻译记录落盘失败:', e.message);
+  }
+  try {
+    // 放行浮层关闭（窗口自身 close 事件会 preventDefault 隐藏）
+    disposeTranslateWindow();
+  } catch (e) {
+    console.error('[Main] 翻译浮层关闭失败:', e.message);
+  }
   try {
     // 退出前补写落盘：写入走 2s 去抖，close() 只关闭连接不会触发去抖，
     // 不补这一步会丢掉最后 2s 内的写入。

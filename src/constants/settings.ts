@@ -41,6 +41,8 @@ export const DEFAULT_SHORTCUTS: ShortcutItem[] = [
   { id: 8, tag: '最小化', cmd: 'CommandOrControl+[', isOpen: 1, isGlobal: 0 },
   { id: 9, tag: '最大化', cmd: 'CommandOrControl+]', isOpen: 1, isGlobal: 0 },
   { id: 10, tag: '锁定/解锁', cmd: 'CommandOrControl+L', isOpen: 1, isGlobal: 1 },
+  { id: 11, tag: '划词翻译', cmd: 'Alt+E', isOpen: 1, isGlobal: 1, name: 'translateSelection' },
+  { id: 12, tag: '截图翻译', cmd: 'Alt+W', isOpen: 1, isGlobal: 1, name: 'translateScreenshot' },
 ];
 
 export const FLOAT_TYPE_OPTIONS = [

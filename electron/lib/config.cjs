@@ -1,4 +1,4 @@
-const { app, nativeTheme } = require('electron');
+const { app, nativeTheme, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { https, http } = require('follow-redirects');
@@ -8,6 +8,8 @@ const { hasLocalPluginIcon } = require('./pluginLocalIcons.cjs');
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 // 自定义主题配色快照：锁屏等独立窗口读不到渲染层的 localStorage，靠这份快照上色
 const themeSnapshotPath = path.join(app.getPath('userData'), 'theme.json');
+// AI 配置快照：浮层读不到渲染层 localStorage，api_key 经 safeStorage 加密后落盘
+const aiSnapshotPath = path.join(app.getPath('userData'), 'ai.json');
 const shortcutsPath = path.join(app.getPath('userData'), 'shortcuts.json');
 const floatConfigPath = path.join(app.getPath('userData'), 'floatConfig.json');
 const lockPasswordPath = path.join(app.getPath('userData'), 'lockPassword.json');
@@ -133,6 +135,23 @@ const defaultSettings = {
   encryptionKey: '',
   // 悬浮球形象（'' 无装饰 / ears 猫耳 / hat 帽子 / scarf 围巾）
   floatBallAppearance: '',
+  // ── 划词翻译：总开关 ──
+  translateEnabled: 1, // 0 关闭时释放翻译快捷键并收起翻译弹窗
+  // ── 划词翻译：取词 ──
+  translateChoiceDelay: 600, // 前后各 floor(x/2)，范围 100–1000（对齐 TTime 默认 600）
+  // ── 划词翻译：浮层窗口 ──
+  translatePositionType: 'mouse', // 'mouse' | 'center' | 'last'
+  translatePopupWidth: 460,
+  translatePopupHideOnBlur: 1,
+  translatePopupAlwaysOnTop: 0,
+  translatePopupLastBounds: null,
+  // ── 截图翻译：文字识别 ──
+  translateOcrWriteClipboard: 0,
+  translateOcrWrapReplaceSpace: 0,
+  translateOcrWrapRemove: 0,
+  // ── 翻译记录 ──
+  translateHistoryEnabled: 1,
+  translateHistoryLimit: 30,
 };
 
 // 默认项与 NAV_ACTIONS 的有效目标保持一致；图标字段留空，加载时按类型+目标自动解析。
@@ -176,6 +195,9 @@ const defaultShortcuts = [
   { id: 8, tag: '最小化', cmd: 'CommandOrControl+[', isOpen: 1, isGlobal: 0, name: 'windowMinimize' },
   { id: 9, tag: '最大化', cmd: 'CommandOrControl+]', isOpen: 1, isGlobal: 0, name: 'windowMaximizer' },
   { id: 10, tag: '锁定/解锁', cmd: 'CommandOrControl+L', isOpen: 1, isGlobal: 1, name: 'lockToggle' },
+  { id: 11, tag: '划词翻译', cmd: 'Alt+E', isOpen: 1, isGlobal: 1, name: 'translateSelection' },
+  { id: 12, tag: '截图翻译', cmd: 'Alt+W', isOpen: 1, isGlobal: 1, name: 'translateScreenshot' },
+  { id: 13, tag: '打开翻译弹窗', cmd: 'Alt+Q', isOpen: 1, isGlobal: 1, name: 'translatePopup' },
 ];
 
 const loadSettings = () => {
@@ -233,6 +255,67 @@ const saveThemeSnapshot = (snapshot) => {
     }
   } catch (error) {
     console.error('Failed to save theme snapshot:', error);
+  }
+};
+
+/**
+ * 写入 AI 配置快照：每个模型的 api_key 用 safeStorage 加密后存为 api_key_enc，
+ * 明文不落盘；加密不可用时按平台能力回退为明文（与 Electron 默认行为一致）。
+ */
+const saveAIConfigSnapshot = (snapshot) => {
+  try {
+    if (!snapshot || typeof snapshot !== 'object') return;
+    const encryptionAvailable = safeStorage.isEncryptionAvailable();
+    const models = Array.isArray(snapshot.models) ? snapshot.models : [];
+    const payload = {
+      ...snapshot,
+      encrypted: encryptionAvailable,
+      models: models.map((model) => {
+        const next = { ...model };
+        if (typeof next.api_key === 'string' && next.api_key) {
+          if (encryptionAvailable) {
+            next.api_key_enc = safeStorage.encryptString(next.api_key).toString('base64');
+            next.api_key = '';
+          }
+        } else if (typeof next.api_key_enc === 'string' && next.api_key_enc) {
+          // 渲染层未持有解密后的 key（例如仅编辑了其它字段），保留原密文
+          next.api_key = '';
+        } else {
+          next.api_key = typeof next.api_key === 'string' ? next.api_key : '';
+        }
+        return next;
+      }),
+    };
+    fs.writeFileSync(aiSnapshotPath, JSON.stringify(payload, null, 2));
+  } catch (error) {
+    console.error('Failed to save AI config snapshot:', error);
+  }
+};
+
+/** 读取 AI 配置快照，并把 api_key_enc 解密回 api_key 供浮层使用 */
+const loadAIConfigSnapshot = () => {
+  try {
+    if (!fs.existsSync(aiSnapshotPath)) return null;
+    const payload = JSON.parse(fs.readFileSync(aiSnapshotPath, 'utf-8'));
+    if (!payload || typeof payload !== 'object') return null;
+    const models = Array.isArray(payload.models)
+      ? payload.models.map((model) => {
+          const next = { ...model };
+          if (next.api_key_enc) {
+            try {
+              next.api_key = safeStorage.decryptString(Buffer.from(next.api_key_enc, 'base64'));
+            } catch {
+              next.api_key = '';
+            }
+            delete next.api_key_enc;
+          }
+          return next;
+        })
+      : [];
+    return { ...payload, models };
+  } catch (error) {
+    console.error('Failed to load AI config snapshot:', error);
+    return null;
   }
 };
 
@@ -923,6 +1006,8 @@ module.exports = {
   isDarkTheme,
   loadThemeSnapshot,
   saveThemeSnapshot,
+  loadAIConfigSnapshot,
+  saveAIConfigSnapshot,
   loadShortcuts,
   saveShortcuts,
   loadFloatConfig,

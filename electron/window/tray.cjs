@@ -118,6 +118,14 @@ const refreshTrayMenu = () => {
     },
     { type: 'separator' },
     {
+      label: '翻译',
+      click: () => {
+        checkLockAndShow(() => {
+          require('./translateWindow.cjs').showTranslateWindow({ text: '', autoTranslate: false, trigger: 'manual' });
+        });
+      },
+    },
+    {
       label: '功能',
       submenu: [
         {
