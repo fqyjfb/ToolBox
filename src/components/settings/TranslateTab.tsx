@@ -1,16 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { History, Languages, ScanText, SlidersHorizontal, Keyboard } from 'lucide-react';
+import { History, Languages, ScanText, SlidersHorizontal } from 'lucide-react';
 import SettingCard from './SettingCard';
 import SettingSection from './SettingSection';
 import SettingRow from './SettingRow';
 import ToggleSwitch from './ToggleSwitch';
-import ShortcutRow from './ShortcutRow';
 import Select from '../ui/Select';
 import { useToastStore } from '../../store/toastStore';
 import { useTranslateConfigStore } from '../../store/translateConfigStore';
 import { useAIConfigStore } from '../../store/aiConfigStore';
 import { LANGUAGES } from '../../constants/languages';
-import type { ShortcutItem } from '../../types/settings';
 import { PROVIDER_LABELS, type TranslateProviderId } from '../../types/translate';
 
 type SettingValue = string | number | boolean;
@@ -53,7 +51,6 @@ const TranslateTab: React.FC = () => {
   const models = useAIConfigStore((state) => state.config.models);
 
   const [draft, setDraft] = useState<Record<string, string>>(() => toDraft(SETTING_DEFAULTS));
-  const [shortcuts, setShortcuts] = useState<ShortcutItem[]>([]);
   const [promptDraft, setPromptDraft] = useState(config.ai_system_prompt);
   const [runtime, setRuntime] = useState<{ source: string; dir: string; available: boolean; ready: boolean } | null>(null);
 
@@ -91,44 +88,6 @@ const TranslateTab: React.FC = () => {
     void save(name, clamped);
   };
 
-  const loadShortcuts = useCallback(async () => {
-    if (!window.electron) return;
-    try {
-      const list = await window.electron.getShortcuts();
-      const filtered = list.filter(
-        (item) =>
-          item.name === 'translateSelection' ||
-          item.name === 'translateScreenshot' ||
-          item.name === 'translatePopup' ||
-          item.tag === '划词翻译' ||
-          item.tag === '截图翻译' ||
-          item.tag === '打开翻译弹窗',
-      );
-      // 打开翻译弹窗快捷键置于区域最上方
-      const popup = filtered.find((item) => item.name === 'translatePopup');
-      setShortcuts(
-        popup ? [popup, ...filtered.filter((item) => item.name !== 'translatePopup')] : filtered,
-      );
-    } catch {
-      setShortcuts([]);
-    }
-  }, []);
-
-  const handleResetShortcuts = async () => {
-    if (!window.electron) return;
-    try {
-      const result = await window.electron.resetShortcuts();
-      if (result.code === 0) {
-        addToast({ type: 'success', message: result.msg });
-        void loadShortcuts();
-      } else {
-        addToast({ type: 'error', message: result.msg });
-      }
-    } catch {
-      addToast({ type: 'error', message: '恢复默认快捷键失败' });
-    }
-  };
-
   useEffect(() => {
     if (!window.electron) return;
     void (async () => {
@@ -147,24 +106,7 @@ const TranslateTab: React.FC = () => {
         // 读取失败时保留默认值，不影响页面渲染
       }
     })();
-    void loadShortcuts();
-  }, [loadShortcuts]);
-
-  const handleUpdateShortcut = async (shortcut: ShortcutItem) => {
-    if (!window.electron) return;
-    try {
-      const result = await window.electron.updateShortcut({ ...shortcut, flag: true });
-      if (result.code === 0) {
-        setShortcuts((previous) => previous.map((item) => (item.id === shortcut.id ? shortcut : item)));
-        addToast({ type: 'success', message: result.msg });
-      } else {
-        addToast({ type: 'error', message: result.msg });
-        void loadShortcuts();
-      }
-    } catch {
-      addToast({ type: 'error', message: '更新快捷键失败' });
-    }
-  };
+  }, []);
 
   /** 刷新 OCR 运行时信息与状态（设置页状态行） */
   const loadRuntime = useCallback(async () => {
@@ -414,31 +356,6 @@ const TranslateTab: React.FC = () => {
             onBlur={() => commitNumber('translateHistoryLimit', 5, 200)}
           />
         </SettingRow>
-      </SettingSection>
-
-      <SettingSection title="快捷键" icon={<Keyboard size={14} />}>
-        <div className="flex items-center justify-between border-b border-content-light px-4 py-2">
-          <span className="text-xs text-content-tertiary">全局快捷键</span>
-          <button
-            type="button"
-            onClick={() => void handleResetShortcuts()}
-            className="rounded-md border border-content px-2 py-1 text-xs text-content-primary transition-colors hover:bg-menu-hover"
-          >
-            恢复默认
-          </button>
-        </div>
-        {shortcuts.length === 0 ? (
-          <p className="px-4 py-3 text-xs text-content-tertiary">未找到翻译快捷键配置。</p>
-        ) : (
-          shortcuts.map((shortcut) => (
-            <ShortcutRow
-              key={shortcut.id}
-              shortcut={shortcut}
-              allShortcuts={shortcuts}
-              onUpdate={(next) => void handleUpdateShortcut(next)}
-            />
-          ))
-        )}
       </SettingSection>
     </SettingCard>
   );

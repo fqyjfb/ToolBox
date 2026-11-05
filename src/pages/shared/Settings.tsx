@@ -260,6 +260,9 @@ const Settings: React.FC = () => {
           STORAGE_KEYS.NOTES_LAST_OPENED_FILE,
           STORAGE_KEYS.AI_CONFIG,
           STORAGE_KEYS.TRANSLATE_CONFIG,
+          // 插件缓存：清了就得重新等 IPC / 网络
+          STORAGE_KEYS.PLUGINS,
+          STORAGE_KEYS.PLUGINS_AVAILABLE_CACHE,
         ]);
         addToast({ type: 'success', message: '缓存已清除，应用将自动重启' });
         if (window.electron?.restart) {

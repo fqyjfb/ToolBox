@@ -56,6 +56,8 @@ export const STORAGE_KEYS = {
   NOTES_SIDEBAR_SECTIONS: 'notes_sidebar_sections',
 
   PLUGINS: 'toolbox_plugins',
+  // 可用插件注册表缓存（TTL=1h），离线时先显示旧数据
+  PLUGINS_AVAILABLE_CACHE: 'toolbox_plugins_available_cache',
   // 自定义主题配置（含背景图 data URI）；与 THEME='custom' 联用，缓存清理时需保留
   CUSTOM_THEME: 'toolbox_custom_theme',
   // 自定义主题背景图片库（多图管理）；缓存清理时需保留

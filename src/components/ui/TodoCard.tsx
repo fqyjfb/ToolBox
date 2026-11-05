@@ -3,6 +3,7 @@ import { FolderOpen, Folder, MoreVertical, CheckSquare, Clock, AlertCircle, Edit
 import { Todo } from '../../services/TodoService';
 import { PRIORITY_WEIGHT, getDeleteCategoryMessage } from '../../constants/todo';
 import type { TodoTab } from '../../constants/todo';
+import { pad2 } from '../../utils/format';
 
 /** 一个分组卡片所需的全部数据（已包含未分类虚拟分组） */
 export interface TodoBoardItem {
@@ -69,7 +70,7 @@ const formatTime = (dueDate?: string | null, isCompleted?: boolean): TimeInfo | 
   // 截止时间精确到分钟时补充展示，避免同一天的任务无法区分先后
   const hasTime = date.getHours() !== 0 || date.getMinutes() !== 0;
   const timeText = hasTime
-    ? ` ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+    ? ` ${pad2(date.getHours())}:${pad2(date.getMinutes())}`
     : '';
 
   if (diffDays === 0) return { text: `今天${timeText}`, status: 'today' };

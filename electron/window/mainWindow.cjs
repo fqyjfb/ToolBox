@@ -6,9 +6,19 @@ const { execFile } = require('child_process');
 const { loadSettings, saveSettings, getNetworkConfig, invalidateNetworkConfigCache, isDarkTheme } = require('../lib/config.cjs');
 const ShortcutManager = require('../lib/shortcutManager.cjs');
 const notesService = require('../services/notesService.cjs');
-const systemInfoService = require('../services/systemInfoService.cjs');
+// 延迟加载：systemInfoService 仅在 'system-info:get' IPC 时才会用到，不在启动期阻塞
+let _systemInfoService = null;
+const getSystemInfoService = () => {
+  if (!_systemInfoService) _systemInfoService = require('../services/systemInfoService.cjs');
+  return _systemInfoService;
+};
 const { getFloatWindow } = require('./floatWindow.cjs');
-const { getFileIcon, isSupportedFileType, getShortcutInfo, getCacheFilePath } = require('../lib/iconExtractor.cjs');
+// 延迟加载：iconExtractor 仅在文件图标相关 IPC 时才会用到，不在启动期阻塞
+let _iconExtractor = null;
+const getIconExtractor = () => {
+  if (!_iconExtractor) _iconExtractor = require('../lib/iconExtractor.cjs');
+  return _iconExtractor;
+};
 const { getAppIcon } = require('../lib/appIcon.cjs');
 
 // 快启动扫描统一过滤规则（桌面扫描与开始菜单扫描共享，保证整体去重一致）
@@ -92,7 +102,7 @@ const scanQuickLaunchPaths = async (event, scanPaths) => {
     let appArgs = '';
     if (fullPath.toLowerCase().endsWith('.lnk')) {
       try {
-        const info = await getShortcutInfo(fullPath);
+        const info = await getIconExtractor().getShortcutInfo(fullPath);
         // 失效快捷方式（目标不存在）或解析异常时不添加
         if (!info.targetPath) { sendProgress(processed); continue; }
         if (isWindowsInstallerPath(info.targetPath)) {
@@ -1227,9 +1237,9 @@ const registerIpcHandlers = () => {
 
       logger.addLog('debug', `[QuickLaunch] 处理文件: ${filePath}`, 'drag-drop');
 
-      if (isSupportedFileType(filePath)) {
+      if (getIconExtractor().isSupportedFileType(filePath)) {
         const targetPath = filePath.toLowerCase().endsWith('.lnk')
-          ? (await getShortcutInfo(filePath)).targetPath
+          ? (await getIconExtractor().getShortcutInfo(filePath)).targetPath
           : filePath;
 
         if (fs.existsSync(targetPath)) {
@@ -1248,7 +1258,7 @@ const registerIpcHandlers = () => {
   });
 
   ipcMain.handle('get-file-icon', async (event, filePath) => {
-    return await getFileIcon(filePath);
+    return await getIconExtractor().getFileIcon(filePath);
   });
 
   ipcMain.handle('file-exists', (event, filePath) => {
@@ -1866,81 +1876,10 @@ const registerIpcHandlers = () => {
     });
   });
 
-  ipcMain.handle('notes-has-root-path', () => notesService.hasRootPath());
-  ipcMain.handle('notes-get-root-path', () => notesService.getRootPath());
-  ipcMain.handle('notes-set-root-path', (event, rootPath) => notesService.setRootPath(rootPath));
-  // 视图根 / 对话根仅用于文件操作越界放行，与主根相互独立，不影响扫描与取树
-  ipcMain.handle('notes-set-view-path', (event, viewPath) => notesService.setViewPath(viewPath));
-  ipcMain.handle('notes-set-chat-path', (event, chatPath) => notesService.setChatRootPath(chatPath));
-  ipcMain.handle('notes-select-folder', async () => notesService.selectFolder());
-  ipcMain.handle('notes-validate-folder', (event, folderPath) => notesService.validateFolder(folderPath));
-  ipcMain.handle('notes-scan-folder', (event, rootPath) => notesService.scanFolder(rootPath));
-  ipcMain.handle('notes-get-file-tree', () => notesService.getFileTree());
-  ipcMain.handle('notes-create-folder', (event, parentPath, name) => notesService.createFolder(parentPath, name));
-  ipcMain.handle('notes-create-folder-force', (event, parentPath, name, mode) => notesService.createFolderForce(parentPath, name, mode));
-  ipcMain.handle('notes-create-note', (event, parentPath, name, content) => notesService.createNote(parentPath, name, content));
-  ipcMain.handle('notes-create-note-force', (event, parentPath, name, mode, content) => notesService.createNoteForce(parentPath, name, mode, content));
-  ipcMain.handle('notes-read-file', (event, filePath) => notesService.readFile(filePath));
-  ipcMain.handle('notes-save-file', (event, filePath, content) => notesService.saveFile(filePath, content));
-  ipcMain.handle('notes-rename-item', (event, oldPath, newName) => notesService.renameItem(oldPath, newName));
-  ipcMain.handle('notes-delete-item', (event, itemPath) => notesService.deleteItem(itemPath));
-  ipcMain.handle('notes-trash-item', async (event, itemPath) => notesService.trashItem(itemPath));
-  ipcMain.handle('notes-index-all', (event, rootPath) => notesService.indexAllNotes(rootPath));
-  ipcMain.handle('notes-open-file-in-folder', (event, filePath) => notesService.openFileInFolder(filePath));
-  ipcMain.handle('notes-read-file-as-buffer', (event, filePath) => notesService.readFileAsBuffer(filePath));
-  ipcMain.handle('notes-move-item', (event, itemPath, targetFolderPath) => notesService.moveItem(itemPath, targetFolderPath));
-  ipcMain.handle('notes-copy-item', (event, sourcePath) => notesService.copyItem(sourcePath));
-  ipcMain.handle('notes-send-item', (event, sourcePath, target) => notesService.sendItem(sourcePath, target));
-  ipcMain.handle('notes-import-dropped-files', (event, rootPath, filePaths) => notesService.importDroppedFiles(rootPath, filePaths));
+  // 以下 IPC 已迁移至独立子模块，此处统一注册
   require('../ipc/notesIpc.cjs').registerNotesIpc();
-
-  ipcMain.handle('ip-info:query', async (event, ip) => {
-    const https = require('https');
-    return new Promise((resolve) => {
-      const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
-      https.get(url, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          try {
-            const result = JSON.parse(data);
-            if (result.error) {
-              resolve({ error: true, reason: result.error.message || '查询失败' });
-            } else {
-              const [latitude, longitude] = result.loc ? result.loc.split(',').map(Number) : [0, 0];
-              resolve({
-                ip: result.ip || '',
-                version: result.ip?.includes(':') ? 'IPv6' : 'IPv4',
-                city: result.city || '',
-                region: result.region || '',
-                country_name: result.country || '',
-                country_code: result.country || '',
-                timezone: result.timezone || '',
-                currency: '',
-                currency_name: '',
-                postal: result.postal || '',
-                latitude,
-                longitude,
-                org: result.org || '',
-                asn: result.asn || '',
-                languages: '',
-              });
-            }
-          } catch (error) {
-            resolve({ error: true, reason: '解析数据失败' });
-          }
-        });
-      }).on('error', (error) => {
-        resolve({ error: true, reason: error.message });
-      });
-    });
-  });
-
-  ipcMain.handle('system-info:get', () => {
-    return systemInfoService.getSystemInfo();
-  });
+  require('../ipc/systemIpc.cjs').registerSystemIpc();
+  require('../ipc/quickLaunchIpc.cjs').registerQuickLaunchIpc();
 };
 
 // P2: 应用退出时统一注销所有快启动全局热键

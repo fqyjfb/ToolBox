@@ -1,17 +1,15 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home, Monitor, Copy, AppWindow, Shield, FolderOpen, Keyboard, Download, Upload, Wrench, X, Check, Settings } from 'lucide-react';
-import { DndContext, closestCenter, pointerWithin, CollisionDetection, DragEndEvent, DragMoveEvent, DragStartEvent, DragOverlay as DndDragOverlay, type ClientRect } from '@dnd-kit/core';
+import { Rocket, Folder, Monitor, AppWindow } from 'lucide-react';
+import { DndContext, closestCenter, pointerWithin, CollisionDetection, DragEndEvent, DragMoveEvent, DragStartEvent, DragOverlay as DndDragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useDndSensors } from '../../hooks/useDndSensors';
 import {
   QuickLaunchCategory,
   QuickLaunchItem,
   QuickLaunchSortMode,
-  addHomeQuickLaunchApp,
-  isAppInHomeQuickLaunch,
   loadApps,
   ensureAppIconsCached,
-  generateAppId,
   loadDesktopOrder,
   saveDesktopOrder,
   reconcileDesktopOrder,
@@ -19,7 +17,6 @@ import {
   sortAppsByMode,
   toAppKey,
   toFolderKey,
-  getAppName,
 } from '../../utils/quickLaunch';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useToastStore } from '../../store/toastStore';
@@ -36,60 +33,16 @@ import { DesktopFolderTile, FolderTileVisual } from '../../components/quicklaunc
 import FolderPopup, { FOLDER_POPUP_PREFIX } from '../../components/quicklaunch/FolderPopup';
 import { buildDesktopTiles, repositionKey, writeBackSlots } from '../../components/quicklaunch/desktopTiles';
 import { DesktopTile } from '../../components/quicklaunch/types';
+import { QuickLaunchHotkeyDialog } from './quickLaunch/QuickLaunchHotkeyDialog';
+import { QuickLaunchRepairDialog } from './quickLaunch/QuickLaunchRepairDialog';
+import { buildContextMenuItems } from './quickLaunch/contextMenuItems';
+import { useQuickLaunchActions } from './quickLaunch/useQuickLaunchActions';
 import './QuickLaunch.css';
-
-/**
- * 文件夹磁贴中心区域内缩比例：磁贴中心区域松手=归入文件夹；
- * 边缘区域松手=把应用插入到该文件夹相邻的桌面槽位（可落在两个文件夹之间）。
- */
-const FOLDER_CORE_INSET_RATIO = 0.25;
-
-type FolderDropIntent = 'group' | 'insert-before' | 'insert-after';
-
-/**
- * 取拖拽中的指针坐标：activatorEvent 是按下时的初始位置，叠加累计 delta 得到当前位置。
- * 键盘拖拽等无坐标输入返回 null（此时按归入处理，保持原有行为）。
- */
-const getDragPointer = (
-  activatorEvent: Event,
-  delta: { x: number; y: number }
-): { x: number; y: number } | null => {
-  if (!('clientX' in activatorEvent)) return null;
-  const { clientX, clientY } = activatorEvent as MouseEvent;
-  return { x: clientX + delta.x, y: clientY + delta.y };
-};
-
-/**
- * 判定应用落在文件夹磁贴上的意图：
- * 指针处于磁贴中心区域 → 归入；处于边缘 → 按最近的一条边插入到该文件夹前/后。
- */
-const resolveFolderDropIntent = (
-  pointer: { x: number; y: number } | null,
-  rect: ClientRect
-): FolderDropIntent => {
-  if (!pointer) return 'group';
-  const insetX = rect.width * FOLDER_CORE_INSET_RATIO;
-  const insetY = rect.height * FOLDER_CORE_INSET_RATIO;
-  const inCore =
-    pointer.x >= rect.left + insetX &&
-    pointer.x <= rect.right - insetX &&
-    pointer.y >= rect.top + insetY &&
-    pointer.y <= rect.bottom - insetY;
-  if (inCore) return 'group';
-  const dLeft = pointer.x - rect.left;
-  const dRight = rect.right - pointer.x;
-  const dTop = pointer.y - rect.top;
-  const dBottom = rect.bottom - pointer.y;
-  return Math.min(dLeft, dTop) <= Math.min(dRight, dBottom) ? 'insert-before' : 'insert-after';
-};
-
-/** 当前展开的文件夹信息 */
-interface OpenFolderInfo {
-  key: string;
-  title: string;
-  apps: QuickLaunchItem[];
-  category: QuickLaunchCategory;
-}
+import {
+  getDragPointer,
+  resolveFolderDropIntent,
+  type OpenFolderInfo,
+} from './quickLaunch/dndLogic';
 
 const QuickLaunch: React.FC = () => {
   const { searchQuery, isSearchActive } = useNavSearch();
@@ -234,104 +187,40 @@ const QuickLaunch: React.FC = () => {
     return () => document.removeEventListener('click', handleClick);
   }, []);
 
-  const handleLaunch = useCallback((path: string) => {
-    const targetApp = apps.find(a => a.path === path);
-    const hasOptions = targetApp && (
-      targetApp.args ||
-      targetApp.workingDir ||
-      targetApp.runAsAdmin ||
-      (targetApp.windowMode && targetApp.windowMode !== 'normal')
-    );
+  // ── 业务操作 hooks ─────────────────────────────────────────────────────────
+  const {
+    handleLaunch, handleRemove, handleAddCustom, handleSelectFile, handleDropFiles,
+    handleRename, handleMoveToCategory, handleSaveRename, handleSelectWorkingDir,
+    handleAddCategory, handleEditCategory, handleSaveCategory, handleDeleteCategory,
+    handleContextMenu, handleCloseContextMenu, handleAddApp, handleClearAll, confirmClearAll,
+    handleSetHotkey, handleHotkeyKeyDown, handleSaveHotkey,
+    handleExportConfig, handleImportConfig,
+    handleRemoveInvalidApps, handleRepairInvalidApps, handleRelocateApp, handleRemoveFromInvalid,
+  } = useQuickLaunchActions({
+    apps, categories, customPath, addTargetCategory, editingApp, editingCategory,
+    newCategoryName, openFolderId, desktopOrder, hotkeyTargetApp, hotkeyInput,
+    setApps, setCategories, setDesktopOrder, setOpenFolderId,
+    setEditingApp, setEditingCategory, setNewCategoryName,
+    setShowAddDialog, setShowEditDialog, setShowCategoryDialog,
+    setShowHotkeyDialog, setShowClearConfirm, setShowInvalidDialog,
+    setInvalidApps, setHotkeyTargetApp, setHotkeyInput,
+    setCustomPath, setAddTargetCategory, setContextMenu, addToast,
+    selectFile: async () => (await window.electron?.selectFile()) ?? undefined,
+    selectFolder: async () => (await window.electron?.selectFolder()) ?? undefined,
+    getFileIcon: async (path: string) => (await window.electron?.getFileIcon?.(path)) ?? undefined,
+    openFile: (path: string) => window.electron?.openFile?.(path),
+    launchAppWithOptions: (opts) => (window.electron?.launchAppWithOptions?.({ ...opts, windowMode: opts.windowMode as 'normal' | 'minimized' | 'maximized' | undefined }) ?? Promise.resolve({ success: true })),
+    registerQuickLaunchHotkey: (opts) => (window.electron?.registerQuickLaunchHotkey?.(opts) ?? Promise.resolve(undefined)),
+    unregisterQuickLaunchHotkey: (appId: string) => (window.electron?.unregisterQuickLaunchHotkey?.(appId) as Promise<void> | undefined) ?? Promise.resolve(),
+    fileExists: async (path: string) => (await window.electron?.fileExists?.(path)) ?? undefined,
+    exportQuickLaunchConfig: (content: string) => window.electron?.exportQuickLaunchConfig(content) as Promise<{ success: boolean; filePath?: string; error?: string } | undefined>,
+    importQuickLaunchConfig: () => window.electron?.importQuickLaunchConfig() as Promise<{ success: true; apps: QuickLaunchItem[]; categories: QuickLaunchCategory[] } | { success: false; error: string } | undefined>,
+  });
 
-    if (hasOptions && window.electron?.launchAppWithOptions) {
-      window.electron.launchAppWithOptions({
-        path: targetApp!.path,
-        args: targetApp!.args,
-        workingDir: targetApp!.workingDir,
-        runAsAdmin: targetApp!.runAsAdmin,
-        windowMode: targetApp!.windowMode,
-      }).then(result => {
-        if (!result.success) {
-          addToast({ type: 'error', message: `启动失败: ${result.error ?? '未知错误'}` });
-        }
-      }).catch(() => {
-        // 回退到普通启动
-        window.electron?.openFile(path);
-      });
-    } else {
-      window.electron?.openFile(path);
-    }
-
-    // P0: 频率统计
-    setApps(prev => prev.map(app =>
-      app.path === path
-        ? { ...app, launchCount: (app.launchCount ?? 0) + 1, lastLaunchedAt: Date.now() }
-        : app
-    ));
-    setContextMenu(prev => ({ ...prev, isOpen: false }));
-  }, [apps, addToast]);
-
-  const handleRemove = useCallback((id: string) => {
-    setApps(prev => prev.filter(app => app.id !== id));
-    setContextMenu(prev => ({ ...prev, isOpen: false }));
-  }, []);
-
-  const handleAddCustom = useCallback(async () => {
-    if (customPath.trim()) {
-      const lowerPath = customPath.toLowerCase();
-      const exists = apps.some(app => app.path.toLowerCase() === lowerPath);
-
-      if (exists) {
-        return;
-      }
-
-      const icon = await window.electron?.getFileIcon(customPath) || undefined;
-      const newApp: QuickLaunchItem = {
-        id: generateAppId(),
-        name: getAppName(customPath),
-        path: customPath,
-        icon,
-        // 默认未分类（直接落在桌面），在文件夹弹层内添加时归入该文件夹
-        categoryId: addTargetCategory,
-        addedAt: Date.now(),
-      };
-      setApps(prev => [...prev, newApp]);
-      setCustomPath('');
-      setShowAddDialog(false);
-    }
-  }, [customPath, addTargetCategory, apps]);
-
-  const handleSelectFile = useCallback(async () => {
-    const result = await window.electron?.selectFile();
-    if (result) {
-      setCustomPath(result);
-    }
-  }, []);
-
-  const handleDropFiles = useCallback(async (paths: string[], targetCategoryId = '') => {
-    for (const filePath of paths) {
-      const lowerPath = filePath.toLowerCase();
-      const exists = apps.some(app => app.path.toLowerCase() === lowerPath);
-
-      if (exists) {
-        continue;
-      }
-
-      const icon = await window.electron?.getFileIcon(filePath) || undefined;
-      const newApp: QuickLaunchItem = {
-        id: generateAppId(),
-        name: getAppName(filePath),
-        path: filePath,
-        icon,
-        categoryId: targetCategoryId,
-        addedAt: Date.now(),
-      };
-      setApps(prev => [...prev, newApp]);
-    }
-  }, [apps]);
-
+  // 桌面网格拖拽容器 ref（handleDrop 和 handleDragOver 等共用）
   const dragContainerRef = useRef<HTMLDivElement>(null);
 
+  // ── DND：桌面网格文件拖入处理 ────────────────────────────────────────────
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -361,10 +250,8 @@ const QuickLaunch: React.FC = () => {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-
         const filePath = await window.electron?.getFileOrFolderPath(file);
         logDebug(`[QuickLaunch] File ${i}: name=${file.name}, path=${filePath}`, 'drag-drop');
-
         if (filePath) {
           filePaths.push(filePath);
         }
@@ -399,7 +286,7 @@ const QuickLaunch: React.FC = () => {
     } catch (error) {
       logWarn(`[QuickLaunch] 拖拽处理异常: ${(error as Error).message}`, 'drag-drop');
     }
-  }, [handleDropFiles, collectDroppedPaths]);
+  }, [collectDroppedPaths]);
 
   // 文件夹弹层是 fixed 遮罩层，不在桌面网格的 onDrop 覆盖范围内。
   // 必须 preventDefault，否则 Electron 下拖入文件会触发浏览器默认导航（页面跳走）。
@@ -409,294 +296,6 @@ const QuickLaunch: React.FC = () => {
       e.stopPropagation();
     }
   }, []);
-
-
-
-  const handleContextMenu = useCallback((e: React.MouseEvent, type: 'app' | 'category' | 'empty', targetId?: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({ isOpen: true, x: e.clientX, y: e.clientY, type, targetId });
-  }, []);
-
-  const handleCloseContextMenu = useCallback(() => {
-    setContextMenu(prev => ({ ...prev, isOpen: false }));
-  }, []);
-
-  const handleAddApp = useCallback((categoryId = '') => {
-    setAddTargetCategory(categoryId);
-    setShowAddDialog(true);
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  // 清空操作需二次确认，确认后执行
-  const handleClearAll = useCallback(() => {
-    setShowClearConfirm(true);
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  const confirmClearAll = useCallback(() => {
-    setApps([]);
-    addToast({ type: 'success', message: '已清空全部应用' });
-  }, [addToast]);
-
-  const handleRemoveInvalidApps = useCallback(async () => {
-    const invalidAppIds: string[] = [];
-
-    for (const app of apps) {
-      const exists = await window.electron?.fileExists(app.path);
-      if (!exists) {
-        invalidAppIds.push(app.id);
-      }
-    }
-
-    if (invalidAppIds.length > 0) {
-      setApps(prev => prev.filter(app => !invalidAppIds.includes(app.id)));
-      addToast({ type: 'success', message: `已移除 ${invalidAppIds.length} 个失效应用` });
-    } else {
-      addToast({ type: 'info', message: '所有应用均有效，无需清理' });
-    }
-
-    handleCloseContextMenu();
-  }, [apps, addToast, handleCloseContextMenu]);
-
-  // P2: 失效应用修复（带重新定位）
-  const handleRepairInvalidApps = useCallback(async () => {
-    const invalid: QuickLaunchItem[] = [];
-    for (const app of apps) {
-      const exists = await window.electron?.fileExists(app.path);
-      if (!exists) invalid.push(app);
-    }
-    if (invalid.length === 0) {
-      addToast({ type: 'info', message: '所有应用均有效，无需修复' });
-    } else {
-      setInvalidApps(invalid);
-      setShowInvalidDialog(true);
-    }
-    handleCloseContextMenu();
-  }, [apps, addToast, handleCloseContextMenu]);
-
-  // 重新定位失效应用路径
-  const handleRelocateApp = useCallback(async (appId: string) => {
-    const target = invalidApps.find(a => a.id === appId);
-    if (!target) return;
-    const newPath = await window.electron?.selectFile();
-    if (!newPath) return;
-
-    const icon = await window.electron?.getFileIcon(newPath) || undefined;
-    // 若用户曾手动改过 name，则保留；否则按新路径自动重命名
-    const originalName = getAppName(target.path);
-    const shouldRename = target.name === originalName;
-    setApps(prev => prev.map(app =>
-      app.id === appId
-        ? { ...app, path: newPath, name: shouldRename ? getAppName(newPath) : app.name, icon }
-        : app
-    ));
-    setInvalidApps(prev => prev.filter(a => a.id !== appId));
-    addToast({ type: 'success', message: '应用路径已更新' });
-  }, [invalidApps, addToast]);
-
-  // 从失效列表直接移除
-  const handleRemoveFromInvalid = useCallback((appId: string) => {
-    setApps(prev => prev.filter(app => app.id !== appId));
-    setInvalidApps(prev => prev.filter(a => a.id !== appId));
-  }, []);
-
-  // P2: 热键设置
-  const handleSetHotkey = useCallback((app: QuickLaunchItem) => {
-    setHotkeyTargetApp(app);
-    setHotkeyInput(app.hotkey ?? '');
-    setShowHotkeyDialog(true);
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  // 热键录制：捕获 keydown 转为 accelerator 字符串
-  const handleHotkeyKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    if (e.key === 'Escape') {
-      setHotkeyInput('');
-      return;
-    }
-    const parts: string[] = [];
-    if (e.ctrlKey) parts.push('Control');
-    if (e.altKey) parts.push('Alt');
-    if (e.shiftKey) parts.push('Shift');
-    if (e.metaKey) parts.push('Super');
-    // 忽略纯修饰键
-    if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
-    // 数字 / 字母键
-    const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
-    parts.push(key);
-    setHotkeyInput(parts.join('+'));
-  }, []);
-
-  const handleSaveHotkey = useCallback(async () => {
-    if (!hotkeyTargetApp) return;
-    if (hotkeyInput) {
-      const result = await window.electron?.registerQuickLaunchHotkey({
-        appId: hotkeyTargetApp.id,
-        accelerator: hotkeyInput,
-        appPath: hotkeyTargetApp.path,
-      });
-      if (result && !result.success) {
-        addToast({ type: 'error', message: `注册失败: ${result.error ?? '未知错误'}` });
-        return;
-      }
-      setApps(prev => prev.map(app =>
-        app.id === hotkeyTargetApp.id ? { ...app, hotkey: hotkeyInput } : app
-      ));
-      addToast({ type: 'success', message: `快捷键已设置: ${hotkeyInput}` });
-    } else {
-      // 清除热键
-      await window.electron?.unregisterQuickLaunchHotkey(hotkeyTargetApp.id);
-      setApps(prev => prev.map(app =>
-        app.id === hotkeyTargetApp.id ? { ...app, hotkey: undefined } : app
-      ));
-      addToast({ type: 'info', message: '已清除快捷键' });
-    }
-    setShowHotkeyDialog(false);
-    setHotkeyTargetApp(null);
-    setHotkeyInput('');
-  }, [hotkeyTargetApp, hotkeyInput, addToast]);
-
-  // P2: 配置导出
-  const handleExportConfig = useCallback(async () => {
-    const content = JSON.stringify({ apps, categories, desktopOrder }, null, 2);
-    const result = await window.electron?.exportQuickLaunchConfig(content);
-    if (!result) {
-      handleCloseContextMenu();
-      return;
-    }
-    if (result.success) {
-      addToast({ type: 'success', message: `配置已导出到: ${result.filePath}` });
-    } else {
-      addToast({ type: 'error', message: `导出失败: ${result.error ?? '未知错误'}` });
-    }
-    handleCloseContextMenu();
-  }, [apps, categories, desktopOrder, addToast, handleCloseContextMenu]);
-
-  // P2: 配置导入
-  const handleImportConfig = useCallback(async () => {
-    const result = await window.electron?.importQuickLaunchConfig();
-    if (!result) {
-      handleCloseContextMenu();
-      return;
-    }
-    if ('error' in result) {
-      addToast({ type: 'error', message: `导入失败: ${result.error}` });
-      handleCloseContextMenu();
-      return;
-    }
-    // 二次确认
-    const confirmed = window.confirm('导入将覆盖当前所有快启动配置，是否继续？');
-    if (!confirmed) {
-      handleCloseContextMenu();
-      return;
-    }
-    try {
-      // 类型校验后写入
-      const newApps = Array.isArray(result.apps) ? result.apps as QuickLaunchItem[] : [];
-      const newCategories = Array.isArray(result.categories) ? result.categories : [];
-      // 旧版本导出文件无 desktopOrder：按空处理，由渲染前对账自动生成默认顺序
-      const importedOrder = (result as { desktopOrder?: unknown }).desktopOrder;
-      const newOrder = Array.isArray(importedOrder) ? importedOrder as string[] : [];
-      setApps(newApps);
-      setCategories(newCategories);
-      setDesktopOrder(newOrder);
-      setOpenFolderId(null);
-      addToast({ type: 'success', message: `已导入 ${newApps.length} 个应用、${newCategories.length} 个分类` });
-    } catch {
-      addToast({ type: 'error', message: '数据格式错误' });
-    }
-    handleCloseContextMenu();
-  }, [addToast, handleCloseContextMenu]);
-
-  const handleRename = useCallback((app: QuickLaunchItem) => {
-    setEditingApp(app);
-    setShowEditDialog(true);
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  const handleMoveToCategory = useCallback((appId: string, categoryId: string) => {
-    setApps(prev => prev.map(app => 
-      app.id === appId ? { ...app, categoryId } : app
-    ));
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  const handleSaveRename = useCallback(() => {
-    if (editingApp) {
-      setApps(prev => prev.map(app =>
-        app.id === editingApp.id ? {
-          ...app,
-          name: editingApp.name,
-          alias: editingApp.alias,
-          keywords: editingApp.keywords,
-          args: editingApp.args,
-          workingDir: editingApp.workingDir,
-          runAsAdmin: editingApp.runAsAdmin,
-          windowMode: editingApp.windowMode,
-        } : app
-      ));
-      setEditingApp(null);
-      setShowEditDialog(false);
-    }
-  }, [editingApp]);
-
-  // P1: 选择工作目录
-  const handleSelectWorkingDir = useCallback(async () => {
-    if (!editingApp) return;
-    const result = await window.electron?.selectFolder();
-    if (result) {
-      setEditingApp({ ...editingApp, workingDir: result });
-    }
-  }, [editingApp]);
-
-  const handleAddCategory = useCallback(() => {
-    setEditingCategory(null);
-    setNewCategoryName('');
-    setShowCategoryDialog(true);
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  const handleEditCategory = useCallback((category: QuickLaunchCategory) => {
-    setEditingCategory(category);
-    setNewCategoryName(category.name);
-    setShowCategoryDialog(true);
-    handleCloseContextMenu();
-  }, [handleCloseContextMenu]);
-
-  const handleSaveCategory = useCallback(() => {
-    if (newCategoryName.trim()) {
-      if (editingCategory) {
-        setCategories(prev => prev.map(cat => 
-          cat.id === editingCategory.id ? { ...cat, name: newCategoryName } : cat
-        ));
-      } else {
-        const colors = ['var(--color-category-1)', 'var(--color-category-2)', 'var(--color-category-3)', 'var(--color-accent)', 'var(--color-category-4)', 'var(--color-success)', 'var(--color-error)'];
-        const newCategory: QuickLaunchCategory = {
-          id: generateAppId(),
-          name: newCategoryName,
-          color: colors[categories.length % colors.length],
-        };
-        setCategories(prev => [...prev, newCategory]);
-      }
-      setShowCategoryDialog(false);
-      setNewCategoryName('');
-      setEditingCategory(null);
-    }
-  }, [newCategoryName, editingCategory, categories.length]);
-
-  const handleDeleteCategory = useCallback((categoryId: string) => {
-    setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-    // 被删文件夹下的应用归为未分类（回到桌面，可重新归类），避免指回已删除的分类 id
-    setApps(prev => prev.map(app =>
-      app.categoryId === categoryId ? { ...app, categoryId: '' } : app
-    ));
-    if (openFolderId === categoryId) {
-      setOpenFolderId(null);
-    }
-    handleCloseContextMenu();
-  }, [openFolderId, handleCloseContextMenu]);
 
   // 搜索激活时切换为平铺结果视图（忽略文件夹，等同旧「全部 + 搜索」）
   const isFlatSearch = isSearchActive && searchQuery.trim().length > 0;
@@ -777,7 +376,7 @@ const QuickLaunch: React.FC = () => {
     if (filePaths.length > 0) {
       handleDropFiles(filePaths, openFolder.category.id);
     }
-  }, [collectDroppedPaths, handleDropFiles, openFolder]);
+  }, [collectDroppedPaths, openFolder]);
 
   /** 桌面磁贴排序：写回槽位（保留已归入文件夹的隐藏键）并锁定为自定义排序 */
   const reorderDesktopTiles = useCallback((fromKey: string, toKey: string) => {
@@ -921,256 +520,51 @@ const QuickLaunch: React.FC = () => {
     reorderDesktopTiles(activeKey, overKey);
   }, [openFolder, apps, categories, addToast, moveAppToContainer, insertTileAdjacentToFolder, reorderFolderApps, reorderDesktopTiles, endDrag]);
 
-  const getContextMenuItems = useCallback((): ContextMenuItem[] => {
-    if (contextMenu.type === 'app' && contextMenu.targetId) {
-      const app = apps.find(a => a.id === contextMenu.targetId);
-      if (!app) return [];
-      
-      return [
-        {
-          id: 'open',
-          label: '打开',
-          icon: <Rocket className="w-4 h-4" />,
-          onClick: () => handleLaunch(app.path)
-        },
-        // P1: 以管理员身份运行
-        {
-          id: 'open-as-admin',
-          label: '以管理员身份运行',
-          icon: <Shield className="w-4 h-4" />,
-          onClick: () => {
-            if (app && window.electron?.launchAppWithOptions) {
-              window.electron.launchAppWithOptions({ path: app.path, runAsAdmin: true })
-                .then(r => {
-                  if (!r.success) addToast({ type: 'error', message: `启动失败: ${r.error ?? '未知错误'}` });
-                });
-            }
-            handleCloseContextMenu();
-          }
-        },
-        // P1: 打开文件位置
-        {
-          id: 'reveal-in-folder',
-          label: '打开文件位置',
-          icon: <FolderOpen className="w-4 h-4" />,
-          onClick: () => {
-            if (app) window.electron?.revealInFolder(app.path);
-            handleCloseContextMenu();
-          }
-        },
-        {
-          id: 'copy-path',
-          label: '复制路径',
-          icon: <Copy className="w-4 h-4" />,
-          onClick: async () => {
-            if (app?.path) {
-              try {
-                await navigator.clipboard.writeText(app.path);
-                addToast({ type: 'success', message: '路径已复制到剪贴板' });
-              } catch {
-                addToast({ type: 'error', message: '复制失败' });
-              }
-            }
-            handleCloseContextMenu();
-          }
-        },
-        {
-          id: 'rename',
-          label: '编辑应用',
-          icon: <Edit2 className="w-4 h-4" />,
-          onClick: () => handleRename(app)
-        },
-        // P2: 设置热键
-        {
-          id: 'set-hotkey',
-          label: app.hotkey ? `热键: ${app.hotkey}` : '设置热键',
-          icon: <Keyboard className="w-4 h-4" />,
-          onClick: () => handleSetHotkey(app)
-        },
-        {
-          id: 'add-to-home',
-          label: app && isAppInHomeQuickLaunch(app.path) ? '已添加到首页' : '加到首页',
-          icon: <Home className="w-4 h-4" />,
-          onClick: () => {
-            if (app) {
-              addHomeQuickLaunchApp(app);
-            }
-            handleCloseContextMenu();
-          }
-        },
-        {
-          id: 'move-to-category',
-          label: '移动',
-          icon: <Folder className="w-4 h-4" />,
-          subMenu: [
-            ...(app.categoryId
-              ? [{
-                  id: 'category-none',
-                  label: '移出文件夹（未分类）',
-                  icon: <FolderPlus className="w-4 h-4" />,
-                  onClick: () => handleMoveToCategory(app.id, '')
-                }]
-              : []),
-            ...categories.map((category) => ({
-              id: `category-${category.id}`,
-              label: category.name,
-              icon: <Tag className="w-4 h-4" />,
-              onClick: () => handleMoveToCategory(app.id, category.id)
-            }))
-          ]
-        },
-        { id: 'divider1', divider: true },
-        {
-          id: 'delete',
-          label: '删除',
-          icon: <Trash2 className="w-4 h-4" />,
-          onClick: () => handleRemove(app.id)
-        }
-      ];
-    }
-
-    if (contextMenu.type === 'category' && contextMenu.targetId) {
-      const category = categories.find(c => c.id === contextMenu.targetId);
-      if (!category) return [];
-      
-      return [
-        {
-          id: 'edit',
-          label: '编辑',
-          icon: <Edit2 className="w-4 h-4" />,
-          onClick: () => handleEditCategory(category)
-        },
-        { id: 'divider1', divider: true },
-        {
-          id: 'delete',
-          label: '删除',
-          icon: <Trash2 className="w-4 h-4" />,
-          onClick: () => handleDeleteCategory(category.id)
-        }
-      ];
-    }
-
-    if (contextMenu.type === 'empty') {
-      const anyScanning = isScanningDesktop || isScanningInstalled;
-      const items: ContextMenuItem[] = [
-        {
-          id: 'add-app',
-          label: '添加应用',
-          icon: <FolderPlus className="w-4 h-4" />,
-          onClick: handleAddApp
-        },
-        {
-          id: 'add-category',
-          label: '新建文件夹',
-          icon: <Plus className="w-4 h-4" />,
-          onClick: () => handleAddCategory()
-        },
-        { id: 'divider-scan', divider: true },
-        {
-          id: 'scan-desktop',
-          label: isScanningDesktop ? '正在扫描桌面…' : '扫描桌面应用',
-          icon: <Monitor className="w-4 h-4" />,
-          className: anyScanning ? 'opacity-50 pointer-events-none' : '',
-          onClick: () => { if (!anyScanning) scanDesktop(); }
-        },
-        {
-          id: 'scan-installed',
-          label: isScanningInstalled ? '正在扫描已安装…' : '扫描已安装应用',
-          icon: <AppWindow className="w-4 h-4" />,
-          className: anyScanning ? 'opacity-50 pointer-events-none' : '',
-          onClick: () => { if (!anyScanning) scanInstalled(); }
-        },
-        { id: 'divider-display', divider: true },
-        {
-          id: 'display',
-          label: '显示设置',
-          icon: <Settings className="w-4 h-4" />,
-          subMenu: [
-            {
-              id: 'size-small',
-              label: '小图标',
-              icon: iconSize === 'small' ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
-              onClick: () => setIconSize('small')
-            },
-            {
-              id: 'size-medium',
-              label: '大图标',
-              icon: iconSize === 'medium' ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
-              onClick: () => setIconSize('medium')
-            },
-            { id: 'divider-text', divider: true },
-            {
-              id: 'text-on',
-              label: '图标 + 文字',
-              icon: showText ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
-              onClick: () => setShowText(true)
-            },
-            {
-              id: 'text-off',
-              label: '仅图标',
-              icon: !showText ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
-              onClick: () => setShowText(false)
-            },
-            { id: 'divider-launch', divider: true },
-            {
-              id: 'launch-single',
-              label: '单击启动',
-              icon: singleClickLaunch ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
-              onClick: () => setSingleClickLaunch(true)
-            },
-            {
-              id: 'launch-double',
-              label: '双击启动',
-              icon: !singleClickLaunch ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
-              onClick: () => setSingleClickLaunch(false)
-            }
-          ]
-        }
-      ];
-
-      if (apps.length > 0) {
-        items.push({ id: 'divider1', divider: true });
-        // P2: 修复失效应用（支持重新定位）
-        items.push({
-          id: 'repair-invalid',
-          label: '修复失效应用',
-          icon: <Wrench className="w-4 h-4" />,
-          onClick: handleRepairInvalidApps
-        });
-        items.push({
-          id: 'remove-invalid',
-          label: '移除失效',
-          icon: <Trash2 className="w-4 h-4" />,
-          onClick: handleRemoveInvalidApps
-        });
-        items.push({ id: 'divider2', divider: true });
-        // P2: 配置导入 / 导出
-        items.push({
-          id: 'export-config',
-          label: '导出配置',
-          icon: <Download className="w-4 h-4" />,
-          onClick: handleExportConfig
-        });
-        items.push({
-          id: 'import-config',
-          label: '导入配置',
-          icon: <Upload className="w-4 h-4" />,
-          onClick: handleImportConfig
-        });
-        items.push({ id: 'divider3', divider: true });
-        items.push({
-          id: 'clear-all',
-          label: '清空',
-          icon: <Trash2 className="w-4 h-4" />,
-          onClick: handleClearAll
-        });
-      }
-      
-      return items;
-    }
-
-    return [];
-  }, [contextMenu.type, contextMenu.targetId, apps, categories, addToast, handleLaunch, handleRename, handleSetHotkey, handleMoveToCategory, handleRemove, handleEditCategory, handleDeleteCategory, handleAddApp, handleAddCategory, handleClearAll, handleRemoveInvalidApps, handleRepairInvalidApps, handleExportConfig, handleImportConfig, handleCloseContextMenu, isScanningDesktop, isScanningInstalled, scanDesktop, scanInstalled, iconSize, showText, singleClickLaunch]);
+  const getContextMenuItems = useCallback((): ContextMenuItem[] =>
+    buildContextMenuItems({
+      type: contextMenu.type,
+      targetId: contextMenu.targetId,
+      apps,
+      categories,
+      iconSize,
+      showText,
+      singleClickLaunch,
+      isScanningDesktop,
+      isScanningInstalled,
+      addToast,
+      handleLaunch,
+      handleRename,
+      handleSetHotkey,
+      handleMoveToCategory,
+      handleRemove,
+      handleEditCategory,
+      handleDeleteCategory,
+      handleAddApp,
+      handleAddCategory,
+      handleClearAll,
+      handleRemoveInvalidApps,
+      handleRepairInvalidApps,
+      handleExportConfig,
+      handleImportConfig,
+      handleCloseContextMenu,
+      scanDesktop,
+      scanInstalled,
+      setIconSize,
+      setShowText,
+      setSingleClickLaunch,
+    }),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [
+    contextMenu.type, contextMenu.targetId,
+    apps, categories, iconSize, showText, singleClickLaunch,
+    isScanningDesktop, isScanningInstalled,
+    addToast, handleLaunch, handleRename, handleSetHotkey,
+    handleMoveToCategory, handleRemove, handleEditCategory, handleDeleteCategory,
+    handleAddApp, handleAddCategory, handleClearAll,
+    handleRemoveInvalidApps, handleRepairInvalidApps,
+    handleExportConfig, handleImportConfig, handleCloseContextMenu,
+    scanDesktop, scanInstalled, setIconSize, setShowText, setSingleClickLaunch,
+  ]);
 
   const renderTile = (tile: DesktopTile) => {
     if (tile.kind === 'app') {
@@ -1530,55 +924,19 @@ const QuickLaunch: React.FC = () => {
       </Modal>
 
       {/* 热键设置 */}
-      <Modal
+      <QuickLaunchHotkeyDialog
         isOpen={showHotkeyDialog}
+        hotkeyTargetApp={hotkeyTargetApp}
+        hotkeyInput={hotkeyInput}
         onClose={() => {
           setShowHotkeyDialog(false);
           setHotkeyTargetApp(null);
           setHotkeyInput('');
         }}
-        title={hotkeyTargetApp ? `设置热键 - ${hotkeyTargetApp.name}` : '设置热键'}
-        confirmText="保存"
         onConfirm={handleSaveHotkey}
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-content-primary mb-2">
-              快捷键
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={hotkeyInput}
-                onKeyDown={handleHotkeyKeyDown}
-                onChange={() => {}}
-                placeholder="按下组合键（如 Ctrl+Alt+1），Esc 清除"
-                readOnly
-                className="w-full px-4 py-2 border-content rounded-lg bg-surface-secondary text-content-primary placeholder-text-content-secondary focus:outline-none focus:border-[var(--color-primary)]"
-                style={{ borderWidth: '1px', borderColor: 'var(--color-border)' }}
-              />
-              {hotkeyInput && (
-                <button
-                  type="button"
-                  onClick={() => setHotkeyInput('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-content-tertiary hover:text-content-secondary rounded transition-colors"
-                  title="清空"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-content-secondary mt-2">
-              支持修饰键: Ctrl / Alt / Shift / Win + 字母或数字。按 Esc 清除当前输入，留空保存则取消绑定。
-            </p>
-          </div>
-          {hotkeyTargetApp?.hotkey && (
-            <div className="text-sm text-content-primary">
-              当前热键: <span className="font-mono font-semibold">{hotkeyTargetApp.hotkey}</span>
-            </div>
-          )}
-        </div>
-      </Modal>
+        onHotkeyKeyDown={handleHotkeyKeyDown}
+        onClear={() => setHotkeyInput('')}
+      />
 
       {/* 清空应用二次确认 */}
       <ConfirmDialog
@@ -1592,46 +950,16 @@ const QuickLaunch: React.FC = () => {
       />
 
       {/* 失效应用修复 */}
-      <Modal
+      <QuickLaunchRepairDialog
         isOpen={showInvalidDialog}
+        invalidApps={invalidApps}
         onClose={() => {
           setShowInvalidDialog(false);
           setInvalidApps([]);
         }}
-        title={`修复失效应用 (${invalidApps.length})`}
-        confirmText="关闭"
-        onConfirm={() => {
-          setShowInvalidDialog(false);
-          setInvalidApps([]);
-        }}
-      >
-        <div className="space-y-2 max-h-96 overflow-auto">
-          {invalidApps.map(app => (
-            <div key={app.id} className="flex items-center justify-between gap-2 p-2 rounded border border-content">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-content-primary truncate">{app.name}</p>
-                <p className="text-xs text-content-secondary truncate">{app.path}</p>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handleRelocateApp(app.id)}
-                  className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
-                  title="重新定位"
-                >
-                  <FolderOpen size={16} />
-                </button>
-                <button
-                  onClick={() => handleRemoveFromInvalid(app.id)}
-                  className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                  title="移除"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
+        onRelocate={handleRelocateApp}
+        onRemove={handleRemoveFromInvalid}
+      />
     </div>
   );
 };

@@ -144,7 +144,7 @@ const TranslatePopup: React.FC = () => {
       setText(nextText);
       setNotice(payload.error || '');
       if (payload.fallback) {
-        setNotice((current) => current || '未能读取选中文本，已使用剪贴板内容');
+        setNotice((current) => current || '未能读取选中文本，请重新框选后重试');
       }
       if (payload.autoTranslate && nextText.trim()) {
         skipAutoRef.current = true;

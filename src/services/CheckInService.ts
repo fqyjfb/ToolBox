@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { logError } from './loggerService';
 import { queryKeys } from '../queries/keys';
 import type { BaseEntity } from '../types/common';
+import { pad2 } from '../utils/format';
 
 /** 签到记录：仅存云端 check_ins 表，每个用户每天一条，check_in_date 为本地时区 YYYY-MM-DD */
 export interface CheckInRecord extends BaseEntity {
@@ -10,7 +11,7 @@ export interface CheckInRecord extends BaseEntity {
 
 /** 取本地时区当天日期串（YYYY-MM-DD），不用 toISOString 避免 UTC 跨日误差 */
 const localDateStr = (d: Date): string =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
 /** 计算连续签到天数：以最近一条为锚点，锚点不是今天/昨天则已连续中断计 0 */
 export const calcStreak = (records: CheckInRecord[]): number => {

@@ -24,7 +24,9 @@ export const throttle = <T extends (...args: unknown[]) => void>(func: T, delay:
   };
 };
 
-const padDateTimePart = (value: number): string => String(value).padStart(2, '0');
+import { pad2 } from './format';
+
+const padDateTimePart = (value: number): string => pad2(value);
 
 /** 将 'YYYY-MM-DD HH:mm' 等本地时间字符串转换为 <input type="datetime-local"> 需要的 'YYYY-MM-DDTHH:mm' */
 export const formatDateTimeForInput = (dateTimeStr: string): string => {

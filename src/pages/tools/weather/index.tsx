@@ -8,7 +8,7 @@ import type { WeatherInfo, DailyForecast, HourlyForecast } from '../../../types/
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
 import { DISPLAY_LIMITS } from '../../../constants/timers';
-import { getDayName } from '../../../utils/format';
+import { getDayName, formatShortDate } from '../../../utils/format';
 
 const WeatherPage: React.FC = () => {
   const navigate = useNavigate();
@@ -93,13 +93,6 @@ const WeatherPage: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [isInitialized, fetchWeather]);
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${month}/${day}`;
-  };
 
   const formatHour = (datetime: string) => {
     return datetime.split(' ')[1]?.slice(0, DISPLAY_LIMITS.TIME_SLICE_LENGTH) || '';
@@ -426,7 +419,7 @@ const WeatherPage: React.FC = () => {
               {dailyForecast.map((day, index) => (
                 <div key={index} className="bg-surface-secondary-50 rounded-lg p-3 text-center">
                   <p className="text-sm font-semibold text-content-primary mb-0.5">{getDayName(day.date, { includeAfterTomorrow: false })}</p>
-                  <p className="text-xs text-content-secondary mb-2">{formatDate(day.date)}</p>
+                  <p className="text-xs text-content-secondary mb-2">{formatShortDate(new Date(day.date))}</p>
                   <div className="flex items-center justify-center gap-1 mb-2">
                     {getWeatherIcon(day.day_condition || '')}
                     <span className="text-xs text-content-secondary">{day.day_condition}</span>

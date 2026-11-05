@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { NotesTemplate } from '../types';
 import { NOTE_TEMPLATES, TEMPLATE_WEEKDAYS } from '../constants/templates';
+import { pad2 } from '../../../../utils/format';
 
 export type TemplateVars = Record<string, string>;
 
@@ -20,9 +21,8 @@ export interface UseNotesTemplatesReturn {
 // 默认占位符值每次调用取当前时间，避免模块级缓存导致日期过期
 function buildDefaultVars(): TemplateVars {
   const now = new Date();
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const time = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const date = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+  const time = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
   return {
     date,
     time,

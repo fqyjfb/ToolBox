@@ -91,6 +91,11 @@
   "build": {
     "appId": "com.toolbox.app",
     "productName": "ToolBox",
+    "compression": "maximum",
+    "electronLanguages": [
+      "zh-CN",
+      "en-US"
+    ],
     "directories": {
       "output": "dist-electron"
     },
@@ -126,7 +131,31 @@
       "!node_modules/@aiden0z/**",
       "!node_modules/docx-preview/**",
       "!node_modules/mammoth/**",
-      "!node_modules/chrono-node/**"
+      "!node_modules/chrono-node/**",
+      "!node_modules/codepage/**",
+      "!node_modules/katex/**",
+      "!node_modules/@mermaid-js/**",
+      "!node_modules/es-toolkit/**",
+      "!node_modules/heic2any/**",
+      "!node_modules/zrender/**",
+      "!node_modules/prismjs/**",
+      "!node_modules/dompurify/**",
+      "!node_modules/d3/**",
+      "!node_modules/tyme4ts/**",
+      "!node_modules/proj4/**",
+      "!node_modules/shpjs/**",
+      "!node_modules/lodash-es/**",
+      "!node_modules/underscore/**",
+      "!node_modules/pako/**",
+      "!node_modules/jszip/**",
+      "!node_modules/markdown-it/**",
+      "!node_modules/markdown-it-footnote/**",
+      "!node_modules/zustand/**",
+      "!node_modules/dayjs/**",
+      "!node_modules/pngjs/**",
+      "!node_modules/sql.js/dist/*debug*",
+      "!node_modules/sql.js/dist/*sql-asm*",
+      "!node_modules/sql.js/dist/sql-wasm-browser*"
     ],
     "asarUnpack": [
       "node_modules/node-notifier/vendor/**",

@@ -6,6 +6,7 @@ import { useToastStore } from '@/store/toastStore';
 import { CreateNoteMenu } from './CreateNoteMenu';
 import { useNotesTemplates } from '../hooks/useNotesTemplates';
 import type { NotesTemplate } from '../types';
+import { pad2 } from '../../../../utils/format';
 
 export interface SidebarToolbarProps {
   loading: boolean;
@@ -31,8 +32,7 @@ export interface SidebarToolbarProps {
 
 // 模板笔记默认文件名后缀：20250101
 function formatDateSuffix(date: Date): string {
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
+  return `${date.getFullYear()}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}`;
 }
 
 export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({

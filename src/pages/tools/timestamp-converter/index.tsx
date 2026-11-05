@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, RefreshCw, Copy, Calendar } from 'lucide-react';
 import { useToolPage } from '../../../hooks/useToolPage';
 import { DISPLAY_LIMITS } from '../../../constants/timers';
+import { formatDateTime, formatRelativeTime } from '../../../utils/format';
 
 const TimestampConverterPage: React.FC = () => {
   const { handleCopy, addToast } = useToolPage();
@@ -17,40 +18,6 @@ const TimestampConverterPage: React.FC = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  const formatDateTime = (timestamp: number, ms: boolean = false): string => {
-    const date = new Date(ms ? timestamp : timestamp * 1000);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-  };
-
-  const getRelativeTime = (timestamp: number): string => {
-    const now = Date.now();
-    const diff = now - timestamp;
-    const absDiff = Math.abs(diff);
-    
-    const seconds = Math.floor(absDiff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    const months = Math.floor(days / 30);
-    const years = Math.floor(days / 365);
-
-    let text;
-    if (seconds < 60) text = `${seconds} 秒`;
-    else if (minutes < 60) text = `${minutes} 分钟`;
-    else if (hours < 24) text = `${hours} 小时`;
-    else if (days < 30) text = `${days} 天`;
-    else if (months < 12) text = `${months} 个月`;
-    else text = `${years} 年`;
-
-    return diff < 0 ? `${text}后` : `${text}前`;
-  };
 
   const convertToDate = useCallback(() => {
     const input = timestampInput.trim();
@@ -77,7 +44,7 @@ const TimestampConverterPage: React.FC = () => {
       { label: '时间戳 (毫秒)', value: timestampMs.toString() },
       { label: 'UTC 时间', value: date.toUTCString() },
       { label: 'ISO 8601', value: date.toISOString() },
-      { label: '相对时间', value: getRelativeTime(timestampMs) }
+      { label: '相对时间', value: formatRelativeTime(timestampMs) }
     ]);
   }, [timestampInput, addToast]);
 

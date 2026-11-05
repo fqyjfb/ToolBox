@@ -1,4 +1,5 @@
 import { ChatMessage } from '../types/chat';
+import { pad2 } from '../../../../utils/format';
 
 export function parseChatContent(content: string): ChatMessage[] {
   const lines = content.split('\n');
@@ -135,7 +136,7 @@ export function generateJournalFilename(): string {
   ];
   const monthIndex = now.getMonth();
   const year = now.getFullYear();
-  const month = String(monthIndex + 1).padStart(2, '0');
-  
+  const month = pad2(monthIndex + 1);
+
   return `${year}.${month} ${monthNames[monthIndex]}.md`;
 }

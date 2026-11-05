@@ -1,5 +1,7 @@
 import { SolarDay, SolarMonth } from 'tyme4ts';
 
+import { pad2 } from './format';
+
 /** 月历网格中的一格 */
 export interface CalendarDay {
   /** 'y-m-d'，同时作为 React key 与黄历缓存键 */
@@ -69,8 +71,6 @@ const LUCK_GOOD = '吉';
 // 黄历按天缓存：整月悬浮会反复命中同一天，上限控制内存
 const ALMANAC_CACHE_LIMIT = 400;
 const almanacCache = new Map<string, AlmanacData>();
-
-const pad2 = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
 
 const dateKey = (year: number, month: number, day: number): string =>
   `${year}-${pad2(month)}-${pad2(day)}`;

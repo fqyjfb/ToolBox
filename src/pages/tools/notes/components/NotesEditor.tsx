@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { FileText, Save, Edit3, PanelLeft, FolderPlus, FilePlus, FileText as FileWord, Table2, FileImage, Code, Play, FileDown, FileCode2, Eye } from 'lucide-react';
+import { FileText, Save, Edit3, PanelLeft, FileText as FileWord, Table2, FileImage, Code, Play, FileDown, FileCode2, Eye } from 'lucide-react';
 import { buildExportHtml } from '@/lib/markdown';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import PlainTextEditor from '@/components/PlainTextEditor';
@@ -11,12 +11,13 @@ import '@open-file-viewer/core/style.css';
 import { FileTreeNode, FileMetadata } from '@/hooks/useNotes';
 import { useToastStore } from '@/store/toastStore';
 import type { UseNotesDraftsReturn } from '../hooks/useNotesDrafts';
-import { AUTOSAVE_DEBOUNCE_MS, AUTOSAVE_MAX_WAIT_MS } from '../constants/limits';
 import { useNotesSearchScroll } from '../hooks/useNotesSearchScroll';
 import { useNotesStats } from '../hooks/useNotesStats';
 import { useNotesAttachments } from '../hooks/useNotesAttachments';
+import { useNotesAutoSave } from '../hooks/useNotesAutoSave';
 import { useNotesTabsStore } from '../../../../store/notesTabsStore';
 import NotesEditorStats from './NotesEditorStats';
+import NotesEditorEmpty from './NotesEditorEmpty';
 import NotesImageViewer from './NotesImageViewer';
 // 图片 URL 拼接统一走 lib 的唯一实现，避免与 Markdown 渲染/导出产生第二份路径逻辑（G15）
 import {
@@ -25,54 +26,13 @@ import {
   resolveAssetPath,
 } from '@/lib/markdown/resolveAssetUrl';
 
-// canPlayType 必须带 codecs，否则恒为 "maybe"
-const VIDEO_CODEC_PROBES: Record<string, string> = {
-  mp4: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"',
-  m4v: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"',
-  mov: 'video/mp4; codecs="avc1.42E01E"',
-  webm: 'video/webm; codecs="vp8,vorbis"',
-  ogv: 'video/ogg; codecs="theora,vorbis"',
-  mkv: 'video/x-matroska; codecs="avc1.42E01E"',
-  avi: 'video/x-msvideo',
-  wmv: 'video/x-ms-wmv',
-  flv: 'video/x-flv',
-};
-
-function canPlayVideoInApp(filePath: string): boolean {
-  const ext = filePath.slice(filePath.lastIndexOf('.') + 1).toLowerCase();
-  const probe = VIDEO_CODEC_PROBES[ext];
-  if (!probe) return false;
-  try {
-    return document.createElement('video').canPlayType(probe) !== '';
-  } catch {
-    return false;
-  }
-}
-
-// 超限文件不进 <video>，交给系统播放器
-const MAX_INLINE_VIDEO_BYTES = 500 * 1024 * 1024;
-
-// 文件名拆分为「主名 + 后缀」：重命名时只编辑主名，后缀单独固定展示并提交，
-// 避免双击编辑时误删 .md 之类后缀（删掉会改变文件类型、图标与解析方式）。
-// 无后缀或点开头的文件（.gitignore 等）整体视为主名，不给空主名。
-function splitFileName(name: string): { base: string; ext: string } {
-  const dot = name.lastIndexOf('.');
-  if (dot <= 0) return { base: name, ext: '' };
-  return { base: name.slice(0, dot), ext: name.slice(dot) };
-}
-
-// 保存时间：同一天只显示 HH:mm，跨天补上日期；不显示"相对时间"（否则需要常驻定时器刷新）
-function formatSavedAt(ts: number | null): string {
-  if (!ts) return '';
-  const d = new Date(ts);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  return new Date().toDateString() === d.toDateString()
-    ? ` · ${hm}`
-    : ` · ${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm}`;
-}
-
-type VideoPlayback = { mode: 'checking' } | { mode: 'play' } | { mode: 'external'; notice: string };
+import {
+  canPlayVideoInApp,
+  MAX_INLINE_VIDEO_BYTES,
+  splitFileName,
+  formatSavedAt,
+  type VideoPlayback,
+} from './NotesEditor.utils';
 
 interface NotesEditorProps {
   selectedFile: FileTreeNode | null;
@@ -111,13 +71,15 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
   onCreateFolder,
 }) => {
   const isDark = useThemeStore((s) => s.isDark);
-  // 脏态只由"读盘 / 落盘成功"推进，组件内不允许再写
-  const isDirty = content !== savedContent;
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  // 保存时间按文件记录：切走再切回仍能看到"上次保存于"，且不受异步保存完成时机影响
-  const [savedAtByPath, setSavedAtByPath] = useState<Record<string, number>>({});
-  const savedAt = selectedFile?.path ? savedAtByPath[selectedFile.path] ?? null : null;
+  // 保存链路整体抽离：persist / 自动保存 / 切文件落盘 / Ctrl+S 与过程态由 useNotesAutoSave 承载
+  const { handleSave, isSaving, saveError, savedAt, isDirty } = useNotesAutoSave({
+    selectedFile,
+    content,
+    savedContent,
+    onSave,
+    drafts,
+    autoSavePaused,
+  });
   // 四态全部由 isDirty / isSaving / saveError 派生，没有"忘记复位"的可能
   const saveState: 'clean' | 'dirty' | 'saving' | 'error' = isSaving
     ? 'saving'
@@ -153,17 +115,6 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
       return 'edit';
     }
   });
-  // 保存链路（唯一入口 persist）的过程态与守卫
-  const contentRef = useRef(content);
-  contentRef.current = content; // 异步回调始终读最新内容，不用闭包旧值
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const currentFilePathRef = useRef<string | null>(null);
-  const savingRef = useRef(false); // 互斥：state 有提交延迟，判重入必须用 ref
-  const savingPathRef = useRef<string | null>(null); // 正在保存哪个文件（切文件时判断"内容是否即将落盘"）
-  const pendingRef = useRef(false); // 合流：保存期间又来的请求，完成后再补一次
-  // 仅用于"同一文件同一内容不重复写盘"，不参与脏态判定（脏态仍是 content !== savedContent）
-  const lastSavedRef = useRef<{ path: string; payload: string } | null>(null);
-  const dirtySinceRef = useRef<number | null>(null); // 变脏起点，用于最长等待
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   useNotesSearchScroll();
@@ -245,129 +196,6 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content, selectedFile?.path]);
 
-  // 切走文件的兜底快照：本 effect 晚于"切文件 effect 的 cleanup"重跑，
-  // 所以 cleanup 里读到的仍是旧文件最后一次渲染的内容（contentRef 已在 render 期被新值覆盖，不能用）。
-  const flushSnapshotRef = useRef<{ content: string; dirty: boolean }>({ content, dirty: isDirty });
-  useEffect(() => {
-    flushSnapshotRef.current = { content, dirty: isDirty };
-  }, [content, isDirty]);
-
-  /**
-   * 唯一落盘入口：自动保存 / 按钮 / Ctrl+S / 切文件 / 冲突 keep-mine 全部走这里。
-   *
-   * - 互斥 + 合流：保存期间的新输入不丢，完成后立刻补写一次
-   * - 路径守卫：目标路径显式传入，父级只回灌"当前打开文件"的内容
-   * - 基线快照：落盘的是发起时的 payload，不是完成时的 content（否则保存期间的输入会被误标为已保存）
-   * - finally：任何异常都不会把 UI 卡在"保存中"
-   */
-  const persist = useCallback(
-    async (
-      reason: 'manual' | 'auto' | 'switch' | 'conflict',
-      targetPath?: string,
-      payloadOverride?: string
-    ): Promise<boolean> => {
-      const path = targetPath ?? selectedFile?.path;
-      if (!path) return false;
-      if (savingRef.current) {
-        pendingRef.current = true;
-        return false;
-      }
-
-      savingRef.current = true;
-      savingPathRef.current = path;
-      setIsSaving(true);
-      setSaveError(null);
-
-      // 显式指定内容的保存（切文件 / 冲突）只写一次，绝不在循环里补写
-      const singleShot = payloadOverride !== undefined;
-      let nextPayload = payloadOverride;
-      try {
-        let ok = true;
-        do {
-          pendingRef.current = false;
-          // 补写只允许"目标文件仍是当前打开文件"：否则会把新文件的内容写进旧文件
-          const payload =
-            nextPayload ?? (path === currentFilePathRef.current ? contentRef.current : null);
-          nextPayload = undefined; // 只对第一次生效：循环补写必须取最新内容
-          if (payload === null) break;
-          // 同一文件同一内容不重复写盘（clean 态点击 / Ctrl+S 连按），mtime 不抖动
-          if (lastSavedRef.current?.path === path && lastSavedRef.current.payload === payload) break;
-
-          ok = await onSave(payload, path);
-          if (!ok) {
-            setSaveError('保存失败');
-            return false;
-          }
-          lastSavedRef.current = { path, payload };
-          // 收尾都是 path 级别的：即使期间切走了，也该清理该文件的草稿与脏点
-          setSavedAtByPath((m) => ({ ...m, [path]: Date.now() }));
-          void drafts.deleteDraftNow(path).catch(() => undefined);
-          useNotesTabsStore.getState().setDirty(path, false);
-        } while (!singleShot && pendingRef.current);
-        return ok;
-      } catch (err) {
-        console.error('[NotesEditor] 保存失败', reason, err);
-        setSaveError('保存失败');
-        return false;
-      } finally {
-        savingRef.current = false;
-        savingPathRef.current = null;
-        setIsSaving(false);
-      }
-    },
-    [drafts, onSave, selectedFile?.path]
-  );
-
-  // 切文件：先尝试落盘（比草稿可靠），失败才退回草稿兜底
-  useEffect(() => {
-    const prevPath = currentFilePathRef.current;
-    const nextPath = selectedFile?.path ?? null;
-    currentFilePathRef.current = nextPath;
-    setSaveError(null); // 错误态属于上一个文件，切走后不能继续挂在标题栏上
-
-    return () => {
-      if (!prevPath || prevPath === nextPath) return;
-      const snap = flushSnapshotRef.current;
-      if (!snap.dirty) return;
-      // 该文件正在保存：内容即将落盘，不必再写一份草稿（否则会留下与磁盘一致的冗余草稿）
-      if (savingPathRef.current === prevPath) return;
-      void persist('switch', prevPath, snap.content).then((ok) => {
-        if (!ok) void drafts.flushNow(prevPath, snap.content).catch(() => undefined);
-      });
-    };
-  }, [selectedFile?.path, persist, drafts]);
-
-  // 自动保存：2s 防抖 + 30s 最长等待；冲突 / 恢复弹窗期间暂停写文件（草稿照写）
-  useEffect(() => {
-    if (!isDirty || !selectedFile || autoSavePaused) {
-      if (!isDirty) dirtySinceRef.current = null;
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = null;
-      }
-      return;
-    }
-
-    const now = Date.now();
-    if (dirtySinceRef.current === null) dirtySinceRef.current = now;
-    const elapsed = now - dirtySinceRef.current;
-    // 连续输入时防抖会被无限重置，必须有上限，否则一次崩溃丢整段
-    const delay = Math.max(0, Math.min(AUTOSAVE_DEBOUNCE_MS, AUTOSAVE_MAX_WAIT_MS - elapsed));
-
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      saveTimeoutRef.current = null;
-      void persist('auto');
-    }, delay);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = null;
-      }
-    };
-  }, [autoSavePaused, isDirty, persist, selectedFile]);
-
   const handleContentChange = useCallback(
     (value: string) => {
       // 编辑器在加载文档时会用同一内容回调一次 onChange：
@@ -435,33 +263,6 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     ],
     [handleExport],
   );
-
-  // 手动保存（按钮 / Ctrl+S）：clean 态只提示、不写盘（避免 mtime 抖动与同步盘噪音）
-  const handleSave = useCallback(() => {
-    if (!selectedFile) return;
-    if (!isDirty) {
-      addToast({ type: 'info', message: '内容已是最新' });
-      return;
-    }
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-    void persist('manual');
-  }, [addToast, isDirty, persist, selectedFile]);
-
-  // Ctrl+S 统一注册一次：编辑器内部不再各自挂监听，避免一次按键触发两次保存
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 's') return;
-      const type = selectedFile?.fileType;
-      if (type !== 'md' && type !== 'txt' && type !== 'html' && type !== 'json') return;
-      event.preventDefault();
-      handleSave();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handleSave, selectedFile?.fileType]);
 
   // 双击标题进入重命名：只带入主名，后缀不进输入框（输入框右侧单独展示，提交时自动补回）
   const startRename = useCallback(() => {
@@ -786,57 +587,12 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
 
   if (!selectedFile) {
     return (
-      <section className="flex flex-1 flex-col min-h-0 min-w-0">
-        {/* 与打开笔记后的头部保持一致：侧边栏开关常驻，列表被隐藏后仍有入口恢复 */}
-        <div className="flex flex-shrink-0 items-center gap-3 bg-surface-secondary-50 px-4 py-2">
-          {onToggleSidebar ? (
-            <button
-              className="rounded p-1 text-content-tertiary hover:bg-menu-hover dark:hover:bg-surface"
-              onClick={onToggleSidebar}
-              title={sidebarVisible ? '隐藏列表' : '显示列表'}
-            >
-              <PanelLeft className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
-
-        <div className="flex flex-1 flex-col items-center justify-center px-6 pb-10">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface-secondary">
-            <Edit3 className="h-10 w-10 text-content-tertiary" />
-          </div>
-          <h3 className="mt-4 text-lg font-medium text-content-secondary">
-            还没有打开笔记
-          </h3>
-          <p className="mt-1 max-w-sm text-center text-sm text-content-tertiary">
-            {sidebarVisible
-              ? '从左侧文件树选择一篇笔记开始编辑，也可以现在新建'
-              : '列表已隐藏，点击左上角图标显示文件树，或直接新建一篇'}
-          </p>
-
-          <div className="mt-6 flex items-center gap-3">
-            <button
-              onClick={onCreateNote}
-              disabled={!onCreateNote}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-button-text transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FilePlus className="h-4 w-4" />
-              新建笔记
-            </button>
-            <button
-              onClick={onCreateFolder}
-              disabled={!onCreateFolder}
-              className="flex items-center gap-2 rounded-lg bg-white/60 px-4 py-2 text-sm text-content-primary transition-colors hover:bg-surface-secondary-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FolderPlus className="h-4 w-4" />
-              新建文件夹
-            </button>
-          </div>
-
-          <p className="mt-8 text-xs text-content-tertiary">
-            Ctrl + Shift + F 全文搜索 · 拖入文件到左侧列表即可导入
-          </p>
-        </div>
-      </section>
+      <NotesEditorEmpty
+        sidebarVisible={sidebarVisible}
+        onToggleSidebar={onToggleSidebar}
+        onCreateNote={onCreateNote}
+        onCreateFolder={onCreateFolder}
+      />
     );
   }
 

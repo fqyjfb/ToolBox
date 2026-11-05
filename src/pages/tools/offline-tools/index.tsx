@@ -3,18 +3,7 @@ import { Wrench, RefreshCw, FolderOpen, Search, Play } from 'lucide-react';
 import { useToastStore } from '../../../store/toastStore';
 import { useIsCompactMode } from '../../../store/windowModeStore';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
-
-const formatFileSize = (size: number): string => {
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / 1024 / 1024).toFixed(1)} MB`;
-};
-
-const formatDate = (mtimeMs: number): string => {
-  const date = new Date(mtimeMs);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-};
+import { formatDateYMD, formatBytes } from '../../../utils/format';
 
 const OfflineToolsPage: React.FC = () => {
   const addToast = useToastStore((s) => s.addToast);
@@ -176,10 +165,10 @@ const OfflineToolsPage: React.FC = () => {
 
                     <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                       <span className="px-1.5 py-0.5 text-xs text-content-secondary dark:text-content-secondary bg-surface rounded">
-                        {formatFileSize(file.size)}
+                        {formatBytes(file.size)}
                       </span>
                       <span className="px-1.5 py-0.5 text-xs text-content-secondary dark:text-content-secondary bg-surface rounded">
-                        {formatDate(file.mtimeMs)}
+                        {formatDateYMD(file.mtimeMs)}
                       </span>
                     </div>
                   </div>

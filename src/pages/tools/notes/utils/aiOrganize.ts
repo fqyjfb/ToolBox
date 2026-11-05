@@ -1,5 +1,6 @@
 import type { ChatMessage } from '../types/chat';
 import { generateTodayHeader } from './chatParser';
+import { pad2 } from '../../../../utils/format';
 
 interface OrganizePrompt {
   system: string;
@@ -48,8 +49,7 @@ export function normalizeAIMarkdown(raw: string): string {
 }
 
 export function buildOrganizeFileName(now = new Date()): string {
-  const pad = (value: number) => String(value).padStart(2, '0');
-  const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const date = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+  const time = `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`;
   return `AI整理-${date}-${time}.md`;
 }

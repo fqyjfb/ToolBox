@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { RefreshCw, Upload, Package, FolderOpen } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useNavSearch } from '../../../contexts/NavSearchContext';
@@ -23,6 +23,7 @@ const PluginStorePage: React.FC = () => {
   const {
     availablePlugins,
     installedPlugins,
+    availableLoaded,
     isLoading,
     setAvailablePlugins,
     setInstalledPlugins,
@@ -32,6 +33,7 @@ const PluginStorePage: React.FC = () => {
   } = usePluginStore(useShallow((s) => ({
     availablePlugins: s.availablePlugins,
     installedPlugins: s.installedPlugins,
+    availableLoaded: s.availableLoaded,
     isLoading: s.isLoading,
     setAvailablePlugins: s.setAvailablePlugins,
     setInstalledPlugins: s.setInstalledPlugins,
@@ -51,6 +53,10 @@ const PluginStorePage: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [installProgress, setInstallProgress] = useState<Record<string, InstallProgress>>({});
+  // 已安装插件列表的 loading（局部 state，与 store 里的 isLoading 解耦）
+  const [isInstalledLoading, setIsInstalledLoading] = useState(false);
+  // 首帧：防止 store 还没初始化 IPC 结果时直接渲染空列表导致的空白闪现
+  const isFirstMountRef = useRef(true);
 
   const hasUpdate = useCallback((plugin: InstalledPlugin): boolean => {
     const available = availablePlugins.find(p => p.id === plugin.id);
@@ -65,15 +71,19 @@ const PluginStorePage: React.FC = () => {
 
   const loadInstalledPlugins = useCallback(async () => {
     try {
+      setIsInstalledLoading(true);
       const installed = await pluginService.getInstalledPlugins();
       setInstalledPlugins(installed);
     } catch {
       logError('获取已安装插件失败', 'PluginStore');
+    } finally {
+      setIsInstalledLoading(false);
     }
   }, [setInstalledPlugins]);
 
   const loadAvailablePlugins = useCallback(async () => {
     setLoadError(null);
+    setIsLoading(true);
     try {
       const available = await pluginService.fetchAvailablePlugins();
       setAvailablePlugins(available);
@@ -83,23 +93,52 @@ const PluginStorePage: React.FC = () => {
     } catch {
       setLoadError('加载插件列表失败，请检查网络连接');
       addToast({ message: '加载插件列表失败', type: 'error' });
+    } finally {
+      setIsLoading(false);
     }
-  }, [setAvailablePlugins, addToast]);
+  }, [setAvailablePlugins, setIsLoading, addToast]);
 
+  // Effect 1：组件挂载 → 异步刷新已安装插件的 IPC 真值（无论哪个 Tab）
   useEffect(() => {
     loadInstalledPlugins();
-    if (activeTab === 'explore' && availablePlugins.length === 0) {
+    // 挂载一次后不再需要，因为 store 初始值已从 localStorage 读了缓存
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Effect 2：切到「发现」Tab 且没有未过期缓存时 → 异步拉注册表
+  useEffect(() => {
+    if (activeTab === 'explore' && !availableLoaded) {
       loadAvailablePlugins();
     }
-  }, [loadInstalledPlugins, loadAvailablePlugins, activeTab, availablePlugins.length]);
+  }, [activeTab, availableLoaded, loadAvailablePlugins]);
+
+  // Effect 3：组件首帧渲染后清掉 isFirstMountRef（用于骨架屏显示）
+  useEffect(() => {
+    isFirstMountRef.current = false;
+  }, []);
 
   const handleRefresh = useCallback(() => {
-    setIsLoading(true);
+    // 强制刷新：绕过 availableLoaded 缓存，直接拉网络
     Promise.all([
       loadInstalledPlugins(),
-      loadAvailablePlugins(),
-    ]).finally(() => setIsLoading(false));
-  }, [loadInstalledPlugins, loadAvailablePlugins, setIsLoading]);
+      (async () => {
+        setLoadError(null);
+        setIsLoading(true);
+        try {
+          const available = await pluginService.fetchAvailablePlugins();
+          setAvailablePlugins(available);
+          if (available.length === 0) {
+            setLoadError('无法连接到插件注册表，请检查网络连接');
+          }
+        } catch {
+          setLoadError('加载插件列表失败，请检查网络连接');
+          addToast({ message: '加载插件列表失败', type: 'error' });
+        } finally {
+          setIsLoading(false);
+        }
+      })(),
+    ]);
+  }, [loadInstalledPlugins, setIsLoading, setAvailablePlugins, addToast]);
 
   const handleInstall = useCallback(async (plugin: PluginInfo) => {
     if (!plugin.releaseUrl && !plugin.githubRepo) {
@@ -359,11 +398,22 @@ const PluginStorePage: React.FC = () => {
       )}
 
       <div className={`flex-1 overflow-y-auto ${isCompact ? 'p-2 scrollbar-hide' : 'p-4'}`}>
-        {isLoading ? (
+        {isFirstMountRef.current ? (
+          // 首帧骨架屏：store 初始化 + IPC 真值回来前占个位置，避免空白闪现
           <div className="flex items-center justify-center h-full">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : loadError ? (
+        ) : activeTab === 'installed' && isInstalledLoading && installedPlugins.length === 0 ? (
+          // 已安装 Tab 正在 IPC + 还没缓存
+          <div className="flex items-center justify-center h-full">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : activeTab === 'explore' && isLoading && availablePlugins.length === 0 ? (
+          // 发现 Tab 正在网络请求 + 还没缓存
+          <div className="flex items-center justify-center h-full">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : loadError && activeTab === 'explore' ? (
           <div className="flex flex-col items-center justify-center h-64 text-content-tertiary">
             <Package className="w-12 h-12 mb-3 opacity-50" />
             <p className="text-sm">{loadError}</p>
