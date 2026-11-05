@@ -241,6 +241,8 @@ const Settings: React.FC = () => {
       if (result && result.code === 0) {
         localStorageService.clearAllExcept([
           STORAGE_KEYS.THEME,
+          // 自定义模式下的明暗基色（themeStore.persistMode 写入的裸键），清掉会以浅色重启
+          'theme-isDark',
           STORAGE_KEYS.CUSTOM_THEME,
           STORAGE_KEYS.CUSTOM_BG_IMAGES,
           STORAGE_KEYS.BROWSER_MODE,

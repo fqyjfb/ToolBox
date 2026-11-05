@@ -322,7 +322,7 @@ const ExchangePage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="overflow-auto flex-1">
+            <div className="overflow-auto flex-1 scrollbar-hide">
               <table className="w-full border-collapse">
                 <thead className="sticky top-0 bg-menu-hover">
                   <tr>

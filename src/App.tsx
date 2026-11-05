@@ -194,7 +194,7 @@ const isStandaloneWindow = (): boolean => isStandaloneLogWindow() || isStandalon
 
 function App() {
   const queryClient = useQueryClient();
-  const { setTheme } = useThemeStore(useShallow((s) => ({ setTheme: s.setTheme })));
+  const { setBaseTheme } = useThemeStore(useShallow((s) => ({ setBaseTheme: s.setBaseTheme })));
   const { setLastSyncTime, setStorageLocation, setSyncEnabled, setSyncModules, setSyncOnStartupEnabled } = useSyncStore(useShallow((s) => ({
     setLastSyncTime: s.setLastSyncTime,
     setStorageLocation: s.setStorageLocation,
@@ -255,7 +255,10 @@ function App() {
       } else if (setting.name === 'leftMenuPosition') {
         setPosition(setting.value as 'left' | 'right');
       } else if (setting.name === 'systemTheme') {
-        setTheme(setting.value === 'dark' || (setting.value === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches));
+        // 主进程会回广播自己刚收到的 systemTheme。这里只能用 setBaseTheme：
+        // setTheme 会 switchToPreset 清掉自定义注入、改写 THEME 并删除主题快照。
+        // setBaseTheme 在基色相同时早退，同值回广播无副作用；外部来源则只调整基色。
+        setBaseTheme(setting.value === 'dark' || (setting.value === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches));
       }
     };
 
@@ -268,7 +271,7 @@ function App() {
         unsubscribeSettingChanged();
       }
     };
-  }, [setVisible, setPosition, setTheme]);
+  }, [setVisible, setPosition, setBaseTheme]);
 
   useEffect(() => {
     const initialize = async () => {

@@ -10,6 +10,8 @@ import { useNavSearch } from '../../contexts/NavSearchContext'
 import { openUrl } from '../../services/browserService'
 import { useNavStore } from '../../store/navStore'
 import { useAuthStore } from '../../store/AuthStore'
+import { useIsCompactMode } from '../../store/windowModeStore'
+import CompactSelector, { CompactSelectorItem } from '../../components/ui/CompactSelector'
 import type { Bookmark, Category } from '../../types/website'
 import './NavPage.css'
 
@@ -74,6 +76,29 @@ const NavPage: React.FC = () => {
     const favoriteIds = new Set(favorites.map((f) => f.id))
     return (bookmarksData ?? []).map((b) => (favoriteIds.has(b.id) ? { ...b, is_favorite: true } : b))
   }, [bookmarksData, favorites])
+
+  const isCompact = useIsCompactMode()
+
+  // 小窗模式主分类 CompactSelector 数据源
+  const compactMainItems = useMemo<CompactSelectorItem[]>(() => {
+    return categoriesTree.map((category) => ({
+      key: category.id,
+      label: category.name,
+      active: activeMainCategoryId === category.id,
+      onClick: () => switchMainCategory(category.id),
+    }))
+  }, [categoriesTree, activeMainCategoryId])
+
+  // 小窗模式子分类 CompactSelector 数据源
+  const compactSubItems = useMemo<CompactSelectorItem[]>(() => {
+    if (!activeMainCategoryId) return []
+    return getSubCategories(activeMainCategoryId).map((subCategory) => ({
+      key: subCategory.id,
+      label: subCategory.name,
+      active: getActiveSubCategoryId(activeMainCategoryId) === subCategory.id,
+      onClick: () => switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id),
+    }))
+  }, [activeMainCategoryId])
 
   // 仅在未选过分类（或原分类已不存在）时落到第一个分类
   useEffect(() => {
@@ -459,14 +484,30 @@ const NavPage: React.FC = () => {
     <div className="homenav-page flex flex-col h-full overflow-hidden">
       {/* 收藏夹效果导航 */}
 
+      {isCompact ? (
+        <div className="flex flex-col gap-2 mb-4 px-4">
+          <CompactSelector
+            items={compactMainItems}
+            selectedKey={activeMainCategoryId ?? 'all'}
+            title="分类"
+          />
+          {!favoritesView && activeMainCategoryId && compactSubItems.length > 0 && (
+            <CompactSelector
+              items={compactSubItems}
+              selectedKey={getActiveSubCategoryId(activeMainCategoryId)}
+              title="子分类"
+            />
+          )}
+        </div>
+      ) : (
         <div className="nav-container">
           <div className="radio-inputs" ref={categoriesContainerRef}>
             {/* 我的收藏 */}
             <label className={`radio ${favoritesView ? 'active' : ''}`}>
-              <input 
-                type="radio" 
-                name="category" 
-                checked={favoritesView} 
+              <input
+                type="radio"
+                name="category"
+                checked={favoritesView}
                 onChange={handleFavoriteClick}
               />
               <span className="name">
@@ -475,16 +516,16 @@ const NavPage: React.FC = () => {
                 <span>收藏</span>
               </span>
             </label>
-            
+
             {/* 分类导航 */}
             {categoriesTree.filter((category) => !overflowCategories.some(c => c.id === category.id)).map((category) => (
-              <label 
-                key={category.id} 
+              <label
+                key={category.id}
                 className={`radio ${!favoritesView && activeMainCategoryId === category.id ? 'active' : ''}`}
               >
-                <input 
-                  type="radio" 
-                  name="category" 
+                <input
+                  type="radio"
+                  name="category"
                   checked={!favoritesView && activeMainCategoryId === category.id}
                   onChange={() => switchMainCategory(category.id)}
                 />
@@ -495,7 +536,7 @@ const NavPage: React.FC = () => {
                 </span>
               </label>
             ))}
-            
+
             {/* 下拉按钮 */}
             {overflowCategories.length > 0 && (
               <div className="relative radio">
@@ -531,7 +572,7 @@ const NavPage: React.FC = () => {
                   {subCategory.name}
                 </button>
               ))}
-              
+
               {/* 子分类下拉按钮 */}
               {overflowSubCategories.length > 0 && (
                 <button
@@ -560,6 +601,7 @@ const NavPage: React.FC = () => {
             </div>
           )}
         </div>
+      )}
 
       {/* 下拉菜单 - 放在容器外部避免被遮挡 */}
       {showMoreCategories && categoryDropdownPosition && (

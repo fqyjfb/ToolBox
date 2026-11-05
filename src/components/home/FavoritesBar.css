@@ -18,12 +18,13 @@
   height: 40px;
 }
 
+/* 收藏默认 / 悬停 / 激活三态分别接自定义主题的三个收藏取色器 */
 .favorite-item > .favorite-title {
   --var: -0%;
   position: absolute;
   top: var(--var);
   transition: all var(--transition-slow);
-  background-color: var(--color-primary);
+  background-color: var(--color-favorites);
   border-radius: 7px;
   opacity: 0;
   padding-inline: 7px;
@@ -39,7 +40,7 @@
 .favorite-item > .favorite-title::after {
   content: "";
   position: absolute;
-  border-top: 10px solid var(--color-primary);
+  border-top: 10px solid var(--color-favorites);
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
   top: 100%;
@@ -50,6 +51,19 @@
 .favorite-item:hover > .favorite-title {
   --var: -100%;
   opacity: 1;
+  background-color: var(--color-favorites-hover);
+}
+
+.favorite-item:hover > .favorite-title::after {
+  border-top-color: var(--color-favorites-hover);
+}
+
+.favorite-item:active > .favorite-title {
+  background-color: var(--color-favorites-active);
+}
+
+.favorite-item:active > .favorite-title::after {
+  border-top-color: var(--color-favorites-active);
 }
 
 .favorite-item:hover {

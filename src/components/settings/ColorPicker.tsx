@@ -46,12 +46,12 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label, defau
         className="text-xs w-24 px-1.5 py-0.5 rounded bg-surface text-content-primary font-mono focus:outline-none"
       />
       {usingDefault ? (
-        <span className="text-2xs text-content-tertiary">跟随预设</span>
+        <span className="text-2xs text-content-tertiary" title="沿用当前明暗预设的默认值">当前明暗默认值</span>
       ) : (
         <button
           type="button"
           onClick={() => onChange('')}
-          title="清除该颜色，跟随预设"
+          title="清除该颜色，使用当前明暗默认值"
           aria-label={`清除${label}`}
           className="text-xs text-content-tertiary hover:text-content-primary"
         >

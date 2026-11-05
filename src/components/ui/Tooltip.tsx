@@ -90,8 +90,8 @@ const Tooltip: React.FC<TooltipProps> = ({ children, title, position = 'top', cl
       {rect && title && createPortal(
         <div
           ref={tooltipRef}
-          className="fixed z-[1000] rounded-lg whitespace-nowrap text-button-text text-sm font-bold px-[7px] py-[3px] shadow-md pointer-events-none"
-          style={{ ...PLACEMENT[actualPosition](rect), backgroundColor: 'var(--color-tooltip-bg, dodgerblue)' }}
+          className="fixed z-[1000] rounded-lg whitespace-nowrap text-sm font-bold px-[7px] py-[3px] shadow-md pointer-events-none"
+          style={{ ...PLACEMENT[actualPosition](rect), backgroundColor: 'var(--color-tooltip-bg, dodgerblue)', color: 'var(--color-tooltip-text)' }}
         >
           {title}
           <span style={{ ...ARROW_BASE, ...ARROW[actualPosition] }} />

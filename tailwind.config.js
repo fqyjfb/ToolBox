@@ -95,7 +95,7 @@ module.exports = {
         sidebar: 'var(--color-sidebar)',
         'sidebar-item': 'var(--color-sidebar-item)',
         'sidebar-item-active': 'var(--color-sidebar-item-active)',
-        'button-text': 'var(--color-bg-primary)',
+        'button-text': 'var(--color-button-text)',
         'switch-bg': 'var(--color-switch-bg)',
         'switch-active-bg': 'var(--color-switch-active-bg)',
         'todo-1': 'var(--color-todo-1)',

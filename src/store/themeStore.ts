@@ -68,18 +68,20 @@ const buildSnapshot = (theme: CustomTheme, isDark: boolean): CustomThemeColorSna
   return snapshot;
 };
 
-// 已同步给主进程的快照指纹（'' = 已同步「无自定义主题」）
+// 已同步给主进程的快照指纹（含明暗基色；配色为 null 时仍要区分明暗）
 let syncedSnapshotKey: string | null = null;
 
 /**
  * 自定义主题同步主进程的唯一出口：主进程用它给锁屏等独立窗口上色（这些窗口读不到 localStorage）。
- * 刻意与 systemTheme 通道分开 —— 走 updateSetting 会被主进程回广播 setting-changed，
- * App 收到后会调用 setTheme 退出自定义模式。
+ * 刻意与 systemTheme 通道分开 —— App 收到 setting-changed 后只按明暗基色调用 setBaseTheme，
+ * 不会退出自定义模式。
  */
 const syncThemeSnapshot = (theme: CustomTheme | null, isDark: boolean) => {
   if (!window.electron?.setThemeSnapshot) return;
   const snapshot = theme ? buildSnapshot(theme, isDark) : null;
-  const key = snapshot ? JSON.stringify(snapshot) : '';
+  // 基色必须进指纹：预设模式下切明暗时 snapshot 同为 null，
+  // 否则会被去重短路，常驻的翻译浮层收不到 theme-changed。
+  const key = `${isDark ? 'dark' : 'light'}:${snapshot ? JSON.stringify(snapshot) : ''}`;
   if (syncedSnapshotKey === key) return;
   syncedSnapshotKey = key;
   void window.electron.setThemeSnapshot(snapshot);

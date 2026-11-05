@@ -211,7 +211,10 @@
   --color-admin-6: #e91e63;
 }
 
-.dark {
+/* 深色变量只在 html 上声明：applyBaseClass 同时给 body 加 .dark（body.dark 背景图规则需要）。
+   若用 .dark 选择器，body 会重新声明一整套 --color-* 局部变量，遮蔽 html 上自定义主题覆盖层，
+   使深色基色下所有自定义配色对 body 内的组件失效；限制为 html.dark 后变量统一由 html 继承。 */
+html.dark {
   --color-primary: #EAF1F8;
   --color-primary-hover: #CBD5E1;
   --color-secondary: #60a5fa;
@@ -246,7 +249,8 @@
   --color-sidebar-item-active: #1e3a5f;
   --color-sidebar-item-active-text: #FFFFFF;
   --color-sidebar-item-text: #94A3B8;
-  --color-button-text: #FFFFFF;
+  /* 与 --color-bg-primary 等价：深色主色为浅色，按钮文字必须仍是深色 */
+  --color-button-text: #16181D;
   
   /* 底色带 alpha，对应原先的 *-900/30 半透明效果 */
   --color-toast-success-bg: #14532D4D;
@@ -1195,8 +1199,9 @@ body.dark {
    1) 底色放在 html 上（会传播到画布），body 设为透明，
       背景图用 body::before 承载 —— 负 z-index 在根层叠上下文中稳定绘制在内容之下，
       且 background-image 无法被 CSS 变量覆盖，只能走独立图层。
-   2) 变量覆盖层特异性 (0,2,0) 高于 .dark (0,1,0)：
-      自定义模式下 dark class 仍然保留（主进程 / 托盘只感知明暗基色），本层覆盖生效。
+   2) 变量覆盖层特异性 (0,2,0) 高于 html.dark (0,1,1)：
+      自定义模式下 dark class 仍然保留（主进程 / 托盘只感知明暗基色），本层覆盖生效；
+      深色预设变量只在 html 声明，body 内组件通过继承拿到自定义值，不会被局部声明遮蔽。
    3) 覆盖层一律裸 var(--ct-*)，禁止写 var(--ct-x, var(--color-x)) 这类自引用 fallback：
       同一元素上的自引用会形成循环引用，导致变量 guaranteed-invalid。 */
 
@@ -1253,6 +1258,8 @@ body[data-custom-bg]::before {
 
   --color-primary: var(--ct-primary);
   --color-primary-hover: var(--ct-primary-hover);
+  /* 按钮文字取原始主背景色（不透明），不复用已按 surfaceOpacity 半透明化的 --color-bg-primary */
+  --color-button-text: var(--ct-bg-primary);
   --color-button-primary: var(--ct-primary);
   --color-button-primary-hover: var(--ct-primary-hover);
   --color-secondary: var(--ct-secondary);
@@ -1292,15 +1299,8 @@ body[data-custom-bg]::before {
   --color-tooltip: var(--ct-tooltip);
   --color-tooltip-text: var(--ct-tooltip-text);
   --color-tooltip-border: var(--ct-tooltip-border);
-
-  --color-admin-button: #dda36c;
-  --color-admin-button-hover: #c4935a;
-  --color-admin-1: #dda36c;
-  --color-admin-2: #67aaf7;
-  --color-admin-3: #bc8acf;
-  --color-admin-4: #f5a623;
-  --color-admin-5: #00bcd4;
-  --color-admin-6: #e91e63;
+  /* 通用 Tooltip（ui/Tooltip.tsx）用 --color-tooltip-bg，与网址导航描述气泡共用气泡配色 */
+  --color-tooltip-bg: var(--ct-tooltip);
 }
 
 /* 深色预设的 Toast 底色偏暗，文字/边框改朝提亮方向派生。

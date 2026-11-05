@@ -49,7 +49,7 @@ declare interface Window {
     setAutostartStatus: (enable: boolean) => Promise<boolean>;
     getSettings: () => Promise<SettingItem[]>;
     updateSetting: (setting: { name: string; value: string | number | boolean | object }) => Promise<UpdateResult>;
-    setThemeSnapshot: (colors: Record<string, string> | null) => Promise<UpdateResult>;
+    setThemeSnapshot: (colors: Record<string, string> | null) => Promise<{ code: number }>;
     setAIConfigSnapshot: (config: import('./types/ai').AIConfig) => Promise<{ success: boolean }>;
     clearCache: () => Promise<UpdateResult>;
     clearIconCache: (type: 'all' | 'general' | 'plugin' | 'app') => Promise<{ success: boolean; error?: string }>;

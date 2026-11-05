@@ -21,8 +21,7 @@ import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Pagination from '../../../components/ui/Pagination';
 import { modalControlClass } from '../account/shared';
 import { useIsCompactMode } from '../../../store/windowModeStore';
-import { useOverflowItems } from '../../../hooks/useOverflowItems';
-import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
+import CompactSelector, { CompactSelectorItem } from '../../../components/ui/CompactSelector';
 import ClipboardFormModal from './ClipboardFormModal';
 
 const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = ({ url, onCopy }) => {
@@ -500,70 +499,64 @@ const CloudClipboardPage: React.FC = () => {
     setEditingCategory(null);
   };
 
-  // 小窗：分类按可用宽度收拢，放不下的进「更多」下拉（hook 必须早于下面的条件返回）
-  const categoryBarItems: Array<{ key: string; category?: ClipboardCategory }> = [
-    { key: 'all' },
-    ...categories.map((category) => ({ key: category.id, category })),
+  // 小窗：分类收进 CompactSelector 下拉（与账号管理一致），大窗保持横向胶囊
+  const compactCategoryItems: CompactSelectorItem[] = [
+    {
+      key: 'all',
+      label: '全部',
+      icon: <Tag size={14} />,
+      active: selectedCategory === null,
+      onClick: () => setSelectedCategory(null),
+    },
+    ...categories.map((category) => ({
+      key: category.id,
+      label: category.name,
+      icon: <Tag size={14} />,
+      active: selectedCategory === category.id,
+      onClick: () => setSelectedCategory(category.id),
+      onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, 'category', category.id),
+    })),
   ];
-  const { containerRef, visible, overflow } = useOverflowItems(categoryBarItems, (item) => item.key, { enabled: isCompact });
 
   if (!isAuthenticated) {
     return null;
   }
 
-  const overflowMenuItems: OverflowMenuItem[] = overflow.map((item) => ({
-    key: item.key,
-    label: item.category?.name ?? '全部',
-    active: item.category ? selectedCategory === item.category.id : selectedCategory === null,
-    onClick: () => setSelectedCategory(item.category?.id ?? null),
-    onContextMenu: item.category
-      ? (e: React.MouseEvent) => handleContextMenu(e, 'category', item.category!.id)
-      : undefined,
-  }));
-
   return (
-    <div 
-      className="h-full flex flex-col overflow-hidden"
-      onContextMenu={(e) => handleContextMenu(e, 'empty')}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
     >
-        <div className={`${isCompact ? 'mb-2' : 'mb-4'} flex-shrink-0`}>
-          <div className={`${isCompact ? 'flex flex-col items-stretch gap-2 mb-2' : 'flex items-center justify-between mb-4'}`}>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+      <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+        <div
+          className="h-full flex flex-col overflow-hidden"
+          onContextMenu={(e) => handleContextMenu(e, 'empty')}
+        >
+          <div className={`${isCompact ? 'mb-2' : 'mb-4'} flex-shrink-0`}>
+            <div className={`${isCompact ? 'flex flex-col items-stretch gap-2 mb-2' : 'flex items-center justify-between mb-4'}`}>
+              {isCompact ? (
+                <div className="flex items-center gap-1 px-1 pb-2 flex-shrink-0">
+                  <CompactSelector
+                    items={compactCategoryItems}
+                    selectedKey={selectedCategory ?? 'all'}
+                    title="切换分类"
+                    emptyText="暂无分类"
+                  />
+                </div>
+              ) : (
                 <div className="flex items-center gap-1 min-w-0 flex-1">
-                  <div
-                    ref={containerRef}
-                    className={`flex items-center min-w-0 flex-1 ${isCompact ? 'gap-1 flex-nowrap overflow-hidden' : 'gap-2 flex-wrap'}`}
-                  >
-                    {visible.map((item) =>
-                      item.category ? (
-                        <SortableCategoryButton
-                          key={item.key}
-                          category={item.category}
-                          isSelected={selectedCategory === item.category.id}
-                          onClick={() => setSelectedCategory(item.category!.id)}
-                          onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
-                        />
-                      ) : (
-                        <button
-                          key={item.key}
-                          onClick={() => setSelectedCategory(null)}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${
-                            selectedCategory === null
-                              ? 'bg-primary text-button-text'
-                              : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
-                          }`}
-                        >
-                          全部
-                        </button>
-                      )
-                    )}
+                  <div className="flex items-center min-w-0 flex-1 gap-2 flex-wrap">
+                    {categories.map((category) => (
+                      <SortableCategoryButton
+                        key={category.id}
+                        category={category}
+                        isSelected={selectedCategory === category.id}
+                        onClick={() => setSelectedCategory(category.id)}
+                        onContextMenu={(e) => handleContextMenu(e, 'category', category.id)}
+                      />
+                    ))}
                   </div>
-                  <OverflowMenu items={overflowMenuItems} />
                   <button
                     onClick={() => setShowAddCategoryModal(true)}
                     className="p-1.5 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary transition-colors flex-shrink-0"
@@ -572,25 +565,23 @@ const CloudClipboardPage: React.FC = () => {
                     <Plus size={16} />
                   </button>
                 </div>
-              </SortableContext>
-            </DndContext>
-            <div className={`flex gap-2 ${isCompact ? 'justify-end' : ''}`}>
-              <button 
-                onClick={handleQuickPaste}
-                className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
-              >
-                <ClipboardPaste className="w-3.5 h-3.5" />
-              </button>
-              <button 
-                onClick={() => setShowAddItemModal(true)}
-                className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
+              )}
+              <div className={`flex gap-2 ${isCompact ? 'justify-end' : ''}`}>
+                <button
+                  onClick={handleQuickPaste}
+                  className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
+                >
+                  <ClipboardPaste className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setShowAddItemModal(true)}
+                  className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-
         <div className="space-y-3 flex-1 overflow-y-auto scrollbar-hide">
           {loading ? (
             <div className="flex items-center justify-center py-8">
@@ -641,7 +632,7 @@ const CloudClipboardPage: React.FC = () => {
             ))
           )}
         </div>
-        
+
         <div className="flex-shrink-0">
           <Pagination
             currentPage={currentPage}
@@ -734,7 +725,9 @@ const CloudClipboardPage: React.FC = () => {
         title={confirmDialog.title}
         message={confirmDialog.message}
       />
-    </div>
+      </div>
+      </SortableContext>
+    </DndContext>
   );
 };
 

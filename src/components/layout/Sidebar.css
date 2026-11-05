@@ -117,7 +117,8 @@
 
 /* 自定义主题接管侧边栏容器：让「表面颜色 → 侧边栏」设置生效。
    预设模式保持既有半透明质感（浅 60% / 深 40%），不受影响。
-   特异性 (0,2,1) 高于 .dark .sidebar-root (0,2,0)，自定义模式下覆盖成立。 */
+   特异性 (0,2,1) 高于 .dark .sidebar-root (0,2,0)，自定义模式下覆盖成立。
+   --color-sidebar 在覆盖层里已按 surfaceOpacity 混合过一次，此处直接使用，避免透明度被叠加两次。 */
 :root[data-custom-theme="active"] .sidebar-root {
-  background-color: color-mix(in srgb, var(--color-sidebar) var(--ct-surface-opacity), transparent);
+  background-color: var(--color-sidebar);
 }

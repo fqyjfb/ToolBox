@@ -22,8 +22,7 @@ const consoleLog = (message: string, data?: unknown) => {
 };
 
 import { useIsCompactMode } from '../../../store/windowModeStore';
-import { useOverflowItems } from '../../../hooks/useOverflowItems';
-import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
+import CompactSelector, { CompactSelectorItem } from '../../../components/ui/CompactSelector';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import ContextMenu, { ContextMenuItem } from '../../../components/ui/ContextMenu';
@@ -633,27 +632,29 @@ const MemoPage: React.FC = () => {
     setPreviewMemo(null);
   };
 
-  // 小窗：分类按可用宽度收拢，放不下的进「更多」下拉（hook 必须早于下面的条件返回）
-  const categoryBarItems: Array<{ key: string; category?: MemoCategory }> = [
-    { key: 'all' },
-    ...categories.map((category) => ({ key: category.id, category })),
+  // 小窗：分类收进 CompactSelector 下拉（与账号管理一致），大窗保持竖排侧栏
+  const compactCategoryItems: CompactSelectorItem[] = [
+    {
+      key: 'all',
+      label: '全部',
+      icon: <Tag size={14} />,
+      active: selectedCategory === null,
+      onClick: () => setSelectedCategory(null),
+    },
+    ...categories.map((category) => ({
+      key: category.id,
+      label: category.name,
+      color: category.color,
+      icon: <Tag size={14} />,
+      active: selectedCategory === category.id,
+      onClick: () => setSelectedCategory(category.id),
+      onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, 'category', category.id),
+    })),
   ];
-  const { containerRef, visible, overflow } = useOverflowItems(categoryBarItems, (item) => item.key, { enabled: isCompact });
 
   if (!isAuthenticated) {
     return null;
   }
-
-  const overflowMenuItems: OverflowMenuItem[] = overflow.map((item) => ({
-    key: item.key,
-    label: item.category?.name ?? '全部',
-    color: item.category?.color,
-    active: item.category ? selectedCategory === item.category.id : selectedCategory === null,
-    onClick: () => setSelectedCategory(item.category?.id ?? null),
-    onContextMenu: item.category
-      ? (e: React.MouseEvent) => handleContextMenu(e, 'category', item.category!.id)
-      : undefined,
-  }));
 
   return (
     // DndContext / SortableContext 提到最外层：小窗与大窗只是分类的排布不同，拖拽排序共用同一套上下文
@@ -669,28 +670,12 @@ const MemoPage: React.FC = () => {
         >
           {isCompact ? (
             <div className="flex items-center gap-1 px-1 pb-2 flex-shrink-0">
-              <div ref={containerRef} className="flex items-center gap-1 flex-nowrap min-w-0 flex-1 overflow-hidden">
-                {visible.map((item) =>
-                  item.category ? (
-                    <SortableCategoryButton
-                      key={item.key}
-                      compact
-                      category={item.category}
-                      isSelected={selectedCategory === item.category.id}
-                      onClick={() => setSelectedCategory(item.category!.id)}
-                      onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
-                    />
-                  ) : (
-                    <AllCategoryButton
-                      key={item.key}
-                      compact
-                      isSelected={selectedCategory === null}
-                      onClick={() => setSelectedCategory(null)}
-                    />
-                  )
-                )}
-              </div>
-              <OverflowMenu items={overflowMenuItems} />
+              <CompactSelector
+                items={compactCategoryItems}
+                selectedKey={selectedCategory ?? 'all'}
+                title="切换分类"
+                emptyText="暂无分类"
+              />
             </div>
           ) : (
             <div className="w-32 max-w-[120px] flex-shrink-0 mr-4 flex flex-col">

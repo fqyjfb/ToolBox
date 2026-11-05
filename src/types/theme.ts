@@ -117,6 +117,8 @@ export interface ThemeColorField {
 export interface ThemeColorGroup {
   title: string;
   hint?: string;
+  /** true = 高级颜色，编辑器默认折叠，字段留空时由 withThemeDefaults 自动派生 */
+  advanced?: boolean;
   fields: ThemeColorField[];
 }
 
@@ -157,7 +159,7 @@ const getDefaultLightTheme = (): CustomTheme => ({
   colorCardHover: '#F9FAFB',
   colorSidebar: '#FFFFFF',
   colorSidebarItem: '#F4F4F5',
-  colorSidebarItemActive: '#e5fbff',
+  colorSidebarItemActive: '#e9f5ff',
   colorSidebarItemActiveText: '#0f766e',
   colorSidebarItemText: '#18181B',
   colorMenuHover: '#E4E4E7',
@@ -176,8 +178,9 @@ const getDefaultLightTheme = (): CustomTheme => ({
 
   surfaceOpacity: 100,
 
-  toastSuccessBg: '#EDFBD8',
-  toastWarningBg: '#FEFCE8',
+  // 与 theme.css 明暗预设保持等价，启用自定义主题时不跳色
+  toastSuccessBg: '#F0FDF4',
+  toastWarningBg: '#FFFBEB',
   toastErrorBg: '#FEF2F2',
   toastInfoBg: '#EFF6FF',
   switchBg: '#E4E4E7',
@@ -235,6 +238,8 @@ const getDefaultDarkTheme = (): CustomTheme => ({
 
   surfaceOpacity: 100,
 
+  // 预设的深色 Toast 底色是 8 位半透明 hex；取色器只接受 6 位 hex，
+  // 这里用等效不透明色，文字 / 边框仍由覆盖层按底色派生
   toastSuccessBg: '#166534',
   toastWarningBg: '#92400E',
   toastErrorBg: '#991B1B',
@@ -265,6 +270,89 @@ export const clampPercent = (value: number, fallback: number): number => {
   return Math.min(100, Math.max(0, Math.round(value)));
 };
 
+/** 字符串字段中不属于颜色的：背景图 data URI / 网络地址，不参与颜色校验 */
+const NON_COLOR_STRING_KEYS = new Set<keyof CustomTheme>(['bgImage']);
+
+/**
+ * 规范化单个颜色值：合法 CSS 颜色原样返回，非法值（含输入中的半成品 "#F2"）回退到默认值。
+ * 空串表示「使用当前明暗默认值」，语义交给调用方处理。
+ * 预览、保存、导入、启动四条路径共用，保证所见即所得。
+ */
+export const normalizeThemeColor = (value: string, fallback: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const isValid = typeof CSS !== 'undefined' && typeof CSS.supports === 'function'
+    ? CSS.supports('color', trimmed)
+    : /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(trimmed);
+  return isValid ? trimmed : fallback;
+};
+
+/** #RRGGBB → [r,g,b]；非 6 位 hex（rgba / 8 位 / 3 位）返回 null，交由调用方回退 */
+const parseHex = (hex: string): [number, number, number] | null => {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+
+/** 线性插值两个 #RRGGBB 颜色，t 为 b 的占比；任一非法返回 null。输出 6 位 hex 保证取色器可用 */
+const mixHex = (a: string, b: string, t: number): string | null => {
+  const ca = parseHex(a);
+  const cb = parseHex(b);
+  if (!ca || !cb) return null;
+  const ch = (v: number) => Math.round(v).toString(16).padStart(2, '0');
+  return `#${ch(ca[0] + (cb[0] - ca[0]) * t)}${ch(ca[1] + (cb[1] - ca[1]) * t)}${ch(ca[2] + (cb[2] - ca[2]) * t)}`;
+};
+
+/** 近似相对亮度（0~1），用于高亮主色圆点的对比色选择 */
+const relativeLuminance = (hex: string): number => {
+  const c = parseHex(hex);
+  if (!c) return 0;
+  return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255;
+};
+
+/**
+ * 高级区字段留空（用户清除 / 未配置）时按既有字段派生，减少需手调项。
+ * 仅改写 pending（用户显式空串）字段；已配置字段原样保留，确保旧配置升级零变化。
+ * 依赖顺序：先解析基础字段，再派生其下游（如 次背景 → 三级背景）。
+ */
+const applyDerivedColors = (
+  merged: CustomTheme,
+  base: CustomTheme,
+  pending: Set<keyof CustomTheme>,
+  isDark: boolean,
+): void => {
+  const derive = (key: keyof CustomTheme, value: string | null) => {
+    if (!pending.has(key)) return;
+    const resolved = value ?? base[key];
+    if (typeof resolved === 'string' && resolved) merged[key] = resolved as never;
+  };
+
+  // 表面细节
+  derive('colorBgSecondary', mixHex(merged.colorBgPrimary, merged.textColorPrimary, 0.05));
+  derive('colorBgTertiary', mixHex(merged.colorBgSecondary, merged.textColorPrimary, 0.06));
+  derive('colorCardHover', mixHex(merged.colorCard, merged.textColorPrimary, 0.08));
+  derive('colorMenuHover', mixHex(merged.colorBgPrimary, merged.textColorPrimary, 0.11));
+  derive('colorBorderLight', mixHex(merged.colorBorder, merged.colorBgPrimary, 0.5));
+  // 侧边栏细节
+  derive('colorSidebarItem', mixHex(merged.colorSidebar, merged.colorBorder, 0.5));
+  derive('colorSidebarItemText', mixHex(merged.textColorPrimary, merged.textColorSecondary, 0.38));
+  // 杂项
+  derive('colorMuted', merged.textColorTertiary);
+  derive('colorCardValue', merged.textColorPrimary);
+  // 开关
+  derive('switchBg', merged.colorBorder);
+  derive('switchActiveBg', merged.colorPrimary);
+  derive('switchActiveThumb', relativeLuminance(merged.colorPrimary) >= 0.6 ? '#1F2430' : '#FFFFFF');
+  // Toast 底色：按明暗基色方向混黑白，近似预设深色档
+  const toastTarget = isDark ? '#000000' : '#FFFFFF';
+  const toastRatio = isDark ? 0.55 : 0.78;
+  derive('toastSuccessBg', mixHex(merged.colorSuccess, toastTarget, toastRatio));
+  derive('toastWarningBg', mixHex(merged.colorWarning, toastTarget, toastRatio));
+  derive('toastErrorBg', mixHex(merged.colorError, toastTarget, toastRatio));
+  derive('toastInfoBg', mixHex(merged.colorInfo, toastTarget, toastRatio));
+};
+
 const BACKGROUND_VALUES = new Set<string>([
   ...BACKGROUND_SIZES,
   ...BACKGROUND_POSITIONS,
@@ -283,6 +371,7 @@ export const withThemeDefaults = (
   if (!partial || typeof partial !== 'object') return base;
 
   const merged: CustomTheme = { ...base };
+  const pending = new Set<keyof CustomTheme>();
   (Object.keys(base) as (keyof CustomTheme)[]).forEach((key) => {
     const value = partial[key];
     if (value === undefined || value === null) return;
@@ -302,15 +391,23 @@ export const withThemeDefaults = (
         return;
       default:
         if (typeof value === typeof base[key]) {
-          // 空字符串字段（用户清除的颜色 / 背景图）回退到当前基色默认值，
-          // 避免存储与快照中残留空值导致锁屏等场景兜底不一致
-          merged[key] =
-            typeof value === 'string' && value.trim() === ''
-              ? (base[key] ?? '')
-              : (value as never);
+          if (typeof value === 'string' && value.trim() === '') {
+            if (NON_COLOR_STRING_KEYS.has(key)) {
+              // 背景图空串 = 不使用图片，保持空（不参与派生）
+              merged[key] = '' as never;
+            } else {
+              // 颜色字段空串 = 留空待派生（见 applyDerivedColors），避免存储残留空值
+              pending.add(key);
+            }
+          } else if (typeof value === 'string' && !NON_COLOR_STRING_KEYS.has(key)) {
+            merged[key] = normalizeThemeColor(value, (base[key] as string) ?? '') as never;
+          } else {
+            merged[key] = value as never;
+          }
         }
     }
   });
 
+  applyDerivedColors(merged, base, pending, isDark);
   return merged;
 };

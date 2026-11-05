@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Download, ImageOff, Plus, RotateCcw, Save, Trash2, Upload, X } from 'lucide-react';
+import { ChevronDown, Download, ImageOff, Plus, RotateCcw, Save, Trash2, Upload, X } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import ColorPicker from './ColorPicker';
 import SettingCard from './SettingCard';
@@ -31,6 +31,11 @@ import {
   isBgImageSizeSafe,
 } from '../../utils/imageCompress';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
+import { toCssUrl } from '../../utils/themeInject';
+
+/** 图库条目 id：同一毫秒连续添加也不会撞 React key */
+let bgImageSeq = 0;
+const newBgImageId = () => `bg-${Date.now()}-${++bgImageSeq}`;
 
 const SELECT_CLASS =
   'text-xs px-1.5 py-0.5 rounded border border-content bg-surface text-content-primary focus:outline-none focus:border-primary';
@@ -110,6 +115,7 @@ const ThemeCustomEditor: React.FC = () => {
     localStorageService.get<BgImageItem[]>(STORAGE_KEYS.CUSTOM_BG_IMAGES, []),
   );
   const [networkUrl, setNetworkUrl] = useState('');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
   const imageInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -131,13 +137,17 @@ const ThemeCustomEditor: React.FC = () => {
 
   const handleSave = () => {
     try {
-      // 先落盘基色：setCustomTheme 内部按当前 isDark 兜底未配置字段
+      // 预览、保存、导入共用同一份规范化结果：颜色合法性 / 数值范围 / 枚举都在此收敛
+      const themeToSave = withThemeDefaults(draft, draftIsDark);
+      // 先写配色：setCustomTheme 唯一可能失败的是首步落盘，失败时基色保持不变；
+      // 成功后 setBaseTheme 会按新基色重新注入并同步，最终状态一致。
+      setCustomTheme(themeToSave);
       if (draftIsDark !== isDark) setBaseTheme(draftIsDark);
-      setCustomTheme(draft);
+      setDraft(themeToSave);
       addToast({ type: 'success', message: '自定义主题已保存并生效' });
     } catch (error) {
       addToast({
-        type: 'error',
+        type: 'warning',
         message:
           error instanceof Error && error.message === CUSTOM_THEME_STORAGE_FULL
             ? '存储空间不足，请移除背景图或改用更小的图片'
@@ -146,9 +156,25 @@ const ThemeCustomEditor: React.FC = () => {
     }
   };
 
+  /** 恢复默认只重置配色；背景图与透明度属于个人材质设置，原样保留 */
   const handleReset = () => {
-    setDraft(getDefaultTheme(draftIsDark));
-    addToast({ type: 'info', message: '已恢复为当前明暗预设的默认值，点击保存后才会保留' });
+    setDraft((prev) => ({
+      ...getDefaultTheme(draftIsDark),
+      bgImage: prev.bgImage,
+      bgOpacity: prev.bgOpacity,
+      bgSize: prev.bgSize,
+      bgPosition: prev.bgPosition,
+      bgRepeat: prev.bgRepeat,
+      surfaceOpacity: prev.surfaceOpacity,
+    }));
+    addToast({ type: 'info', message: '已恢复为当前明暗预设的默认配色，背景图与透明度保留，点击保存后才会保留' });
+  };
+
+  /** 放弃草稿：回到最近一次保存的主题（预览也随下一次 effect 复位） */
+  const handleDiscard = () => {
+    setDraft(customTheme ?? getDefaultTheme(isDark));
+    setDraftIsDark(isDark);
+    restoreSavedTheme();
   };
 
   const handleDelete = () => {
@@ -161,7 +187,7 @@ const ThemeCustomEditor: React.FC = () => {
 
   // 预设模板：基色只进草稿，不直接调 setBaseTheme —— 后者会立即落盘并同步主进程，
   // 而草稿此时尚未保存，会留下「基色已改、配色未改」的残留状态。
-  // 预设只负责配色：背景图 / 图片透明度 / 铺放方式属于个人设置，切换预设时原样保留，
+  // 预设只负责配色：背景图 / 图片透明度 / 铺放方式 / 表面透明度属于个人设置，切换预设时原样保留，
   // 页面底色是配色的一部分，仍跟随预设。
   const handlePresetClick = (presetId: string) => {
     const preset = THEME_PRESETS.find((item) => item.id === presetId);
@@ -174,10 +200,11 @@ const ThemeCustomEditor: React.FC = () => {
       bgSize: prev.bgSize,
       bgPosition: prev.bgPosition,
       bgRepeat: prev.bgRepeat,
+      surfaceOpacity: prev.surfaceOpacity,
     }));
     addToast({
       type: 'info',
-      message: `已应用预设「${preset.name}」，背景图设置保留不变，点击保存后才会保留`,
+      message: `已应用预设「${preset.name}」，背景图与表面透明度保留，点击保存后才会保留`,
     });
   };
 
@@ -194,7 +221,7 @@ const ThemeCustomEditor: React.FC = () => {
         // 同步入库（去重）
         if (!bgImages.some(item => item.url === result.dataUrl)) {
           const next = [...bgImages, {
-            id: `bg-${Date.now()}`,
+            id: newBgImageId(),
             url: result.dataUrl,
             source: 'upload' as const,
             name: file.name,
@@ -207,7 +234,7 @@ const ThemeCustomEditor: React.FC = () => {
         }
         addToast({
           type: 'success',
-          message: `背景图已就绪（${formatBytesToMB(result.compressedSize)}），点击保存后才会保留`,
+          message: `背景图已就绪（${formatBytesToMB(result.compressedSize)}）；图片库已保存，当前主题需点击「保存主题」才会保留`,
         });
         return;
       }
@@ -243,7 +270,7 @@ const ThemeCustomEditor: React.FC = () => {
       return;
     }
     const next = [...bgImages, {
-      id: `bg-${Date.now()}`,
+      id: newBgImageId(),
       url,
       source: 'network' as const,
       name: url.length > 40 ? url.slice(0, 40) + '…' : url,
@@ -252,7 +279,7 @@ const ThemeCustomEditor: React.FC = () => {
       setBgImages(next);
       update('bgImage', url);
       setNetworkUrl('');
-      addToast({ type: 'success', message: '图片地址已添加并应用，点击保存后才会保留' });
+      addToast({ type: 'success', message: '图片地址已存入图库并应用，当前主题需点击「保存主题」才会保留' });
     }
   };
 
@@ -273,13 +300,16 @@ const ThemeCustomEditor: React.FC = () => {
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(draft, null, 2)], { type: 'application/json' });
+    // 带上草稿的明暗基色，导入时不必再猜用户当时用的是哪套预设
+    const blob = new Blob([JSON.stringify({ ...draft, isDark: draftIsDark }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = 'toolbox-theme.json';
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -288,19 +318,35 @@ const ThemeCustomEditor: React.FC = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onerror = () => addToast({ type: 'error', message: '主题文件读取失败' });
+    reader.onerror = () => addToast({ type: 'warning', message: '主题文件读取失败' });
     reader.onload = () => {
       try {
-        const parsed = JSON.parse(reader.result as string) as Partial<CustomTheme>;
+        const parsed = JSON.parse(reader.result as string) as unknown;
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          throw new Error('INVALID_THEME');
+        }
+        const data = parsed as Record<string, unknown>;
+        // 至少包含一个已知主题字段，避免任意 JSON 静默把用户配色重置为默认值
+        if (!Object.keys(getDefaultTheme(draftIsDark)).some((key) => key in data)) {
+          throw new Error('INVALID_THEME');
+        }
         // 导入前校验背景图体积，避免导入后在保存阶段才触发存储配额错误
-        if (typeof parsed.bgImage === 'string' && parsed.bgImage && !isBgImageSizeSafe(parsed.bgImage)) {
-          addToast({ type: 'error', message: '导入的主题背景图过大，请先压缩或移除背景图后再导入' });
+        if (typeof data.bgImage === 'string' && data.bgImage && !isBgImageSizeSafe(data.bgImage)) {
+          addToast({ type: 'warning', message: '导入的主题背景图过大，请先压缩或移除背景图后再导入' });
           return;
         }
-        setDraft(withThemeDefaults(parsed, draftIsDark));
+        const importedIsDark = typeof data.isDark === 'boolean' ? data.isDark : draftIsDark;
+        setDraftIsDark(importedIsDark);
+        // withThemeDefaults 只按已知字段取值，导出附带的 isDark 不会进入主题
+        setDraft(withThemeDefaults(data as Partial<CustomTheme>, importedIsDark));
         addToast({ type: 'success', message: '主题配置已导入，点击保存后才会保留' });
-      } catch {
-        addToast({ type: 'error', message: '主题文件解析失败，请确认是本页导出的 JSON' });
+      } catch (error) {
+        addToast({
+          type: 'warning',
+          message: error instanceof Error && error.message === 'INVALID_THEME'
+            ? '主题文件内容无效，请确认是本页导出的 JSON'
+            : '主题文件解析失败，请确认是本页导出的 JSON',
+        });
       }
     };
     reader.readAsText(file);
@@ -317,8 +363,8 @@ const ThemeCustomEditor: React.FC = () => {
         )}
       </div>
 
-      <GroupTitle title="预设模板" hint="一键填充配色，背景图设置保留" />
-      <div className="flex flex-wrap gap-1.5">
+      <GroupTitle title="预设模板" hint="一键填充配色，背景图与表面透明度保留" />
+      <div className={`flex flex-wrap gap-1.5 ${isCompressing ? 'pointer-events-none opacity-50' : ''}`}>
         {THEME_PRESETS.map((preset) => (
           <button
             key={preset.id}
@@ -341,7 +387,7 @@ const ThemeCustomEditor: React.FC = () => {
       </div>
 
       <GroupTitle title="实时预览" />
-      <ThemePreview theme={draft} />
+      <ThemePreview theme={draft} isDark={draftIsDark} />
 
       <GroupTitle title="背景" />
       <SettingCard className="px-3 py-2 border-0">
@@ -374,7 +420,7 @@ const ThemeCustomEditor: React.FC = () => {
               <span
                 className="inline-block w-14 h-8 rounded"
                 style={{
-                  backgroundImage: `url("${draft.bgImage}")`,
+                  backgroundImage: toCssUrl(draft.bgImage),
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }}
@@ -502,35 +548,60 @@ const ThemeCustomEditor: React.FC = () => {
       <PercentRow
         label="表面透明度"
         value={draft.surfaceOpacity}
-        hint="卡片、侧边栏、菜单等表面色与背景的混合比例，越低越透"
+        hint="卡片、侧边栏、菜单等表面色与背景的混合比例，越低越透；背景图需调低此值才明显可见"
         onChange={(value) => update('surfaceOpacity', value)}
       />
 
-      {THEME_COLOR_GROUPS.map((group) => (
-        <div key={group.title}>
-          <GroupTitle title={group.title} hint={group.hint} />
-          <SettingCard className={`px-3 py-2 border-0 ${group.title === '侧边栏' ? 'ring-1 ring-primary/20 shadow-sm' : ''}`}>
-            {group.fields.map((field) => (
-              <ColorPicker
-                key={field.key}
-                label={field.label}
-                value={draft[field.key]}
-                defaultColor={baseTheme[field.key] ?? ''}
-                desc={field.desc}
-                onChange={(value) => update(field.key, value)}
-              />
-            ))}
-          </SettingCard>
-        </div>
-      ))}
+      {THEME_COLOR_GROUPS.map((group) => {
+        const isAdvanced = !!group.advanced;
+        const expanded = !isAdvanced || advancedOpen;
+        return (
+          <div key={group.title}>
+            {isAdvanced ? (
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen((o) => !o)}
+                className="flex w-full items-center gap-1 text-left"
+                aria-expanded={advancedOpen}
+              >
+                <GroupTitle title={group.title} hint={group.hint} />
+                <ChevronDown
+                  size={14}
+                  className={`text-content-tertiary transition-transform ${advancedOpen ? '' : '-rotate-90'}`}
+                />
+              </button>
+            ) : (
+              <GroupTitle title={group.title} hint={group.hint} />
+            )}
+            {expanded && (
+              <SettingCard className="px-3 py-2 border-0">
+                {group.fields.map((field) => (
+                  <ColorPicker
+                    key={field.key}
+                    label={field.label}
+                    value={draft[field.key]}
+                    defaultColor={baseTheme[field.key] ?? ''}
+                    desc={field.desc}
+                    onChange={(value) => update(field.key, value)}
+                  />
+                ))}
+              </SettingCard>
+            )}
+          </div>
+        );
+      })}
 
-      <div className="flex flex-wrap gap-1.5 pt-3">
+      <div className={`flex flex-wrap gap-1.5 pt-3 ${isCompressing ? 'pointer-events-none opacity-50' : ''}`}>
         <button
           type="button"
           onClick={handleSave}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-primary text-button-text hover:opacity-90"
+          disabled={isCompressing}
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-primary text-button-text hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save size={12} /> 保存主题
+        </button>
+        <button type="button" onClick={handleDiscard} disabled={!isDirty} className={ACTION_CLASS}>
+          <X size={12} /> 放弃修改
         </button>
         <button type="button" onClick={handleReset} className={ACTION_CLASS}>
           <RotateCcw size={12} /> 恢复默认

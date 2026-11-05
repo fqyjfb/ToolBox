@@ -20,8 +20,7 @@ import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Pagination from '../../../components/ui/Pagination';
 import { modalControlClass } from '../account/shared';
 import { useIsCompactMode } from '../../../store/windowModeStore';
-import { useOverflowItems } from '../../../hooks/useOverflowItems';
-import OverflowMenu, { OverflowMenuItem } from '../../../components/ui/OverflowMenu';
+import CompactSelector, { CompactSelectorItem } from '../../../components/ui/CompactSelector';
 import QuickReplyFormModal from './QuickReplyFormModal';
 
 const SortableCategoryButton: React.FC<{
@@ -70,12 +69,32 @@ const QuickReplyPage: React.FC = () => {
   const addToast = useToastStore((state) => state.addToast);
   // 小窗模式：分类栏改单行横向滚动（不换行），操作按钮独立成行
   const isCompact = useIsCompactMode();
+
   const { searchQuery, isSearchActive } = useNavSearch();
   const [categories, setCategories] = useState<QuickReplyCategory[]>([]);
 
   const sensors = useDndSensors();
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const compactCategoryItems: CompactSelectorItem[] = [
+    {
+      key: 'all',
+      label: '全部',
+      icon: <Tag size={14} />,
+      active: selectedCategory === null,
+      onClick: () => setSelectedCategory(null),
+    },
+    ...categories.map((category) => ({
+      key: category.id,
+      label: category.name,
+      color: category.color,
+      icon: <Tag size={14} />,
+      active: selectedCategory === category.id,
+      onClick: () => setSelectedCategory(category.id),
+      onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, 'category', category.id),
+    })),
+  ];
   const [newQuickReplyContent, setNewQuickReplyContent] = useState<string>('');
   const [newCategoryName, setNewCategoryName] = useState<string>('');
   const [editingQuickReply, setEditingQuickReply] = useState<QuickReply | null>(null);
@@ -456,70 +475,43 @@ const QuickReplyPage: React.FC = () => {
     setEditingCategory(null);
   };
 
-  // 小窗：分类按可用宽度收拢，放不下的进「更多」下拉（hook 必须早于下面的条件返回）
-  const categoryBarItems: Array<{ key: string; category?: QuickReplyCategory }> = [
-    { key: 'all' },
-    ...categories.map((category) => ({ key: category.id, category })),
-  ];
-  const { containerRef, visible, overflow } = useOverflowItems(categoryBarItems, (item) => item.key, { enabled: isCompact });
-
   if (!isAuthenticated) {
     return null;
   }
 
-  const overflowMenuItems: OverflowMenuItem[] = overflow.map((item) => ({
-    key: item.key,
-    label: item.category?.name ?? '全部',
-    active: item.category ? selectedCategory === item.category.id : selectedCategory === null,
-    onClick: () => setSelectedCategory(item.category?.id ?? null),
-    onContextMenu: item.category
-      ? (e: React.MouseEvent) => handleContextMenu(e, 'category', item.category!.id)
-      : undefined,
-  }));
-
   return (
-    <div 
-      className="h-full flex flex-col overflow-hidden"
-      onContextMenu={(e) => handleContextMenu(e, 'empty')}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
     >
-        <div className={`${isCompact ? 'mb-2' : 'mb-4'} flex-shrink-0`}>
-          <div className={`${isCompact ? 'flex flex-col items-stretch gap-2 mb-2' : 'flex items-center justify-between mb-4'}`}>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+      <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+        <div
+          className="h-full flex flex-col overflow-hidden"
+          onContextMenu={(e) => handleContextMenu(e, 'empty')}
+        >
+          <div className={`${isCompact ? 'mb-2' : 'mb-4'} flex-shrink-0`}>
+            <div className={`${isCompact ? 'flex flex-col items-stretch gap-2 mb-2' : 'flex items-center justify-between mb-4'}`}>
+              {isCompact ? (
+                <div className="flex items-center gap-1 px-1 pb-2 flex-shrink-0">
+                  <CompactSelector
+                    items={compactCategoryItems}
+                    selectedKey={selectedCategory ?? 'all'}
+                    title="切换分类"
+                    emptyText="暂无分类"
+                  />
+                </div>
+              ) : (
                 <div className="flex items-center gap-1 min-w-0 flex-1">
-                  <div
-                    ref={containerRef}
-                    className={`flex items-center min-w-0 flex-1 ${isCompact ? 'gap-1 flex-nowrap overflow-hidden' : 'gap-2 flex-wrap'}`}
-                  >
-                    {visible.map((item) =>
-                      item.category ? (
-                        <SortableCategoryButton
-                          key={item.key}
-                          category={item.category}
-                          isSelected={selectedCategory === item.category.id}
-                          onClick={() => setSelectedCategory(item.category!.id)}
-                          onContextMenu={(e) => handleContextMenu(e, 'category', item.category!.id)}
-                        />
-                      ) : (
-                        <button
-                          key={item.key}
-                          onClick={() => setSelectedCategory(null)}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${
-                            selectedCategory === null
-                              ? 'bg-primary text-button-text'
-                              : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
-                          }`}
-                        >
-                          全部
-                        </button>
-                      )
-                    )}
-                  </div>
-                  <OverflowMenu items={overflowMenuItems} />
+                  {categories.map((category) => (
+                    <SortableCategoryButton
+                      key={category.id}
+                      category={category}
+                      isSelected={selectedCategory === category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      onContextMenu={(e) => handleContextMenu(e, 'category', category.id)}
+                    />
+                  ))}
                   <button
                     onClick={() => setShowAddCategoryModal(true)}
                     className="p-1.5 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary transition-colors flex-shrink-0"
@@ -528,9 +520,8 @@ const QuickReplyPage: React.FC = () => {
                     <Plus size={16} />
                   </button>
                 </div>
-              </SortableContext>
-            </DndContext>
-            <div className={`flex gap-2 ${isCompact ? 'justify-end' : ''}`}>
+              )}
+              <div className={`flex gap-2 ${isCompact ? 'justify-end' : ''}`}>
               <button 
                 onClick={handleQuickPaste}
                 className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
@@ -543,69 +534,66 @@ const QuickReplyPage: React.FC = () => {
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
+            <div className="space-y-3 flex-1 overflow-y-auto scrollbar-hide">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <LoadingSpinner size="lg" />
+                </div>
+              ) : quickReplies.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Clipboard className="w-10 h-10 text-content-tertiary mb-3" />
+                  <p className="text-content-secondary text-sm">暂无快捷回复</p>
+                </div>
+              ) : (
+                quickReplies.map((quickReply) => (
+                  <div 
+                    key={quickReply.id} 
+                    className="rounded-md p-3"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
+                    onContextMenu={(e) => handleContextMenu(e, 'item', quickReply.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <button 
+                        onClick={() => handleCopyQuickReply(quickReply.content)}
+                        className="p-2 text-content-secondary hover:text-primary rounded transition-colors flex-shrink-0"
+                      >
+                        <Clipboard className="w-4 h-4" />
+                      </button>
+                      <p className="text-content-secondary whitespace-pre-wrap break-words text-sm flex-1">
+                        {quickReply.content.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+                          if (part.match(/^https?:\/\/[^\s]+$/)) {
+                            return (
+                              <a 
+                                key={index} 
+                                href={part} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-primary hover:text-primary-hover transition-colors"
+                              >
+                                {part}
+                              </a>
+                            );
+                          }
+                          return part;
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      {quickReply.category_id && (
+                        <span className="text-xs font-medium bg-toast-info-bg text-toast-info-text px-2 py-0.5 rounded-full">
+                          {categories.find(c => c.id === quickReply.category_id)?.name}
+                        </span>
+                      )}
+                      <span className="text-xs text-content-secondary ml-auto">
+                        {new Date(quickReply.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
-
-        <div className="space-y-3 flex-1 overflow-y-auto scrollbar-hide">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <LoadingSpinner size="lg" />
-            </div>
-          ) : quickReplies.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Clipboard className="w-10 h-10 text-content-tertiary mb-3" />
-              <p className="text-content-secondary text-sm">暂无快捷回复</p>
-            </div>
-          ) : (
-            quickReplies.map((quickReply) => (
-              <div 
-                key={quickReply.id} 
-                className="rounded-md p-3"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
-                onContextMenu={(e) => handleContextMenu(e, 'item', quickReply.id)}
-              >
-                <div className="flex items-start gap-3">
-                  <button 
-                    onClick={() => handleCopyQuickReply(quickReply.content)}
-                    className="p-2 text-content-secondary hover:text-primary rounded transition-colors flex-shrink-0"
-                  >
-                    <Clipboard className="w-4 h-4" />
-                  </button>
-                  <p className="text-content-secondary whitespace-pre-wrap break-words text-sm flex-1">
-                    {quickReply.content.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
-                      if (part.match(/^https?:\/\/[^\s]+$/)) {
-                        return (
-                          <a 
-                            key={index} 
-                            href={part} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-primary hover:text-primary-hover transition-colors"
-                          >
-                            {part}
-                          </a>
-                        );
-                      }
-                      return part;
-                    })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  {quickReply.category_id && (
-                    <span className="text-xs font-medium bg-toast-info-bg text-toast-info-text px-2 py-0.5 rounded-full">
-                      {categories.find(c => c.id === quickReply.category_id)?.name}
-                    </span>
-                  )}
-                  <span className="text-xs text-content-secondary ml-auto">
-                    {new Date(quickReply.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        
         <div className="flex-shrink-0">
           <Pagination
             currentPage={currentPage}
@@ -618,6 +606,7 @@ const QuickReplyPage: React.FC = () => {
             }}
           />
         </div>
+      </div>
 
         <QuickReplyFormModal
           isOpen={showAddQuickReplyModal}
@@ -693,7 +682,9 @@ const QuickReplyPage: React.FC = () => {
         title={confirmDialog.title}
         message={confirmDialog.message}
       />
-    </div>
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 };
 

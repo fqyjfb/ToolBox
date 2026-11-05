@@ -6,6 +6,21 @@
 import { CUSTOM_THEME_EFFECT_VARS, CUSTOM_THEME_VARS } from '../constants/theme';
 import { CustomTheme, clampPercent, getDefaultTheme } from '../types/theme';
 
+/**
+ * 背景图 → CSS url()：只允许 data:image/ 与 http(s) 地址，并转义会破坏 url("…") 的字符。
+ * 主题注入、设置页缩略图、局部预览、模式卡片共用，避免各处重复拼接。
+ */
+export const toCssUrl = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed || !/^(data:image\/|https?:\/\/)/i.test(trimmed)) return 'none';
+  const escaped = trimmed
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/[()]/g, (char) => `\\${char}`)
+    .replace(/[\r\n]/g, '');
+  return `url("${escaped}")`;
+};
+
 /** 切换 .dark 基色 class */
 export const applyBaseClass = (isDark: boolean) => {
   document.documentElement.classList.toggle('dark', isDark);
@@ -32,10 +47,7 @@ export const applyCustomTheme = (theme: CustomTheme, isDark: boolean) => {
     root.style.setProperty(CUSTOM_THEME_VARS[key], theme[key]?.trim() || base[key] || '');
   });
 
-  root.style.setProperty(
-    CUSTOM_THEME_EFFECT_VARS.bgImage,
-    theme.bgImage ? `url("${theme.bgImage}")` : 'none',
-  );
+  root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgImage, toCssUrl(theme.bgImage ?? ''));
   root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgOpacity, String(clampPercent(theme.bgOpacity, 100) / 100));
   root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgSize, theme.bgSize);
   root.style.setProperty(CUSTOM_THEME_EFFECT_VARS.bgPosition, theme.bgPosition);

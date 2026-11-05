@@ -6,6 +6,7 @@ import {
   CustomThemeColorFieldKey,
   ThemeColorGroup,
   getDefaultTheme,
+  withThemeDefaults,
 } from '../types/theme';
 
 /**
@@ -87,33 +88,13 @@ export const THEME_COLOR_GROUPS: ThemeColorGroup[] = [
     ],
   },
   {
-    title: '表面颜色',
-    hint: '受表面透明度影响',
+    title: '常用表面',
+    hint: '内容区与面板底色，影响面最大',
     fields: [
-      { key: 'colorBgPrimary', label: '主背景', desc: '内容区、面板、表格底色，同时是按钮文字色' },
-      { key: 'colorBgSecondary', label: '次背景', desc: '卡片头部、分组区、次级面板、次级按钮' },
-      { key: 'colorBgTertiary', label: '三级背景', desc: '标签、未选中页签、侧栏容器' },
+      { key: 'colorBgPrimary', label: '主背景', desc: '内容区、面板、表格底色，按钮文字色由它派生' },
       { key: 'colorCard', label: '卡片', desc: '设置卡片、弹窗、下拉菜单、工具卡、次级按钮' },
-      { key: 'colorCardHover', label: '卡片悬停', desc: '工具卡与列表项的鼠标悬停底色' },
-      { key: 'colorMenuHover', label: '菜单悬停', desc: '用户菜单、右键菜单项与按钮悬停' },
-    ],
-  },
-  {
-    title: '侧边栏',
-    hint: '独立配色区块，各项互不影响',
-    fields: [
       { key: 'colorSidebar', label: '侧边栏背景', desc: '左侧主导航栏整体背景' },
-      { key: 'colorSidebarItem', label: '侧栏项背景', desc: '侧边栏导航项（未选中）' },
-      { key: 'colorSidebarItemActive', label: '侧栏激活背景', desc: '侧边栏当前选中项与标记条' },
-      { key: 'colorSidebarItemActiveText', label: '侧栏激活文字', desc: '侧边栏选中项文字与图标颜色' },
-      { key: 'colorSidebarItemText', label: '侧栏文字', desc: '侧边栏未选中项文字与图标颜色' },
-    ],
-  },
-  {
-    title: '边框颜色',
-    fields: [
       { key: 'colorBorder', label: '边框', desc: '输入框、卡片、表格、分割线与描边按钮' },
-      { key: 'colorBorderLight', label: '弱化边框', desc: '内部分隔线、次级描边' },
     ],
   },
   {
@@ -128,8 +109,8 @@ export const THEME_COLOR_GROUPS: ThemeColorGroup[] = [
     title: '强调色',
     hint: '链接、高亮与点缀',
     fields: [
-      { key: 'colorSecondary', label: '次要', desc: '链接、进度条、选中态描边、渐变强调' },
-      { key: 'colorAccent', label: '强调', desc: '日历今天、VIP 标识、收藏星标、高亮标签' },
+      { key: 'colorSecondary', label: '次要', desc: '链接、进度条、选中态描边、次级强调' },
+      { key: 'colorAccent', label: '强调', desc: '日历今天、VIP 标识、高亮标签、点缀色' },
     ],
   },
   {
@@ -143,8 +124,63 @@ export const THEME_COLOR_GROUPS: ThemeColorGroup[] = [
     ],
   },
   {
-    title: '状态色',
-    hint: '可选，留空跟随当前明暗预设；文字与边框由底色自动派生',
+    title: '表面细节',
+    advanced: true,
+    hint: '留空自动派生：由主背景 / 主文字按明暗关系推导',
+    fields: [
+      { key: 'colorBgSecondary', label: '次背景', desc: '卡片头部、分组区、次级面板、次级按钮' },
+      { key: 'colorBgTertiary', label: '三级背景', desc: '标签、未选中页签、侧栏容器' },
+      { key: 'colorCardHover', label: '卡片悬停', desc: '工具卡与列表项的鼠标悬停底色' },
+      { key: 'colorMenuHover', label: '菜单悬停', desc: '用户菜单、右键菜单项与按钮悬停' },
+      { key: 'colorBorderLight', label: '弱化边框', desc: '内部分隔线、次级描边' },
+    ],
+  },
+  {
+    title: '侧边栏细节',
+    advanced: true,
+    hint: '项底色与文字留空自动派生；激活态留空跟随明暗预设',
+    fields: [
+      { key: 'colorSidebarItem', label: '侧栏项背景', desc: '侧边栏导航项（未选中）' },
+      { key: 'colorSidebarItemText', label: '侧栏文字', desc: '侧边栏未选中项文字与图标颜色' },
+      { key: 'colorSidebarItemActive', label: '侧栏激活背景', desc: '侧边栏当前选中项与标记条' },
+      { key: 'colorSidebarItemActiveText', label: '侧栏激活文字', desc: '侧边栏选中项文字与图标颜色' },
+    ],
+  },
+  {
+    title: '开关',
+    advanced: true,
+    hint: '背景 / 激活态留空自动派生；圆点留空跟随明暗预设',
+    fields: [
+      { key: 'switchBg', label: '开关背景', desc: '开关关闭状态底色' },
+      { key: 'switchActiveBg', label: '开关激活', desc: '开关开启状态底色' },
+      { key: 'switchThumb', label: '开关圆点', desc: '关闭态圆点颜色' },
+      { key: 'switchActiveThumb', label: '激活圆点', desc: '开启态圆点颜色' },
+    ],
+  },
+  {
+    title: '收藏条',
+    advanced: true,
+    hint: '可选，留空跟随当前明暗预设',
+    fields: [
+      { key: 'favorites', label: '收藏', desc: '首页收藏条悬浮标题默认底色' },
+      { key: 'favoritesHover', label: '收藏悬停', desc: '收藏条标题鼠标悬停底色' },
+      { key: 'favoritesActive', label: '收藏激活', desc: '收藏条标题按下 / 激活态底色' },
+    ],
+  },
+  {
+    title: '提示气泡',
+    advanced: true,
+    hint: '可选，留空跟随当前明暗预设',
+    fields: [
+      { key: 'tooltipBg', label: '气泡背景', desc: '网址导航描述气泡与通用提示气泡底色' },
+      { key: 'tooltipText', label: '气泡文字', desc: '上述两类气泡的文字色' },
+      { key: 'tooltipBorder', label: '气泡边框', desc: '网址导航描述气泡的描边色' },
+    ],
+  },
+  {
+    title: 'Toast 底色',
+    advanced: true,
+    hint: '留空自动派生：由状态色按明暗关系推导',
     fields: [
       { key: 'toastSuccessBg', label: '成功', desc: '成功态底色：提示条 / 状态标签 / 徽章' },
       { key: 'toastWarningBg', label: '警告', desc: '警告态底色：提示条 / 状态标签 / 徽章' },
@@ -153,30 +189,9 @@ export const THEME_COLOR_GROUPS: ThemeColorGroup[] = [
     ],
   },
   {
-    title: '开关与收藏',
-    hint: '可选，留空跟随当前明暗预设',
-    fields: [
-      { key: 'switchBg', label: '开关背景', desc: '开关关闭状态底色' },
-      { key: 'switchActiveBg', label: '开关激活', desc: '开关开启状态底色' },
-      { key: 'switchThumb', label: '开关圆点', desc: '关闭态圆点颜色' },
-      { key: 'switchActiveThumb', label: '激活圆点', desc: '开启态圆点颜色' },
-      { key: 'favorites', label: '收藏', desc: '收藏按钮、收藏夹图标默认态' },
-      { key: 'favoritesHover', label: '收藏悬停', desc: '收藏按钮鼠标悬停态' },
-      { key: 'favoritesActive', label: '收藏激活', desc: '已收藏图标与收藏视图激活态' },
-    ],
-  },
-  {
-    title: '提示框气泡',
-    hint: '可选，留空跟随当前明暗预设',
-    fields: [
-      { key: 'tooltipBg', label: '气泡背景', desc: '网址导航卡片悬浮描述气泡底色' },
-      { key: 'tooltipText', label: '气泡文字', desc: '上述气泡的文字色' },
-      { key: 'tooltipBorder', label: '气泡边框', desc: '上述气泡的描边色' },
-    ],
-  },
-  {
     title: '杂项颜色',
-    hint: '可选，留空跟随当前明暗预设',
+    advanced: true,
+    hint: '留空自动派生：跟随对应文字 / 主文字',
     fields: [
       { key: 'colorMuted', label: '弱文字', desc: '禁用态图标、次要统计数字、次要描述文字' },
       { key: 'colorCardValue', label: '卡片数值', desc: '统计面板大数字、存储用量等关键数值' },
@@ -575,19 +590,9 @@ export const getPresetSwatch = (preset: ThemePreset): string[] => {
   return [theme.bgColor, theme.colorBgPrimary, theme.colorPrimary, theme.colorAccent];
 };
 
-const HEX_COLOR = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
-
 /**
- * 预览前清洗草稿：只拦「以 # 开头但不是合法 hex」的值（用户正在输入的半成品如 "#F2"）。
- * 这类值会让 var() / color-mix() 解析失败、整条声明失效，页面出现闪烁或透明，
- * 因此回退到当前基色默认值；其余写法（合法 hex、rgb()、hsl() 等）原样保留，与保存路径一致。
+ * 预览前清洗草稿：直接复用 withThemeDefaults 的兜底与派生口径，避免两套逻辑漂移；
+ * 其内置 normalizeThemeColor 已处理半成品颜色与空串自动派生，与全站 / 快照一致。
  */
-export const sanitizeThemeForPreview = (theme: CustomTheme, isDark: boolean): CustomTheme => {
-  const base = getDefaultTheme(isDark);
-  const sanitized: CustomTheme = { ...theme };
-  (Object.keys(CUSTOM_THEME_VARS) as (keyof typeof CUSTOM_THEME_VARS)[]).forEach((key) => {
-    const value = sanitized[key]?.trim() ?? '';
-    if (value.startsWith('#') && !HEX_COLOR.test(value)) sanitized[key] = base[key] as never;
-  });
-  return sanitized;
-};
+export const sanitizeThemeForPreview = (theme: CustomTheme, isDark: boolean): CustomTheme =>
+  withThemeDefaults(theme, isDark);
