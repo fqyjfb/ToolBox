@@ -79,6 +79,32 @@ const NavPage: React.FC = () => {
 
   const isCompact = useIsCompactMode()
 
+  // 获取子分类 - 需在 compactSubItems 之前声明（避免 TDZ）
+  const getSubCategories = useCallback((mainCategoryId: string) => {
+    const mainCategory = categoriesTree.find(category => category.id === mainCategoryId)
+    const subCategories = mainCategory?.children || []
+    return [{ id: 'all', name: '全部', children: [], parent_id: null, order: 0, created_at: '', updated_at: '' }, ...subCategories]
+  }, [categoriesTree])
+
+  // 获取当前激活的子分类ID
+  const getActiveSubCategoryId = useCallback((mainCategoryId: string) => {
+    return activeSubCategoryIds[mainCategoryId] || 'all'
+  }, [activeSubCategoryIds])
+
+  // 切换主分类
+  const switchMainCategory = (categoryId: string) => {
+    setActiveMainCategory(categoryId)
+    setActiveSubCategory(categoryId, 'all')
+    setFavoritesView(false)
+    setShowMoreSubCategories(false)
+  }
+
+  // 切换子分类
+  const switchSubCategoryForMainCategory = (mainCategoryId: string, subCategoryId: string) => {
+    setActiveSubCategory(mainCategoryId, subCategoryId)
+    setFavoritesView(false)
+  }
+
   // 小窗模式主分类 CompactSelector 数据源
   const compactMainItems = useMemo<CompactSelectorItem[]>(() => {
     return categoriesTree.map((category) => ({
@@ -152,13 +178,6 @@ const NavPage: React.FC = () => {
     }
   }, [categoriesTree])
 
-  // 获取子分类 - 使用useMemo缓存
-  const getSubCategories = useCallback((mainCategoryId: string) => {
-    const mainCategory = categoriesTree.find(category => category.id === mainCategoryId)
-    const subCategories = mainCategory?.children || []
-    return [{ id: 'all', name: '全部', children: [], parent_id: null, order: 0, created_at: '', updated_at: '' }, ...subCategories]
-  }, [categoriesTree])
-
   // 检测子分类导航是否超出可视宽度
   useEffect(() => {
     if (!activeMainCategoryId) return
@@ -217,11 +236,6 @@ const NavPage: React.FC = () => {
       setFavoritesView(false)
     }
   }, [isSearchActive, setFavoritesView])
-
-  // 获取当前激活的子分类ID
-  const getActiveSubCategoryId = useCallback((mainCategoryId: string) => {
-    return activeSubCategoryIds[mainCategoryId] || 'all'
-  }, [activeSubCategoryIds])
 
   // 获取分类下的所有ID
   const getCategoryIds = useCallback((category: Category): string[] => {
@@ -298,20 +312,6 @@ const NavPage: React.FC = () => {
         : Math.max(MARGIN, hoveredBookmark.top - GAP - height)
     })
   }, [hoveredBookmark])
-
-  // 切换主分类
-  const switchMainCategory = (categoryId: string) => {
-    setActiveMainCategory(categoryId)
-    setActiveSubCategory(categoryId, 'all')
-    setFavoritesView(false)
-    setShowMoreSubCategories(false)
-  }
-
-  // 切换子分类
-  const switchSubCategoryForMainCategory = (mainCategoryId: string, subCategoryId: string) => {
-    setActiveSubCategory(mainCategoryId, subCategoryId)
-    setFavoritesView(false)
-  }
 
   // 处理收藏点击
   const handleFavoriteClick = () => {

@@ -24,8 +24,10 @@ import {
   sortIdsByPosition,
   type Cell,
   type HomeCardLayout,
+  type WindowMode,
 } from '../../utils/homeCardLayout';
 import { isElectron } from '../../utils/environment';
+import { useWindowModeStore } from '../../store/windowModeStore';
 import { openUrl } from '../../services/browserService';
 import { useToastStore } from '../../store/toastStore';
 import { logError } from '../../services/loggerService';
@@ -195,7 +197,11 @@ const Home: React.FC = () => {
   const hydrateHomeTools = useHomeToolsStore(state => state.hydrate);
 
   // 卡片坐标布局（HOME_CARD_LAYOUT）；首次进入为空，按老顺序 / 数据源顺序打包出初始坐标
-  const [layout, setLayout] = useState<HomeCardLayout>(loadHomeCardLayout);
+  // 携带当前窗口模式：跨模式切换时自动清无效坐标，退回默认按序排布
+  const windowMode = useWindowModeStore(s => s.mode);
+  const [layout, setLayout] = useState<HomeCardLayout>(() =>
+    loadHomeCardLayout(windowMode as WindowMode | undefined)
+  );
   const [grid, setGrid] = useState<GridMetrics>({ columns: MIN_COLUMNS, unit: MIN_UNIT });
   const [activeId, setActiveId] = useState<string | null>(null);
   // 拖拽中的预览布局（所见即所得）；null 表示未拖拽或尚未产生位移
@@ -582,9 +588,9 @@ const Home: React.FC = () => {
     // 没产生过落点变化（例如原地按下又松开）时保持原布局
     if (next) {
       setLayout(next);
-      saveHomeCardLayout(next);
+      saveHomeCardLayout(next, windowMode as WindowMode);
     }
-  }, [previewLayout]);
+  }, [previewLayout, windowMode]);
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);

@@ -547,6 +547,17 @@ const CloudClipboardPage: React.FC = () => {
               ) : (
                 <div className="flex items-center gap-1 min-w-0 flex-1">
                   <div className="flex items-center min-w-0 flex-1 gap-2 flex-wrap">
+                    <button
+                      onClick={() => setSelectedCategory(null)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${
+                        selectedCategory === null
+                          ? 'bg-primary text-button-text'
+                          : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
+                      }`}
+                    >
+                      <Tag size={12} />
+                      全部
+                    </button>
                     {categories.map((category) => (
                       <SortableCategoryButton
                         key={category.id}
@@ -557,13 +568,6 @@ const CloudClipboardPage: React.FC = () => {
                       />
                     ))}
                   </div>
-                  <button
-                    onClick={() => setShowAddCategoryModal(true)}
-                    className="p-1.5 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary transition-colors flex-shrink-0"
-                    title="添加分类"
-                  >
-                    <Plus size={16} />
-                  </button>
                 </div>
               )}
               <div className={`flex gap-2 ${isCompact ? 'justify-end' : ''}`}>
@@ -572,12 +576,6 @@ const CloudClipboardPage: React.FC = () => {
                   className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
                 >
                   <ClipboardPaste className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setShowAddItemModal(true)}
-                  className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

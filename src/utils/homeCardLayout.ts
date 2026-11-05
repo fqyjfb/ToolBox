@@ -9,6 +9,12 @@ export interface Cell {
 /** 首页统一网格的卡片坐标布局：cardId -> 左上角单元格 */
 export type HomeCardLayout = Record<string, Cell>;
 
+/** 保存时的窗口模式（large | compact），用于跨模式切换时校验布局有效性 */
+export type WindowMode = 'large' | 'compact';
+
+/** 带模式标记的布局存储结构（__mode 不视为卡片坐标） */
+type HomeCardLayoutRaw = HomeCardLayout & { __mode?: WindowMode };
+
 /** 参与排布的卡片几何描述（HomeCard 的子集，span 不落盘，永远以实时数据为准） */
 interface CardSize {
   id: string;
@@ -241,12 +247,24 @@ export const sortIdsByPosition = (layout: HomeCardLayout): string[] =>
   Object.keys(layout).sort((a, b) =>
     layout[a].row - layout[b].row || layout[a].col - layout[b].col || a.localeCompare(b));
 
-export const loadHomeCardLayout = (): HomeCardLayout => {
+/**
+ * 加载卡片布局；若 __mode 与 expectedMode 不一致，返回空布局（触发默认按序排布）。
+ * 无 __mode 字段的历史数据保持原有行为（不清除）。
+ */
+export const loadHomeCardLayout = (expectedMode?: WindowMode): HomeCardLayout => {
   const saved = localStorageService.get<unknown>(STORAGE_KEYS.HOME_CARD_LAYOUT, {});
   if (typeof saved !== 'object' || saved === null || Array.isArray(saved)) return {};
 
+  const raw = saved as HomeCardLayoutRaw;
+
+  // 有模式标记且与当前期望模式不符 → 视为跨模式失效，退回空布局
+  if (expectedMode && raw.__mode && raw.__mode !== expectedMode) {
+    return {};
+  }
+
   const layout: HomeCardLayout = {};
-  for (const [id, value] of Object.entries(saved as Record<string, unknown>)) {
+  for (const [id, value] of Object.entries(raw)) {
+    if (id === '__mode') continue;
     if (!value || typeof value !== 'object') continue;
     const { col, row } = value as Partial<Cell>;
     const colValue = Number(col);
@@ -257,6 +275,16 @@ export const loadHomeCardLayout = (): HomeCardLayout => {
   return layout;
 };
 
-export const saveHomeCardLayout = (layout: HomeCardLayout): void => {
-  localStorageService.set(STORAGE_KEYS.HOME_CARD_LAYOUT, layout);
+/**
+ * 保存卡片布局，同时记录保存时的窗口模式，用于跨模式切换时做兼容性判断。
+ */
+export const saveHomeCardLayout = (layout: HomeCardLayout, mode: WindowMode): void => {
+  localStorageService.set(STORAGE_KEYS.HOME_CARD_LAYOUT, { ...layout, __mode: mode });
+};
+
+/** 读取布局保存时的窗口模式标记；无标记时返回 undefined（旧数据） */
+export const getLayoutMode = (): WindowMode | undefined => {
+  const saved = localStorageService.get<unknown>(STORAGE_KEYS.HOME_CARD_LAYOUT, {});
+  if (typeof saved !== 'object' || saved === null || Array.isArray(saved)) return undefined;
+  return (saved as HomeCardLayoutRaw).__mode;
 };

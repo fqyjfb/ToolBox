@@ -503,6 +503,17 @@ const QuickReplyPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex items-center gap-1 min-w-0 flex-1">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${
+                      selectedCategory === null
+                        ? 'bg-primary text-button-text'
+                        : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
+                    }`}
+                  >
+                    <Tag size={12} />
+                    全部
+                  </button>
                   {categories.map((category) => (
                     <SortableCategoryButton
                       key={category.id}
@@ -522,19 +533,16 @@ const QuickReplyPage: React.FC = () => {
                 </div>
               )}
               <div className={`flex gap-2 ${isCompact ? 'justify-end' : ''}`}>
-              <button 
-                onClick={handleQuickPaste}
-                className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
-              >
-                <ClipboardPaste className="w-3.5 h-3.5" />
-              </button>
-              <button 
-                onClick={() => setShowAddQuickReplyModal(true)}
-                className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            <div className="space-y-3 flex-1 overflow-y-auto scrollbar-hide">
+                <button
+                  onClick={handleQuickPaste}
+                  className="p-1.5 text-content-secondary hover:text-content-primary dark:text-content-tertiary dark:hover:text-gray-200 bg-surface-secondary hover:bg-menu-hover dark:bg-surface dark:hover:bg-menu-hover rounded-md transition-colors"
+                >
+                  <ClipboardPaste className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3 flex-1 overflow-y-auto scrollbar-hide">
               {loading ? (
                 <div className="flex items-center justify-center py-8">
                   <LoadingSpinner size="lg" />
@@ -592,8 +600,6 @@ const QuickReplyPage: React.FC = () => {
                 ))
               )}
             </div>
-          </div>
-        </div>
         <div className="flex-shrink-0">
           <Pagination
             currentPage={currentPage}
@@ -606,7 +612,6 @@ const QuickReplyPage: React.FC = () => {
             }}
           />
         </div>
-      </div>
 
         <QuickReplyFormModal
           isOpen={showAddQuickReplyModal}
@@ -682,7 +687,7 @@ const QuickReplyPage: React.FC = () => {
         title={confirmDialog.title}
         message={confirmDialog.message}
       />
-        </div>
+      </div>
       </SortableContext>
     </DndContext>
   );
