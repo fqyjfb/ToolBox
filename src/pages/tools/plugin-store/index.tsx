@@ -385,7 +385,7 @@ const PluginStorePage: React.FC = () => {
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap flex-shrink-0 transition-colors ${
                   selectedCategory === category.id
                     ? 'bg-primary text-button-text'
-                    : 'text-content-secondary hover:bg-menu-hover'
+                    : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
                 }`}
               >
                 <category.icon className="w-3.5 h-3.5" />

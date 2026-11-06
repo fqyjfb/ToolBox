@@ -77,7 +77,7 @@ const SortableCategoryButton: React.FC<{
         className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${
           isSelected
             ? 'bg-primary text-button-text'
-            : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
+            : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
         }`}
       >
         <Tag size={12} />
@@ -552,7 +552,7 @@ const CloudClipboardPage: React.FC = () => {
                       className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${
                         selectedCategory === null
                           ? 'bg-primary text-button-text'
-                          : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
+                          : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
                       }`}
                     >
                       <Tag size={12} />

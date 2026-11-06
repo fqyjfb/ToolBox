@@ -343,8 +343,8 @@ const AccountManagerPage: React.FC = () => {
           onClick={onClick}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
             isActive
-              ? 'bg-gray-800 text-white dark:bg-menu-hover'
-              : 'text-content-secondary hover:bg-menu-hover'
+              ? 'bg-primary text-button-text'
+              : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
           }`}
         >
           <Icon className="w-4 h-4" />

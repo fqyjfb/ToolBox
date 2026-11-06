@@ -84,8 +84,8 @@ const SortableCategoryItem: React.FC<{
         onContextMenu={onContextMenu}
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 ${
           isActive
-            ? 'bg-primary text-button-text shadow-sm'
-            : 'text-content-secondary hover:bg-menu-hover'
+            ? 'bg-primary text-button-text'
+            : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
         }`}
       >
         <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(category.name).dot}`}></div>
@@ -673,7 +673,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
                   {/* 「全部」固定为第一个标签，不进下拉 */}
                   <button
                     onClick={() => handleCategorySelect(null)}
-                    className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${selectedCategory === null ? 'bg-primary text-button-text shadow-sm' : 'text-content-secondary hover:bg-menu-hover'}`}
+                    className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${selectedCategory === null ? 'bg-primary text-button-text' : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'}`}
                   >
                     全部
                   </button>
@@ -759,7 +759,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
                             <button
                               key={item.key}
                               onClick={() => handleCategorySelect(null)}
-                              className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${selectedCategory === null ? 'bg-primary text-button-text shadow-sm' : 'text-content-secondary hover:bg-menu-hover'}`}
+                              className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 whitespace-nowrap ${selectedCategory === null ? 'bg-primary text-button-text' : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'}`}
                             >
                               全部
                             </button>

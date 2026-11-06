@@ -565,8 +565,8 @@ const NavPage: React.FC = () => {
                   onClick={() => switchSubCategoryForMainCategory(activeMainCategoryId, subCategory.id)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
                     getActiveSubCategoryId(activeMainCategoryId) === subCategory.id
-                      ? 'bg-primary text-button-text shadow-sm'
-                      : 'text-content-secondary hover:bg-menu-hover dark:text-content-secondary dark:hover:bg-menu-hover'
+                      ? 'bg-primary text-button-text'
+                      : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
                   }`}
                 >
                   {subCategory.name}
@@ -581,7 +581,7 @@ const NavPage: React.FC = () => {
                     e.stopPropagation()
                     setShowMoreSubCategories(!showMoreSubCategories)
                   }}
-                  className="px-3 py-1 rounded-full text-xs font-medium text-content-secondary dark:text-content-secondary hover:bg-menu-hover dark:hover:bg-menu-hover hover:shadow-sm transition-all duration-300 flex items-center gap-1"
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-surface-secondary text-content-primary hover:bg-menu-hover transition-all duration-300 flex items-center gap-1"
                 >
                   <span>更多</span>
                   <ChevronDown className="w-3 h-3" />
@@ -594,7 +594,7 @@ const NavPage: React.FC = () => {
           {favoritesView && (
             <div className="subcategory-nav flex flex-wrap gap-2">
               <button
-                className="px-3 py-1 rounded-full text-xs font-medium bg-primary text-button-text shadow-sm"
+                className="px-3 py-1 rounded-full text-xs font-medium bg-primary text-button-text"
               >
                 全部收藏
               </button>
