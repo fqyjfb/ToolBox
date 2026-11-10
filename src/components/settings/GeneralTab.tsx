@@ -19,6 +19,7 @@ interface GeneralTabProps {
   isFloatWindowEnabled: boolean;
   isMenuVisible: boolean;
   leftMenuPosition: string;
+  isSelectionToolbarEnabled: boolean;
   defaultWindowSize: WindowSize;
   browserMode: string;
   autoLockEnabled: boolean;
@@ -29,6 +30,7 @@ interface GeneralTabProps {
   onFloatWindowChange: (enabled: boolean) => void;
   onMenuVisibleChange: (enabled: boolean) => void;
   onMenuPositionChange: (position: string) => void;
+  onSelectionToolbarChange: (enabled: boolean) => void;
   onWindowSizeChange: (key: 'width' | 'height', value: string) => void;
   onBrowserModeChange: (value: string) => void;
   onAutoLockChange: (enabled: boolean) => void;
@@ -50,6 +52,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   isFloatWindowEnabled,
   isMenuVisible,
   leftMenuPosition,
+  isSelectionToolbarEnabled,
   defaultWindowSize,
   browserMode,
   autoLockEnabled,
@@ -60,6 +63,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   onFloatWindowChange,
   onMenuVisibleChange,
   onMenuPositionChange,
+  onSelectionToolbarChange,
   onWindowSizeChange,
   onBrowserModeChange,
   onAutoLockChange,
@@ -232,11 +236,14 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
           />
         </SettingRow>
         <SettingRow label="外部链接">
-          <RadioGroup 
-            value={browserMode} 
-            options={[{ label: '程序弹窗', value: 'internal' }, { label: '默认浏览器', value: 'external' }]} 
-            onChange={onBrowserModeChange} 
+          <RadioGroup
+            value={browserMode}
+            options={[{ label: '程序弹窗', value: 'internal' }, { label: '默认浏览器', value: 'external' }]}
+            onChange={onBrowserModeChange}
           />
+        </SettingRow>
+        <SettingRow label="划词工具条">
+          <ToggleSwitch enabled={isSelectionToolbarEnabled} onChange={onSelectionToolbarChange} />
         </SettingRow>
       </SettingSection>
 

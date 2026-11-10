@@ -609,6 +609,12 @@
     if (session.mode === 'selection' && session.text) {
       els.selectionText.textContent = session.text.length > 220 ? session.text.slice(0, 220) + '…' : session.text;
     }
+    // 会话自带文本（划词工具条「问AI」）时预填输入框：用户可编辑/补充后再发送。
+    // modeChanged 含 text 比较 —— 划词文本变化会归档旧会话并新建，正好覆盖预填。
+    if (modeChanged && session.mode === 'chat' && session.text) {
+      els.input.value = session.text;
+      autoGrow();
+    }
     applyModeUI();
     renderFeature();
 

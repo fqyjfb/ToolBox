@@ -232,27 +232,14 @@ const registerFloatPanelIpc = () => {
     }
   });
 
-  // 存为笔记：复用 notesService 的根目录解析与越界校验，不自己拼路径
+  // 存为笔记：落盘逻辑抽到 notesService.saveOrganizedNote 共享（划词工具条转笔记同源复用），
+  // 这里只保留面板 sender 守卫与返回值映射（面板据此提供「打开笔记」跳转）
   ipcMain.handle('float:save-note', (event, payload = {}) => {
     if (!isPanelSender(event)) return { ok: false, error: '非法调用' };
     const content = typeof payload.content === 'string' ? payload.content.trim() : '';
     if (!content) return { ok: false, error: '没有可保存的内容' };
     try {
-      const notesService = require('../services/notesService.cjs');
-      if (!notesService.hasRootPath()) return { ok: false, error: '还没有设置笔记目录' };
-      const stamp = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      const name = `AI 对话 ${stamp.getFullYear()}-${pad(stamp.getMonth() + 1)}-${pad(stamp.getDate())} ${pad(stamp.getHours())}-${pad(stamp.getMinutes())}`;
-      // 落到「对话整理」目录，与 对话.md 同级，方便和对话内容一起管理；
-      // 未配置对话目录时回落到主根（保持原行为）
-      const organizePath = notesService.getOrganizePath();
-      if (organizePath) {
-        try { fs.mkdirSync(organizePath, { recursive: true }); } catch { /* 建目录失败时回落到主根 */ }
-      }
-      const parentPath = organizePath && fs.existsSync(organizePath) ? organizePath : '';
-      // mode=rename：同一分钟多次保存时自动加序号，不覆盖已有笔记
-      const result = notesService.createNoteForce(parentPath, name, 'rename', content);
-      // 回传 path：面板据此提供「打开笔记」跳转，且可悬停核对保存位置
+      const result = require('../services/notesService.cjs').saveOrganizedNote(content, 'AI 对话');
       return result && result.success
         ? { ok: true, path: result.path }
         : { ok: false, error: (result && result.error) || '保存失败' };
@@ -315,6 +302,20 @@ const registerFloatPanelIpc = () => {
     entry.resolve(payload.success
       ? { ok: true, todo: payload.todo || null }
       : { ok: false, error: payload.error || '添加待办失败' });
+  });
+
+  // 主窗口划词工具条「问AI」：带文本打开小橘面板（chat 模式，输入框预填）。
+  // 仅主窗口 sender 可调，对齐 float-ai-save-todo-result 的校验风格；
+  // registerFloatPanelIpc 在启动期无条件注册（main.cjs app.whenReady），
+  // 与悬浮球开关无关，面板按需 createPanelWindow()。
+  ipcMain.handle('float-panel-open-chat', (event, payload = {}) => {
+    const mainWindow = require('./mainWindow.cjs').getMainWindow();
+    if (!mainWindow || mainWindow.isDestroyed() || event.sender.id !== mainWindow.webContents.id) {
+      return { ok: false, error: '非法调用' };
+    }
+    const text = typeof payload.text === 'string' ? payload.text.slice(0, 4000) : '';
+    openPanel({ mode: 'chat', text });
+    return { ok: true };
   });
 
   // 待办保存成功后跳转：打开主窗口并定位到该条待办（由待办页 ?focus 消费）

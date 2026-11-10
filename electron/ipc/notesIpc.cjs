@@ -40,6 +40,12 @@ const { registerNotesIpc } = (() => {
       ipcMain.handle('notes-copy-item', (event, sourcePath) => notesService.copyItem(sourcePath));
       ipcMain.handle('notes-send-item', (event, sourcePath, target) => notesService.sendItem(sourcePath, target));
       ipcMain.handle('notes-import-dropped-files', (event, rootPath, filePaths) => notesService.importDroppedFiles(rootPath, filePaths));
+      // 划词工具条「转笔记」：把划词内容落为「对话整理」目录的 md 笔记（与悬浮球存为笔记同源）
+      ipcMain.handle('notes-save-organized-note', (event, payload = {}) => {
+        const content = typeof payload.content === 'string' ? payload.content.trim() : '';
+        if (!content) return { success: false, error: '没有可保存的内容' };
+        return notesService.saveOrganizedNote(content, '划词笔记');
+      });
 
       // ── 异步扫描 / 文件树 ──
       ipcMain.handle('notes-scan-folder-async', async (_event, payload) => {

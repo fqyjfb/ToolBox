@@ -6,6 +6,7 @@ import WebLayout from './components/layout/WebLayout';
 import MobileLayout from './components/layout/MobileLayout';
 import CompactLayout from './components/layout/CompactLayout';
 import Toast from './components/ui/Toast';
+import SelectionToolbar from './components/SelectionToolbar';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import PluginPanels from './components/plugins/PluginPanels';
@@ -216,6 +217,8 @@ function App() {
   const isLoading = useAuthStore((state) => state.isLoading);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  // 划词工具条开关：初始化读设置（未落库默认开启），onSettingChanged 实时同步
+  const [isSelectionToolbarEnabled, setIsSelectionToolbarEnabled] = useState(true);
   const { setVisible, setPosition } = useSidebarStore(useShallow((s) => ({ setVisible: s.setVisible, setPosition: s.setPosition })));
 
   usePreloadTools();
@@ -268,6 +271,8 @@ function App() {
         // setTheme 会 switchToPreset 清掉自定义注入、改写 THEME 并删除主题快照。
         // setBaseTheme 在基色相同时早退，同值回广播无副作用；外部来源则只调整基色。
         setBaseTheme(setting.value === 'dark' || (setting.value === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches));
+      } else if (setting.name === 'isSelectionToolbarEnabled') {
+        setIsSelectionToolbarEnabled(setting.value !== 0 && setting.value !== false);
       }
     };
 
@@ -303,6 +308,9 @@ function App() {
             // 窗口模式回流：getSettings 本就随初始化调用一次，带出上次模式，首帧即按正确布局渲染（无闪烁）
             const winMode = settings.find(s => s.name === 'windowMode')?.value;
             useWindowModeStore.getState().hydrate(winMode === 'compact' ? 'compact' : 'large');
+            // 划词工具条开关：设置未落库时默认开启
+            const selectionRaw = settings.find(s => s.name === 'isSelectionToolbarEnabled')?.value;
+            setIsSelectionToolbarEnabled(selectionRaw === undefined || (selectionRaw !== 0 && selectionRaw !== false));
           } catch (error) {
             logError('加载桌面端自定义配置失败', 'App', error as Error);
           }
@@ -449,6 +457,9 @@ function App() {
                     renderRoutes(currentRoutes, isAuthenticated, isAdmin || false, LayoutComponent, isLoading)
                   )}
                   <Toast />
+                  {isDesktopApp && !isStandaloneWindow() && (
+                    <SelectionToolbar enabled={isSelectionToolbarEnabled} />
+                  )}
                   <PluginPanels />
                 </>
               }

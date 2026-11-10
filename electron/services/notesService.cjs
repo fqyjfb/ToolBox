@@ -444,6 +444,25 @@ function createNoteForce(parentPath, fileName, mode, content = '') {
   }
 }
 
+/**
+ * 划词工具条 / 悬浮球等入口统一把一段内容存为「对话整理」目录下的 md 笔记。
+ * 未配置对话根时回落主根（与悬浮球面板行为一致）。
+ * 返回 { success, path?, error? }，与 createNoteForce 返回语义对齐。
+ */
+function saveOrganizedNote(content, namePrefix = 'AI 对话') {
+  if (!hasRootPath()) return { success: false, error: '还没有设置笔记目录' };
+  const stamp = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const name = `${namePrefix} ${stamp.getFullYear()}-${pad(stamp.getMonth() + 1)}-${pad(stamp.getDate())} ${pad(stamp.getHours())}-${pad(stamp.getMinutes())}`;
+  const organizePath = getOrganizePath();
+  if (organizePath) {
+    try { fs.mkdirSync(organizePath, { recursive: true }); } catch { /* 建目录失败回落主根 */ }
+  }
+  const parentPath = organizePath && fs.existsSync(organizePath) ? organizePath : '';
+  // mode=rename：同一分钟多次保存时自动加序号，不覆盖已有笔记
+  return createNoteForce(parentPath, name, 'rename', content);
+}
+
 function readFile(filePath) {
   const outside = rejectOutsideRoots(filePath, getAllowedRoots());
   if (outside) return outside;
@@ -887,6 +906,7 @@ module.exports = {
   createFolderForce,
   createNote,
   createNoteForce,
+  saveOrganizedNote,
   readFile,
   saveFile,
   renameItem,

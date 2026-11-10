@@ -356,6 +356,10 @@ contextBridge.exposeInMainWorld('electron', {
     // 创建结果回执：主进程据此确认「存为待办」是否真实成功
     reportSaveTodo: (payload) => ipcRenderer.send('float-ai-save-todo-result', payload),
   },
+  // 划词工具条「问AI」：主窗口带文本打开小橘面板（chat 模式，输入框预填）
+  floatPanel: {
+    openChat: (text) => ipcRenderer.invoke('float-panel-open-chat', { text }),
+  },
   notes: {
     hasRootPath: () => ipcRenderer.invoke('notes-has-root-path'),
     getRootPath: () => ipcRenderer.invoke('notes-get-root-path'),
@@ -387,6 +391,8 @@ contextBridge.exposeInMainWorld('electron', {
     copyItem: (sourcePath) => ipcRenderer.invoke('notes-copy-item', sourcePath),
     sendItem: (sourcePath, target) => ipcRenderer.invoke('notes-send-item', sourcePath, target),
     importDroppedFiles: (rootPath, filePaths) => ipcRenderer.invoke('notes-import-dropped-files', rootPath, filePaths),
+    // 划词工具条「转笔记」：写入「对话整理」目录（未配置对话根时回落主根）
+    saveOrganizedNote: (payload) => ipcRenderer.invoke('notes-save-organized-note', payload),
     scanFolderAsync: (rootPath) => ipcRenderer.invoke('notes-scan-folder-async', { rootPath }),
     getFileTreeAsync: (rootPath) => ipcRenderer.invoke('notes-get-file-tree-async', { rootPath }),
     writeDraft: (absolutePath, content) => ipcRenderer.invoke('notes-write-draft', { absolutePath, content }),

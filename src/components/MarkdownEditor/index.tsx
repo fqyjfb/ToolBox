@@ -789,6 +789,8 @@ export function MarkdownEditor({
       ref={rootRef}
       className={className ? `mde ${className}` : 'mde'}
       data-mode={effectiveMode}
+      // 编辑模式排除全局划词工具条（InlineToolbar 独占）；阅读模式不加属性即恢复支持
+      data-selection-toolbar-disable={readonly || effectiveMode === 'read' ? undefined : ''}
       onPaste={handlePaste}
       onDrop={handleDrop}
       onDragOver={(event) => event.preventDefault()}

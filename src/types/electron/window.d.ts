@@ -151,6 +151,8 @@ declare interface Window {
       createFolderForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy') => Promise<NotesCreateResult>;
       createNote: (parentPath: string | null, name: string, content?: string) => Promise<NotesCreateResult>;
       createNoteForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy', content?: string) => Promise<NotesCreateResult>;
+      /** 划词工具条「转笔记」：内容落为「对话整理」目录 md 笔记（未配置对话根时回落主根） */
+      saveOrganizedNote: (payload: { content: string }) => Promise<{ success: boolean; path?: string; error?: string }>;
       readFile: (filePath: string) => Promise<NotesReadResult>;
       readFileAsBuffer: (filePath: string) => Promise<{ success: boolean; base64?: string; mimeType?: string; error?: string }>;
       /** 视频内嵌播放前置探测：只取 size/mtime，不读文件内容 */
@@ -231,6 +233,10 @@ declare interface Window {
         todo?: unknown;
         error?: string;
       }) => void;
+    };
+    /** 划词工具条「问AI」：带文本打开小橘面板（chat 模式，输入框预填） */
+    floatPanel?: {
+      openChat: (text: string) => Promise<{ ok: boolean; error?: string }>;
     };
     /** 悬浮球洞察气泡：每日快照（天气/黄历/打卡，预格式化文案，主进程合并写） */
     floatDailySnapshot?: (payload: {

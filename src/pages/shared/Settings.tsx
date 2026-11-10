@@ -55,6 +55,7 @@ const Settings: React.FC = () => {
   const [isEdgeAdsorption, setIsEdgeAdsorption] = useState(false);
   const [isMemoryOptimizationEnabled, setIsMemoryOptimizationEnabled] = useState(false);
   const [isFloatWindowEnabled, setIsFloatWindowEnabled] = useState(false);
+  const [isSelectionToolbarEnabled, setIsSelectionToolbarEnabled] = useState(true);
   const [defaultWindowSize, setDefaultWindowSize] = useState<WindowSize>(DEFAULT_WINDOW_SIZE);
   const [btnLoading, setBtnLoading] = useState(false);
   const [btnText, setBtnText] = useState('清除缓存');
@@ -79,6 +80,9 @@ const Settings: React.FC = () => {
         setIsEdgeAdsorption(Boolean(getValue('isWindowEdgeAdsorption')));
         setIsMemoryOptimizationEnabled(Boolean(getValue('isMemoryOptimizationEnabled')));
         setIsFloatWindowEnabled(Boolean(getValue('isFloatWindowEnabled')));
+        // 划词工具条开关：未落库时保持默认开启
+        const selectionToolbar = getValue('isSelectionToolbarEnabled');
+        setIsSelectionToolbarEnabled(selectionToolbar !== 0 && selectionToolbar !== false);
         setVisible(getValue('isMenuVisible') !== false);
         setPosition(((getValue('leftMenuPosition') as string) || 'left') as 'left' | 'right');
         const windowSize = getValue('defaultWindowSize');
@@ -203,6 +207,19 @@ const Settings: React.FC = () => {
   const handleMenuVisibleChange = (val: boolean) => {
     setVisible(val);
     handleSettingUpdate('isMenuVisible', val ? 1 : 0);
+  };
+
+  // 划词工具条：即时生效（渲染层自行消费 setting-changed），无需重启
+  const handleSelectionToolbarChange = async (val: boolean) => {
+    setIsSelectionToolbarEnabled(val);
+    try {
+      await window.electron?.updateSetting({ name: 'isSelectionToolbarEnabled', value: val ? 1 : 0 });
+      addToast({ type: 'success', message: '设置已更新' });
+    } catch (error) {
+      logError('Failed to update selection toolbar setting', 'Settings', error as Error);
+      setIsSelectionToolbarEnabled(!val);
+      addToast({ type: 'error', message: '设置失败，请重试' });
+    }
   };
 
   const handleMenuPositionChange = (val: string) => {
@@ -462,6 +479,7 @@ const Settings: React.FC = () => {
               isFloatWindowEnabled={isFloatWindowEnabled}
               isMenuVisible={isMenuVisible}
               leftMenuPosition={leftMenuPosition}
+              isSelectionToolbarEnabled={isSelectionToolbarEnabled}
               defaultWindowSize={defaultWindowSize}
               browserMode={browserMode}
               autoLockEnabled={autoLockEnabled}
@@ -472,6 +490,7 @@ const Settings: React.FC = () => {
               onFloatWindowChange={handleFloatWindowChange}
               onMenuVisibleChange={handleMenuVisibleChange}
               onMenuPositionChange={handleMenuPositionChange}
+              onSelectionToolbarChange={handleSelectionToolbarChange}
               onWindowSizeChange={handleWindowSizeChange}
               onBrowserModeChange={handleBrowserModeChange}
               onAutoLockChange={handleAutoLockChange}
