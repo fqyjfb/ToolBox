@@ -5,7 +5,11 @@
 const path = require('path');
 const fs = require('fs');
 const { app } = require('electron');
-const { RapidOCR } = require('rapidocr-node');
+
+// rapidocr-node（拖带 onnxruntime-node + sharp 两个 native 库）不能在顶层 require：
+// 本模块被 main.cjs / pluginIpc.cjs 顶层加载，顶层 require 会把它带进启动关键路径。
+// 改为首次 ensureInit 时延迟 require，与 email 模块的延迟加载策略一致。
+let rapidocrMod = null;
 
 let ocr = null;
 let initPromise = null;
@@ -18,11 +22,14 @@ async function ensureInit() {
   if (ocr) return ocr;
   if (initPromise) return initPromise;
   initPromise = (async () => {
+    if (!rapidocrMod) {
+      rapidocrMod = require('rapidocr-node');
+    }
     const modelDir = getModelCacheDir();
     if (!fs.existsSync(modelDir)) {
       fs.mkdirSync(modelDir, { recursive: true });
     }
-    ocr = await RapidOCR.create({ modelDirectory: modelDir });
+    ocr = await rapidocrMod.RapidOCR.create({ modelDirectory: modelDir });
     return ocr;
   })();
   return initPromise;

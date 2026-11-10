@@ -1,7 +1,7 @@
 // 固定目录 + 当前查看路径；暴露 setter / ref 供其他 hook 跨模块同步
 // 注：switchToFolder 在 useNotesTree 内（它会触树状态）
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import localStorageService, { STORAGE_KEYS } from '../../../../services/localStorageService';
 import type { PinnedFolder } from '../types';
 
@@ -95,6 +95,14 @@ export function useNotesPinned(): UseNotesPinnedReturn {
       return next;
     });
   }, []);
+
+  // 固定目录变化（增删/改名/排序）→ 同步主进程白名单，
+  // 保证切到别的目录后，其它固定目录中已打开文件的读、写、图片渲染不被越界拒绝。
+  useEffect(() => {
+    const notes = window.electron?.notes;
+    if (!notes) return;
+    void notes.setPinnedRoots(pinnedFolders.map((folder) => folder.path)).catch(() => undefined);
+  }, [pinnedFolders]);
 
   return {
     pinnedFolders,

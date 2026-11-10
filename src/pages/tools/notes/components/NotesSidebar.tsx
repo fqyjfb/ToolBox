@@ -189,8 +189,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = (props) => {
         onRemoveRecent={props.onRemoveRecent}
         onClearRecents={props.onClearRecents}
         selectedFile={props.selectedFile}
-        fileTree={props.fileTree}
-        onSelectFile={props.onSelectFile}
+        onOpenPath={props.onOpenRecentPath}
       />
 
       <SidebarContextMenu

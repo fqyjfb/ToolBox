@@ -465,10 +465,21 @@ function hasAttachment(node) {
   return node.disposition === 'attachment';
 }
 
-function streamToBuffer(stream) {
+// 上限保护：整封邮件（含附件）会一次性读入内存，超大附件曾可打爆主进程。
+// 拒绝时直接给出友好错误（调用方 catch 后经 IPC 返回，无需再映射）。
+function streamToBuffer(stream, maxBytes = 100 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    stream.on('data', (c) => chunks.push(c));
+    let total = 0;
+    stream.on('data', (c) => {
+      total += c.length;
+      if (total > maxBytes) {
+        stream.destroy();
+        reject(new Error('邮件过大（超过 100MB），无法读取'));
+        return;
+      }
+      chunks.push(c);
+    });
     stream.on('end', () => resolve(Buffer.concat(chunks)));
     stream.on('error', reject);
   });

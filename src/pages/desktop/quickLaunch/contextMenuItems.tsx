@@ -1,9 +1,9 @@
 import {
   Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home,
   Monitor, Copy, AppWindow, Shield, FolderOpen, Keyboard,
-  Download, Upload, Wrench, Check, Settings,
+  Download, Upload, Wrench, Check, Settings, ArrowUpDown,
 } from 'lucide-react';
-import type { QuickLaunchItem, QuickLaunchCategory } from '../../../utils/quickLaunch';
+import type { QuickLaunchItem, QuickLaunchCategory, QuickLaunchSortMode } from '../../../utils/quickLaunch';
 import type { ContextMenuItem } from '../../../components/ui/ContextMenu';
 import { isAppInHomeQuickLaunch, addHomeQuickLaunchApp } from '../../../utils/quickLaunch';
 
@@ -15,6 +15,8 @@ interface BuildParams {
   iconSize: 'small' | 'medium';
   showText: boolean;
   singleClickLaunch: boolean;
+  sortMode: QuickLaunchSortMode;
+  setSortMode: (mode: QuickLaunchSortMode) => void;
   isScanningDesktop: boolean;
   isScanningInstalled: boolean;
   addToast: (msg: { type: 'success' | 'error' | 'warning' | 'info'; message: string; duration?: number }) => void;
@@ -44,6 +46,7 @@ interface BuildParams {
 export function buildContextMenuItems(params: BuildParams): ContextMenuItem[] {
   const {
     type, targetId, apps, categories, iconSize, showText, singleClickLaunch,
+    sortMode, setSortMode,
     isScanningDesktop, isScanningInstalled,
     addToast, handleLaunch, handleRename, handleSetHotkey, handleMoveToCategory,
     handleRemove, handleEditCategory, handleDeleteCategory,
@@ -183,6 +186,44 @@ export function buildContextMenuItems(params: BuildParams): ContextMenuItem[] {
     const anyScanning = isScanningDesktop || isScanningInstalled;
     const items: ContextMenuItem[] = [
       {
+        id: 'sort-by',
+        label: '排序',
+        icon: <ArrowUpDown className="w-4 h-4" />,
+        subMenu: [
+          {
+            id: 'sort-custom',
+            label: '自定义',
+            icon: sortMode === 'custom' ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+            onClick: () => setSortMode('custom'),
+          },
+          {
+            id: 'sort-name',
+            label: '按名称',
+            icon: sortMode === 'name' ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+            onClick: () => setSortMode('name'),
+          },
+          {
+            id: 'sort-added',
+            label: '按添加时间',
+            icon: sortMode === 'addedAt' ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+            onClick: () => setSortMode('addedAt'),
+          },
+          {
+            id: 'sort-launch-count',
+            label: '按使用频率',
+            icon: sortMode === 'launchCount' ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+            onClick: () => setSortMode('launchCount'),
+          },
+          {
+            id: 'sort-last-launched',
+            label: '按最近使用',
+            icon: sortMode === 'lastLaunchedAt' ? <Check className="w-4 h-4" /> : <span className="w-4 h-4" />,
+            onClick: () => setSortMode('lastLaunchedAt'),
+          },
+        ],
+      },
+      { id: 'divider-sort', divider: true },
+      {
         id: 'add-app',
         label: '添加应用',
         icon: <FolderPlus className="w-4 h-4" />,
@@ -193,21 +234,6 @@ export function buildContextMenuItems(params: BuildParams): ContextMenuItem[] {
         label: '新建文件夹',
         icon: <Plus className="w-4 h-4" />,
         onClick: () => handleAddCategory(),
-      },
-      { id: 'divider-scan', divider: true },
-      {
-        id: 'scan-desktop',
-        label: isScanningDesktop ? '正在扫描桌面…' : '扫描桌面应用',
-        icon: <Monitor className="w-4 h-4" />,
-        className: anyScanning ? 'opacity-50 pointer-events-none' : '',
-        onClick: () => { if (!anyScanning) scanDesktop(); },
-      },
-      {
-        id: 'scan-installed',
-        label: isScanningInstalled ? '正在扫描已安装…' : '扫描已安装应用',
-        icon: <AppWindow className="w-4 h-4" />,
-        className: anyScanning ? 'opacity-50 pointer-events-none' : '',
-        onClick: () => { if (!anyScanning) scanInstalled(); },
       },
       { id: 'divider-display', divider: true },
       {
@@ -254,6 +280,21 @@ export function buildContextMenuItems(params: BuildParams): ContextMenuItem[] {
             onClick: () => setSingleClickLaunch(false),
           },
         ],
+      },
+      { id: 'divider-scan', divider: true },
+      {
+        id: 'scan-desktop',
+        label: isScanningDesktop ? '正在扫描桌面…' : '扫描桌面应用',
+        icon: <Monitor className="w-4 h-4" />,
+        className: anyScanning ? 'opacity-50 pointer-events-none' : '',
+        onClick: () => { if (!anyScanning) scanDesktop(); },
+      },
+      {
+        id: 'scan-installed',
+        label: isScanningInstalled ? '正在扫描已安装…' : '扫描已安装应用',
+        icon: <AppWindow className="w-4 h-4" />,
+        className: anyScanning ? 'opacity-50 pointer-events-none' : '',
+        onClick: () => { if (!anyScanning) scanInstalled(); },
       },
     ];
 

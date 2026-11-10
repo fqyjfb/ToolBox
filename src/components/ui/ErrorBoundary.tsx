@@ -4,6 +4,8 @@ import { logError } from '../../services/loggerService';
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  /** 路由级边界使用：额外提供「回首页」（应用为 HashRouter，改 hash 即导航且会自动复位本边界） */
+  showGoHome?: boolean;
 }
 
 interface State {
@@ -70,6 +72,14 @@ class ErrorBoundary extends Component<Props, State> {
               >
                 刷新页面
               </button>
+              {this.props.showGoHome && (
+                <button
+                  onClick={() => { window.location.hash = '#/'; }}
+                  className="px-4 py-2 bg-surface-secondary text-content-primary hover:bg-menu-hover transition-colors"
+                >
+                  回首页
+                </button>
+              )}
             </div>
             {this.state.errorInfo && (
               <details className="mt-4 text-left text-sm text-content-secondary">

@@ -21,10 +21,9 @@ const { registerNotesIpc } = (() => {
       ipcMain.handle('notes-set-root-path', (event, rootPath) => notesService.setRootPath(rootPath));
       ipcMain.handle('notes-set-view-path', (event, viewPath) => notesService.setViewPath(viewPath));
       ipcMain.handle('notes-set-chat-path', (event, chatPath) => notesService.setChatRootPath(chatPath));
+      ipcMain.handle('notes-set-pinned-roots', (event, paths) => notesService.setPinnedRoots(paths));
       ipcMain.handle('notes-select-folder', async () => notesService.selectFolder());
       ipcMain.handle('notes-validate-folder', (event, folderPath) => notesService.validateFolder(folderPath));
-      ipcMain.handle('notes-scan-folder', (event, rootPath) => notesService.scanFolder(rootPath));
-      ipcMain.handle('notes-get-file-tree', () => notesService.getFileTree());
       ipcMain.handle('notes-create-folder', (event, parentPath, name) => notesService.createFolder(parentPath, name));
       ipcMain.handle('notes-create-folder-force', (event, parentPath, name, mode) => notesService.createFolderForce(parentPath, name, mode));
       ipcMain.handle('notes-create-note', (event, parentPath, name, content) => notesService.createNote(parentPath, name, content));

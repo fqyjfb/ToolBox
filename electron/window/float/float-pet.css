@@ -328,3 +328,110 @@
   border-bottom: 1px solid rgba(217, 106, 47, .3);
   transform: rotate(45deg);
 }
+
+/* ── 可交互卡片：只有带按钮时才接管鼠标，避免平时挡住球体拖拽 ── */
+.float-ball .pet-bubble.has-actions {
+  pointer-events: auto;
+}
+
+.pet-bubble-text {
+  display: block;
+  white-space: pre-wrap;
+}
+
+.pet-bubble-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.pet-bubble-btn {
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 106, 47, .4);
+  background: #fff6ec;
+  color: #8a4d1f;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pet-bubble-btn:hover {
+  background: #ffe6cf;
+}
+
+/* ── AI 状态机（由主进程事件驱动）── */
+.pet-thinking-dots {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  display: none;
+  gap: 3px;
+  transform: translateX(-50%);
+  z-index: 6;
+}
+
+.float-ball.pet-thinking .pet-thinking-dots {
+  display: flex;
+}
+
+.pet-thinking-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #c0551f;
+  animation: petDot 1.1s ease-in-out infinite;
+}
+
+.pet-thinking-dots span:nth-child(2) { animation-delay: .15s; }
+.pet-thinking-dots span:nth-child(3) { animation-delay: .3s; }
+
+@keyframes petDot {
+  0%, 100% { transform: translateY(0); opacity: .45; }
+  50% { transform: translateY(-3px); opacity: 1; }
+}
+
+.float-ball.pet-thinking .float-pet .eye-open {
+  transform: translateY(-1.2px);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.float-ball.pet-speaking .float-pet .mouth-happy { display: none; }
+.float-ball.pet-speaking .float-pet .mouth-ooo {
+  display: block;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: petTalk .34s ease-in-out infinite alternate;
+}
+
+@keyframes petTalk {
+  from { transform: scaleY(.65); }
+  to { transform: scaleY(1.25); }
+}
+
+.float-ball.pet-happy .float-pet {
+  animation: petHop .42s ease-in-out 2;
+}
+
+@keyframes petHop {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-6px); }
+}
+
+.float-ball.pet-sad .float-pet .mouth-happy { display: none; }
+.float-ball.pet-sad .float-pet .mouth-sad { display: block; }
+.float-ball.pet-sad .float-pet .eye-open {
+  transform: translateY(1.4px) scaleY(.9);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.float-ball.pet-listening .float-pet .fit-ears {
+  display: inline;
+}
+
+.float-ball.pet-listening .float-pet .tail {
+  animation-duration: 3.4s;
+}

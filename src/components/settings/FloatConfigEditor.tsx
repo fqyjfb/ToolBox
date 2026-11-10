@@ -5,6 +5,7 @@ import { QuickLaunchItem } from '../../utils/quickLaunch';
 import {
   NAV_ACTIONS,
   SYSTEM_ACTIONS,
+  AI_ACTIONS,
   FLOAT_TYPE_OPTIONS,
 } from '../../constants/settings';
 import { ALL_TOOLS } from '../../constants/tools';
@@ -30,6 +31,7 @@ const AUTO_ICON_LABELS: Record<FloatConfigItem['type'], string> = {
   tool: '使用工具图标',
   app: '使用应用图标',
   system: '使用系统图标',
+  ai: '使用 AI 图标',
   plugin: '使用插件图标',
 };
 
@@ -49,19 +51,27 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
 
   const handleTypeChange = (type: FloatConfigItem['type']) => {
     // 切换类型后目标重置，图标同步收敛为新类型对应（首个）功能的原有图标
+    // AI 类型默认落到「AI 对话」，避免出现没有 action 的空条目
+    const defaultAiAction = 'chat';
+    const defaultAction = type === 'ai' ? defaultAiAction : '';
     const newConfig: FloatConfigItem = {
       ...localConfig,
       type,
-      action: '',
+      action: defaultAction,
       path: undefined,
-      icon: getTargetIcon(type, '')
+      name: type === 'ai' ? 'AI 对话' : localConfig.name,
+      icon: getTargetIcon(type, defaultAction)
     };
     setLocalConfig(newConfig);
     onUpdate(newConfig);
   };
 
   const handleActionChange = (action: string) => {
-    const actionList = localConfig.type === 'system' ? SYSTEM_ACTIONS : NAV_ACTIONS;
+    const actionList = localConfig.type === 'system'
+      ? SYSTEM_ACTIONS
+      : localConfig.type === 'ai'
+        ? AI_ACTIONS
+        : NAV_ACTIONS;
     const target = actionList.find(item => item.action === action);
     if (!target) return;
 
@@ -137,6 +147,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
       case 'plugin': return '插件';
       case 'app': return '应用';
       case 'system': return '系统';
+      case 'ai': return 'AI';
       default: return '';
     }
   };
@@ -256,6 +267,27 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
             <label className="block text-xs text-content-secondary mb-1">系统功能</label>
             <div className="flex flex-wrap gap-2">
               {SYSTEM_ACTIONS.map(({ action, label }) => (
+                <button
+                  key={action}
+                  onClick={() => handleActionChange(action)}
+                  className={`px-2 py-1 text-xs rounded transition-colors ${
+                    localConfig.action === action
+                      ? 'bg-primary text-button-text'
+                      : 'bg-surface text-content-primary hover:bg-menu-hover'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {localConfig.type === 'ai' && (
+          <div className="col-span-2">
+            <label className="block text-xs text-content-secondary mb-1">AI 功能</label>
+            <div className="flex flex-wrap gap-2">
+              {AI_ACTIONS.map(({ action, label }) => (
                 <button
                   key={action}
                   onClick={() => handleActionChange(action)}

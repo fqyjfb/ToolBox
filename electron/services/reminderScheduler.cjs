@@ -122,7 +122,7 @@ function registerTask(reminder) {
     try {
       const xmlBuffer = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(buildTaskXml(reminder), 'utf16le')]);
       fs.writeFileSync(xmlPath, xmlBuffer);
-      exec(`schtasks /create /tn "${taskName(reminder.id)}" /xml "${xmlPath}" /f`, { windowsHide: true }, (err, _stdout, stderr) => {
+      exec(`schtasks /create /tn "${taskName(reminder.id)}" /xml "${xmlPath}" /f`, { windowsHide: true, timeout: 15000 }, (err, _stdout, stderr) => {
         if (err) {
           console.error(`[reminderScheduler] registerTask failed for ${reminder.id}:`, err.message, stderr || '');
         }
@@ -149,7 +149,7 @@ function removeTask(id) {
     }
   }
   return new Promise((resolve) => {
-    exec(buildDeleteCommand(id), { windowsHide: true }, (err) => {
+    exec(buildDeleteCommand(id), { windowsHide: true, timeout: 15000 }, (err) => {
       if (err && !/cannot find|找不到|未找到/i.test(err.message)) {
         console.warn(`[reminderScheduler] removeTask ${id}:`, err.message);
       }
@@ -184,7 +184,7 @@ async function scheduleTask(reminder) {
 // 查询系统中现存的全部提醒任务 id
 function queryExistingTaskIds() {
   return new Promise((resolve) => {
-    exec('schtasks /query /fo CSV /nh | findstr "ToolBox_Reminder_"', { windowsHide: true }, (_err, stdout) => {
+    exec('schtasks /query /fo CSV /nh | findstr "ToolBox_Reminder_"', { windowsHide: true, timeout: 15000 }, (_err, stdout) => {
       const ids = new Set();
       if (stdout) {
         for (const line of stdout.split('\n')) {

@@ -152,6 +152,21 @@ const defaultSettings = {
   // ── 翻译记录 ──
   translateHistoryEnabled: 1,
   translateHistoryLimit: 30,
+  // ── 悬浮球进阶功能（P1/P2）──
+  // 隐私类默认关闭：剪贴板/截图/店铺场景都不主动读取用户数据，需设置页显式开启
+  floatClipboardHintEnabled: 0,
+  floatClipboardHintMinLen: 10,
+  floatClipboardHintMaxLen: 2000,
+  floatClipboardHintCooldownMs: 8000,
+  floatShopAssistantEnabled: 0,
+  floatScreenshotQAEnabled: 0,
+  // 交互类默认开启：均需用户主动触发，不改变既有单击/双击行为
+  floatGesturesEnabled: 1,
+  floatPaletteEnabled: 1,
+  floatShelfEnabled: 1,
+  floatCaptureEnabled: 1,
+  floatShelfRetentionDays: 7,
+  floatShelfMaxItems: 20,
 };
 
 // 默认项与 NAV_ACTIONS 的有效目标保持一致；图标字段留空，加载时按类型+目标自动解析。
@@ -198,6 +213,11 @@ const defaultShortcuts = [
   { id: 11, tag: '划词翻译', cmd: 'Alt+E', isOpen: 1, isGlobal: 1, name: 'translateSelection' },
   { id: 12, tag: '截图翻译', cmd: 'Alt+W', isOpen: 1, isGlobal: 1, name: 'translateScreenshot' },
   { id: 13, tag: '打开翻译弹窗', cmd: 'Alt+Q', isOpen: 1, isGlobal: 1, name: 'translatePopup' },
+  { id: 14, tag: '悬浮球划词提问', cmd: 'Alt+D', isOpen: 1, isGlobal: 1, name: 'floatSelectionAI' },
+  // Alt+Space 在 Windows 会被系统窗口菜单占用，快速捕捉改用 Alt+Shift+C
+  { id: 15, tag: '悬浮球快速捕捉', cmd: 'Alt+Shift+C', isOpen: 1, isGlobal: 1, name: 'floatQuickCapture' },
+  { id: 16, tag: '悬浮球命令面板', cmd: 'Alt+P', isOpen: 1, isGlobal: 1, name: 'floatPalette' },
+  { id: 17, tag: '悬浮球截图问答', cmd: 'Alt+Shift+A', isOpen: 1, isGlobal: 1, name: 'floatScreenshotQA' },
 ];
 
 const loadSettings = () => {
@@ -263,29 +283,43 @@ const saveThemeSnapshot = (snapshot) => {
  * 明文不落盘；加密不可用时按平台能力回退为明文（与 Electron 默认行为一致）。
  */
 const saveAIConfigSnapshot = (snapshot) => {
+  if (!snapshot || typeof snapshot !== 'object') return;
+  let encryptionAvailable = false;
   try {
-    if (!snapshot || typeof snapshot !== 'object') return;
-    const encryptionAvailable = safeStorage.isEncryptionAvailable();
-    const models = Array.isArray(snapshot.models) ? snapshot.models : [];
-    const payload = {
-      ...snapshot,
-      encrypted: encryptionAvailable,
-      models: models.map((model) => {
-        const next = { ...model };
-        if (typeof next.api_key === 'string' && next.api_key) {
-          if (encryptionAvailable) {
-            next.api_key_enc = safeStorage.encryptString(next.api_key).toString('base64');
-            next.api_key = '';
-          }
-        } else if (typeof next.api_key_enc === 'string' && next.api_key_enc) {
-          // 渲染层未持有解密后的 key（例如仅编辑了其它字段），保留原密文
+    encryptionAvailable = safeStorage.isEncryptionAvailable();
+  } catch (error) {
+    console.warn('[AIConfig] 加密能力检测失败，按明文落盘:', error && error.message);
+  }
+
+  const models = Array.isArray(snapshot.models) ? snapshot.models : [];
+  const payload = {
+    ...snapshot,
+    encrypted: encryptionAvailable,
+    models: models.map((model) => {
+      const next = { ...model };
+      const plainKey = typeof next.api_key === 'string' ? next.api_key : '';
+      if (plainKey && encryptionAvailable) {
+        try {
+          // 加密失败不能连整份快照都不写：否则浮层会一直提示「未配置」
+          next.api_key_enc = safeStorage.encryptString(plainKey).toString('base64');
           next.api_key = '';
-        } else {
-          next.api_key = typeof next.api_key === 'string' ? next.api_key : '';
+          return next;
+        } catch (error) {
+          console.warn('[AIConfig] api_key 加密失败，回退明文:', error && error.message);
         }
+      }
+      if (typeof next.api_key_enc === 'string' && next.api_key_enc && !plainKey) {
+        // 渲染层未持有解密后的 key（例如仅编辑了其它字段），保留原密文
+        next.api_key = '';
         return next;
-      }),
-    };
+      }
+      delete next.api_key_enc;
+      next.api_key = plainKey;
+      return next;
+    }),
+  };
+
+  try {
     fs.writeFileSync(aiSnapshotPath, JSON.stringify(payload, null, 2));
   } catch (error) {
     console.error('Failed to save AI config snapshot:', error);
@@ -348,38 +382,87 @@ const saveShortcuts = (shortcuts) => {
   }
 };
 
+// ── 悬浮球配置容器（v2）──
+// v1 是裸数组；v2 为 { version, ...meta, items }。items 之外字段原样保留，
+// 对渲染层/悬浮窗的读写接口仍是数组，避免改动既有调用方。
+const FLOAT_CONFIG_VERSION = 2;
+let floatConfigMeta = {};
+
+const backupFloatConfigOnce = (raw) => {
+  try {
+    // 只在首次迁移时留档，之后保存不再覆盖，保证用户可回到升级前状态
+    const backupPath = `${floatConfigPath}.bak`;
+    if (!fs.existsSync(backupPath)) fs.writeFileSync(backupPath, raw);
+  } catch (error) {
+    console.error('Failed to backup float config:', error);
+  }
+};
+
+const writeFloatConfigFile = (items) => {
+  fs.writeFileSync(
+    floatConfigPath,
+    JSON.stringify({ version: FLOAT_CONFIG_VERSION, ...floatConfigMeta, items }, null, 2)
+  );
+};
+
 const loadFloatConfig = () => {
   // 使用 !== null 检查，避免空数组 []（truthy）被错误缓存后永远返回空
   if (floatConfigCache !== null) return floatConfigCache;
+  let savedItems = null;
+  let needsMigration = false;
   try {
     if (fs.existsSync(floatConfigPath)) {
-      const data = fs.readFileSync(floatConfigPath, 'utf-8');
-      const config = JSON.parse(data);
-      if (!Array.isArray(config)) {
-        floatConfigCache = defaultFloatConfig.map(withResolvedIcon);
-        return floatConfigCache;
+      const raw = fs.readFileSync(floatConfigPath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        // v1：裸数组，读取后立即按 v2 结构回写并留档
+        savedItems = parsed;
+        needsMigration = true;
+        floatConfigMeta = {};
+      } else if (parsed && Array.isArray(parsed.items)) {
+        const { version: _version, items, ...rest } = parsed;
+        // items 之外的键（含未来新增的 gestures/panel）原样保留，保存条目不丢配置
+        savedItems = items;
+        floatConfigMeta = rest;
       }
-      // 合并默认配置和用户自定义配置：先处理默认项，再追加用户自定义项
-      const usedIds = new Set();
-      const mergedConfig = defaultFloatConfig.map((defaultItem) => {
-        const savedItem = config.find(c => c.id === defaultItem.id);
-        usedIds.add(defaultItem.id);
-        return withResolvedIcon(savedItem ? { ...defaultItem, ...savedItem } : defaultItem);
-      });
-      // 追加用户自定义项（不在默认配置中的）
-      config.forEach((item) => {
-        if (item && !usedIds.has(item.id)) {
-          mergedConfig.push(withResolvedIcon(item));
-        }
-      });
-      floatConfigCache = mergedConfig;
-      return mergedConfig;
     }
   } catch (error) {
     console.error('Failed to load float config:', error);
+    savedItems = null;
   }
-  floatConfigCache = defaultFloatConfig.map(withResolvedIcon);
-  return floatConfigCache;
+
+  if (!Array.isArray(savedItems)) {
+    floatConfigCache = defaultFloatConfig.map(withResolvedIcon);
+    return floatConfigCache;
+  }
+
+  // 合并默认配置和用户自定义配置：先处理默认项，再追加用户自定义项
+  const usedIds = new Set();
+  const mergedConfig = defaultFloatConfig.map((defaultItem) => {
+    const savedItem = savedItems.find(c => c.id === defaultItem.id);
+    usedIds.add(defaultItem.id);
+    return withResolvedIcon(savedItem ? { ...defaultItem, ...savedItem } : defaultItem);
+  });
+  // 追加用户自定义项（不在默认配置中的）
+  savedItems.forEach((item) => {
+    if (item && !usedIds.has(item.id)) {
+      mergedConfig.push(withResolvedIcon(item));
+    }
+  });
+  floatConfigCache = mergedConfig;
+
+  if (needsMigration) {
+    try {
+      const raw = fs.readFileSync(floatConfigPath, 'utf-8');
+      backupFloatConfigOnce(raw);
+      writeFloatConfigFile(mergedConfig);
+    } catch (error) {
+      // 迁移写盘失败不阻断读取：内存态已可用，下次保存会再写 v2
+      console.error('Failed to migrate float config:', error);
+    }
+  }
+
+  return mergedConfig;
 };
 
 const saveFloatConfig = (config) => {
@@ -389,7 +472,7 @@ const saveFloatConfig = (config) => {
       ? config
       : defaultFloatConfig.map(withResolvedIcon);
     floatConfigCache = configToSave;
-    fs.writeFileSync(floatConfigPath, JSON.stringify(configToSave, null, 2));
+    writeFloatConfigFile(configToSave);
   } catch (error) {
     console.error('Failed to save float config:', error);
   }

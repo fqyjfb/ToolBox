@@ -349,7 +349,7 @@ const CompanyPanel = forwardRef<CompanyPanelRef, CompanyPanelProps>(({ userId },
           <input type="text" value={companyForm.unified_social_credit_code} onChange={(e) => setCompanyForm(prev => ({ ...prev, unified_social_credit_code: e.target.value }))} placeholder="统一社会信用代码" className={modalControlClass} />
           <input type="text" value={companyForm.legal_person} onChange={(e) => setCompanyForm(prev => ({ ...prev, legal_person: e.target.value }))} placeholder="法人" className={modalControlClass} />
           <div className="grid grid-cols-2 gap-2">
-            <input type="date" value={companyForm.establishment_date} onChange={(e) => setCompanyForm(prev => ({ ...prev, establishment_date: e.target.value }))} className={modalControlClass} />
+            <input type="date" value={companyForm.establishment_date} onChange={(e) => setCompanyForm(prev => ({ ...prev, establishment_date: e.target.value }))} className={`${modalControlClass} date-control`} />
             <input type="text" value={companyForm.registered_capital} onChange={(e) => setCompanyForm(prev => ({ ...prev, registered_capital: e.target.value }))} placeholder="注册资本" className={modalControlClass} />
           </div>
           <textarea value={companyForm.address} onChange={(e) => setCompanyForm(prev => ({ ...prev, address: e.target.value }))} placeholder="地址" rows={2} className={modalTextareaClass} />

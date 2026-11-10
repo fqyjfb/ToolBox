@@ -1,8 +1,8 @@
 /**
- * 划词取词：Windows 用 koffi 直接调 user32!SendInput（主进程内同步 / 零启动开销）。
+ * 划词取词：Windows 用 koffi 直接调 user32!SendInput（主进程内同步 / 首次取词时懒加载）。
  * macOS / Linux 沿用原方案。
  *
- * TTime 用 @jitsi/robotjs 实现同样效果——我们选 koffi 是因为它是纯 JS FFI，
+ * 用 @jitsi/robotjs 实现同样效果——我们选 koffi 是因为它是纯 JS FFI，
  * 不需要 native 编译，Electron 打包时不会出 ABI 不兼容问题。
  *
  * 设计要点：
@@ -39,9 +39,9 @@ const VK_RCONTROL = 0xA3;
 const VK_LMENU = 0xA4;
 const VK_RMENU = 0xA5;
 
-// 注入前需要统一抬起的按键（对齐 TTime 的释放列表）：
+// 注入前需要统一抬起的按键：
 // 全局快捷键回调触发时物理 Alt 往往还按着，不清理会让 Ctrl+C 变成组合键；
-// Space/Tab/Escape 是 TTime 额外释放的键，用于清掉热键组合残留的按下状态。
+// Space/Tab/Escape 是额外释放的键，用于清掉热键组合残留的按下状态。
 const VK_SPACE = 0x20;
 const VK_TAB = 0x09;
 const VK_ESCAPE = 0x1B;
@@ -53,10 +53,19 @@ const RELEASE_VKS = [
 // 仅修饰键：用于判断「是否还需要等物理按键松开」（Space/Tab/Escape 不算）
 const MODIFIER_VKS = [VK_LCONTROL, VK_RCONTROL, VK_LMENU, VK_RMENU, VK_LSHIFT, VK_RSHIFT, VK_LWIN, VK_RWIN];
 
-// ── koffi 模块级初始化（仅 win32，仅一次） ───────────────────────────────────
+// ── koffi 惰性初始化（仅 win32，仅一次；首次取词时才加载） ──────────────────
 // 类型名统一加 TBox 前缀：koffi 的类型注册表是进程级全局的，同名重复定义会抛
-// "Duplicate type name"，且抛出后该名字永久不可用——放在模块级可确保永不重复注册。
-const win32Api = (() => {
+// "Duplicate type name"，且抛出后该名字永久不可用——单例缓存 + undefined 守卫
+// 确保永不重复注册；加载失败缓存 false，避免反复重试。
+// 惰性化的原因：koffi.load 在模块加载期执行会把 FFI 初始化带进启动关键路径
+// （本模块经 translateIpc → main.cjs 顶层 require），首次取词再加载对用户无感。
+let win32Api;
+function getWin32Api() {
+  if (win32Api === undefined) win32Api = buildWin32Api();
+  return win32Api;
+}
+
+function buildWin32Api() {
   if (process.platform !== 'win32') return null;
   try {
     const koffi = require('koffi');
@@ -119,22 +128,24 @@ const win32Api = (() => {
     console.error('[SelectionReader] koffi 初始化失败，改用 PowerShell 回退:', error.message);
     return null;
   }
-})();
+}
 
 /** 等待物理修饰键释放：全局快捷键回调触发时用户手指通常还按着 Alt，最多等 timeoutMs */
 async function waitModifiersReleased(timeoutMs = 400) {
-  if (!win32Api) return;
+  const api = getWin32Api();
+  if (!api) return;
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
-    if (!win32Api.isModifierPressed()) return;
+    if (!api.isModifierPressed()) return;
     await sleep(15);
   }
 }
 
-/** 同步抬起 RELEASE_VKS 中的全部按键（对齐 TTime：取词一开始就释放，早于等待延迟） */
+/** 同步抬起 RELEASE_VKS 中的全部按键（取词一开始就释放，早于等待延迟） */
 function releaseKeys() {
-  if (!win32Api) return;
-  RELEASE_VKS.forEach((vk) => win32Api.pressKey(vk, true));
+  const api = getWin32Api();
+  if (!api) return;
+  RELEASE_VKS.forEach((vk) => api.pressKey(vk, true));
 }
 
 /** PowerShell 回退：一次性完成"抬修饰键 + Ctrl+C"，避免逐键启动进程（单次 ~1.5s） */
@@ -173,20 +184,21 @@ function sendCopyWin32Fallback(holdMs) {
 }
 
 /**
- * 发 Ctrl+C。holdMs 为组合键保持按下的时长——对齐 TTime 的 translateChoiceDelay/2，
+ * 发 Ctrl+C。holdMs 为组合键保持按下的时长，
  * 太短（如 60ms）时响应慢的应用（Office / WPS / Java 类）来不及处理复制。
  */
 async function sendCopyWin32(holdMs) {
-  if (!win32Api) {
+  const api = getWin32Api();
+  if (!api) {
     await sendCopyWin32Fallback(holdMs);
     return;
   }
-  RELEASE_VKS.forEach((vk) => win32Api.pressKey(vk, true));
-  win32Api.pressKey(VK_CTRL, false);
-  win32Api.pressKey(VK_C, false);
+  RELEASE_VKS.forEach((vk) => api.pressKey(vk, true));
+  api.pressKey(VK_CTRL, false);
+  api.pressKey(VK_C, false);
   await sleep(holdMs);
-  win32Api.pressKey(VK_C, true);
-  win32Api.pressKey(VK_CTRL, true);
+  api.pressKey(VK_C, true);
+  api.pressKey(VK_CTRL, true);
 }
 
 function sendCopyDarwin() {
@@ -261,7 +273,7 @@ async function readSelectedText() {
     const delay = Number(loadSettings().translateChoiceDelay) || 600;
     const half = Math.max(50, Math.floor(delay / 2));
 
-    // 对齐 TTime：先同步释放快捷键残留的按键状态，再等半个延迟让用户松手
+    // 先同步释放快捷键残留的按键状态，再等半个延迟让用户松手
     releaseKeys();
     await sleep(half);
 

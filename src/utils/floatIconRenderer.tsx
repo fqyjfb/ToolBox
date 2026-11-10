@@ -1,7 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { HelpCircle, type LucideIcon } from 'lucide-react';
-import { NAV_ACTIONS, SYSTEM_ACTIONS } from '../constants/settings';
+import { NAV_ACTIONS, SYSTEM_ACTIONS, AI_ACTIONS } from '../constants/settings';
 import { ALL_TOOLS } from '../constants/tools';
 import { iconMap } from './iconMap';
 
@@ -32,6 +32,10 @@ export const getTargetIcon = (type: string, action: string): string => {
   }
   if (type === 'system') {
     const target = SYSTEM_ACTIONS.find(item => item.action === action) || SYSTEM_ACTIONS[0];
+    return lucideIconToDataUrl(target.icon);
+  }
+  if (type === 'ai') {
+    const target = AI_ACTIONS.find(item => item.action === action) || AI_ACTIONS[0];
     return lucideIconToDataUrl(target.icon);
   }
   if (type === 'tool') {

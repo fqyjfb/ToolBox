@@ -30,25 +30,27 @@ function getDbFileName(username) {
 async function init(userDataPath, username) {
   const normalizedUsername = username || null;
 
+  // 有飞行中的 init：先等它结束（无论成败），再统一做下方的切换检查。
+  // 不能直接 return——飞行中的 init 可能属于其他用户，await 后直接返回会
+  // 把别人刚建好的连接误当作自己的库（新记录写进错误用户库）。
+  if (initPromise) {
+    try {
+      await initPromise;
+    } catch {
+      // 飞行中的 init 失败：清空引用，由下方重走初始化
+    }
+    initPromise = null;
+  }
+
   // 用户名变化时，先关闭现有数据库连接再重新打开
   if (db && currentUsername !== normalizedUsername) {
     flushPersist();
     db.close();
     db = null;
     dbPath = null;
-    initPromise = null;
   }
 
   if (db && currentUsername === normalizedUsername) return Promise.resolve();
-  
-  if (initPromise) {
-    try {
-      await initPromise;
-      return;
-    } catch {
-      initPromise = null;
-    }
-  }
 
   currentUsername = normalizedUsername;
 
@@ -105,12 +107,50 @@ function persist() {
   }
 }
 
+// 定时落盘走异步写：fs.writeFileSync 在大库时会阻塞主进程事件循环（所有窗口/IPC 冻结）。
+// db.export() 本身仍是同步 CPU 操作（sql.js 限制），仅 IO 部分不再阻塞。
+// 安全性设计（防止异步写与同步 flush 竞态）：
+// 1. 先写 <dbPath>.tmp 再原子重命名——任何时刻磁盘上的正式库文件都是完整文件，
+//    退出时进程被杀也只留下临时文件，绝不截断正式库；changePath 迁移拷贝也读不到半写内容；
+// 2. flushPersist 递增 persistGen：在途异步快照若在重命名前发现代数已变（期间发生过
+//    更新的同步落盘），直接丢弃，避免旧快照覆盖新数据（用户切换/changePath/退出前 flush）。
+let persistInFlight = false;
+let persistQueued = false;
+let persistGen = 0;
+async function persistAsync() {
+  if (!db || !dbPath) return;
+  if (persistInFlight) { persistQueued = true; return; }
+  persistInFlight = true;
+  const targetPath = dbPath; // 闭包内固定路径：写入期间用户切换/changePath 改指向也不会错写
+  const tmpPath = targetPath + '.tmp';
+  const gen = persistGen;
+  try {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    await fs.promises.writeFile(tmpPath, buffer);
+    if (gen !== persistGen) {
+      // 期间发生过同步落盘（内容更新），本快照已过期，丢弃
+      fs.promises.unlink(tmpPath).catch(() => {});
+      return;
+    }
+    // renameSync 为微秒级原子操作，且与上面的 gen 检查在同一同步段内，
+    // 中间不可能插入其它 JS 执行（flush 的同步写无法落在这个窗口）
+    fs.renameSync(tmpPath, targetPath);
+  } catch (e) {
+    console.error('[SQLite] Failed to persist database:', e.message);
+    fs.promises.unlink(tmpPath).catch(() => {});
+  } finally {
+    persistInFlight = false;
+    if (persistQueued) { persistQueued = false; persistAsync(); }
+  }
+}
+
 let persistTimer = null;
 function schedulePersist() {
   if (persistTimer) return;
   persistTimer = setTimeout(() => {
     persistTimer = null;
-    persist();
+    persistAsync();
   }, 2000);
 }
 
@@ -119,6 +159,7 @@ function flushPersist() {
     clearTimeout(persistTimer);
     persistTimer = null;
   }
+  persistGen++; // 作废在途异步快照，下方同步写入即为最新版本
   persist();
 }
 
@@ -283,15 +324,41 @@ function clearByUser(table, userId) {
 
 async function changePath(newPath) {
   if (!SQL) throw new Error('SQL module not loaded');
+  if (!fs.existsSync(newPath)) fs.mkdirSync(newPath, { recursive: true });
+  const oldDir = dbPath ? path.dirname(dbPath) : null;
+
   if (db) {
     flushPersist();
     db.close();
     db = null;
   }
   initPromise = null;
-  if (!fs.existsSync(newPath)) fs.mkdirSync(newPath, { recursive: true });
+
+  // 迁移旧目录全部用户库到新目录（旧库为准；重选同目录时跳过）。
+  // 此前切换目录不迁移：新目录建空库后重启即「数据全丢」感知（旧 .db 其实还在旧目录）。
+  if (oldDir && path.resolve(oldDir) !== path.resolve(newPath)) {
+    let oldFiles = [];
+    try {
+      oldFiles = fs.readdirSync(oldDir);
+    } catch (err) {
+      console.error('[SQLite] changePath 读取旧数据目录失败，跳过迁移:', err.message);
+    }
+    for (const f of oldFiles) {
+      if (/^ToolBox(?:_.+)?\.db$/.test(f)) {
+        try {
+          fs.copyFileSync(path.join(oldDir, f), path.join(newPath, f));
+        } catch (err) {
+          console.error('[SQLite] changePath 迁移用户库失败:', f, err.message);
+        }
+      }
+    }
+  }
+
   dbPath = path.join(newPath, getDbFileName(currentUsername));
-  db = new SQL.Database();
+  // 目标库文件已存在（迁移来的或本来就有）：加载它，绝不能建空库覆盖
+  db = fs.existsSync(dbPath)
+    ? new SQL.Database(fs.readFileSync(dbPath))
+    : new SQL.Database();
 
   const schemaPath = path.join(__dirname, '../schema/schema.sql');
   if (fs.existsSync(schemaPath)) {
@@ -394,7 +461,7 @@ function importAllPluginData(rows) {
   database.run('BEGIN');
   try {
     const stmt = database.prepare(
-      'INSERT OR REPLACE INTO plugin_data (id, plugin_id, user_id, data_key, data_value, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)'
+      'INSERT OR REPLACE INTO plugin_data (id, plugin_id, user_id, data_key, data_value, created_at, updated_at) VALUES (?,?,?,?,?,?,?)'
     );
     for (const row of rows) {
       stmt.run([
@@ -515,6 +582,46 @@ async function readAllReminders(userDataPath) {
   return byId;
 }
 
+// 通用只读汇总：以「独立只读连接」遍历全部 ToolBox*.db，解析指定表的 data JSON 并返回行数组。
+// 与 readAllReminders 同一纪律：绝不使用/切换全局单例连接 db；单库损坏只跳过该库。
+// 表名做白名单校验（仅小写字母/下划线），防止拼接注入；行数据不做结构假设，由调用方防御性解析。
+async function readAllTableRows(userDataPath, table) {
+  if (!/^[a-z_]+$/.test(String(table || ''))) return [];
+  await warmup();
+
+  const dir = loadSettingsSafe().dbPath || getDefaultDbDir(userDataPath);
+  const rows = [];
+  let files = [];
+  try {
+    files = fs.readdirSync(dir).filter((f) => /^ToolBox(?:_.+)?\.db$/.test(f));
+  } catch (err) {
+    console.error('[SQLite] readAllTableRows 读取数据目录失败:', err.message);
+    return rows;
+  }
+
+  for (const file of files) {
+    let reader = null;
+    try {
+      reader = new SQL.Database(fs.readFileSync(path.join(dir, file)));
+      const stmt = reader.prepare(`SELECT data FROM ${table}`);
+      while (stmt.step()) {
+        try {
+          const parsed = JSON.parse(stmt.getAsObject().data);
+          if (parsed && typeof parsed === 'object') rows.push(parsed);
+        } catch {
+          // 单行 data 损坏：跳过该行
+        }
+      }
+      stmt.free();
+    } catch (err) {
+      console.error(`[SQLite] readAllTableRows 跳过无法读取的库 ${file}:`, err.message);
+    } finally {
+      try { if (reader) reader.close(); } catch { /* 忽略关闭异常 */ }
+    }
+  }
+  return rows;
+}
+
 // 提醒触发专用：计划任务命令行只带提醒 id，无从判断它归属哪个用户库，故需逐库定位。
 // 全程使用独立连接，绝不切换全局单例连接 db —— 复用全局连接会把渲染进程后续的读写
 // 永久留在别人的库上（表现为新建记录在登录账号列表里凭空消失）。
@@ -547,13 +654,22 @@ async function findReminderInOwningDb(userDataPath, reminderId, updatedRecord) {
       if (updatedRecord) {
         updated = updatedRecord;
         const { recordId, userId } = extractUserAndId(updated);
-        const write = conn.prepare('INSERT OR REPLACE INTO reminders (id, user_id, data) VALUES (?, ?, ?)');
-        try {
-          write.run([recordId, userId, JSON.stringify(updated)]);
-        } finally {
-          write.free();
+        // 目标库恰为当前全局连接打开的库时，必须改走全局连接写入：
+        // 独立连接写盘后，随后的全局 flushPersist() 会用旧内存快照覆盖刚写入的结果。
+        const targetFile = path.resolve(path.join(dir, file));
+        const currentFile = getFilePath() ? path.resolve(getFilePath()) : null;
+        if (currentFile && targetFile === currentFile) {
+          insert('reminders', updated);
+          flushPersist();
+        } else {
+          const write = conn.prepare('INSERT OR REPLACE INTO reminders (id, user_id, data) VALUES (?, ?, ?)');
+          try {
+            write.run([recordId, userId, JSON.stringify(updated)]);
+          } finally {
+            write.free();
+          }
+          fs.writeFileSync(targetFile, Buffer.from(conn.export()));
         }
-        fs.writeFileSync(path.join(dir, file), Buffer.from(conn.export()));
       }
       return { reminder, updated };
     } catch (err) {
@@ -638,6 +754,7 @@ module.exports = {
   getStorageStats,
   getStoredUsers,
   readAllReminders,
+  readAllTableRows,
   findReminderInOwningDb,
   exportUserData,
   importUserData,

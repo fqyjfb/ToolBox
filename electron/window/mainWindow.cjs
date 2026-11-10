@@ -353,6 +353,22 @@ const shortcutFunctions = {
     // 打开翻译弹窗：showTranslateWindow 内部自带锁屏守卫，无需先唤起主窗口
     require('./translateWindow.cjs').showTranslateWindow({});
   },
+  floatSelectionAI: () => {
+    checkLockAndShowMain(() => {
+      // 取词 → AI 面板：与悬浮球菜单 ai:selection 走同一条分发路径
+      require('./float/actions.cjs').dispatch('ai:selection');
+    });
+  },
+  // P1/P2 新增入口全部复用同一个 dispatch，避免再写一套 if/else
+  floatQuickCapture: () => {
+    checkLockAndShowMain(() => require('./float/actions.cjs').dispatch('ai:capture'));
+  },
+  floatPalette: () => {
+    checkLockAndShowMain(() => require('./float/actions.cjs').dispatch('ai:palette'));
+  },
+  floatScreenshotQA: () => {
+    checkLockAndShowMain(() => require('./float/actions.cjs').dispatch('ai:screenshot'));
+  },
 };
 
 /** 翻译功能相关快捷键：总开关关闭时整体释放 */
@@ -1120,8 +1136,14 @@ const registerIpcHandlers = () => {
     else mainWindow.minimize();
   });
 
+  // 贴边事件只信任主窗口渲染层：日志窗口/提醒弹窗复用主 preload 且同样挂载 App，
+  // 其 mouseenter/mouseleave 不应驱动主窗口的贴边展开/折叠。
+  const isEdgeSnapEventFromMainWindow = (event) =>
+    !!mainWindow && !mainWindow.isDestroyed() && event.sender === mainWindow.webContents;
+
   // 边缘吸附停靠态：渲染层光标跨界事件转发（mouseleave → 延迟折叠；mouseenter → 取消折叠）
-  ipcMain.on('edge-snap:cursor-left', () => {
+  ipcMain.on('edge-snap:cursor-left', (event) => {
+    if (!isEdgeSnapEventFromMainWindow(event)) return;
     if (!edgeDockedEdge || edgeHidden) return; // 未停靠 / 已折叠时忽略渲染层事件
     if (edgeHideTimer) clearTimeout(edgeHideTimer);
     edgeHideTimer = setTimeout(() => {
@@ -1132,7 +1154,8 @@ const registerIpcHandlers = () => {
   });
 
   // 输入法组合态：输入中抑制自动折叠；输入结束时补偿判定（失焦且光标在窗外 → 延迟折叠兜底）
-  ipcMain.on('edge-snap:ime-state', (_event, composing) => {
+  ipcMain.on('edge-snap:ime-state', (event, composing) => {
+    if (!isEdgeSnapEventFromMainWindow(event)) return;
     edgeImeComposing = !!composing;
     if (edgeImeComposing || !edgeDockedEdge || edgeHidden || !mainWindow || mainWindow.isDestroyed()) return;
     if (mainWindow.isFocused() || isCursorInsideWindow()) return;
@@ -1140,7 +1163,8 @@ const registerIpcHandlers = () => {
     edgeHideTimer = setTimeout(hideEdgeWindow, EDGE_HIDE_DELAY_MS);
   });
 
-  ipcMain.on('edge-snap:cursor-enter', () => {
+  ipcMain.on('edge-snap:cursor-enter', (event) => {
+    if (!isEdgeSnapEventFromMainWindow(event)) return;
     if (edgeHideTimer) {
       clearTimeout(edgeHideTimer);
       edgeHideTimer = null;
@@ -1518,7 +1542,14 @@ const registerIpcHandlers = () => {
       nativeTheme.themeSource = setting.value || 'system';
       const floatWindow = getFloatWindow();
       floatWindow?.webContents.send('theme-changed', { isDark: nativeTheme.shouldUseDarkColors });
+      // 面板是独立窗口，同样要跟着明暗基色重绘
+      require('./floatPanelWindow.cjs').notifyPanelTheme();
       require('./tray.cjs').refreshTrayMenu();
+    }
+
+    // 悬浮球进阶功能的剪贴板订阅跟随开关即时启停（关闭即解绑，不留后台监听）
+    if (typeof setting.name === 'string' && setting.name.startsWith('float')) {
+      require('../services/floatFeatureService.cjs').syncClipboardSubscription();
     }
 
     mainWindow?.webContents.send('setting-changed', { name: setting.name, value: setting.value });
@@ -1876,10 +1907,13 @@ const registerIpcHandlers = () => {
     });
   });
 
-  // 以下 IPC 已迁移至独立子模块，此处统一注册
+  // notes / system 的 IPC 在独立子模块注册，与上方内联通道不重叠
   require('../ipc/notesIpc.cjs').registerNotesIpc();
   require('../ipc/systemIpc.cjs').registerSystemIpc();
-  require('../ipc/quickLaunchIpc.cjs').registerQuickLaunchIpc();
+  // 快启动的 14 个通道（scan-desktop-apps ~ set-autostart-status）仍是上方内联注册，
+  // 且那里才是真实实现。早前误调用过拆分残留的 quickLaunchIpc.cjs（同名占位 handler），
+  // 导致启动时抛 "Attempted to register a second handler for 'get-dropped-files'"；
+  // 该模块已删除。今后若要拆分，必须先删掉上方内联实现，不能两套并存。
 };
 
 // P2: 应用退出时统一注销所有快启动全局热键

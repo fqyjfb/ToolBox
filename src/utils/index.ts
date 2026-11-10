@@ -11,19 +11,6 @@ export const debounce = <T extends (...args: unknown[]) => void>(func: T, wait: 
   };
 };
 
-export const throttle = <T extends (...args: unknown[]) => void>(func: T, delay: number): ((...args: Parameters<T>) => void) => {
-  let inThrottle = false;
-  return (...args: Parameters<T>) => {
-    if (!inThrottle) {
-      func(...args);
-      inThrottle = true;
-      setTimeout(() => {
-        inThrottle = false;
-      }, delay);
-    }
-  };
-};
-
 import { pad2 } from './format';
 
 const padDateTimePart = (value: number): string => pad2(value);

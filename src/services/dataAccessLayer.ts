@@ -195,7 +195,8 @@ class StorageContext {
 
       const { data, error, count } = await query
       if (error) {
-        logError(`云端查询失败，返回空数据: ${table}`, 'StorageContext', error as Error)
+        const detail = new Error(`${error.message}${error.code ? ` (code: ${error.code})` : ''}`)
+        logError(`云端查询失败，返回空数据: ${table}`, 'StorageContext', detail)
         return { data: [], total: 0 }
       }
 

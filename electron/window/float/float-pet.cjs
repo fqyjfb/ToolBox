@@ -8,6 +8,8 @@
   var ball = document.getElementById('floatBall');
   var pet = document.getElementById('floatPet');
   var bubble = document.getElementById('petBubble');
+  var bubbleText = document.getElementById('petBubbleText') || bubble;
+  var bubbleActions = document.getElementById('petBubbleActions');
   var eyes = pet.querySelector('#eyes');
   var mouth = pet.querySelector('.mouth-group');
   var tailEl = pet.querySelector('.tail');
@@ -21,50 +23,12 @@
     'scarf': '围巾是莓果味的，暖暖的～'
   };
 
-  var DEFAULT_PHRASES = {
-    welcome: '来啦来啦！等你好久啦～',
-    greeting: {
-      lateNight: '早点休息，烦恼交给我保管～',
-      morning: '早安！今天也元气满满哦～',
-      noon: '中午啦，吃饭了么？别饿着~',
-      afternoon: '下午的时光真难熬，还好有你在！',
-      evening: '晚上好，要安静地学习啦~',
-      night: '快来逗我玩吧！我好无聊啊~'
-    },
-    idle: [
-      '好无聊哦，你都不陪我玩~',
-      '我是个摆件，不是AI哦',
-      '从前有座山，山里有座小包子…',
-      '我可爱吧！嘻嘻~',
-      '悄悄告诉你，双击空白处我能回家哦',
-      '盯——你在看什么好东西？',
-      '好无聊…陪我玩嘛～',
-      '咦？我的包子馅呢…',
-      '今天运气是草莓味的！',
-      '嘘…我在和鼠标聊天～',
-      '施了魔法，bug都会消失！',
-      '今天的风甜甜的呢～',
-      '喝水了吗？别忘了哦～',
-      '坐太久啦，起来动一动嘛～',
-      '眼睛酸了吧？看看远处～',
-      '你不理我，我就把你密码改了！',
-      '别看我圆，我这叫富态，懂？',
-      '今天运势：宜摸头，忌不理包子。',
-      '再不捏我，我就要自捏了！',
-      '你的鼠标抖了诶，是心动了吧？',
-      '你是不是在假装工作？',
-      '摸鱼吗？我放哨，我嘴严得很。'
-    ]
-  };
-
   var EYE_RADIUS = 2.2;
   var TAIL_TALK_MS = 3000;
   var SAD_TICK_MS = 60;
   var SAD_THRESHOLD = 22;
   var BUBBLE_HOLD_MS = 4200;
   var IDLE_POLL_MS = 1000;
-  var IDLE_FIRST_DELAY_MS = 5500;
-  var IDLE_INTERVAL_MS = 45000;
   var ENTER_POP_MS = 600;
 
   var eyeX = 0;
@@ -76,7 +40,9 @@
   var talkTimer = null;
   var talkUntil = 0;
   var bubbleTimer = null;
-  var lastSay = 0;
+  var stateTimer = null;
+  var currentState = 'idle';
+  var STATE_CLASSES = ['pet-thinking', 'pet-speaking', 'pet-happy', 'pet-sad', 'pet-listening'];
 
   // ── 眼神跟随鼠标 ──
   function render() {
@@ -131,10 +97,22 @@
     tailEl.classList.remove('talking');
   }
 
-  // ── 台词气泡 ──
+  // ── 台词气泡 / 可交互卡片 ──
+  function clearActions() {
+    if (!bubbleActions) return;
+    bubbleActions.innerHTML = '';
+    bubbleActions.hidden = true;
+    bubble.classList.remove('has-actions');
+    // 无按钮时通知主进程可以恢复穿透（气泡本身可能还在显示，但按钮已清除）
+    if (window.electronAPI && window.electronAPI.setInteractiveCard) {
+      window.electronAPI.setInteractiveCard(false);
+    }
+  }
+
   function say(text) {
     if (!text) return;
-    bubble.textContent = text;
+    clearActions();
+    bubbleText.textContent = text;
     startTailTalk();
     bubble.classList.add('show');
     clearTimeout(bubbleTimer);
@@ -143,19 +121,64 @@
     }, BUBBLE_HOLD_MS);
   }
 
+  // 带按钮的卡片：actions = [{ label, action }]，action 交回主进程分发（卡片只负责展示）
+  function showCard(card) {
+    if (!card || !card.text) return;
+    clearActions();
+    bubbleText.textContent = card.text;
+    var hasActions = false;
+    if (bubbleActions && Array.isArray(card.actions) && card.actions.length > 0) {
+      hasActions = true;
+      // 最多渲染 3 个按钮（剪贴板提示为 翻译/总结/存笔记，店铺话术为 回复1~3），超出部分丢弃
+      card.actions.slice(0, 3).forEach(function (item) {
+        if (!item || !item.label) return;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pet-bubble-btn';
+        btn.textContent = item.label;
+        btn.addEventListener('click', function (event) {
+          event.stopPropagation();
+          if (item.action && window.electronAPI && window.electronAPI.floatAction) {
+            window.electronAPI.floatAction(item.action);
+          }
+          clearBubble();
+        });
+        bubbleActions.appendChild(btn);
+      });
+      bubbleActions.hidden = false;
+      bubble.classList.add('has-actions');
+    }
+    // 告诉主进程当前气泡是否有可点按钮 — 主进程据此保持窗口不穿透
+    if (window.electronAPI && window.electronAPI.setInteractiveCard) {
+      window.electronAPI.setInteractiveCard(hasActions);
+    }
+    startTailTalk();
+    bubble.classList.add('show');
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(function () {
+      bubble.classList.remove('show');
+      clearActions();
+    }, card.ttl || BUBBLE_HOLD_MS);
+  }
+
   function clearBubble() {
     clearTimeout(bubbleTimer);
     bubble.classList.remove('show');
+    clearActions();
   }
 
-  function hourPhase() {
-    var h = new Date().getHours();
-    if (h >= 0 && h < 5) return 'lateNight';
-    if (h >= 5 && h < 11) return 'morning';
-    if (h >= 11 && h < 13) return 'noon';
-    if (h >= 13 && h < 17) return 'afternoon';
-    if (h >= 17 && h < 21) return 'evening';
-    return 'night';
+  // ── 状态机：由主进程按事件驱动，到时自动回落 idle ──
+  function setState(name, ttl) {
+    clearTimeout(stateTimer);
+    stateTimer = null;
+    STATE_CLASSES.forEach(function (cls) { ball.classList.remove(cls); });
+    currentState = name || 'idle';
+    if (currentState !== 'idle') {
+      ball.classList.add('pet-' + currentState);
+    }
+    if (ttl > 0) {
+      stateTimer = setTimeout(function () { setState('idle'); }, ttl);
+    }
   }
 
   // ── 拖拽状态：举手惊讶，拖久了难过 ──
@@ -195,20 +218,10 @@
     pet.setAttribute('data-fit', fit === '' ? 'none' : fit);
   }
 
-  // ── 空闲闲聊 ──
+  // ── 空闲巡检：气泡内容全部由主进程 floatInsightService 推送（功能联动卡片），
+  //    渲染层不再随机播放语录；这里只保留「尾巴说话超时归位」的兜底 ──
   function tickIdle() {
-    // 兜底：页面隐藏 / 定时器竞态时强制归位
     if (talkUntil && Date.now() > talkUntil) stopTailTalk();
-    if (dragging || ball.classList.contains('expanded')) return;
-    var now = Date.now();
-    if (lastSay === 0) {
-      lastSay = now + IDLE_FIRST_DELAY_MS;
-      return;
-    }
-    if (now - lastSay < IDLE_INTERVAL_MS) return;
-    lastSay = now;
-    var list = DEFAULT_PHRASES.idle;
-    say(list[Math.floor(Math.random() * list.length)]);
   }
 
   render();
@@ -231,18 +244,31 @@
 
   requestAnimationFrame(function () {
     ball.classList.add('entering');
-    say(DEFAULT_PHRASES.welcome);
-    setTimeout(function () {
-      say(DEFAULT_PHRASES.greeting[hourPhase()]);
-    }, 3200);
-    // 弹出动画结束后摘掉 .entering，让 .body-scale 回到常驻呼吸动画
+    // 入场欢迎语已由主进程「今日概览」启动卡取代（floatWindow.cjs 的 did-finish-load 钩子），
+    // 这里只播弹出动画，结束后摘掉 .entering 回到常驻呼吸动画
     setTimeout(function () {
       ball.classList.remove('entering');
     }, ENTER_POP_MS);
   });
 
+  if (window.electronAPI.onPetState) {
+    window.electronAPI.onPetState(function (data) {
+      setState((data && data.state) || 'idle', data && data.ttl);
+    });
+  }
+
+  if (window.electronAPI.onPetCard) {
+    window.electronAPI.onPetCard(function (card) {
+      // 拖拽时优先保证跟手体验，卡片等下次事件再说
+      if (dragging) return;
+      showCard(card);
+    });
+  }
+
   window.FloatPet = {
     setDragging: setDragging,
-    clearBubble: clearBubble
+    clearBubble: clearBubble,
+    setState: setState,
+    showCard: showCard
   };
 })();

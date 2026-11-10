@@ -277,6 +277,8 @@ const registerLockIpcHandlers = () => {
         snapshot: loadThemeSnapshot(),
       });
     }
+    // 悬浮球 AI 面板读的是同一份快照，必须一起刷新，否则自定义配色下会与主窗口不一致
+    require('./floatPanelWindow.cjs').notifyPanelTheme();
     return { code: 0 };
   });
 

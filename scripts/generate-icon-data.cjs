@@ -67,6 +67,21 @@ const parseToolTargets = (source) =>
     })
     .filter(Boolean);
 
+// P2-1：主进程是 CJS，读不到 TS 的 ALL_TOOLS；构建期把工具清单落成 JSON。
+// 与图标解析共用同一个源文件与同样的逐行正则，避免两份数据源不一致。
+const parseToolDefinitions = (source) =>
+  source.split('\n')
+    .map(line => {
+      const read = (key) => {
+        const match = line.match(new RegExp(`${key}: '([^']*)'`));
+        return match ? match[1] : '';
+      };
+      const id = read('id');
+      if (!id || !line.includes('iconName:')) return null;
+      return { id, name: read('name'), path: read('path'), color: read('color'), iconName: read('iconName') };
+    })
+    .filter(Boolean);
+
 // 插件本地图标目录（public/plugins/icons/{图标目录名}/icon.*）
 // 构建期扫描一次，运行期就能直接查表：省掉对每个插件的本地文件探测请求，
 // 也避免图标缺失时对每个插件都白等一次网络往返
@@ -173,6 +188,9 @@ const buildDataUri = (lucide, iconName) => {
   parseActionTargets(settingsSource, 'SYSTEM_ACTIONS').forEach(({ action, iconName }) => {
     targetIcons[`system:${action}`] = buildDataUri(lucide, iconName);
   });
+  parseActionTargets(settingsSource, 'AI_ACTIONS').forEach(({ action, iconName }) => {
+    targetIcons[`ai:${action}`] = buildDataUri(lucide, iconName);
+  });
   parseToolTargets(toolsSource).forEach(({ action, iconName }) => {
     targetIcons[`tool:${action}`] = buildDataUri(lucide, iconName);
   });
@@ -202,4 +220,16 @@ module.exports = { getTargetIconData, getLegacyIconData };
 
   fs.writeFileSync(path.join(__dirname, '../electron/lib/icon-data.cjs'), jsContent);
   console.log(`✓ 已生成 electron/lib/icon-data.cjs（${Object.keys(targetIcons).length} 个目标图标，${Object.keys(legacyIcons).length} 个兼容图标）`);
+
+  // 解析失败时保留上一版 JSON，不能让构建期把开发卡死
+  try {
+    const tools = parseToolDefinitions(toolsSource);
+    if (tools.length === 0) throw new Error('未解析到任何工具定义');
+    const outDir = path.join(__dirname, '../electron/generated');
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(path.join(outDir, 'tools.json'), JSON.stringify(tools, null, 2));
+    console.log(`✓ 已生成 electron/generated/tools.json（${tools.length} 个工具）`);
+  } catch (error) {
+    console.warn('⚠ tools.json 生成失败，保留上一版:', error.message);
+  }
 })();

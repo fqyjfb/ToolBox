@@ -146,7 +146,7 @@ const LogMonitorTab: React.FC<LogMonitorTabProps> = ({
               onClick={() => handleLevelToggle('warn')}
               className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1.5 transition-colors ${
                 settings.levels.warn
-                  ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400'
+                  ? 'bg-toast-warning-bg border-toast-warning-border text-toast-warning-text'
                   : 'bg-surface-secondary border-content text-content-secondary'
               }`}
             >

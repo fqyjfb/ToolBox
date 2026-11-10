@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { MoreHorizontal, X } from 'lucide-react';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import { useNotesTabs } from '../hooks/useNotesTabs';
+import { basenameOfPath as basenameOf } from '../utils/treeUtils';
 
 interface OpenTabsProps {
   onSelect: (path: string) => void;
@@ -11,10 +12,6 @@ interface OpenTabsProps {
 
 // 待确认的关闭动作
 type PendingClose = { scope: 'one'; path: string } | { scope: 'all' };
-
-function basenameOf(path: string): string {
-  return path.split(/[\\/]/).pop() || path;
-}
 
 const OpenTabs: React.FC<OpenTabsProps> = ({ onSelect }) => {
   const { tabs, activePath, dirtyMap, closeTab, reorderTab } = useNotesTabs();

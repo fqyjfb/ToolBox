@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PanelLeft } from 'lucide-react';
 import { useNotes, type FileTreeNode } from '@/hooks/useNotes';
 import { useChatNotes } from './hooks/useChatNotes';
@@ -81,6 +82,7 @@ const NotesPage: React.FC = () => {
     removeRecent,
     clearRecents,
     switchTab,
+    openFileByPath,
   } = useNotes();
 
   const {
@@ -168,6 +170,19 @@ const NotesPage: React.FC = () => {
     search.bindSelectFile(selectFile);
   }, [selectFile, search]);
 
+  // 悬浮球「打开笔记」深链：/tools/notes?file=<绝对路径>，只消费一次
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const filePath = searchParams.get('file');
+    if (!filePath) return;
+    setSearchParams({}, { replace: true });
+    const name = filePath.split(/[\\/]/).pop() || '笔记';
+    void (async () => {
+      await refreshFileTree();
+      await selectFile({ id: filePath, name, path: filePath, type: 'file', fileType: 'md' });
+    })();
+  }, [searchParams, selectFile, refreshFileTree, setSearchParams]);
+
   // 搜索范围限定在当前查看的固定目录：文件列表不显示对话路径内容，无视图时不检索。
   const handleSearch = useCallback(
     (q: string) => {
@@ -212,6 +227,12 @@ const NotesPage: React.FC = () => {
   const handleSelectFile = (file: FileTreeNode) => {
     setIsChatMode(false);
     selectFile(file);
+  };
+
+  // 最近条目：与文件树点击一样先退出对话模式，再按路径打开（跨固定目录可用）
+  const handleOpenRecentPath = (path: string) => {
+    setIsChatMode(false);
+    void openFileByPath(path);
   };
 
   // 标题重命名（NotesEditor 双击标题触发）：复用组合根 renameItem（内部刷新树 + 同步选中项 + 更新标签页）。
@@ -371,6 +392,7 @@ const NotesPage: React.FC = () => {
             onToggleFavorite={toggleFavorite}
             onRemoveRecent={removeRecent}
             onClearRecents={clearRecents}
+            onOpenRecentPath={handleOpenRecentPath}
           />
         )}
 

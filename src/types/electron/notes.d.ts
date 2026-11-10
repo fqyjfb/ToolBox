@@ -22,13 +22,6 @@ interface NotesValidateResult {
   error?: string;
 }
 
-interface NotesScanResult {
-  success: boolean;
-  fileCount: number;
-  folderCount: number;
-  error?: string;
-}
-
 interface NotesCreateResult {
   success: boolean;
   path?: string;

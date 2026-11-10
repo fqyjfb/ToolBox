@@ -27,6 +27,7 @@ const LogsPage = React.lazy(() => import('./pages/logs/index'));
 const ReminderPopup = React.lazy(() => import('./pages/tools/reminder/ReminderPopup'));
 import { isElectron } from './utils/environment';
 import { usePreloadTools } from './hooks/usePreloadTools';
+import { useFloatAiActions } from './hooks/useFloatAiActions';
 import { pluginApi } from './services/pluginApi';
 
 // 路由保护组件
@@ -46,6 +47,12 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
+// 路由级错误边界：单页渲染抛错只降级当前路由区域（保留侧栏导航，可重试/回首页），
+// 不再击穿根边界导致全窗口白屏。切到其它路由时 children 变化，边界自动复位。
+const RouteBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ErrorBoundary showGoHome>{children}</ErrorBoundary>
+);
+
 // 渲染路由列表
 const renderRoutes = (
   routes: RouteConfig[],
@@ -58,7 +65,7 @@ const renderRoutes = (
     <Route
       key={route.path}
       path={route.path}
-      element={route.element}
+      element={<RouteBoundary>{route.element}</RouteBoundary>}
     />
   ));
 
@@ -69,14 +76,14 @@ const renderRoutes = (
       element={
         route.requiresAdmin ? (
           <ProtectedRoute isAuthenticated={isAuthenticated} requiresAdmin={route.requiresAdmin} isAdmin={isAdmin} isAuthLoading={isAuthLoading}>
-            {route.element}
+            <RouteBoundary>{route.element}</RouteBoundary>
           </ProtectedRoute>
         ) : route.requiresAuth ? (
           <ProtectedRoute isAuthenticated={isAuthenticated} requiresAdmin={route.requiresAdmin} isAuthLoading={isAuthLoading}>
-            {route.element}
+            <RouteBoundary>{route.element}</RouteBoundary>
           </ProtectedRoute>
         ) : (
-          route.element
+          <RouteBoundary>{route.element}</RouteBoundary>
         )
       }
     />
@@ -88,7 +95,7 @@ const renderRoutes = (
       path={route.path}
       element={
         isAuthenticated && isAdmin ? (
-          route.element
+          <RouteBoundary>{route.element}</RouteBoundary>
         ) : (
           <Navigate to="/login" replace />
         )
@@ -156,10 +163,11 @@ const TrayNavigationHandler: React.FC = () => {
       navigate(path);
     };
 
-    window.electron?.onNavigate(handleNavigate);
+    // onNavigate 返回退订函数（多播），卸载时正确退订
+    const unsubscribe = window.electron?.onNavigate(handleNavigate);
 
     return () => {
-      window.electron?.onNavigate(() => {});
+      unsubscribe?.();
     };
   }, [navigate]);
 
@@ -211,6 +219,7 @@ function App() {
   const { setVisible, setPosition } = useSidebarStore(useShallow((s) => ({ setVisible: s.setVisible, setPosition: s.setPosition })));
 
   usePreloadTools();
+  useFloatAiActions();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -386,7 +395,9 @@ function App() {
           </div>
         }
       >
-        <ReminderPopup />
+        <RouteBoundary>
+          <ReminderPopup />
+        </RouteBoundary>
       </Suspense>
     );
   }
@@ -431,7 +442,7 @@ function App() {
                   {isStandaloneLogWindow() ? (
                     <Suspense fallback={<div className="flex items-center justify-center h-full"><LoadingSpinner size="md" /></div>}>
                       <Routes>
-                        <Route path="/logs" element={<LogsPage />} />
+                        <Route path="/logs" element={<RouteBoundary><LogsPage /></RouteBoundary>} />
                       </Routes>
                     </Suspense>
                   ) : (

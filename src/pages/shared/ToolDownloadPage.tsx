@@ -33,6 +33,8 @@ const ToolDownloadPage: React.FC = () => {
   const { data: toolsData, isLoading } = useQuery({
     queryKey: [...queryKeys.tool.userDownloads(), filterCategory],
     queryFn: () => toolService.getTools(filterCategory || undefined, undefined, 1, 1000),
+    // 单页最多 1000 条的大结果集：缩短缓存驻留（全局默认 30min 过长），页面关闭 5 分钟后释放
+    gcTime: 5 * 60 * 1000,
   });
 
   const tools = useMemo(

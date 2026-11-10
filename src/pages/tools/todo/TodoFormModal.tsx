@@ -78,7 +78,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
               type="datetime-local"
               value={newTodo.due_date ? formatDateTimeForInput(newTodo.due_date) : ''}
               onChange={(e) => onNewTodoChange({ ...newTodo, due_date: e.target.value.replace('T', ' ') })}
-              className={modalControlClass}
+              className={`${modalControlClass} date-control`}
             />
           </div>
         </div>

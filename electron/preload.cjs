@@ -7,8 +7,10 @@ const ALLOWED_INVOKE_CHANNELS = new Set([
 ]);
 const ALLOWED_LISTEN_CHANNELS = new Set(['clipboard:changed', 'clipboard:image-changed']);
 
-let navigateCallback = null;
-let downloadProgressCallback = null;
+// navigate / download-progress 同样可能有多订阅方，与 setting-changed 一样走 Set 多播，
+// onNavigate / onDownloadProgress 返回退订函数（此前为单槽赋值，后注册者会顶掉前者）。
+const navigateCallbacks = new Set();
+const downloadProgressCallbacks = new Set();
 // setting-changed 有多个订阅方（App / baseApi / PluginService 各自按 networkConfig 缓存），
 // 单槽赋值会让后注册者把前者顶掉，改为多播并支持退订。
 const settingChangedCallbacks = new Set();
@@ -23,9 +25,7 @@ const openAddCallbacks = { todo: null, memo: null, reminder: null };
 const pendingOpenAdd = { todo: false, memo: false, reminder: false };
 
 ipcRenderer.on('navigate-to', (event, path) => {
-  if (navigateCallback) {
-    navigateCallback(path);
-  }
+  navigateCallbacks.forEach((cb) => cb(path));
 });
 
 Object.keys(openAddCallbacks).forEach((kind) => {
@@ -47,6 +47,34 @@ const registerOpenAddCallback = (kind, callback) => {
   callback();
 };
 
+// 悬浮球 AI 面板「存为待办」：面板只负责发起，真正写入仍走渲染层的 todoService。
+// 与 open-add-* 同理，页面回调可能尚未注册，先暂存再补发。
+const floatSaveTodoCallbacks = new Set();
+const pendingFloatSaveTodo = [];
+
+ipcRenderer.on('float-ai-save-todo', (event, payload) => {
+  if (floatSaveTodoCallbacks.size === 0) {
+    pendingFloatSaveTodo.push(payload);
+    return;
+  }
+  floatSaveTodoCallbacks.forEach((callback) => {
+    try {
+      callback(payload);
+    } catch (error) {
+      console.error('[Preload] float-ai-save-todo 处理失败:', error);
+    }
+  });
+});
+
+// 主进程等待超时：丢弃尚未投递的队列项，避免登录后凭空多建一条待办
+ipcRenderer.on('float-ai-save-todo-cancel', (event, payload = {}) => {
+  for (let i = pendingFloatSaveTodo.length - 1; i >= 0; i--) {
+    if (pendingFloatSaveTodo[i].requestId === payload.requestId) {
+      pendingFloatSaveTodo.splice(i, 1);
+    }
+  }
+});
+
 // 主进程 second-instance 收到 --reminder <id> 后，从数据库读取并下发到渲染进程弹窗
 ipcRenderer.on('show-reminder', (event, reminder) => {
   if (showReminderCallback) {
@@ -57,9 +85,7 @@ ipcRenderer.on('show-reminder', (event, reminder) => {
 });
 
 ipcRenderer.on('update-download-progress', (event, progress) => {
-  if (downloadProgressCallback) {
-    downloadProgressCallback(progress);
-  }
+  downloadProgressCallbacks.forEach((cb) => cb(progress));
 });
 
 ipcRenderer.on('setting-changed', (event, setting) => {
@@ -181,6 +207,9 @@ contextBridge.exposeInMainWorld('electron', {
   downloadUpdate: (url) => ipcRenderer.invoke('download-update', url),
   installUpdate: (filePath) => ipcRenderer.invoke('install-update', filePath),
   toggleFloatWindow: () => ipcRenderer.invoke('toggle-float-window'),
+  // 悬浮球洞察气泡：每日快照（天气/黄历/打卡，预格式化文案）与轻量事件（打卡成功等）
+  floatDailySnapshot: (payload) => ipcRenderer.send('float:daily-snapshot', payload),
+  floatInsightEvent: (payload) => ipcRenderer.send('float:insight-event', payload),
   getFloatConfig: () => ipcRenderer.invoke('get-float-config'),
   updateFloatConfig: (config) => ipcRenderer.invoke('update-float-config', config),
   resetFloatConfig: () => ipcRenderer.invoke('reset-float-config'),
@@ -310,6 +339,23 @@ contextBridge.exposeInMainWorld('electron', {
   ai: {
     chat: (payload) => ipcRenderer.invoke('ai-chat', payload),
   },
+  floatAi: {
+    // 悬浮球 AI 结果「存为待办」：返回退订函数，卸载时务必调用
+    onSaveTodo: (callback) => {
+      floatSaveTodoCallbacks.add(callback);
+      while (pendingFloatSaveTodo.length > 0) {
+        const payload = pendingFloatSaveTodo.shift();
+        try {
+          callback(payload);
+        } catch (error) {
+          console.error('[Preload] float-ai-save-todo 补发失败:', error);
+        }
+      }
+      return () => { floatSaveTodoCallbacks.delete(callback); };
+    },
+    // 创建结果回执：主进程据此确认「存为待办」是否真实成功
+    reportSaveTodo: (payload) => ipcRenderer.send('float-ai-save-todo-result', payload),
+  },
   notes: {
     hasRootPath: () => ipcRenderer.invoke('notes-has-root-path'),
     getRootPath: () => ipcRenderer.invoke('notes-get-root-path'),
@@ -317,10 +363,10 @@ contextBridge.exposeInMainWorld('electron', {
     // 视图根（当前固定目录）/ 对话根（对话整理独立目录）：仅同步给主进程做越界放行
     setViewPath: (viewPath) => ipcRenderer.invoke('notes-set-view-path', viewPath),
     setChatRootPath: (chatPath) => ipcRenderer.invoke('notes-set-chat-path', chatPath),
+    // 所有固定目录：切视图后其它固定目录中的文件仍需可读写
+    setPinnedRoots: (paths) => ipcRenderer.invoke('notes-set-pinned-roots', paths),
     selectFolder: () => ipcRenderer.invoke('notes-select-folder'),
     validateFolder: (folderPath) => ipcRenderer.invoke('notes-validate-folder', folderPath),
-    scanFolder: (rootPath) => ipcRenderer.invoke('notes-scan-folder', rootPath),
-    getFileTree: () => ipcRenderer.invoke('notes-get-file-tree'),
     createFolder: (parentPath, name) => ipcRenderer.invoke('notes-create-folder', parentPath, name),
     createFolderForce: (parentPath, name, mode) => ipcRenderer.invoke('notes-create-folder-force', parentPath, name, mode),
     createNote: (parentPath, name, content) => ipcRenderer.invoke('notes-create-note', parentPath, name, content),
@@ -372,10 +418,12 @@ contextBridge.exposeInMainWorld('electron', {
     open: (filePath) => ipcRenderer.invoke('offline-tools:open', filePath),
   },
   onDownloadProgress: (callback) => {
-    downloadProgressCallback = callback;
+    downloadProgressCallbacks.add(callback);
+    return () => downloadProgressCallbacks.delete(callback);
   },
   onNavigate: (callback) => {
-    navigateCallback = callback;
+    navigateCallbacks.add(callback);
+    return () => navigateCallbacks.delete(callback);
   },
   onSettingChanged: (callback) => {
     settingChangedCallbacks.add(callback);

@@ -1,41 +1,30 @@
 // 侧栏「最近」分组
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ChevronDown, ChevronRight, Clock, X } from 'lucide-react';
 import { useNotesSidebarSectionsStore } from '@/store/notesSidebarSectionsStore';
 import type { FileTreeNode, NotesRecentItem, NotesFavoritePath } from '../types';
-import { findInTree } from '../utils/treeUtils';
 
 interface NotesSidebarRecentsProps {
   selectedFile: FileTreeNode | null;
-  fileTree: FileTreeNode[];
   recents: NotesRecentItem[];
-  onSelectFile: (fileNode: FileTreeNode) => void;
+  // 最近条目只持有绝对路径，跨固定目录也要能打开：交给组合根按路径解析
+  onOpenPath: (path: string) => void;
   onRemoveRecent: (absolutePath: NotesFavoritePath) => void;
   onClearRecents: () => void;
 }
 
 const NotesSidebarRecents: React.FC<NotesSidebarRecentsProps> = ({
   selectedFile,
-  fileTree,
   recents,
-  onSelectFile,
+  onOpenPath,
   onRemoveRecent,
   onClearRecents,
 }) => {
   const open = useNotesSidebarSectionsStore((s) => s.sections.recents);
   const toggleSection = useNotesSidebarSectionsStore((s) => s.toggleSection);
 
-  const recentItems = useMemo(() => {
-    return recents.slice(0, 20).map((item) => {
-      const node = findInTree(fileTree, item.path);
-      return {
-        ...item,
-        name: node?.name || item.name,
-        found: !!node,
-      };
-    });
-  }, [recents, fileTree]);
+  const recentItems = recents.slice(0, 20);
 
   if (recentItems.length === 0) return null;
 
@@ -80,11 +69,8 @@ const NotesSidebarRecents: React.FC<NotesSidebarRecentsProps> = ({
                   isActive
                     ? 'bg-menu-hover dark:bg-menu-hover text-primary font-medium'
                     : 'text-content-primary hover:bg-menu-hover dark:hover:bg-menu-hover'
-                } ${!item.found ? 'opacity-60' : ''}`}
-                onClick={() => {
-                  const node = findInTree(fileTree, item.path);
-                  if (node) onSelectFile(node);
-                }}
+                }`}
+                onClick={() => onOpenPath(item.path)}
                 title={item.path}
               >
                 <Clock className="h-3 w-3 flex-shrink-0 text-content-tertiary" />

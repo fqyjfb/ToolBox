@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CalendarCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/AuthStore';
@@ -14,6 +14,19 @@ const CheckInButton: React.FC<{ compact?: boolean }> = ({ compact = false }) => 
   const queryClient = useQueryClient();
   const { data } = useQuery(checkInStatusQuery(userId));
   const [submitting, setSubmitting] = useState(false);
+
+  // 打卡状态快照推给主进程：悬浮球「打卡提醒/连续打卡/周摘要/启动卡」的内容源。
+  // check_ins 是云端表，主进程无法直读，故沿用 ai.json 同款快照惯例；推送失败静默。
+  useEffect(() => {
+    if (!data || !window.electron?.floatDailySnapshot) return;
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    try {
+      window.electron.floatDailySnapshot({
+        checkIn: { checkedToday: data.checkedToday, streak: data.streak, weekCount: data.weekCount, date },
+      });
+    } catch { /* 快照仅是缓存，推送失败静默 */ }
+  }, [data]);
 
   if (!userId) return null;
 
@@ -33,6 +46,12 @@ const CheckInButton: React.FC<{ compact?: boolean }> = ({ compact = false }) => 
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: queryKeys.checkIn.status(userId) });
         addToast({ type: 'success', message: result.alreadyChecked ? '今日已签到' : '签到成功' });
+        // 悬浮球即时反馈卡：新打卡时 streak+1（今日此前未签），已签则保持原值
+        if (!result.alreadyChecked) {
+          try {
+            window.electron?.floatInsightEvent?.({ type: 'checkin:done', streak: streak + 1 });
+          } catch { /* 推送失败静默 */ }
+        }
       } else {
         addToast({ type: 'error', message: result.error || '签到失败' });
       }

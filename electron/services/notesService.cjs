@@ -4,7 +4,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { execFileSync } = require('child_process');
+const { execFile } = require('child_process');
 const fileTypeUtils = require('./fileTypeUtils.cjs');
 
 const SETTINGS_FILE_NAME = 'notes_settings.json';
@@ -54,6 +54,12 @@ function getRootPath() {
   return getSetting('notes_root_path');
 }
 
+// 「对话整理」目录：与 对话.md 同级，AI 对话生成的笔记统一落在这里
+function getOrganizePath() {
+  const chatPath = getSetting('notes_chat_path');
+  return chatPath ? path.join(chatPath, '对话整理') : null;
+}
+
 function isInsideRoot(targetPath, rootPath) {
   if (!rootPath || typeof targetPath !== 'string' || !targetPath) return false;
   const resolvedRoot = path.resolve(rootPath);
@@ -76,12 +82,37 @@ function setChatRootPath(chatPath) {
   return saveSetting('notes_chat_path', chatPath || null);
 }
 
+// 固定目录白名单：由渲染层在固定目录变化时同步，只参与越界校验，不参与扫描语义
+const PINNED_ROOTS_KEY = 'notes_pinned_roots';
+
+function setPinnedRoots(paths) {
+  // 先触发一次读取：saveSetting 会整文件落盘，settings 未加载时直接写会覆盖丢失其它键
+  getSetting(PINNED_ROOTS_KEY);
+  const list = Array.isArray(paths)
+    ? paths
+        .filter((p) => typeof p === 'string' && p)
+        .map((p) => path.resolve(p))
+    : [];
+  const unique = [];
+  for (const p of list) {
+    if (!unique.includes(p)) unique.push(p);
+  }
+  return saveSetting(PINNED_ROOTS_KEY, unique);
+}
+
 function getAllowedRoots() {
   const roots = [];
   for (const key of ['notes_root_path', 'notes_view_path', 'notes_chat_path']) {
     const value = getSetting(key);
     if (value && typeof value === 'string' && !roots.includes(value)) {
       roots.push(value);
+    }
+  }
+  // 追加所有固定目录：切视图后，旧固定目录中的文件仍可读写
+  const pinned = getSetting(PINNED_ROOTS_KEY);
+  if (Array.isArray(pinned)) {
+    for (const p of pinned) {
+      if (typeof p === 'string' && p && !roots.includes(p)) roots.push(p);
     }
   }
   return roots;
@@ -166,62 +197,9 @@ function scanFolder(rootPath) {
   }
 }
 
-function getFileTree() {
-  const rootPath = getRootPath();
-
-  if (!rootPath || !fs.existsSync(rootPath)) {
-    return [];
-  }
-
-  const buildTree = (dirPath) => {
-    const items = fs.readdirSync(dirPath, { withFileTypes: true });
-
-    const nodes = [];
-
-    for (const item of items) {
-      if (item.name.startsWith('.') || item.name.startsWith('~')) {
-        continue;
-      }
-
-      const itemPath = path.join(dirPath, item.name);
-
-      if (item.isDirectory()) {
-        const node = {
-          id: itemPath,
-          name: item.name,
-          type: 'folder',
-          path: itemPath,
-          children: buildTree(itemPath),
-          expanded: false,
-        };
-        nodes.push(node);
-      } else if (item.isFile()) {
-        const fileType = fileTypeUtils.getFileType(itemPath);
-        if (!fileType) continue;
-
-        const node = {
-          id: itemPath,
-          name: item.name,
-          type: 'file',
-          path: itemPath,
-          fileType,
-        };
-        nodes.push(node);
-      }
-    }
-
-    nodes.sort((a, b) => {
-      if (a.type === b.type) {
-        return a.name.localeCompare(b.name);
-      }
-      return a.type === 'folder' ? -1 : 1;
-    });
-
-    return nodes;
-  };
-
-  return buildTree(rootPath);
-}
+// 同步版 getFileTree/buildTree 已随 notes-get-file-tree 通道一并删除：
+// 渲染层全部走 notes-scan-folder-async / notes-get-file-tree-async（scanFolderAsync/buildTreeAsync）。
+// scanFolder 保留：仅被 indexAllNotes（UI「重建索引」按钮）使用。
 
 // 异步递归扫描：结果形状同 scanFolder，额外带 tree（便于一次 IPC 同时拿统计与树）
 async function scanFolderAsync(rootPath) {
@@ -635,6 +613,11 @@ function openFileInFolder(filePath) {
   }
 }
 
+// base64 读取的大小上限：预览/内嵌场景无必要读入超大文件（base64 还会 ×1.33 膨胀），
+// 此前无上限会把大文件整体塞进 IPC。渲染层两个调用方（resolveAssetUrl / useNotesSelection）
+// 均已按 success:false 优雅降级。
+const MAX_READ_AS_BUFFER_BYTES = 20 * 1024 * 1024; // 20MB
+
 function readFileAsBuffer(filePath) {
   const outside = rejectOutsideRoots(filePath, getAllowedRoots());
   if (outside) return outside;
@@ -642,6 +625,9 @@ function readFileAsBuffer(filePath) {
   try {
     if (!fs.existsSync(filePath)) {
       return { success: false, error: '文件不存在' };
+    }
+    if (fs.statSync(filePath).size > MAX_READ_AS_BUFFER_BYTES) {
+      return { success: false, error: '文件过大（超过 20MB），不支持以 base64 方式读取' };
     }
     const buffer = fs.readFileSync(filePath);
     const base64 = buffer.toString('base64');
@@ -685,24 +671,27 @@ function moveItem(itemPath, targetFolderPath) {
   }
 }
 
+// PowerShell 调用必须异步：execFileSync 会阻塞主进程最长 10s（期间所有窗口/IPC 冻结）。
+// 脚本内容、参数、超时与错误语义与同步版完全一致，仅执行方式改为非阻塞。
 function runPsScript(scriptContent) {
   const tmpScript = path.join(os.tmpdir(), `tb_clip_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.ps1`);
   // BOM 必不可少：无 BOM 的 .ps1 会被 powershell.exe 按 ANSI 解析，中文路径乱码
   fs.writeFileSync(tmpScript, '\ufeff' + scriptContent, 'utf-8');
-  try {
-    return execFileSync('powershell.exe', [
+  const options = {
+    encoding: 'utf-8',
+    timeout: 10000,
+    windowsHide: true,
+  };
+  return new Promise((resolve, reject) => {
+    execFile('powershell.exe', [
       '-NoProfile', '-NonInteractive', '-Sta', '-ExecutionPolicy', 'Bypass', '-File', tmpScript
-    ], {
-      encoding: 'utf-8',
-      timeout: 10000,
-      windowsHide: true,
-    });
-  } finally {
-    try { fs.unlinkSync(tmpScript); } catch {}
-  }
+    ], options, (err, stdout) => (err ? reject(err) : resolve(stdout)));
+  }).finally(() => {
+    try { fs.unlinkSync(tmpScript); } catch { /* 临时文件清理失败不影响结果 */ }
+  });
 }
 
-function writeFilesToSystemClipboard(filePaths) {
+async function writeFilesToSystemClipboard(filePaths) {
   const filesJson = JSON.stringify(filePaths);
   const script = `Add-Type -AssemblyName System.Windows.Forms
 $paths = [string[]] (ConvertFrom-Json '${filesJson.replace(/'/g, "''")}')
@@ -714,16 +703,16 @@ if ($sc.Count -gt 0) {
 } else {
   Write-Output 'CLIPBOARD_EMPTY'
 }`;
-  const output = runPsScript(script);
+  const output = await runPsScript(script);
   return typeof output === 'string' && output.trim().includes('CLIPBOARD_OK');
 }
 
-function copyItem(sourcePath) {
+async function copyItem(sourcePath) {
   try {
     if (!fs.existsSync(sourcePath)) {
       return { success: false, error: '文件或文件夹不存在' };
     }
-    if (!writeFilesToSystemClipboard([sourcePath])) {
+    if (!(await writeFilesToSystemClipboard([sourcePath]))) {
       return { success: false, error: '写入系统剪贴板失败' };
     }
     return { success: true };
@@ -765,7 +754,7 @@ function uniqueDestPath(dir, name) {
 // 发送：desktop=复制一份到系统桌面；qq/wechat=写入系统剪贴板后唤起应用，用户在窗口内 Ctrl+V 粘贴。
 const SEND_APP_PROTOCOLS = { qq: 'tencent://', wechat: 'weixin://' };
 
-function sendItem(sourcePath, target) {
+async function sendItem(sourcePath, target) {
   if (!fs.existsSync(sourcePath)) {
     return { success: false, error: '文件或文件夹不存在' };
   }
@@ -787,7 +776,7 @@ function sendItem(sourcePath, target) {
 
   const protocol = SEND_APP_PROTOCOLS[target];
   if (typeof protocol !== 'string') return { success: false, error: '不支持的发送目标' };
-  if (!writeFilesToSystemClipboard([sourcePath])) {
+  if (!(await writeFilesToSystemClipboard([sourcePath]))) {
     return { success: false, error: '写入系统剪贴板失败' };
   }
   // 唤起失败不算发送失败：文件已在剪贴板，用户可切到应用窗口手动粘贴
@@ -875,6 +864,7 @@ async function statFile(filePath) {
       size: stat.size,
       mtime: stat.mtimeMs,
       isDirectory: stat.isDirectory(),
+      fileType: fileTypeUtils.getFileType(filePath),
     };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : '读取文件信息失败' };
@@ -883,14 +873,14 @@ async function statFile(filePath) {
 
 module.exports = {
   getRootPath,
+  getOrganizePath,
   setRootPath,
   setViewPath,
   setChatRootPath,
+  setPinnedRoots,
   selectFolder,
   validateFolder,
   scanFolder,
-  getFileTree,
-  // 异步版本（结构与同步版一致，IPC 层独立通道）
   scanFolderAsync,
   getFileTreeAsync,
   createFolder,

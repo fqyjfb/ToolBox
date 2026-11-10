@@ -485,7 +485,7 @@ const SocialPanel = forwardRef<SocialPanelRef, SocialPanelProps>(({ userId }, re
               placeholder="绑定公司"
               className={modalControlClass}
             />
-            <input type="date" value={socialForm.register_time} onChange={(e) => setSocialForm(prev => ({ ...prev, register_time: e.target.value }))} className={modalControlClass} />
+            <input type="date" value={socialForm.register_time} onChange={(e) => setSocialForm(prev => ({ ...prev, register_time: e.target.value }))} className={`${modalControlClass} date-control`} />
           </div>
           <Select
             value={socialForm.account_status}

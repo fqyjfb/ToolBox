@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getAlmanac } from '../../utils/almanac';
 import { resolveAnchoredPosition } from '../../utils/anchoredPosition';
@@ -39,6 +39,24 @@ const AlmanacField: React.FC<AlmanacFieldProps> = ({ label, value, luck }) => (
 /** 黄历面板：纯展示，数据由 utils/almanac 本地计算 */
 const AlmanacPanel: React.FC<AlmanacDate> = ({ year, month, day }) => {
   const data = getAlmanac(year, month, day);
+
+  // 黄历快照推给主进程：悬浮球「黄历」卡片的内容源（与天气同一快照通道，预格式化一行文案）。
+  // 仅当面板展示的是今天才推；推送失败静默。
+  useEffect(() => {
+    if (!window.electron?.floatDailySnapshot) return;
+    const now = new Date();
+    const isToday = now.getFullYear() === year && now.getMonth() + 1 === month && now.getDate() === day;
+    if (!isToday) return;
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const yi = data.yi.slice(0, 3).join('、');
+    const ji = data.ji.slice(0, 2).join('、');
+    const line = `今日宜：${yi || '无'} · 忌：${ji || '无'}`;
+    try {
+      window.electron.floatDailySnapshot({ almanac: { line, date } });
+    } catch { /* 快照仅是缓存，推送失败静默 */ }
+    // data 由 year/month/day 纯函数算出，依赖日期三元组即可
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month, day]);
 
   return (
     <div className="almanac">
@@ -99,10 +117,12 @@ interface AlmanacPopoverProps {
   /** 触发元素的位置，浮层围绕它上下摆放 */
   rect: DOMRect;
   date: AlmanacDate;
+  /** 点击持久模式：浮层需接收鼠标事件才能滚动内容 */
+  pinned?: boolean;
 }
 
 /** 悬浮浮层：渲染到 body，挂载后回读真实尺寸再收回视口内（与右键菜单同一套定位思路） */
-const AlmanacPopover: React.FC<AlmanacPopoverProps> = ({ rect, date }) => {
+const AlmanacPopover: React.FC<AlmanacPopoverProps> = ({ rect, date, pinned = false }) => {
   const ref = useRef<HTMLDivElement>(null);
   const panelWidth = Math.min(PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, window.innerWidth - POPOVER_PADDING * 2));
   const [style, setStyle] = useState<React.CSSProperties>({
@@ -135,7 +155,11 @@ const AlmanacPopover: React.FC<AlmanacPopoverProps> = ({ rect, date }) => {
   }, [rect, date.year, date.month, date.day]);
 
   return createPortal(
-    <div ref={ref} className="almanac-popover" style={style}>
+    <div
+      ref={ref}
+      className={pinned ? 'almanac-popover almanac-popover--pinned' : 'almanac-popover'}
+      style={style}
+    >
       <AlmanacPanel year={date.year} month={date.month} day={date.day} />
     </div>,
     document.body

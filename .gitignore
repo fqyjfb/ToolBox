@@ -41,6 +41,7 @@ doc/
 
 # Build output
 dist-electron/
+vite.config.d.ts
 
 # TypeScript build info
 *.tsbuildinfo

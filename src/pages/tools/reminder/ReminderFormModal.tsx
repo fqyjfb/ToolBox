@@ -100,7 +100,7 @@ const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
               type="datetime-local"
               value={formData.remind_time ? formatDateTimeForInput(formData.remind_time) : ''}
               onChange={(e) => onFormDataChange({ ...formData, remind_time: e.target.value.replace('T', ' ') })}
-              className={modalControlClass}
+              className={`${modalControlClass} date-control`}
             />
           </div>
           <div>

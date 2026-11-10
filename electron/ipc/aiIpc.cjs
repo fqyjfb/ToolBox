@@ -1,7 +1,7 @@
 const { ipcMain } = require('electron');
 
 const DEFAULT_TIMEOUT_MS = 60000;
-const MAX_TIMEOUT_MS = 120000;
+const MAX_TIMEOUT_MS = 180000;
 
 function normalizeTimeout(value) {
   const num = Number(value);
@@ -36,6 +36,16 @@ async function handleChat(_event, payload) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), normalizeTimeout(timeoutMs));
 
+  // 去掉服务端错误里的 OpenAIException/ServiceUnavailableError 前缀，
+  // 只保留对用户有意义的部分，避免整条消息被截断或看不懂。
+  const trimApiError = (raw) => {
+    const msg = String(raw || '');
+    // 去掉 "ServiceUnavailableError: ServiceUnavailableError: OpenAIException - " 等前缀
+    const cleaned = msg.replace(/^[A-Za-z]+(?:Exception|Error)[:：\s]*/g, '').trim();
+    // 去掉 "xxx.xxxError: xxxError: " 这种嵌套前缀
+    return cleaned.replace(/^[A-Za-z$.]+Error[:：]\s*/, '').trim() || msg;
+  };
+
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (typeof apiKey === 'string' && apiKey) {
@@ -58,13 +68,12 @@ async function handleChat(_event, payload) {
     }
 
     if (!response.ok) {
+      const rawMsg = data?.error?.message || data?.message || '';
+      const cleaned = trimApiError(rawMsg);
       return {
         success: false,
         status: response.status,
-        error:
-          data?.error?.message ||
-          data?.message ||
-          `AI 请求失败 (${response.status})`,
+        error: cleaned || `AI 请求失败 (${response.status})`,
       };
     }
 
@@ -75,9 +84,10 @@ async function handleChat(_event, payload) {
 
     return { success: true, content };
   } catch (error) {
+    const aborted = error?.name === 'AbortError';
     return {
       success: false,
-      error: error?.name === 'AbortError' ? 'AI 请求超时' : error?.message || 'AI 请求失败',
+      error: aborted ? 'AI 请求超时，请稍后再试或换个更快的模型' : (error?.message || 'AI 请求失败'),
     };
   } finally {
     clearTimeout(timer);
@@ -86,6 +96,8 @@ async function handleChat(_event, payload) {
 
 function registerAIIpc() {
   ipcMain.handle('ai-chat', handleChat);
+  // 悬浮球/面板的 AI 通道与主窗共用同一套请求实现，挂在同一注册点
+  require('../services/floatAssistantService.cjs').registerFloatAIIpc();
 }
 
-module.exports = { registerAIIpc };
+module.exports = { registerAIIpc, handleChat };

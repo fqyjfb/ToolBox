@@ -17,10 +17,16 @@ let screenshotOverlayWindow = null;
 // 插件窗口表（由 pluginIpc 注入的同一 Map 实例）
 let pluginWindowsRef = null;
 
+// 截图问答的一次性标记：只影响下一次 screenshot:translate 的落点，不改变既有翻译路径
+let pendingFloatScreenshot = false;
+
 async function startScreenshotCapture(options) {
-  const mode = options && options.mode === 'translate' ? 'translate' : 'capture';
+  // P1-4：截图问答复用 translate 选区 + OCR 流程（overlay 不必认识新 mode），
+  // 但不受「翻译总开关」约束，且结果改投 AI 面板而不是翻译浮层。
+  const forFloat = options && options.mode === 'float';
+  const mode = (options && options.mode === 'translate') || forFloat ? 'translate' : 'capture';
   // 翻译功能总开关：关闭时截图翻译入口直接退出，避免启动 OCR 服务
-  if (mode === 'translate' && loadSettings().translateEnabled === 0) {
+  if (mode === 'translate' && !forFloat && loadSettings().translateEnabled === 0) {
     return { success: false, error: '翻译功能已关闭' };
   }
   try {
@@ -451,6 +457,12 @@ function registerScreenshotIpc({ pluginWindows }) {
   ipcMain.handle('screenshot:translate', async (_event, dataUrl) => {
     // 翻译场景不应把主窗口拉出来，showInactive 只恢复遮罩和插件窗口
     restoreAfterScreenshot({ showMain: false });
+    const forFloat = pendingFloatScreenshot;
+    pendingFloatScreenshot = false;
+    const openFloatPanel = (text, image, error) => {
+      const { openPanel } = require('../window/floatPanelWindow.cjs');
+      openPanel({ mode: 'screenshot', text, image: image || '', error: error || '' });
+    };
     try {
       const settings = loadSettings();
       const { recognizeBase64 } = require('../services/ocrService.cjs');
@@ -459,8 +471,18 @@ function registerScreenshotIpc({ pluginWindows }) {
 
       if (!result.success || !result.text) {
         const error = result.error || '未识别到文字，请调整选区后重试';
+        if (forFloat) {
+          openFloatPanel('', dataUrl, error);
+          return { success: false, error };
+        }
         showTranslateWindow({ text: '', autoTranslate: false, trigger: 'screenshot', error });
         return { success: false, error };
+      }
+
+      // 截图问答：OCR 文本 + 原图都只在内存里传给面板，不写剪贴板、不落盘
+      if (forFloat) {
+        openFloatPanel(result.text.trim(), dataUrl, '');
+        return { success: true, text: result.text.trim() };
       }
 
       let text = result.text;
@@ -477,7 +499,10 @@ function registerScreenshotIpc({ pluginWindows }) {
     }
   });
 
-  ipcMain.on('cancel-screenshot', () => restoreAfterScreenshot({ showMain: true }));
+  ipcMain.on('cancel-screenshot', () => {
+    pendingFloatScreenshot = false;
+    restoreAfterScreenshot({ showMain: true });
+  });
 
   ipcMain.on('screenshot-session-complete', () => restoreAfterScreenshot({ showMain: true }));
 
@@ -548,4 +573,17 @@ function registerScreenshotIpc({ pluginWindows }) {
   });
 }
 
-module.exports = { registerScreenshotIpc, startScreenshotCapture };
+/** 悬浮球截图问答入口：复用现有选区遮罩与 OCR，结果投到 AI 面板 */
+async function requestFloatScreenshot() {
+  pendingFloatScreenshot = true;
+  try {
+    const result = await startScreenshotCapture({ mode: 'float' });
+    if (result && result.success === false) pendingFloatScreenshot = false;
+    return result;
+  } catch (error) {
+    pendingFloatScreenshot = false;
+    throw error;
+  }
+}
+
+module.exports = { registerScreenshotIpc, startScreenshotCapture, requestFloatScreenshot };

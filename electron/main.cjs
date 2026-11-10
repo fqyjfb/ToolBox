@@ -143,8 +143,13 @@ function resolveLocalMediaRoots() {
   return roots;
 }
 function isLocalMediaAllowed(p) {
-  const resolved = path.resolve(p);
-  return resolveLocalMediaRoots().some(r => resolved === r || resolved.startsWith(r + path.sep));
+  // Windows 路径大小写不敏感：比较前统一小写，避免大小写变体被误判 403；
+  // 保留 path.sep 前缀边界（防 C:\notes-evil 绕过 C:\notes），归一化不影响该防护。
+  const resolved = path.resolve(p).toLowerCase();
+  return resolveLocalMediaRoots().some((r) => {
+    const root = path.resolve(r).toLowerCase();
+    return resolved === root || resolved.startsWith(root + path.sep);
+  });
 }
 
 async function handleLocalMediaRequest(request) {

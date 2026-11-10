@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
   todoServiceWrapper,
@@ -251,6 +251,29 @@ const TodoManagerPage: React.FC = () => {
     setShowAddTodoModal(true);
     handleCloseContextMenu();
   }, [handleCloseContextMenu]);
+
+  // 悬浮球「查看待办」深链：/tools/todo?focus=<id>，加载后打开该条待办的编辑弹层
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusConsumedRef = useRef(false);
+  // 记录已补拉过的 focus id：页面已挂载时列表可能是旧数据，补拉一次即可，避免反复请求
+  const focusLoadRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    if (!focusId || focusConsumedRef.current) return;
+    const todo = todos.find((item) => item.id === focusId);
+    if (!todo) {
+      // 首屏加载进行中不重复请求；加载完仍没有才补拉一次
+      if (!isLoading && focusLoadRef.current !== focusId) {
+        focusLoadRef.current = focusId;
+        void loadTodos();
+      }
+      return; // 仍找不到（多端同步延迟 / 不在当前分页）时安静停留在列表页
+    }
+    focusConsumedRef.current = true;
+    handleEditTodo(todo);
+    setSearchParams({}, { replace: true });
+  }, [todos, isLoading, searchParams, handleEditTodo, loadTodos, setSearchParams]);
 
   const handleSaveEdit = async () => {
     if (!user || !editingTodo || !newTodo.title.trim()) return;

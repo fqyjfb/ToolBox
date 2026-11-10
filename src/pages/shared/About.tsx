@@ -60,15 +60,12 @@ const About: React.FC = () => {
       const handleProgress = (progress: number) => {
         setDownloadProgress(progress);
       };
-      
-      if (window.electron?.onDownloadProgress) {
-        window.electron.onDownloadProgress(handleProgress);
-      }
-      
+
+      // onDownloadProgress 返回退订函数（多播），卸载时正确退订
+      const unsubscribe = window.electron?.onDownloadProgress(handleProgress);
+
       return () => {
-        if (window.electron?.onDownloadProgress) {
-          window.electron.onDownloadProgress(() => {});
-        }
+        unsubscribe?.();
       };
     }
   }, [updateStatus, isElectron]);

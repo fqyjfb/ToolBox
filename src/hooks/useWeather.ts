@@ -56,6 +56,18 @@ export const useWeather = () => {
 
   const weatherData = currentWeather.data ?? null;
   const forecast = forecastResult.data ?? [];
+
+  // 天气快照推给主进程：悬浮球「今日天气/启动卡」的内容源（ai.json 同款快照惯例，主进程不重复发请求）。
+  // 预格式化成一行文案，主进程只做过期判断与展示；Web 端 window.electron 不存在，自动跳过；推送失败静默。
+  useEffect(() => {
+    if (!weatherData || !window.electron?.floatDailySnapshot) return;
+    try {
+      const { location, weather } = weatherData;
+      window.electron.floatDailySnapshot({
+        weather: { summary: `${location.name} ${weather.temperature}°C ${weather.condition}`, updatedAt: Date.now() },
+      });
+    } catch { /* 快照仅是缓存，推送失败静默 */ }
+  }, [weatherData]);
   // isFetching 对应原实现「请求进行中」的语义（手动刷新时同样为 true）
   const loading = currentWeather.isFetching || forecastResult.isFetching;
   const error =

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Select, { type SelectOption } from '../ui/Select';
 import Modal from '../ui/Modal';
@@ -39,7 +39,7 @@ const BADGE_CLASS: Record<string, string> = {
 interface CalendarCellProps {
   day: CalendarDay;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onHoverStart: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onHoverEnd: () => void;
 }
@@ -98,6 +98,7 @@ interface CalendarModalProps {
  * 悬浮任意日期格弹出当日黄历。
  */
 const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
@@ -106,8 +107,27 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
   });
-  const { show, hide, popover } = useAlmanacHover(150);
+  const { show, hide, showClick, hideClick, popover, isPinned } = useAlmanacHover(150);
   const month = useMemo(() => getMonthCalendar(view.year, view.month), [view.year, view.month]);
+
+  // 点击其它区域自动关闭点击持久的黄历浮层
+  useEffect(() => {
+    if (!isOpen || !isPinned) return;
+    const handleDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (!target) return;
+      if (containerRef.current && containerRef.current.contains(target)) return;
+      if ((target as HTMLElement).closest?.('.almanac-popover')) return;
+      hideClick();
+    };
+    document.addEventListener('mousedown', handleDocClick);
+    return () => document.removeEventListener('mousedown', handleDocClick);
+  }, [isOpen, isPinned, hideClick]);
+
+  // 弹窗关闭时清掉点击持久状态
+  useEffect(() => {
+    if (!isOpen) hideClick();
+  }, [isOpen, hideClick]);
 
   const shiftMonth = (delta: number) => {
     setView(prev => {
@@ -129,7 +149,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
       bodyClassName=""
       className="min-w-0"
     >
-      <div className="calendar-modal">
+      <div className="calendar-modal" ref={containerRef}>
         <div className="calendar-modal__head">
           <div className="calendar-modal__pickers">
             <Select
@@ -199,9 +219,12 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
                     selected.month === day.month &&
                     selected.day === day.day
                   }
-                  onSelect={() => setSelected({ year: day.year, month: day.month, day: day.day })}
+                  onSelect={event => {
+                    setSelected({ year: day.year, month: day.month, day: day.day });
+                    showClick(event, { year: day.year, month: day.month, day: day.day });
+                  }}
                   onHoverStart={event => show(event, { year: day.year, month: day.month, day: day.day })}
-                  onHoverEnd={hide}
+                  onHoverEnd={() => { if (!isPinned) hide(); }}
                 />
               ))}
             </div>

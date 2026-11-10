@@ -13,6 +13,7 @@ import { useChatPath } from '../pages/tools/notes/hooks/useChatPath';
 import { useNotesRecents } from '../pages/tools/notes/hooks/useNotesRecents';
 import { useNotesFavorites } from '../pages/tools/notes/hooks/useNotesFavorites';
 import { useNotesTabs } from '../pages/tools/notes/hooks/useNotesTabs';
+import { basenameOfPath } from '../pages/tools/notes/utils/treeUtils';
 import { bindNotesRecentsStorageSync } from '../store/notesRecentsStore';
 import { useToastStore } from '../store/toastStore';
 import type { FileTreeNode, FileMetadata, PinnedFolder, NotesRecentItem, NotesFavoritePath, NotesSendTarget } from '../pages/tools/notes/types';
@@ -71,9 +72,11 @@ export interface UseNotesReturn extends NotesState {
   toggleFavorite: (absolutePath: NotesFavoritePath) => Promise<boolean>;
   removeRecent: (absolutePath: NotesFavoritePath) => void;
   clearRecents: () => void;
-  // 只暴露 switchTab：tabs / activeTabPath / closeTab 由 <OpenTabs> 直连 store，
+  // 只暴露 switchTab / openFileByPath：tabs / activeTabPath / closeTab 由 <OpenTabs> 直连 store，
   // 经组合根转发会变成零调用方的冗余 API
   switchTab: (path: string) => void;
+  /** 按绝对路径打开文件：先查当前树，查不到再用主进程 stat 判定存在性并合成节点 */
+  openFileByPath: (path: string) => Promise<boolean>;
 }
 
 export function useNotes(): UseNotesReturn {
@@ -117,20 +120,47 @@ export function useNotes(): UseNotesReturn {
   // 6) T08：标签页（独立 hook，只存路径；与上面两者互不依赖）
   const tabs = useNotesTabs();
 
-  // 切换标签：从文件树找回节点再 selectFile。节点不在树中（被外部删除 / 移动 / 不在当前目录）
-  // 时不能静默返回——关掉标签并弹 toast，否则用户点了标签像没反应。
-  const switchTab = useCallback(
-    (path: string) => {
+  // 按路径打开文件：当前视图树能查到就沿用原节点；查不到则用主进程 stat 判定
+  // "真实存在 / 是目录 / 类型是否支持"，存在则合成节点打开，避免把"不在当前目录"
+  // 误判成"文件已删除"。失败时统一在此提示，调用方不重复弹 toast。
+  const openFileByPath = useCallback(
+    async (path: string): Promise<boolean> => {
       const node = tree.findFileInTree(path, tree.fileTree);
       if (node) {
-        void selection.selectFile(node);
-        return;
+        await selection.selectFile(node);
+        return true;
       }
-      tabs.closeTab(path);
-      useToastStore.getState().addToast({ type: 'warning', message: '文件已不存在，已关闭标签' });
+
+      const notes = window.electron?.notes;
+      if (!notes) return false;
+      const stat = await notes.statFile(path).catch(() => null);
+      if (!stat?.success || stat.isDirectory || !stat.fileType) {
+        useToastStore.getState().addToast({ type: 'warning', message: '文件已不存在，或无法访问' });
+        return false;
+      }
+
+      await selection.selectFile({
+        id: path,
+        name: basenameOfPath(path),
+        type: 'file',
+        path,
+        fileType: stat.fileType,
+      });
+      return true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tree.fileTree, selection.selectFile, tabs.closeTab]
+    [tree.fileTree, selection.selectFile]
+  );
+
+  // 切换标签：按路径打开，不再要求节点必须存在于当前视图树。
+  // 只有文件真实缺失（stat 失败 / 是目录 / 类型不支持）才关闭标签；提示由 openFileByPath 统一发出。
+  const closeTab = tabs.closeTab;
+  const switchTab = useCallback(
+    async (path: string) => {
+      if (await openFileByPath(path)) return;
+      closeTab(path);
+    },
+    [openFileByPath, closeTab]
   );
 
   // 延迟注入：把 recents.pushRecent / favorites.toggle / tabs.openTab 注入 selection，
@@ -256,6 +286,7 @@ export function useNotes(): UseNotesReturn {
     clearRecents: recents.clearRecents,
     // tabs 数据由 <OpenTabs> 直连 store，不在此转发
     switchTab,
+    openFileByPath,
   };
 }
 

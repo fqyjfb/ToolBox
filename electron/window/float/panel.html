@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小橘 · AI 面板</title>
+  <link rel="stylesheet" href="panel.css">
+  <script>
+    // 同步取一次主题，保证深色模式下首帧不闪白（与锁屏窗口同一做法）
+    try {
+      var initialTheme = window.panelAPI && window.panelAPI.getThemeSync();
+      if (initialTheme && initialTheme.isDark) {
+        document.documentElement.classList.add('dark');
+      }
+    } catch (error) {
+      // 取不到主题就按浅色渲染，后续 panel.js 会用异步结果纠正
+    }
+  </script>
+</head>
+<body>
+  <header class="panel-header">
+    <div class="panel-title">
+      <svg class="sparkle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
+        <path d="M20 2v4" />
+        <path d="M22 4h-4" />
+        <circle cx="4" cy="20" r="2" />
+      </svg>
+      <span>小橘</span>
+      <span class="panel-badge" id="modelBadge">AI</span>
+    </div>
+    <div class="panel-tools">
+      <button class="icon-btn" id="headerMenuBtn" title="功能菜单" aria-label="功能菜单">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="5" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <circle cx="12" cy="19" r="1.5" />
+        </svg>
+      </button>
+      <!-- 头部下拉菜单：AI对话 / 收件箱 / 捕捉 / 截图 / 命令面板 -->
+      <div class="header-dropdown" id="headerDropdown" hidden>
+        <button type="button" class="header-dropdown-item" data-mode="chat">
+          <span class="header-dropdown-label">AI 对话</span>
+        </button>
+        <button type="button" class="header-dropdown-item" data-mode="shelf">
+          <span class="header-dropdown-label">拖拽收件箱</span>
+        </button>
+        <button type="button" class="header-dropdown-item" data-mode="capture">
+          <span class="header-dropdown-label">快速捕捉</span>
+        </button>
+        <button type="button" class="header-dropdown-item" data-mode="screenshot">
+          <span class="header-dropdown-label">截图问答</span>
+        </button>
+        <button type="button" class="header-dropdown-item" data-mode="palette">
+          <span class="header-dropdown-label">命令面板</span>
+        </button>
+      </div>
+      <button class="icon-btn" id="historyBtn" title="对话历史" aria-label="对话历史">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+          <path d="M12 7v5l4 2" />
+        </svg>
+      </button>
+      <button class="icon-btn" id="newChatBtn" title="新对话" aria-label="新对话">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14" />
+          <path d="M12 5v14" />
+        </svg>
+      </button>
+      <button class="icon-btn" id="closeBtn" title="关闭 (Esc)" aria-label="关闭">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="selection-bar" id="selectionBar" hidden>
+    <div class="selection-quote" id="selectionText"></div>
+    <div class="preset-row" id="selectionActions">
+      <button class="chip" data-preset="translate">翻译</button>
+      <button class="chip" data-preset="polish">润色</button>
+      <button class="chip" data-preset="summarize">总结</button>
+      <button class="chip" data-preset="explain">解释</button>
+    </div>
+  </div>
+
+  <section class="feature-panel" id="featurePanel" hidden></section>
+
+  <main class="messages" id="messages"></main>
+
+  <section class="guide" id="guide" hidden>
+    <p class="guide-title">还没有配置 AI 模型</p>
+    <p class="guide-text">去「设置 → AI 设置」添加一个模型（DeepSeek、智谱或本地 Ollama 都可以），回来就能直接用。</p>
+    <button class="primary-btn" id="openSettingsBtn">去设置</button>
+  </section>
+
+  <footer class="composer" id="composer">
+    <div class="preset-row" id="chatPresets">
+      <button class="chip" data-preset="explain">解释</button>
+      <button class="chip" data-preset="translate">翻译</button>
+      <button class="chip" data-preset="summarize">总结</button>
+      <button class="chip" data-action="save-note">存笔记</button>
+      <button class="chip" data-action="save-todo">存待办</button>
+    </div>
+    <div class="input-wrapper">
+      <textarea id="input" rows="1" placeholder="问点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
+      <button class="send-btn" id="sendBtn" title="发送">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 2 11 13" />
+          <path d="M22 2 15 22l-4-9-9-4Z" />
+        </svg>
+      </button>
+    </div>
+  </footer>
+
+  <script src="panel.js"></script>
+</body>
+</html>

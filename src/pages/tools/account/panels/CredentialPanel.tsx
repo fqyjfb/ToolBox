@@ -429,7 +429,7 @@ const CredentialPanel = forwardRef<CredentialPanelRef, CredentialPanelProps>(({ 
               ]}
               className={modalControlClass}
             />
-            <input type="date" value={credentialForm.birth_date} onChange={(e) => setCredentialForm(prev => ({ ...prev, birth_date: e.target.value }))} className={modalControlClass} />
+            <input type="date" value={credentialForm.birth_date} onChange={(e) => setCredentialForm(prev => ({ ...prev, birth_date: e.target.value }))} className={`${modalControlClass} date-control`} />
           </div>
           <input type="text" value={credentialForm.id_card_address} onChange={(e) => setCredentialForm(prev => ({ ...prev, id_card_address: e.target.value }))} placeholder="身份证地址" className={modalControlClass} />
           <div className="grid grid-cols-2 gap-2">

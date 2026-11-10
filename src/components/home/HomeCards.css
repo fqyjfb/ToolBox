@@ -1115,6 +1115,11 @@
   pointer-events: none;
 }
 
+/* 点击持久模式：接收鼠标事件，内容超高时可滚动；悬浮模式保持穿透不影响下方日期格 */
+.almanac-popover--pinned {
+  pointer-events: auto;
+}
+
 .almanac {
   display: flex;
   flex-direction: column;

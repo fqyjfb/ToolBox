@@ -143,10 +143,10 @@ declare interface Window {
       setViewPath: (viewPath: string | null) => Promise<boolean>;
       /** 同步对话整理独立目录（对话根）给主进程，仅用于文件操作越界放行；null 表示未单独设置 */
       setChatRootPath: (chatPath: string | null) => Promise<boolean>;
+      /** 同步所有固定目录给主进程，仅用于文件操作越界放行（跨目录标签/最近条目的读写） */
+      setPinnedRoots: (paths: string[]) => Promise<boolean>;
       selectFolder: () => Promise<NotesSelectFolderResult>;
       validateFolder: (folderPath: string) => Promise<NotesValidateResult>;
-      scanFolder: (rootPath: string) => Promise<NotesScanResult>;
-      getFileTree: () => Promise<NotesFileTreeNode[]>;
       createFolder: (parentPath: string | null, name: string) => Promise<NotesCreateResult>;
       createFolderForce: (parentPath: string | null, name: string, mode: 'overwrite' | 'copy') => Promise<NotesCreateResult>;
       createNote: (parentPath: string | null, name: string, content?: string) => Promise<NotesCreateResult>;
@@ -154,7 +154,7 @@ declare interface Window {
       readFile: (filePath: string) => Promise<NotesReadResult>;
       readFileAsBuffer: (filePath: string) => Promise<{ success: boolean; base64?: string; mimeType?: string; error?: string }>;
       /** 视频内嵌播放前置探测：只取 size/mtime，不读文件内容 */
-      statFile: (filePath: string) => Promise<{ success: boolean; size?: number; mtime?: number; isDirectory?: boolean; error?: string }>;
+      statFile: (filePath: string) => Promise<{ success: boolean; size?: number; mtime?: number; isDirectory?: boolean; fileType?: 'md' | 'txt' | 'html' | 'json' | 'docx' | 'xlsx' | 'image' | 'pdf' | 'video' | null; error?: string }>;
       /** 导出 PDF：传已构建的 HTML（图片已内联），主进程打印并弹保存对话框落盘 */
       exportPdf: (payload: { html: string; defaultPath?: string }) => Promise<{ success: boolean; canceled?: boolean; filePath?: string; error?: string }>;
       /** 导出独立 HTML（图片已内联为 data-uri，单文件可分发） */
@@ -222,6 +222,24 @@ declare interface Window {
     ai: {
       chat: (payload: { url: string; apiKey?: string; body: Record<string, unknown>; timeoutMs?: number }) => Promise<{ success: boolean; content?: string; error?: string; status?: number }>;
     };
+    /** 悬浮球 AI 面板回传的写入请求（当前仅「存为待办」） */
+    floatAi?: {
+      onSaveTodo: (callback: (payload: { requestId?: string; title: string; description?: string }) => void) => () => void;
+      reportSaveTodo: (payload: {
+        requestId: string;
+        success: boolean;
+        todo?: unknown;
+        error?: string;
+      }) => void;
+    };
+    /** 悬浮球洞察气泡：每日快照（天气/黄历/打卡，预格式化文案，主进程合并写） */
+    floatDailySnapshot?: (payload: {
+      weather?: { summary: string; updatedAt: number };
+      almanac?: { line: string; date: string };
+      checkIn?: { checkedToday: boolean; streak: number; weekCount: number; date: string };
+    }) => void;
+    /** 悬浮球洞察气泡：轻量事件（打卡成功等即时反馈） */
+    floatInsightEvent?: (payload: { type: string; streak?: number }) => void;
     log: {
       open: () => void;
       addLog: (level: 'error' | 'warn' | 'info' | 'debug', message: string, context?: string, stack?: string) => Promise<boolean>;
@@ -277,8 +295,8 @@ declare interface Window {
       onNewEntry: (callback: (entry: { id: string; timestamp: number; level: 'error' | 'warn' | 'info' | 'debug'; message: string; context?: string; stack?: string }) => void) => () => void;
       onCleared: (callback: () => void) => () => void;
     };
-    onDownloadProgress: (callback: (progress: number) => void) => void;
-    onNavigate: (callback: (path: string) => void) => void;
+    onDownloadProgress: (callback: (progress: number) => void) => () => void;
+    onNavigate: (callback: (path: string) => void) => () => void;
     onSettingChanged: (callback: (setting: { name: string; value: string | number | boolean | object }) => void) => () => void;
     onOpenAddTodo: (callback: () => void) => void;
     onOpenAddMemo: (callback: () => void) => void;

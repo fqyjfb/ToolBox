@@ -47,4 +47,6 @@ export interface NotesSidebarProps {
   onToggleFavorite: (absolutePath: NotesFavoritePath) => void;
   onRemoveRecent: (absolutePath: NotesFavoritePath) => void;
   onClearRecents: () => void;
+  /** 最近条目按绝对路径打开（跨固定目录可用） */
+  onOpenRecentPath: (path: string) => void;
 }

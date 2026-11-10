@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Home, Grid3X3, Zap, Star, CheckSquare, Newspaper, Settings,
   Trash2, Monitor, Power, RotateCcw, RotateCw,
+  Sparkles, Languages,
 } from 'lucide-react';
 import { ShortcutItem } from '../types/settings';
 
@@ -20,6 +21,12 @@ export const NAV_ACTIONS: FloatActionOption[] = [
   { action: 'todo', label: '待办', icon: CheckSquare },
   { action: 'news', label: '热点', icon: Newspaper },
   { action: 'settings', label: '设置', icon: Settings },
+];
+
+// 悬浮球 AI 动作：action 存短名，渲染层发送时统一拼成 ai:xxx
+export const AI_ACTIONS: FloatActionOption[] = [
+  { action: 'chat', label: 'AI 对话', icon: Sparkles },
+  { action: 'selection', label: '划词提问', icon: Languages },
 ];
 
 export const SYSTEM_ACTIONS: FloatActionOption[] = [
@@ -43,6 +50,10 @@ export const DEFAULT_SHORTCUTS: ShortcutItem[] = [
   { id: 10, tag: '锁定/解锁', cmd: 'CommandOrControl+L', isOpen: 1, isGlobal: 1 },
   { id: 11, tag: '划词翻译', cmd: 'Alt+E', isOpen: 1, isGlobal: 1, name: 'translateSelection' },
   { id: 12, tag: '截图翻译', cmd: 'Alt+W', isOpen: 1, isGlobal: 1, name: 'translateScreenshot' },
+  { id: 14, tag: '悬浮球划词提问', cmd: 'Alt+D', isOpen: 1, isGlobal: 1, name: 'floatSelectionAI' },
+  { id: 15, tag: '悬浮球快速捕捉', cmd: 'Alt+Shift+C', isOpen: 1, isGlobal: 1, name: 'floatQuickCapture' },
+  { id: 16, tag: '悬浮球命令面板', cmd: 'Alt+P', isOpen: 1, isGlobal: 1, name: 'floatPalette' },
+  { id: 17, tag: '悬浮球截图问答', cmd: 'Alt+Shift+A', isOpen: 1, isGlobal: 1, name: 'floatScreenshotQA' },
 ];
 
 export const FLOAT_TYPE_OPTIONS = [
@@ -50,6 +61,7 @@ export const FLOAT_TYPE_OPTIONS = [
   { type: 'tool' as const, label: '工具' },
   { type: 'app' as const, label: '应用' },
   { type: 'system' as const, label: '系统' },
+  { type: 'ai' as const, label: 'AI' },
   { type: 'plugin' as const, label: '插件' },
 ];
 

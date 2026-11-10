@@ -70,14 +70,19 @@ export const checkInService = {
   },
 };
 
-// 头部签到按钮：当天签到状态 + 连续天数，随写操作 invalidate 刷新
+// 头部签到按钮：当天签到状态 + 连续天数 + 本周打卡天数，随写操作 invalidate 刷新
+// weekCount 同时供悬浮球「每周摘要」快照使用（周一起算，与主进程聚合口径一致）
 export const checkInStatusQuery = (userId: string) => ({
   queryKey: queryKeys.checkIn.status(userId),
-  queryFn: async (): Promise<{ checkedToday: boolean; streak: number }> => {
+  queryFn: async (): Promise<{ checkedToday: boolean; streak: number; weekCount: number }> => {
     const records = await checkInService.listCheckIns(userId);
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+    const weekStartStr = localDateStr(weekStart);
     return {
       checkedToday: records.some(r => r.check_in_date === localDateStr(new Date())),
       streak: calcStreak(records),
+      weekCount: records.filter(r => r.check_in_date >= weekStartStr).length,
     };
   },
   enabled: !!userId,

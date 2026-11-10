@@ -194,18 +194,25 @@ const MemoPage: React.FC = () => {
     type: 'empty'
   });
 
+  // 分类加载竞态防护：与下方 loadMemos 的 memoReqIdRef 同一模式，
+  // 快速切换用户/重挂载时丢弃旧响应，避免旧用户分类覆盖当前视图
+  const categoryReqIdRef = useRef(0);
+
   const loadCategories = useCallbackRef(async () => {
     if (!user) return;
-    
+    const reqId = ++categoryReqIdRef.current;
+
     try {
       setLoading(true);
       const categoriesData = await memoService.getCategories(user.id);
+      if (reqId !== categoryReqIdRef.current) return;
       setCategories(categoriesData);
     } catch (error) {
+      if (reqId !== categoryReqIdRef.current) return;
       logError('Error loading categories', 'MemoPage', error as Error);
       addToast({ message: '加载分类失败', type: 'error' });
     } finally {
-      setLoading(false);
+      if (reqId === categoryReqIdRef.current) setLoading(false);
     }
   }, [user, addToast]);
 

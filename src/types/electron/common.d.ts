@@ -98,7 +98,7 @@ interface UpdateResult {
 
 interface FloatConfigItem {
   id: number;
-  type: 'nav' | 'tool' | 'app' | 'system' | 'plugin';
+  type: 'nav' | 'tool' | 'app' | 'system' | 'ai' | 'plugin';
   action: string;
   name: string;
   icon: string;

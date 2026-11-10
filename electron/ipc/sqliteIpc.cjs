@@ -1,4 +1,4 @@
-const { ipcMain, dialog, shell } = require('electron');
+const { ipcMain, dialog, shell, app } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const sqliteService = require('../services/sqliteService.cjs');
@@ -63,6 +63,12 @@ function register() {
       throw new Error('路径无写入权限');
     }
     await sqliteService.changePath(newPath);
+    // 迁移完成后真实重启（与设置页 Toast 文案「应用将重启生效」对齐）：
+    // 延迟 800ms 留出 IPC 响应与 Toast 展示时间
+    setTimeout(() => {
+      app.relaunch();
+      app.exit(0);
+    }, 800);
     return true;
   });
 

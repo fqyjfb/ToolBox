@@ -89,6 +89,8 @@ const registerTranslateIpc = () => {
     if (translateWindow && !translateWindow.isDestroyed()) {
       translateWindow.webContents.send('ai-config-changed', config);
     }
+    // 悬浮球面板按同一份快照取模型：设置页改完要立即刷新，不能等下次开面板
+    require('../window/floatPanelWindow.cjs').notifyPanelAIStatus();
     return { success: true };
   });
 

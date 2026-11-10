@@ -529,6 +529,8 @@ const QuickLaunch: React.FC = () => {
       iconSize,
       showText,
       singleClickLaunch,
+      sortMode,
+      setSortMode,
       isScanningDesktop,
       isScanningInstalled,
       addToast,
@@ -613,25 +615,7 @@ const QuickLaunch: React.FC = () => {
     <div
         className="h-full flex flex-col"
         onContextMenu={(e) => handleContextMenu(e, 'empty')}
-      >
-        
-      <div className={`flex ${isCompact ? 'flex-col items-stretch gap-1 px-1 py-1' : 'items-center justify-end pl-6 pr-0 py-2'}`}>
-        {/* 工具栏：仅保留排序方式选择，其余功能由右键菜单提供（与桌面文件夹交互一致） */}
-        <Select
-          value={sortMode}
-          onChange={(v) => setSortMode(v as QuickLaunchSortMode)}
-          size="sm"
-          options={[
-            { value: 'custom', label: '自定义' },
-            { value: 'name', label: '按名称' },
-            { value: 'addedAt', label: '按添加时间' },
-            { value: 'launchCount', label: '按使用频率' },
-            { value: 'lastLaunchedAt', label: '按最近使用' },
-          ]}
-          className="!w-fit quick-launch-sort !border-0 !bg-transparent hover:!bg-gray-100 dark:hover:!bg-gray-700"
-        />
-      </div>
-
+      >        
       <div
         ref={dragContainerRef}
         className={`quick-launch-scroll flex-1 overflow-auto flex flex-col transition-colors duration-200 ${

@@ -448,7 +448,7 @@ const GeneralPanel = forwardRef<GeneralPanelRef, GeneralPanelProps>(({ userId },
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <input type="date" value={generalForm.registration_date} onChange={(e) => setGeneralForm(prev => ({ ...prev, registration_date: e.target.value }))} className={modalControlClass} />
+            <input type="date" value={generalForm.registration_date} onChange={(e) => setGeneralForm(prev => ({ ...prev, registration_date: e.target.value }))} className={`${modalControlClass} date-control`} />
             <Select
               value={generalForm.status}
               onChange={(v) => setGeneralForm(prev => ({ ...prev, status: v as GeneralAccount['status'] }))}

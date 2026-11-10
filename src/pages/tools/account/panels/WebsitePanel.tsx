@@ -884,7 +884,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <input type="date" value={accountForm.date} onChange={(e) => setAccountForm(prev => ({ ...prev, date: e.target.value }))} className={modalControlClass} />
+            <input type="date" value={accountForm.date} onChange={(e) => setAccountForm(prev => ({ ...prev, date: e.target.value }))} className={`${modalControlClass} date-control`} />
             <Select
               value={accountForm.status}
               onChange={(v) => setAccountForm(prev => ({ ...prev, status: v as 'active' | 'inactive' | 'expired' }))}

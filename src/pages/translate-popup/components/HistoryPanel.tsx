@@ -31,8 +31,8 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onCopy }) => {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      // 服务端写入时已按设置上限裁剪，这里直接取全量
-      setRecords(await listTranslateHistory());
+      // 客户端也强制上限：不依赖主进程「写入时裁剪」是否生效，防止全量驻留内存
+      setRecords(await listTranslateHistory({ limit: 200 }));
     } finally {
       setLoading(false);
     }

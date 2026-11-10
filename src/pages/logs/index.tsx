@@ -121,11 +121,11 @@ const LogsPage: React.FC = () => {
   const getLevelIcon = (level: LogLevel) => {
     switch (level) {
       case 'error':
-        return <AlertCircle className="text-red-500" size={16} />;
+        return <AlertCircle className="text-error" size={16} />;
       case 'warn':
-        return <AlertTriangle className="text-yellow-500" size={16} />;
+        return <AlertTriangle className="text-warning" size={16} />;
       case 'info':
-        return <Info className="text-blue-500" size={16} />;
+        return <Info className="text-info" size={16} />;
       case 'debug':
         return <Bug className="text-content-secondary" size={16} />;
     }
@@ -147,13 +147,13 @@ const LogsPage: React.FC = () => {
   const getLevelBgClass = (level: LogLevel) => {
     switch (level) {
       case 'error':
-        return 'bg-red-50 border-red-200';
+        return 'bg-toast-error-bg';
       case 'warn':
-        return 'bg-yellow-50 border-yellow-200';
+        return 'bg-toast-warning-bg';
       case 'info':
-        return 'bg-blue-50 border-blue-200';
+        return 'bg-toast-info-bg';
       case 'debug':
-        return 'bg-surface-secondary border-content';
+        return 'bg-surface-secondary';
     }
   };
 
@@ -180,24 +180,24 @@ const LogsPage: React.FC = () => {
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-blue-400" />
-          <span className="text-sm font-medium text-white">日志监控</span>
+          <Info className="w-4 h-4 text-content-secondary" />
+          <span className="text-sm font-medium text-content-primary">日志监控</span>
         </div>
         <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <div className="flex items-center gap-1">
             <button
               onClick={handleMinimize}
-              className="p-1.5 rounded hover:bg-surface transition-colors"
+              className="p-1.5 rounded hover:bg-menu-hover transition-colors"
               title="最小化"
             >
-              <Minus className="w-4 h-4 text-content-tertiary hover:text-white" />
+              <Minus className="w-4 h-4 text-content-secondary hover:text-content-primary" />
             </button>
             <button
               onClick={handleClose}
               className="p-1.5 rounded hover:bg-red-600 transition-colors"
               title="关闭"
             >
-              <X className="w-4 h-4 text-content-tertiary hover:text-white" />
+              <X className="w-4 h-4 text-content-secondary hover:text-white" />
             </button>
           </div>
         </div>
@@ -240,20 +240,20 @@ const LogsPage: React.FC = () => {
           <div className="flex gap-1.5">
             <button
               onClick={() => setFilterLevel('all')}
-              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+              className={`px-2.5 py-1 text-xs font-medium rounded border transition-colors ${
                 filterLevel === 'all'
-                  ? 'bg-surface text-content-primary'
-                  : 'bg-surface-secondary text-content-primary hover:bg-menu-hover'
+                  ? 'bg-surface-secondary text-content-primary border-content'
+                  : 'bg-transparent text-content-secondary border-transparent hover:bg-surface-secondary'
               }`}
             >
               全部 ({stats.total})
             </button>
             <button
               onClick={() => setFilterLevel('error')}
-              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded border transition-colors flex items-center gap-1 ${
                 filterLevel === 'error'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-red-50 text-red-600 hover:bg-red-100'
+                  ? 'bg-toast-error-bg text-toast-error-text border-toast-error-border font-semibold'
+                  : 'bg-toast-error-bg text-toast-error-text border-transparent hover:brightness-95'
               }`}
             >
               <AlertCircle size={10} />
@@ -261,10 +261,10 @@ const LogsPage: React.FC = () => {
             </button>
             <button
               onClick={() => setFilterLevel('warn')}
-              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded border transition-colors flex items-center gap-1 ${
                 filterLevel === 'warn'
-                  ? 'bg-yellow-500 text-white'
-                  : 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100'
+                  ? 'bg-toast-warning-bg text-toast-warning-text border-toast-warning-border font-semibold'
+                  : 'bg-toast-warning-bg text-toast-warning-text border-transparent hover:brightness-95'
               }`}
             >
               <AlertTriangle size={10} />
@@ -272,10 +272,10 @@ const LogsPage: React.FC = () => {
             </button>
             <button
               onClick={() => setFilterLevel('info')}
-              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded border transition-colors flex items-center gap-1 ${
                 filterLevel === 'info'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                  ? 'bg-toast-info-bg text-toast-info-text border-toast-info-border font-semibold'
+                  : 'bg-toast-info-bg text-toast-info-text border-transparent hover:brightness-95'
               }`}
             >
               <Info size={10} />
@@ -283,10 +283,10 @@ const LogsPage: React.FC = () => {
             </button>
             <button
               onClick={() => setFilterLevel('debug')}
-              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded border transition-colors flex items-center gap-1 ${
                 filterLevel === 'debug'
-                  ? 'bg-gray-500 text-white'
-                  : 'bg-surface-secondary text-content-secondary hover:bg-surface-secondary'
+                  ? 'bg-surface-secondary text-content-primary border-content font-semibold'
+                  : 'bg-transparent text-content-secondary border-transparent hover:bg-surface-secondary'
               }`}
             >
               <Bug size={10} />
@@ -318,11 +318,11 @@ const LogsPage: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                          log.level === 'error' ? 'bg-red-200 text-red-800' :
-                          log.level === 'warn' ? 'bg-yellow-200 text-yellow-800' :
-                          log.level === 'info' ? 'bg-blue-200 text-blue-800' :
-                          'bg-gray-200 text-content-primary'
+                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded border ${
+                          log.level === 'error' ? 'bg-toast-error-bg text-toast-error-text border-toast-error-border' :
+                          log.level === 'warn' ? 'bg-toast-warning-bg text-toast-warning-text border-toast-warning-border' :
+                          log.level === 'info' ? 'bg-toast-info-bg text-toast-info-text border-toast-info-border' :
+                          'bg-surface-secondary text-content-primary border-content'
                         }`}>
                           {getLevelLabel(log.level)}
                         </span>
