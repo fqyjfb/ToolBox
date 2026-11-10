@@ -8,6 +8,10 @@ import {
   type SourceBlock,
 } from '@/lib/markdown';
 
+/** 空块里粘贴「整块就是一条图片语法」的 Markdown：原样写入，不做文本转义 */
+const IMAGE_TOKEN_ONLY = /^!\[[^\]]*\]\([^()\s]*(?:\s+"[^"]*")?\)$/u;
+const LINKED_IMAGE_ONLY = /^\[!\[[^\]]*\]\([^()\s]*\)\]\([^()\s]*\)$/u;
+
 /** 捕获选区相对 root 的纯文本偏移（与渲染 DOM 的文本节点顺序一致，格式符变化不影响） */
 function captureSelectionOffsets(
   root: HTMLElement,
@@ -150,6 +154,14 @@ export function useInlineEditable({
     const after = plainTextFromInlineDom(el);
     const before = plainRef.current;
     if (after === before) return;
+
+    // 空块整块粘贴图片语法：内容本身就是 Markdown 源码，原样写入（否则方括号会被转义成字面量）
+    if (before === '' && (IMAGE_TOKEN_ONLY.test(after) || LINKED_IMAGE_ONLY.test(after))) {
+      plainRef.current = after;
+      selfEditRef.current = true;
+      onEdit(block, `${prefix}${after}`);
+      return;
+    }
 
     let next = mergeInlineTextEdit(body, before, after);
 

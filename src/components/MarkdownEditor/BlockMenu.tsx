@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ClipboardList,
   Copy,
+  Image as ImageIcon,
   Minus,
   Plus,
   Table2,
@@ -64,8 +65,8 @@ function TypeGrid({
   );
 }
 
-/** 通用插入项：表格（尺寸选择器）、分割线、会议记录模板 */
-type CommonInsertKind = 'table' | 'divider' | 'meeting-notes';
+/** 通用插入项：表格（尺寸选择器）、分割线、会议记录模板、图片 */
+type CommonInsertKind = 'table' | 'divider' | 'meeting-notes' | 'image';
 const COMMON_INSERT_ITEMS: ReadonlyArray<{
   kind: CommonInsertKind;
   icon: LucideIcon;
@@ -74,7 +75,79 @@ const COMMON_INSERT_ITEMS: ReadonlyArray<{
   { kind: 'table', icon: Table2, label: '表格' },
   { kind: 'divider', icon: Minus, label: '分割线' },
   { kind: 'meeting-notes', icon: ClipboardList, label: '会议记录' },
+  { kind: 'image', icon: ImageIcon, label: '图片' },
 ];
+
+type InsertHandler = (below: boolean) => boolean | void;
+
+/** 通用插入网格：「插入块」面板与「在下方插入」子菜单共用，避免两处分支重复 */
+function CommonInsertGrid({
+  below,
+  tableOpen,
+  onToggleTable,
+  onInsertTable,
+  onInsertDivider,
+  onInsertMeetingNotes,
+  onInsertImage,
+  onDone,
+  keyPrefix = '',
+  style,
+}: {
+  below: boolean;
+  tableOpen: boolean;
+  onToggleTable: () => void;
+  onInsertTable?: (rows: number, cols: number, below: boolean) => boolean;
+  onInsertDivider?: InsertHandler;
+  onInsertMeetingNotes?: InsertHandler;
+  onInsertImage?: InsertHandler;
+  onDone: () => void;
+  keyPrefix?: string;
+  style?: React.CSSProperties;
+}) {
+  const handlers: Record<Exclude<CommonInsertKind, 'table'>, InsertHandler | undefined> = {
+    divider: onInsertDivider,
+    'meeting-notes': onInsertMeetingNotes,
+    image: onInsertImage,
+  };
+  return (
+    <div className="mde-type-grid is-compact" style={style}>
+      {COMMON_INSERT_ITEMS.map((item) => {
+        const Icon = item.icon;
+        if (item.kind === 'table') {
+          return (
+            <button
+              key={`${keyPrefix}table`}
+              type="button"
+              className="mde-type-item"
+              aria-haspopup="dialog"
+              aria-expanded={tableOpen}
+              disabled={!onInsertTable}
+              onClick={onToggleTable}
+            >
+              <Icon size={16} />
+              <span>{item.label}</span>
+            </button>
+          );
+        }
+        const handler = handlers[item.kind];
+        return (
+          <button
+            key={`${keyPrefix}${item.kind}`}
+            type="button"
+            className="mde-type-item"
+            disabled={!handler}
+            onClick={() => {
+              if (handler?.(below) !== false) onDone();
+            }}
+          >
+            <Icon size={16} />
+            <span>{item.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export interface BlockMenuProps {
   /** 当前块：用于显示类型 token 与高亮菜单里的当前类型 */
@@ -92,6 +165,8 @@ export interface BlockMenuProps {
   onInsertDivider?: (below: boolean) => boolean;
   /** 插入会议记录模板；`below=false` 表示替换当前空块；返回值 = patch 是否生效 */
   onInsertMeetingNotes?: (below: boolean) => boolean;
+  /** 打开「插入图片」弹窗；返回值与其它插入项一致（false = 不关闭菜单） */
+  onInsertImage?: (below: boolean) => boolean | void;
   onDelete?: () => boolean;
   onDuplicate?: () => boolean;
   /** 选区工具栏可见时为 true：强制隐藏 gutter，避免浮层互相遮挡 */
@@ -122,6 +197,7 @@ export function BlockMenu({
   onInsertTable,
   onInsertDivider,
   onInsertMeetingNotes,
+  onInsertImage,
   onDelete,
   onDuplicate,
   selectionActive,
@@ -420,49 +496,19 @@ export function BlockMenu({
                     <span className="mde-command-group-label">块类型</span>
                     <TypeGrid onPick={(kind) => handleInsert(kind, false)} />
                   </div>
-                  {onInsertTable ? (
+                  {onInsertTable || onInsertImage ? (
                     <div className="mde-command-group">
                       <span className="mde-command-group-label">插入</span>
-                      <div className="mde-type-grid is-compact">
-                        {COMMON_INSERT_ITEMS.map((item) => {
-                          const Icon = item.icon;
-                          if (item.kind === 'table') {
-                            return (
-                              <button
-                                key="table"
-                                type="button"
-                                className="mde-type-item"
-                                aria-haspopup="dialog"
-                                aria-expanded={tableOpen}
-                                disabled={!onInsertTable}
-                                onClick={() => setTableOpen((v) => !v)}
-                              >
-                                <Icon size={16} />
-                                <span>{item.label}</span>
-                              </button>
-                            );
-                          }
-                          const isDivider = item.kind === 'divider';
-                          const handler = isDivider
-                            ? onInsertDivider
-                            : onInsertMeetingNotes;
-                          return (
-                            <button
-                              key={item.kind}
-                              type="button"
-                              className="mde-type-item"
-                              disabled={!handler}
-                              onClick={() => {
-                                // hereMode 下插入即替换当前空块（below=false）
-                                if (handler?.(!hereMode) !== false) close();
-                              }}
-                            >
-                              <Icon size={16} />
-                              <span>{item.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <CommonInsertGrid
+                        below={false}
+                        tableOpen={tableOpen}
+                        onToggleTable={() => setTableOpen((v) => !v)}
+                        onInsertTable={onInsertTable}
+                        onInsertDivider={onInsertDivider}
+                        onInsertMeetingNotes={onInsertMeetingNotes}
+                        onInsertImage={onInsertImage}
+                        onDone={close}
+                      />
                     </div>
                   ) : null}
                   {tableOpen && onInsertTable ? (
@@ -565,46 +611,19 @@ export function BlockMenu({
                             compact
                             onPick={(kind) => handleInsert(kind, true)}
                           />
-                          {/* 在下方插入：额外追加表格/分割线/会议记录 */}
-                          <div className="mde-type-grid is-compact" style={{ marginTop: 6 }}>
-                            {COMMON_INSERT_ITEMS.map((item) => {
-                              const Icon = item.icon;
-                              if (item.kind === 'table') {
-                                return (
-                                  <button
-                                    key="s-table"
-                                    type="button"
-                                    className="mde-type-item"
-                                    aria-haspopup="dialog"
-                                    aria-expanded={tableOpen}
-                                    disabled={!onInsertTable}
-                                    onClick={() => setTableOpen((v) => !v)}
-                                  >
-                                    <Icon size={16} />
-                                    <span>{item.label}</span>
-                                  </button>
-                                );
-                              }
-                              const isDivider = item.kind === 'divider';
-                              const handler = isDivider
-                                ? onInsertDivider
-                                : onInsertMeetingNotes;
-                              return (
-                                <button
-                                  key={`s-${item.kind}`}
-                                  type="button"
-                                  className="mde-type-item"
-                                  disabled={!handler}
-                                  onClick={() => {
-                                    if (handler?.(true) !== false) close();
-                                  }}
-                                >
-                                  <Icon size={16} />
-                                  <span>{item.label}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
+                          {/* 在下方插入：额外追加表格/分割线/会议记录/图片 */}
+                          <CommonInsertGrid
+                            keyPrefix="s-"
+                            below
+                            style={{ marginTop: 6 }}
+                            tableOpen={tableOpen}
+                            onToggleTable={() => setTableOpen((v) => !v)}
+                            onInsertTable={onInsertTable}
+                            onInsertDivider={onInsertDivider}
+                            onInsertMeetingNotes={onInsertMeetingNotes}
+                            onInsertImage={onInsertImage}
+                            onDone={close}
+                          />
                           {tableOpen && onInsertTable ? (
                             <TablePicker
                               onPick={(rows, cols) => {

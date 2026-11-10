@@ -145,9 +145,11 @@ export type { FootnoteDefinition, FootnoteMeta } from "./footnotes.ts";
 // ---- 行内编辑辅助（contenteditable ↔ Markdown 互转）----
 export {
   escapeMarkdownText,
+  formatImageMarkdown,
   insertPlainTextAtSelection,
   mergeInlineTextEdit,
   plainTextFromInlineDom,
+  repairBrokenImageSyntax,
   safeLinkTarget,
   serializeInlineDom,
   splitInlineDomAtSelection,

@@ -269,7 +269,10 @@
 .md img,
 .md .document-image {
   max-width: 100%;
+  max-height: min(70vh, 640px);
+  width: auto;
   height: auto;
+  object-fit: contain;
   margin: calc(0.6em * var(--md-font-scale)) 0;
   border-radius: var(--radius-md, 0.375rem);
   background: var(--md-surface-alt);

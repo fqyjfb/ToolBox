@@ -42,6 +42,8 @@ export interface CodeFenceBlockProps {
   onInsertDivider?: (block: SourceBlock, below: boolean) => boolean;
   /** 插入会议记录模板；`below=false` 表示替换当前空块；返回值 = patch 是否生效 */
   onInsertMeetingNotes?: (block: SourceBlock, below: boolean) => boolean;
+  /** 打开「插入图片」弹窗；返回值与其它插入项一致 */
+  onInsertImage?: (block: SourceBlock) => boolean | void;
   /** 右键打开块菜单，默认 true */
   enableContextMenu?: boolean;
   /** 选区工具条可见时为 true；canvas 通过 data 属性隐藏 gutter */
@@ -64,6 +66,7 @@ export function CodeFenceBlock({
   onInsertTable,
   onInsertDivider,
   onInsertMeetingNotes,
+  onInsertImage,
   enableContextMenu,
   selectionActive,
 }: CodeFenceBlockProps) {
@@ -157,6 +160,9 @@ export function CodeFenceBlock({
           onInsertMeetingNotes
             ? (below) => onInsertMeetingNotes(block, below)
             : undefined
+        }
+        onInsertImage={
+          onInsertImage ? () => onInsertImage(block) : undefined
         }
         selectionActive={selectionActive}
         enableContextMenu={enableContextMenu}

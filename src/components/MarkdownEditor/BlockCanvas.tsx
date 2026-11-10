@@ -82,6 +82,8 @@ export interface BlockCanvasProps {
   onInsertDivider?: (block: SourceBlock, below: boolean) => boolean;
   /** 插入会议记录模板；`below=false` 表示替换当前空块。返回值 = patch 是否生效 */
   onInsertMeetingNotes?: (block: SourceBlock, below: boolean) => boolean;
+  /** 打开「插入图片」弹窗；返回值与其它插入项一致 */
+  onInsertImage?: (block: SourceBlock) => boolean | void;
   /** 选区工具条可见时为 true；canvas 通过 data 属性隐藏 gutter */
   selectionActive?: boolean;
 }
@@ -132,6 +134,7 @@ function TableBlock({
   onInsertTable,
   onInsertDivider,
   onInsertMeetingNotes,
+  onInsertImage,
   selectionActive,
 }: {
   block: SourceBlock;
@@ -145,6 +148,7 @@ function TableBlock({
   onInsertTable?: BlockCanvasProps['onInsertTable'];
   onInsertDivider?: BlockCanvasProps['onInsertDivider'];
   onInsertMeetingNotes?: BlockCanvasProps['onInsertMeetingNotes'];
+  onInsertImage?: BlockCanvasProps['onInsertImage'];
   selectionActive?: boolean;
 }) {
   const blockRef = useRef<HTMLDivElement | null>(null);
@@ -287,6 +291,7 @@ function TableBlock({
             ? (below) => onInsertMeetingNotes(block, below)
             : undefined
         }
+        onInsertImage={onInsertImage ? () => onInsertImage(block) : undefined}
         selectionActive={selectionActive}
         enableContextMenu={enableContextMenu}
       />
@@ -387,6 +392,7 @@ function EditableBlock({
   onInsertTable,
   onInsertDivider,
   onInsertMeetingNotes,
+  onInsertImage,
   selectionActive,
 }: {
   block: SourceBlock;
@@ -401,6 +407,7 @@ function EditableBlock({
   onInsertTable?: BlockCanvasProps['onInsertTable'];
   onInsertDivider?: BlockCanvasProps['onInsertDivider'];
   onInsertMeetingNotes?: BlockCanvasProps['onInsertMeetingNotes'];
+  onInsertImage?: BlockCanvasProps['onInsertImage'];
   selectionActive?: boolean;
 }) {
   // 块根元素 ref：用于 gutter portal 定位 + 右键监听
@@ -460,6 +467,7 @@ function EditableBlock({
             ? (below) => onInsertMeetingNotes(block, below)
             : undefined
         }
+        onInsertImage={onInsertImage ? () => onInsertImage(block) : undefined}
         selectionActive={selectionActive}
         enableContextMenu={enableContextMenu}
       />
@@ -512,6 +520,7 @@ export function BlockCanvas({
   onInsertTable,
   onInsertDivider,
   onInsertMeetingNotes,
+  onInsertImage,
   selectionActive,
 }: BlockCanvasProps) {
   const lines = useMemo(() => computeBlockLines(source, blocks), [source, blocks]);
@@ -577,6 +586,7 @@ export function BlockCanvas({
               onInsertTable={onInsertTable}
               onInsertDivider={onInsertDivider}
               onInsertMeetingNotes={onInsertMeetingNotes}
+              onInsertImage={onInsertImage}
               selectionActive={selectionActive}
             />
           );
@@ -595,6 +605,7 @@ export function BlockCanvas({
               onInsertTable={onInsertTable}
               onInsertDivider={onInsertDivider}
               onInsertMeetingNotes={onInsertMeetingNotes}
+              onInsertImage={onInsertImage}
               enableContextMenu={enableContextMenu}
               selectionActive={selectionActive}
             />
@@ -625,6 +636,7 @@ export function BlockCanvas({
               onInsertTable={onInsertTable}
               onInsertDivider={onInsertDivider}
               onInsertMeetingNotes={onInsertMeetingNotes}
+              onInsertImage={onInsertImage}
               selectionActive={selectionActive}
             />
           );
@@ -644,6 +656,7 @@ export function BlockCanvas({
             onInsertTable={onInsertTable}
             onInsertDivider={onInsertDivider}
             onInsertMeetingNotes={onInsertMeetingNotes}
+            onInsertImage={onInsertImage}
             selectionActive={selectionActive}
           />
         );

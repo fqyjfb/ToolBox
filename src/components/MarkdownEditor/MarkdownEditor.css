@@ -148,6 +148,27 @@
   box-shadow: 0 0 0 4px var(--mde-surface-alt);
 }
 
+/* 编辑态图片：与阅读态同观感，并限制最大高度避免大图撑破布局 */
+.mde-block-content img.document-image {
+  display: inline-block;
+  max-width: 100%;
+  max-height: min(50vh, 480px);
+  width: auto;
+  height: auto;
+  vertical-align: middle;
+  border-radius: var(--radius-sm, 6px);
+}
+
+/* 图片解析失败的占位在编辑态也要可见（.md 作用域命中不到编辑态） */
+.mde-block-content .blocked-media {
+  display: inline-block;
+  padding: 0 var(--space-1, 4px);
+  border: 1px dashed var(--mde-border);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--mde-text-faint);
+  font-size: var(--text-xs, 12px);
+}
+
 /* 空行块压缩：空行只承担 8px 视觉间隙，不按整行行高占位 */
 .mde-block-blank {
   min-height: 8px;

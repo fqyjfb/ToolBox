@@ -3,6 +3,7 @@ import {
   Bold,
   Code2,
   HelpCircle,
+  Image as ImageIcon,
   Italic,
   Link2,
   List,
@@ -34,6 +35,8 @@ export interface ToolbarProps {
   onFormat: (format: InlineFormat) => void;
   onInsertLink: () => void;
   onInsertTable: (rows: number, cols: number) => void;
+  /** 打开「插入图片」弹窗（作用于当前聚焦块） */
+  onInsertImage?: () => void;
   outlineOpen: boolean;
   onToggleOutline: () => void;
   /** 打开「快捷键 / 语法速查」 */
@@ -62,6 +65,7 @@ export function Toolbar({
   onFormat,
   onInsertLink,
   onInsertTable,
+  onInsertImage,
   outlineOpen,
   onToggleOutline,
   onOpenGuide,
@@ -198,6 +202,18 @@ export function Toolbar({
           >
             <Link2 size={16} />
           </button>
+          {onInsertImage ? (
+            <button
+              type="button"
+              className="mde-tool"
+              aria-label="插入图片"
+              title="插入图片"
+              onClick={() => onInsertImage()}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <ImageIcon size={16} />
+            </button>
+          ) : null}
           <div className="mde-tool-dropdown">
             <button
               type="button"

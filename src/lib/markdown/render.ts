@@ -229,13 +229,15 @@ function rendererFor(options: MarkdownRenderOptions) {
     );
     const destination = String(token.attrGet("src") ?? "");
     const resolved = options.resolveImage?.(destination) ?? null;
+    // data-md-src 保存原始引用：编辑态序列化时按原子回写，避免拆分块/复制块丢图
+    const sourceAttr = renderer.utils.escapeHtml(destination);
     if (!resolved) {
       const notice = renderer.utils.escapeHtml(
         options.imageUnavailableLabel ?? "Image not loaded",
       );
-      return `<span class="blocked-media" role="note">[${alternative}: ${notice}]</span>`;
+      return `<span class="blocked-media" role="note" data-md-src="${sourceAttr}" data-md-alt="${alternative}">[${alternative}: ${notice}]</span>`;
     }
-    return `<img class="document-image" src="${renderer.utils.escapeHtml(resolved)}" alt="${alternative}" loading="lazy">`;
+    return `<img class="document-image" src="${renderer.utils.escapeHtml(resolved)}" alt="${alternative}" data-md-src="${sourceAttr}" loading="lazy">`;
   };
   renderer.renderer.rules.link_open = (
     tokens,

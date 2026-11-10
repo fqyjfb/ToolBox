@@ -66,7 +66,7 @@ th, td { padding: .5em .75em; border: 1px solid #e4e4e7; text-align: left; }
 th { background: #f4f4f5; font-weight: 600; }
 thead { display: table-header-group; }
 tr { break-inside: avoid; }
-img { max-width: 100%; height: auto; margin: .6em 0; break-inside: avoid; }
+img { max-width: 100%; max-height: 640px; width: auto; height: auto; object-fit: contain; margin: .6em 0; break-inside: avoid; }
 hr { margin: 1.6em 0; border: 0; border-top: 1px solid #e4e4e7; }
 .footnotes { margin-top: 2em; padding-top: .8em; border-top: 1px solid #e4e4e7; font-size: 14px; color: #71717a; }
 .blocked-media { color: #a1a1aa; font-size: 13px; }

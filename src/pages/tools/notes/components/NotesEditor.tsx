@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { FileText, Save, Edit3, PanelLeft, FileText as FileWord, Table2, FileImage, Code, Play, FileDown, FileCode2, Eye } from 'lucide-react';
-import { buildExportHtml } from '@/lib/markdown';
+import { FileText, Save, Edit3, PanelLeft, FileText as FileWord, Table2, FileImage, Code, Play, FileDown, FileCode2, Eye, ImageOff } from 'lucide-react';
+import { buildExportHtml, repairBrokenImageSyntax } from '@/lib/markdown';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import PlainTextEditor from '@/components/PlainTextEditor';
 import OverflowMenu, { type OverflowMenuItem } from '@/components/ui/OverflowMenu';
@@ -215,6 +215,14 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     },
     [content, onContentChange, selectedFile?.path, savedContent, drafts]
   );
+
+  // 历史坏图片语法（旧写入链路把图片语法转义成字面量 / `<>`）：仅 Markdown 笔记提示一键修复
+  const imageRepair = useMemo(() => {
+    if (fileMetadata?.fileType !== 'md') return null;
+    if (!/!\\\[|!<>/u.test(content)) return null;
+    const repaired = repairBrokenImageSyntax(content);
+    return repaired === content ? null : repaired;
+  }, [content, fileMetadata?.fileType]);
 
   // 导出：渲染层构建 HTML（图片内联为 data-uri）→ 主进程打印并弹保存对话框落盘
   const exportingRef = useRef(false);
@@ -561,26 +569,41 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     }
 
     return (
-      <div className="flex flex-1 min-h-0">
-        <MarkdownEditor
-          value={content}
-          onChange={handleContentChange}
-          onSave={handleSave}
-          registerSaveShortcut={false}
-          onUpload={handleUpload}
-          resolveImage={resolveImage}
-          placeholder="开始编写内容..."
-          documentKey={selectedFile?.path ?? null}
-          mode={mode}
-          onModeChange={(next) => {
-            setMode(next);
-            try {
-              localStorage.setItem('md-editor-mode', next);
-            } catch {
-              /* localStorage 不可用时静默忽略 */
-            }
-          }}
-        />
+      <div className="flex flex-1 flex-col min-h-0">
+        {imageRepair ? (
+          <div className="flex items-center gap-2 border-b border-solid border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-2 text-xs text-content-secondary">
+            <ImageOff size={16} className="flex-shrink-0" />
+            <span className="flex-1">检测到历史图片语法损坏（阅读模式下无法显示），可一键修复为正常图片。</span>
+            <button
+              type="button"
+              className="flex-shrink-0 rounded-md border border-solid border-[var(--color-border)] px-2 py-1 text-content-primary transition-colors hover:bg-menu-hover"
+              onClick={() => handleContentChange(imageRepair)}
+            >
+              一键修复
+            </button>
+          </div>
+        ) : null}
+        <div className="flex flex-1 min-h-0">
+          <MarkdownEditor
+            value={content}
+            onChange={handleContentChange}
+            onSave={handleSave}
+            registerSaveShortcut={false}
+            onUpload={handleUpload}
+            resolveImage={resolveImage}
+            placeholder="开始编写内容..."
+            documentKey={selectedFile?.path ?? null}
+            mode={mode}
+            onModeChange={(next) => {
+              setMode(next);
+              try {
+                localStorage.setItem('md-editor-mode', next);
+              } catch {
+                /* localStorage 不可用时静默忽略 */
+              }
+            }}
+          />
+        </div>
       </div>
     );
   };

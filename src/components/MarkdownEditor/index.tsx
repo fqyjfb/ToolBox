@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { deriveOutline, insertPlainTextAtSelection, safeLinkTarget, type SourceBlock } from '@/lib/markdown';
+import {
+  deriveOutline,
+  formatImageMarkdown,
+  safeLinkTarget,
+  type SourceBlock,
+} from '@/lib/markdown';
 import { BlockCanvas } from './BlockCanvas';
 import { convertBlockText, type ConvertKind } from './blockConvert';
 import { CommandGuide } from './CommandGuide';
 import { InlineToolbar } from './InlineToolbar';
+import { InsertImageDialog } from './InsertImageDialog';
 import { MarkdownView } from '../MarkdownView';
 import Modal from '@/components/ui/Modal';
 import {
@@ -27,6 +33,20 @@ const MEETING_NOTES_TEMPLATE =
 
 /** 分割线 Markdown */
 const DIVIDER_MARKDOWN = '---';
+
+/** 纯文本粘贴：整段恰好是一条 http(s) 图片直链时直接转为图片（含查询串） */
+const IMAGE_URL_ONLY = /^https?:\/\/\S+\.(?:png|jpe?g|gif|webp|avif|svg)(?:\?\S*)?$/iu;
+
+/**
+ * 弹窗内输入框（链接地址 / 图片地址）的粘贴、拖放不归编辑器处理。
+ * Modal 渲染在 `.mde` 内部，事件会冒泡到根节点的 onPaste / onDrop；
+ * 若不放行，粘贴图片直链会被误判成「粘贴图片」写进正文，而输入框拿不到内容。
+ */
+function isFromDialogField(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.closest('.mde-canvas')) return false;
+  return target.closest('input, textarea') !== null;
+}
 
 /** 模式持久化 localStorage 键名；默认 mode = read（阅读优先） */
 const MODE_STORAGE_KEY = 'toolbox.markdown.mode.default';
@@ -126,6 +146,9 @@ export function MarkdownEditor({
   const [linkLabelDraft, setLinkLabelDraft] = useState('');
   // 打开链接弹窗时捕获的目标块，避免弹窗 autofocus 抢走 activeElement 后定位失败
   const [linkTargetBlock, setLinkTargetBlock] = useState<SourceBlock | null>(null);
+  // 插入图片弹窗：同样在打开时捕获目标块
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [imageTargetBlock, setImageTargetBlock] = useState<SourceBlock | null>(null);
   // 内部 mode state：父组件未强制时由用户切换并持久化；默认 read
   const [internalMode, setInternalMode] = useState<PersistedMode>(DEFAULT_MODE);
   const effectiveMode = resolveMode(propMode, internalMode);
@@ -148,6 +171,8 @@ export function MarkdownEditor({
       setGuideOpen(false);
       setLinkDialogOpen(false);
       setLinkTargetBlock(null);
+      setImageDialogOpen(false);
+      setImageTargetBlock(null);
     } else {
       // edit 模式：切回后尝试恢复上次 read 时捕获的滚动
       const body = rootRef.current?.querySelector('.mde-body') as HTMLElement | null;
@@ -166,6 +191,8 @@ export function MarkdownEditor({
     setGuideOpen(false);
     setLinkDialogOpen(false);
     setLinkTargetBlock(null);
+    setImageDialogOpen(false);
+    setImageTargetBlock(null);
     setOutlineOpen(false);
     // 2. reset mode 到全局默认
     if (propMode !== 'edit' && propMode !== 'read') {
@@ -435,6 +462,29 @@ export function MarkdownEditor({
     [insertBlockAfter, readonly, replaceBlockWithMarkdown],
   );
 
+  /**
+   * 直接把 Markdown 源码写成独立块。
+   *
+   * 图片等**含 Markdown 语法**的内容必须走这里，不能塞进 contenteditable 当文本：
+   * 提交时 `escapeMarkdownText` 会把 `! [ ] ( )` 转义成字面量，图片永远不显示。
+   * 位置语义与块菜单一致：空块替换、非空块插到下方、无块追加到文末。
+   */
+  const insertMarkdownBlock = useCallback(
+    (markdown: string, block: SourceBlock | null = activeBlock()) => {
+      if (readonly || !markdown) return;
+      if (!block) {
+        appendMarkdown(markdown);
+        return;
+      }
+      if (block.expectedText.trim() === '') {
+        replaceBlockWithMarkdown(block, markdown);
+        return;
+      }
+      insertBlockAfter(block, markdown);
+    },
+    [activeBlock, appendMarkdown, insertBlockAfter, readonly, replaceBlockWithMarkdown],
+  );
+
   /** 大纲点击：定位到目标标题。两种策略按顺序尝试：
    *  1. 按 outline.anchor 查 `#id` —— 阅读/编辑模式的标题 DOM 都带 MarkdownIt 生成的 id（与 outline 共享 slugify）
    *  2. fallback：按 line 找 `[data-source-line]` 块 —— 只在编辑模式有效（阅读模式 DOM 无块级属性）
@@ -482,55 +532,102 @@ export function MarkdownEditor({
   );
 
   /**
-   * 图片上传：粘贴 / 拖放。
+   * 图片上传：粘贴 / 拖放 / 插入图片弹窗。
    *
-   * 旧编辑器内置了这条链路（拿到 url 后自行插入），新编辑器必须自己接上，否则上传静默失效。
-   * 文本粘贴不拦截，交给浏览器默认行为。
+   * 🔴 拿到 url 后必须**直接写入源码**，不能塞进 contenteditable 当文本：
+   * 块提交时 `mergeInlineTextEdit` 会走 `escapeMarkdownText`，把 `[ ] ( )` 全转义，
+   * 源文件会变成 `!\[alt\]\(url\)` 字面量（图片永远不显示）。
+   *
+   * 一批文件统一拼成一段 Markdown 一次写入：顺序稳定、只产生一次撤销点。
    */
   const uploadImages = useCallback(
-    async (files: readonly File[]) => {
+    async (files: readonly File[], target: SourceBlock | null = activeBlock()) => {
       const upload = onUploadRef.current;
       if (!upload || readonly) return;
+      const markdowns: string[] = [];
       for (const file of files) {
         if (!file.type.startsWith('image/')) continue;
         try {
           const url = await upload(file);
           if (!url) continue;
-          const markdown = `![${file.name || 'image'}](${url})`;
-          if (insertPlainTextAtSelection(markdown)) {
-            // 程序化改 DOM 不会触发 React 的 onInput，需手动派发让块提交回源
-            document.activeElement?.dispatchEvent(
-              new Event('input', { bubbles: true }),
-            );
-          } else {
-            appendMarkdown(markdown);
-          }
+          const markdown = formatImageMarkdown(url, file.name || 'image');
+          if (markdown) markdowns.push(markdown);
         } catch (error) {
           console.error('[MarkdownEditor] 上传图片失败', error);
         }
       }
+      if (markdowns.length > 0) insertMarkdownBlock(markdowns.join('\n\n'), target);
     },
-    [appendMarkdown, readonly],
+    [activeBlock, insertMarkdownBlock, readonly],
   );
 
   const handlePaste = useCallback(
     (event: React.ClipboardEvent<HTMLDivElement>) => {
+      // 弹窗输入框放行默认粘贴，避免图片直链被误判成插入图片
+      if (isFromDialogField(event.target)) return;
       const files = Array.from(event.clipboardData?.files ?? []);
-      if (!files.some((f) => f.type.startsWith('image/'))) return;
+      if (files.some((f) => f.type.startsWith('image/'))) {
+        event.preventDefault();
+        void uploadImages(files);
+        return;
+      }
+      // 纯文本粘贴：整段恰好是一个 http(s) 图片直链时直接成图（复制图片地址 → Ctrl+V）
+      const text = event.clipboardData?.getData('text/plain')?.trim() ?? '';
+      if (!IMAGE_URL_ONLY.test(text)) return;
+      const markdown = formatImageMarkdown(text);
+      if (!markdown) return;
       event.preventDefault();
-      void uploadImages(files);
+      insertMarkdownBlock(markdown);
     },
-    [uploadImages],
+    [insertMarkdownBlock, uploadImages],
   );
 
   const handleDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
+      if (isFromDialogField(event.target)) {
+        // 文本拖放放行到输入框；文件拖放要拦下，避免 Electron 用浏览器默认行为打开文件
+        if ((event.dataTransfer?.files?.length ?? 0) > 0) event.preventDefault();
+        return;
+      }
       const files = Array.from(event.dataTransfer?.files ?? []);
       if (!files.some((f) => f.type.startsWith('image/'))) return;
       event.preventDefault();
       void uploadImages(files);
     },
     [uploadImages],
+  );
+
+  /** 顶部工具栏 / 块菜单：打开插入图片弹窗，并冻结目标块（弹窗会抢走焦点） */
+  const handleRequestInsertImage = useCallback(
+    (block: SourceBlock | null) => {
+      if (readonly) return false;
+      setImageTargetBlock(block);
+      setImageDialogOpen(true);
+      return true;
+    },
+    [readonly],
+  );
+
+  const closeImageDialog = useCallback(() => {
+    setImageDialogOpen(false);
+    setImageTargetBlock(null);
+  }, []);
+
+  /** 弹窗确认网络地址：整条地址直接写成图片块，不做行内文本拼接 */
+  const handleImageUrlSubmit = useCallback(
+    (url: string) => {
+      const markdown = formatImageMarkdown(url);
+      if (!markdown) return;
+      insertMarkdownBlock(markdown, imageTargetBlock);
+    },
+    [imageTargetBlock, insertMarkdownBlock],
+  );
+
+  const handleImageFilesPick = useCallback(
+    (files: File[]) => {
+      void uploadImages(files, imageTargetBlock);
+    },
+    [imageTargetBlock, uploadImages],
   );
 
   // Ctrl/Cmd+S 保存（宿主已统一注册时跳过）
@@ -603,6 +700,7 @@ export function MarkdownEditor({
           onFormat={handleInlineFormat}
           onInsertLink={handleInsertLink}
           onInsertTable={handleInsertTable}
+          onInsertImage={() => handleRequestInsertImage(activeBlock())}
           outlineOpen={outlineOpen}
           onToggleOutline={() => setOutlineOpen((v) => !v)}
           onOpenGuide={() => setGuideOpen(true)}
@@ -640,6 +738,7 @@ export function MarkdownEditor({
               onInsertTable={handleInsertTableAt}
               onInsertDivider={handleInsertDividerAt}
               onInsertMeetingNotes={handleInsertMeetingNotesAt}
+              onInsertImage={handleRequestInsertImage}
               selectionActive={inlineToolbarVisible}
             />
           </div>
@@ -707,6 +806,13 @@ export function MarkdownEditor({
           </div>
         </div>
       </Modal>
+
+      <InsertImageDialog
+        isOpen={imageDialogOpen}
+        onClose={closeImageDialog}
+        onPickFiles={handleImageFilesPick}
+        onSubmitUrl={handleImageUrlSubmit}
+      />
     </div>
   );
 }

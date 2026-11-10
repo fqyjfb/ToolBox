@@ -27,6 +27,8 @@ export interface TaskBlockProps {
   onInsertDivider?: (block: SourceBlock, below: boolean) => boolean;
   /** 插入会议记录模板；`below=false` 表示替换当前空块；返回值 = patch 是否生效 */
   onInsertMeetingNotes?: (block: SourceBlock, below: boolean) => boolean;
+  /** 打开「插入图片」弹窗；返回值与其它插入项一致 */
+  onInsertImage?: (block: SourceBlock) => boolean | void;
   selectionActive?: boolean;
 }
 
@@ -48,6 +50,7 @@ export function TaskBlock({
   onInsertTable,
   onInsertDivider,
   onInsertMeetingNotes,
+  onInsertImage,
   selectionActive,
 }: TaskBlockProps) {
   const blockRef = useRef<HTMLDivElement | null>(null);
@@ -116,6 +119,9 @@ export function TaskBlock({
           onInsertMeetingNotes
             ? (below) => onInsertMeetingNotes(block, below)
             : undefined
+        }
+        onInsertImage={
+          onInsertImage ? () => onInsertImage(block) : undefined
         }
         selectionActive={selectionActive}
         enableContextMenu={enableContextMenu}

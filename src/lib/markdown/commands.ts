@@ -28,8 +28,56 @@ export function safeLinkTarget(target: string): string | null {
     .replaceAll(")", "\\)");
 }
 
+/** 生成图片语法；目标不可用时返回空串（调用方直接跳过，不落脏数据） */
+export function formatImageMarkdown(url: string, alt = "image"): string {
+  const target = safeLinkTarget(url);
+  if (!target) return "";
+  const label = alt.replace(/[[\]\\]/gu, "").trim() || "image";
+  return `![${label}](${target})`;
+}
+
+/** 形态一：整条图片语法被转义 —— !\[alt\]\(url\) */
+const ESCAPED_IMAGE = /!\\\[([^\]]*?)\\\]\\\(([^)\s]+?)\\\)/gu;
+/** 形态二·链接包裹且外链干净（href 内无 <>）：<>!<>alt<><>src<><><>href<> */
+const ANGLE_LINKED_CLEAN = /<>(!<>([^<>]*)<><>([^<>]+)<>)<><>([^<>]+)<>$/gmu;
+/** 形态二·链接包裹但外链本身也被 <> 破坏：只救图片，不猜 href */
+const ANGLE_LINKED_DIRTY = /<>!<>([^<>]*)<><>([^<>]+)<><><>.+<>$/gmu;
+/** 形态二·单图：!<>alt<><>src<> */
+const ANGLE_IMAGE = /!<>([^<>]*)<><>([^<>]+)<>/gu;
+
+/**
+ * 修复历史坏数据：只处理「结构可完全判定」的两种形态，幂等。
+ *
+ * - 形态一：`!\[alt\]\(url\)`（写入时被 escapeMarkdownText 转义）
+ * - 形态二：`!<>alt<><>url<>`（转义对又被外部替换成 `<>`）
+ *
+ * 结构不完整的行原样保留，绝不猜测被压缩掉的字符。
+ */
+export function repairBrokenImageSyntax(markdown: string): string {
+  return markdown
+    .replace(
+      ANGLE_LINKED_CLEAN,
+      (_match, _image, alt: string, src: string, href: string) =>
+        `[![${alt}](${src})](${href})`,
+    )
+    .replace(ANGLE_LINKED_DIRTY, (_match, alt: string, src: string) => `![${alt}](${src})`)
+    .replace(ANGLE_IMAGE, (_match, alt: string, src: string) => `![${alt}](${src})`)
+    .replace(ESCAPED_IMAGE, (_match, alt: string, url: string) => `![${alt}](${url})`);
+}
+
 function serializeChildren(node: Node): string {
   return [...node.childNodes].map((child) => serializeNode(child)).join("");
+}
+
+/** 图片/图片占位按原子处理：回写原始 Markdown，避免拆分块时静默丢图 */
+function serializeAtomicMedia(node: HTMLElement): string | null {
+  const source = node.getAttribute("data-md-src");
+  if (!source) return null;
+  const target = safeLinkTarget(source);
+  if (!target) return "";
+  const alt =
+    node.tagName === "IMG" ? node.getAttribute("alt") ?? "" : node.getAttribute("data-md-alt") ?? "";
+  return `![${alt}](${target})`;
 }
 
 function serializeNode(node: Node): string {
@@ -40,6 +88,8 @@ function serializeNode(node: Node): string {
   if (node.matches(".footnote-atom[data-footnote-source]")) {
     return node.getAttribute("data-footnote-source") ?? "";
   }
+  const media = serializeAtomicMedia(node);
+  if (media !== null) return media;
 
   const children = serializeChildren(node);
   switch (node.tagName) {
@@ -88,6 +138,7 @@ function plainTextNode(node: Node): string {
   if (node.matches(".footnote-atom[data-footnote-source]")) {
     return node.getAttribute("data-footnote-source") ?? "";
   }
+  if (node.hasAttribute("data-md-src")) return "";
   if (node.tagName === "BR") return "\n";
   if (node.tagName === "IMG") return "";
   return [...node.childNodes].map((child) => plainTextNode(child)).join("");
