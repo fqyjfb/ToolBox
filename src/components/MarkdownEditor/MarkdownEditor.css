@@ -148,13 +148,14 @@
   box-shadow: 0 0 0 4px var(--mde-surface-alt);
 }
 
-/* 编辑态图片：与阅读态同观感，并限制最大高度避免大图撑破布局 */
+/* 编辑态图片：与阅读态统一限高，同段多图水平并排、随宽度自动换行 */
 .mde-block-content img.document-image {
   display: inline-block;
   max-width: 100%;
-  max-height: min(50vh, 480px);
+  max-height: var(--md-image-max-height, 150px);
   width: auto;
   height: auto;
+  margin-right: var(--space-2, 8px);
   vertical-align: middle;
   border-radius: var(--radius-sm, 6px);
 }

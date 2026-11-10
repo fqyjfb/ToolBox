@@ -75,6 +75,9 @@
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
+
+  /* Markdown 图片统一限高（编辑态 / 阅读态共用，保证一行可并排多张） */
+  --md-image-max-height: 150px;
   
   --space-1: 4px;
   --space-2: 8px;

@@ -243,29 +243,3 @@ export function mergeInlineTextEdit(
   if (boundary !== rightIndex) return null;
   return `${originalMarkdown.slice(0, boundary)}${inserted}${originalMarkdown.slice(boundary)}`;
 }
-
-export function insertPlainTextAtSelection(
-  text: string,
-  fallbackRoot?: HTMLElement,
-): boolean {
-  const selection = window.getSelection();
-  if (!selection) return false;
-  let range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-  if (
-    fallbackRoot &&
-    (!range || !fallbackRoot.contains(range.commonAncestorContainer))
-  ) {
-    range = document.createRange();
-    range.selectNodeContents(fallbackRoot);
-    range.collapse(false);
-  }
-  if (!range) return false;
-  range.deleteContents();
-  const node = document.createTextNode(text);
-  range.insertNode(node);
-  range.setStartAfter(node);
-  range.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(range);
-  return true;
-}

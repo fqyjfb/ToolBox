@@ -268,14 +268,46 @@
 
 .md img,
 .md .document-image {
+  display: inline-block;
   max-width: 100%;
-  max-height: min(70vh, 640px);
+  max-height: var(--md-image-max-height, 150px);
   width: auto;
   height: auto;
   object-fit: contain;
-  margin: calc(0.6em * var(--md-font-scale)) 0;
+  margin: calc(0.6em * var(--md-font-scale)) var(--space-2, 8px)
+    calc(0.6em * var(--md-font-scale)) 0;
   border-radius: var(--radius-md, 0.375rem);
   background: var(--md-surface-alt);
+  vertical-align: middle;
+}
+
+/* 可放大查看的阅读区（MarkdownView enableImageZoom） */
+.md.md-zoomable img.document-image {
+  cursor: zoom-in;
+}
+
+/* 图片放大浮层：点击任意位置或 Esc 关闭 */
+.md-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6, 32px);
+  background: rgba(0, 0, 0, 0.75);
+  cursor: zoom-out;
+}
+
+.md-lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-md, 0.375rem);
+  background: var(--md-surface);
+  box-shadow: var(--shadow-lg);
 }
 
 /* 图片未解析时的占位（render.ts 返回 null 时输出） */

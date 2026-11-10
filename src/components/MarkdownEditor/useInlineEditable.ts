@@ -32,6 +32,13 @@ function captureSelectionOffsets(
   return { start, end: start + range.toString().length };
 }
 
+/** 块内图片原子签名（`data-md-src` 顺序拼接）：纯文本 diff 看不到图片，用它识别图片增删 */
+function mediaSignature(root: HTMLElement): string {
+  return Array.from(root.querySelectorAll('[data-md-src]'))
+    .map((node) => node.getAttribute('data-md-src') ?? '')
+    .join('\n');
+}
+
 /** 按纯文本偏移把选区映射回重渲染后的 DOM（越界时钳制到可用文本末尾） */
 function restoreSelectionOffsets(
   root: HTMLElement,
@@ -114,6 +121,8 @@ export function useInlineEditable({
   const ref = useRef<HTMLDivElement | null>(null);
   // 上次提交时的纯文本，用于增量 diff
   const plainRef = useRef<string>('');
+  // 上次提交时的图片签名，用于识别「纯文本没变但增删了图片」
+  const mediaRef = useRef<string>('');
   // IME 组合期守卫：compositionstart 时 true，end 时 false
   // 期间浏览器会插入临时字符（如拼音候选），不能据此做 diff 写回
   const composingRef = useRef(false);
@@ -139,11 +148,13 @@ export function useInlineEditable({
       el.innerHTML = html;
       restoreSelectionOffsets(el, offsets);
       plainRef.current = plainTextFromInlineDom(el);
+      mediaRef.current = mediaSignature(el);
       return;
     }
     selfEditRef.current = false;
     if (el.innerHTML !== html) el.innerHTML = html;
     plainRef.current = plainTextFromInlineDom(el);
+    mediaRef.current = mediaSignature(el);
   }, [body, block.id, resolveImage]);
 
   const commit = useCallback(() => {
@@ -153,25 +164,35 @@ export function useInlineEditable({
     if (composingRef.current) return;
     const after = plainTextFromInlineDom(el);
     const before = plainRef.current;
-    if (after === before) return;
+    const media = mediaSignature(el);
+    const mediaChanged = media !== mediaRef.current;
+    if (after === before && !mediaChanged) return;
 
     // 空块整块粘贴图片语法：内容本身就是 Markdown 源码，原样写入（否则方括号会被转义成字面量）
     if (before === '' && (IMAGE_TOKEN_ONLY.test(after) || LINKED_IMAGE_ONLY.test(after))) {
       plainRef.current = after;
+      mediaRef.current = media;
       selfEditRef.current = true;
       onEdit(block, `${prefix}${after}`);
       return;
     }
 
-    let next = mergeInlineTextEdit(body, before, after);
-
-    // mergeInlineTextEdit 返回 null 说明 diff 无法精确定位（removed 被 Markdown 格式吞掉、
-    // 或 Markdown 源码与纯文本差异太大）——兜底：全量序列化 after DOM
-    if (next === null) {
+    let next: string | null;
+    if (mediaChanged) {
+      // 图片增删在纯文本里不可见：必须整块重新序列化，否则源码会残留旧图片
       next = serializeInlineDom(el);
+    } else {
+      next = mergeInlineTextEdit(body, before, after);
+
+      // mergeInlineTextEdit 返回 null 说明 diff 无法精确定位（removed 被 Markdown 格式吞掉、
+      // 或 Markdown 源码与纯文本差异太大）——兜底：全量序列化 after DOM
+      if (next === null) {
+        next = serializeInlineDom(el);
+      }
     }
 
     plainRef.current = after;
+    mediaRef.current = media;
     selfEditRef.current = true;
     onEdit(block, `${prefix}${next}`);
   }, [block, body, prefix, onEdit]);
@@ -201,6 +222,7 @@ export function useInlineEditable({
           if (el.innerHTML !== renderedBefore) {
             el.innerHTML = renderedBefore;
             plainRef.current = plainTextFromInlineDom(el);
+            mediaRef.current = mediaSignature(el);
           }
           onSplitBlock(block, `${prefix}${parts.before}`, parts.after);
         } else {

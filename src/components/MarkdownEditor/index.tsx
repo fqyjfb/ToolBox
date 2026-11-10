@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   deriveOutline,
   formatImageMarkdown,
+  renderSafeInlineMarkdown,
   safeLinkTarget,
   type SourceBlock,
 } from '@/lib/markdown';
@@ -46,6 +47,77 @@ function isFromDialogField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.closest('.mde-canvas')) return false;
   return target.closest('input, textarea') !== null;
+}
+
+/** 块内光标插入点：可编辑元素 + 打开时的选区快照（上传是异步的，必须提前捕获） */
+interface CaretPoint {
+  root: HTMLElement;
+  range: Range;
+}
+
+/** 拖放落点 → 光标 Range（Chromium 专有 API，用于把图片落在鼠标松手处） */
+function caretRangeFromPoint(x: number, y: number): Range | null {
+  const doc = document as Document & {
+    caretRangeFromPoint?: (x: number, y: number) => Range | null;
+  };
+  return doc.caretRangeFromPoint?.(x, y) ?? null;
+}
+
+/** 捕获当前选区所在的块内光标；`block` 用于确认光标确实在该块里 */
+function captureCaretPoint(block: SourceBlock | null): CaretPoint | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  const container = range.commonAncestorContainer;
+  const element =
+    container instanceof Element ? container : container.parentElement;
+  const root = element?.closest<HTMLElement>('.mde-block-content') ?? null;
+  if (!root) return null;
+  const holder = root.closest('[data-block-id]');
+  if (block && holder?.getAttribute('data-block-id') !== block.id) return null;
+  return { root, range: range.cloneRange() };
+}
+
+/**
+ * 把行内 Markdown（图片等）插到光标处：先渲染成原子 DOM 节点再插入，
+ * 随后派发 input 交给块自己的 `commit` 写回源码（`serializeInlineDom` 会保留图片语法）。
+ * 返回 false 表示插入点已失效，调用方回退为「新开一个块」。
+ */
+function insertInlineMarkdownAtCaret(
+  point: CaretPoint,
+  markdown: string,
+  resolveImage?: (src: string) => string | null,
+): boolean {
+  const { root, range } = point;
+  if (!root.isConnected || !root.contains(range.commonAncestorContainer)) {
+    return false;
+  }
+  const holder = document.createElement('div');
+  holder.innerHTML = renderSafeInlineMarkdown(
+    markdown,
+    resolveImage ? { resolveImage } : {},
+  );
+  const nodes = Array.from(holder.childNodes);
+  const last = nodes[nodes.length - 1];
+  if (!last) return false;
+  const fragment = document.createDocumentFragment();
+  for (const node of nodes) fragment.append(node);
+  try {
+    range.deleteContents();
+    range.insertNode(fragment);
+    range.setStartAfter(last);
+    range.collapse(true);
+  } catch {
+    return false;
+  }
+  const selection = window.getSelection();
+  if (selection) {
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+  // 触发该块的 onInput → commit，由媒体签名差异识别「非文本编辑」并整块回写
+  root.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  return true;
 }
 
 /** 模式持久化 localStorage 键名；默认 mode = read（阅读优先） */
@@ -149,6 +221,8 @@ export function MarkdownEditor({
   // 插入图片弹窗：同样在打开时捕获目标块
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageTargetBlock, setImageTargetBlock] = useState<SourceBlock | null>(null);
+  // 弹窗打开瞬间的块内光标（上传/输入地址期间焦点在弹窗里，必须提前冻结）
+  const imageCaretRef = useRef<CaretPoint | null>(null);
   // 内部 mode state：父组件未强制时由用户切换并持久化；默认 read
   const [internalMode, setInternalMode] = useState<PersistedMode>(DEFAULT_MODE);
   const effectiveMode = resolveMode(propMode, internalMode);
@@ -277,24 +351,26 @@ export function MarkdownEditor({
     [insertBlockAfter, readonly],
   );
 
+  /** 从 DOM 节点反查所属块（activeElement / selection 共用一份换算） */
+  const blockFromNode = useCallback(
+    (node: Node | null): SourceBlock | null => {
+      const element = node instanceof Element ? node : node?.parentElement ?? null;
+      const id = element?.closest('[data-block-id]')?.getAttribute('data-block-id');
+      if (!id) return null;
+      return snapshot.projection.blocks.find((block) => block.id === id) ?? null;
+    },
+    [snapshot.projection.blocks],
+  );
+
   /** 当前聚焦的块（从 DOM 反查，避免再引入一层 state）
    * 优先从 activeElement 找；点击 InlineToolbar/Toolbar 按钮时 activeElement 变按钮（不在 .mde-block 内），
    * 此时从 selection.anchorNode 往上层找（选区已被 onMouseDown preventDefault 保住）。 */
   const activeBlock = useCallback((): SourceBlock | null => {
-    let holder: Element | null = null;
-    const activeEl = document.activeElement as HTMLElement | null;
-    if (activeEl) holder = activeEl.closest('[data-block-id]');
-    if (!holder) {
-      const sel = window.getSelection();
-      if (sel && sel.anchorNode) {
-        const anchor = sel.anchorNode instanceof Element ? sel.anchorNode : sel.anchorNode.parentElement;
-        holder = anchor?.closest('[data-block-id]') ?? null;
-      }
-    }
-    const id = holder?.getAttribute('data-block-id');
-    if (!id) return null;
-    return snapshot.projection.blocks.find((block) => block.id === id) ?? null;
-  }, [snapshot.projection.blocks]);
+    const fromActive = blockFromNode(document.activeElement);
+    if (fromActive) return fromActive;
+    const sel = window.getSelection();
+    return blockFromNode(sel?.anchorNode ?? null);
+  }, [blockFromNode]);
 
   /** 把 `block`（缺省时取当前聚焦块）转换为目标类型 */
   const handleConvertBlock = useCallback(
@@ -485,6 +561,18 @@ export function MarkdownEditor({
     [activeBlock, appendMarkdown, insertBlockAfter, readonly, replaceBlockWithMarkdown],
   );
 
+  /** 图片落地：光标还在块内就地插入，否则退回「独立成块」，两条路都不丢图 */
+  const insertImageMarkdown = useCallback(
+    (markdown: string, block: SourceBlock | null, caret: CaretPoint | null) => {
+      if (!markdown) return;
+      if (caret && insertInlineMarkdownAtCaret(caret, markdown, resolveImage)) {
+        return;
+      }
+      insertMarkdownBlock(markdown, block);
+    },
+    [insertMarkdownBlock, resolveImage],
+  );
+
   /** 大纲点击：定位到目标标题。两种策略按顺序尝试：
    *  1. 按 outline.anchor 查 `#id` —— 阅读/编辑模式的标题 DOM 都带 MarkdownIt 生成的 id（与 outline 共享 slugify）
    *  2. fallback：按 line 找 `[data-source-line]` 块 —— 只在编辑模式有效（阅读模式 DOM 无块级属性）
@@ -539,9 +627,15 @@ export function MarkdownEditor({
    * 源文件会变成 `!\[alt\]\(url\)` 字面量（图片永远不显示）。
    *
    * 一批文件统一拼成一段 Markdown 一次写入：顺序稳定、只产生一次撤销点。
+   * 多张图用**空格**分隔而不是空行：同一段落内图片才会水平并排、自动换行。
+   * `caret` 在调用瞬间同步捕获（上传是异步的），有光标就插到光标处。
    */
   const uploadImages = useCallback(
-    async (files: readonly File[], target: SourceBlock | null = activeBlock()) => {
+    async (
+      files: readonly File[],
+      target: SourceBlock | null = activeBlock(),
+      caret: CaretPoint | null = captureCaretPoint(target),
+    ) => {
       const upload = onUploadRef.current;
       if (!upload || readonly) return;
       const markdowns: string[] = [];
@@ -556,9 +650,9 @@ export function MarkdownEditor({
           console.error('[MarkdownEditor] 上传图片失败', error);
         }
       }
-      if (markdowns.length > 0) insertMarkdownBlock(markdowns.join('\n\n'), target);
+      if (markdowns.length > 0) insertImageMarkdown(markdowns.join(' '), target, caret);
     },
-    [activeBlock, insertMarkdownBlock, readonly],
+    [activeBlock, insertImageMarkdown, readonly],
   );
 
   const handlePaste = useCallback(
@@ -577,9 +671,10 @@ export function MarkdownEditor({
       const markdown = formatImageMarkdown(text);
       if (!markdown) return;
       event.preventDefault();
-      insertMarkdownBlock(markdown);
+      const target = activeBlock();
+      insertImageMarkdown(markdown, target, captureCaretPoint(target));
     },
-    [insertMarkdownBlock, uploadImages],
+    [activeBlock, insertImageMarkdown, uploadImages],
   );
 
   const handleDrop = useCallback(
@@ -592,15 +687,24 @@ export function MarkdownEditor({
       const files = Array.from(event.dataTransfer?.files ?? []);
       if (!files.some((f) => f.type.startsWith('image/'))) return;
       event.preventDefault();
-      void uploadImages(files);
+      // 浏览器不会给 contenteditable 的拖放设置光标：按落点算出插入位置，
+      // 让图片落在鼠标松手处，而不是块末或新块。
+      const caret = caretRangeFromPoint(event.clientX, event.clientY);
+      if (caret) {
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(caret);
+      }
+      void uploadImages(files, blockFromNode(caret?.startContainer ?? null) ?? activeBlock());
     },
-    [uploadImages],
+    [activeBlock, blockFromNode, uploadImages],
   );
 
-  /** 顶部工具栏 / 块菜单：打开插入图片弹窗，并冻结目标块（弹窗会抢走焦点） */
+  /** 顶部工具栏 / 块菜单：打开插入图片弹窗，冻结目标块与块内光标（弹窗会抢走焦点） */
   const handleRequestInsertImage = useCallback(
     (block: SourceBlock | null) => {
       if (readonly) return false;
+      imageCaretRef.current = captureCaretPoint(block);
       setImageTargetBlock(block);
       setImageDialogOpen(true);
       return true;
@@ -609,23 +713,24 @@ export function MarkdownEditor({
   );
 
   const closeImageDialog = useCallback(() => {
+    imageCaretRef.current = null;
     setImageDialogOpen(false);
     setImageTargetBlock(null);
   }, []);
 
-  /** 弹窗确认网络地址：整条地址直接写成图片块，不做行内文本拼接 */
+  /** 弹窗确认网络地址：整条地址直接写成图片，不做行内文本拼接 */
   const handleImageUrlSubmit = useCallback(
     (url: string) => {
       const markdown = formatImageMarkdown(url);
       if (!markdown) return;
-      insertMarkdownBlock(markdown, imageTargetBlock);
+      insertImageMarkdown(markdown, imageTargetBlock, imageCaretRef.current);
     },
-    [imageTargetBlock, insertMarkdownBlock],
+    [imageTargetBlock, insertImageMarkdown],
   );
 
   const handleImageFilesPick = useCallback(
     (files: File[]) => {
-      void uploadImages(files, imageTargetBlock);
+      void uploadImages(files, imageTargetBlock, imageCaretRef.current);
     },
     [imageTargetBlock, uploadImages],
   );
@@ -718,7 +823,11 @@ export function MarkdownEditor({
 
         {effectiveMode === 'read' ? (
           <div className="mde-body scrollbar-5px">
-            <MarkdownView source={snapshot.source} resolveImage={resolveImage} />
+            <MarkdownView
+              source={snapshot.source}
+              resolveImage={resolveImage}
+              enableImageZoom
+            />
           </div>
         ) : (
           <div className="mde-body scrollbar-5px">

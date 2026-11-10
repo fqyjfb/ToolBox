@@ -146,7 +146,6 @@ export type { FootnoteDefinition, FootnoteMeta } from "./footnotes.ts";
 export {
   escapeMarkdownText,
   formatImageMarkdown,
-  insertPlainTextAtSelection,
   mergeInlineTextEdit,
   plainTextFromInlineDom,
   repairBrokenImageSyntax,
