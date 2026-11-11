@@ -5,6 +5,7 @@ import { ExternalLink, Monitor, HardDrive, Cpu, User, Clock, RefreshCw } from 'l
 import GitHubButton from '../../components/ui/GitHubButton';
 import UpdateButton from '../../components/ui/UpdateButton';
 import { formatBytes } from '../../utils/format';
+import { openUrl } from '../../services/browserService';
 
 type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'installing' | 'error';
 
@@ -178,7 +179,11 @@ const About: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
         <div className="p-4">
-          <div className="flex items-center">
+          <div
+            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => openUrl('https://box.doair.online/')}
+            title="访问官网"
+          >
             <img loading="lazy" src="./favicon.svg" alt="ToolBox Logo" className="w-12 h-12 mr-4" />
             <div>
               <h2 className="text-sm font-semibold">ToolBox</h2>

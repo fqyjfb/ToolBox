@@ -8,6 +8,7 @@ import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { pluginApi } from '../../services/pluginApi';
 import { InstallProgress } from '../../services/PluginService';
+import { openUrl } from '../../services/browserService';
 
 interface PluginCardProps {
   plugin: PluginInfo | InstalledPlugin;
@@ -120,7 +121,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                window.electron?.openExternal(`https://github.com/${(plugin as PluginInfo).githubRepo}`);
+                openUrl(`https://github.com/${(plugin as PluginInfo).githubRepo}`);
               }}
               className="w-6 h-6 flex items-center justify-center rounded text-content-tertiary hover:text-content-primary transition-colors"
               title="查看 GitHub"

@@ -19,6 +19,10 @@ let translateWindow = null;
 let pendingPayload = null;
 let isQuitting = false;
 let lastShownText = '';
+// 主窗口划词工具条触发（trigger='app-selection'）时，本次显示周期豁免失焦自动隐藏：
+// 用户注意力仍在主窗口，焦点进出频繁，blur 收起会让弹窗「闪现即消失」无法交互。
+// 系统划词（selection）/ 截图翻译等入口行为不变，显式 hide 时复位。
+let suppressHideOnBlur = false;
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -116,6 +120,7 @@ const rememberBounds = () => {
 
 const hideTranslateWindow = () => {
   if (!translateWindow || translateWindow.isDestroyed()) return;
+  suppressHideOnBlur = false;
   rememberBounds();
   translateWindow.hide();
 };
@@ -176,6 +181,7 @@ const createTranslateWindow = () => {
   });
 
   translateWindow.on('blur', () => {
+    if (suppressHideOnBlur) return;
     if (loadSettings().translatePopupHideOnBlur !== 1) return;
     if (loadSettings().translatePopupAlwaysOnTop === 1) return;
     hideTranslateWindow();
@@ -211,6 +217,7 @@ const showTranslateWindow = (payload = {}) => {
   applyAlwaysOnTop();
 
   lastShownText = typeof payload.text === 'string' ? payload.text : '';
+  suppressHideOnBlur = payload.trigger === 'app-selection';
   const message = {
     visible: true,
     pinned: loadSettings().translatePopupAlwaysOnTop === 1,

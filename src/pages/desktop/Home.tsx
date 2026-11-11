@@ -843,7 +843,6 @@ const Home: React.FC = () => {
             data={moyuData}
             loading={moyuLoading}
             error={moyuError}
-            onRetry={() => void fetchMoyuData()}
           />
         );
       case 'quicklaunch':

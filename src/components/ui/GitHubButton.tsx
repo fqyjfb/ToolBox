@@ -1,13 +1,9 @@
 import React from 'react';
+import { openUrl } from '../../services/browserService';
 
 const GitHubButton: React.FC = () => {
   const handleClick = () => {
-    const url = 'https://github.com/fqyjfb/ToolBox';
-    if (window.electron && window.electron.openExternal) {
-      window.electron.openExternal(url);
-    } else {
-      window.open(url, '_blank');
-    }
+    openUrl('https://github.com/fqyjfb/ToolBox');
   };
 
   return (

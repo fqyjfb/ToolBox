@@ -18,8 +18,8 @@ const DEFAULT_CONFIG: NetworkConfig = {
     requestTimeout: 10000,
   },
   hotNews: {
-    primaryUrl: 'https://60s.fqy-jfb.workers.dev/v2',
-    fallbackUrl: 'https://60s.viki.moe/v2',
+    primaryUrl: 'https://60api.fqy-jfb.workers.dev/v2',
+    fallbackUrl: 'https://60s.okbaike.com/v2',
     requestTimeout: 15000,
   },
   pluginStore: {
@@ -238,25 +238,6 @@ const NetworkTab: React.FC = () => {
           </div>
         </div>
 
-        <SettingSection title="应用更新">
-          <SettingRow label="检查更新 API">
-            <div className="flex items-center gap-2">
-              <input type="text" value={form.appUpdate.checkUrl} onChange={e => updateField('appUpdate', 'checkUrl', e.target.value)} placeholder={DEFAULT_CONFIG.appUpdate.checkUrl} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
-              <TestButton keyName="appUpdate.checkUrl" url={form.appUpdate.checkUrl} />
-              <DefaultButton onClick={() => updateField('appUpdate', 'checkUrl', '')} />
-            </div>
-          </SettingRow>
-          <SettingRow label="仓库主页">
-            <div className="flex items-center gap-2">
-              <input type="text" value={form.appUpdate.repoUrl} onChange={e => updateField('appUpdate', 'repoUrl', e.target.value)} placeholder={DEFAULT_CONFIG.appUpdate.repoUrl} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
-              <DefaultButton onClick={() => updateField('appUpdate', 'repoUrl', '')} />
-            </div>
-          </SettingRow>
-          <SettingRow label="请求超时 (ms)">
-            <input type="number" value={form.appUpdate.requestTimeout || ''} onChange={e => updateField('appUpdate', 'requestTimeout', Number(e.target.value) || 0)} placeholder={String(DEFAULT_CONFIG.appUpdate.requestTimeout)} className="w-24 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
-          </SettingRow>
-        </SettingSection>
-
         <SettingSection title="60s 新闻 API">
           <SettingRow label="主源">
             <div className="flex items-center gap-2">
@@ -280,19 +261,19 @@ const NetworkTab: React.FC = () => {
         <SettingSection title="插件商店镜像">
           <SettingRow label="注册表镜像">
             <div className="flex items-center gap-2">
-              <textarea rows={4} value={urlsToText(form.pluginStore.registryUrls)} onChange={e => updateField('pluginStore', 'registryUrls', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.registryUrls.join('\n')} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
+              <textarea rows={4} value={urlsToText(form.pluginStore.registryUrls)} onChange={e => updateField('pluginStore', 'registryUrls', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.registryUrls.join('\n')} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary scrollbar-5px" />
               <DefaultButton onClick={() => updateField('pluginStore', 'registryUrls', [])} />
             </div>
           </SettingRow>
           <SettingRow label="GitHub Raw">
             <div className="flex items-center gap-2">
-              <textarea rows={4} value={urlsToText(form.pluginStore.githubRawMirrors)} onChange={e => updateField('pluginStore', 'githubRawMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubRawMirrors.join('\n')} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
+              <textarea rows={4} value={urlsToText(form.pluginStore.githubRawMirrors)} onChange={e => updateField('pluginStore', 'githubRawMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubRawMirrors.join('\n')} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary scrollbar-5px" />
               <DefaultButton onClick={() => updateField('pluginStore', 'githubRawMirrors', [])} />
             </div>
           </SettingRow>
           <SettingRow label="GitHub API">
             <div className="flex items-center gap-2">
-              <textarea rows={3} value={urlsToText(form.pluginStore.githubApiMirrors)} onChange={e => updateField('pluginStore', 'githubApiMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubApiMirrors.join('\n')} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary" />
+              <textarea rows={3} value={urlsToText(form.pluginStore.githubApiMirrors)} onChange={e => updateField('pluginStore', 'githubApiMirrors', textToUrls(e.target.value))} placeholder={DEFAULT_CONFIG.pluginStore.githubApiMirrors.join('\n')} className="w-64 px-2 py-1 text-sm border border-content bg-surface text-content-primary scrollbar-5px" />
               <DefaultButton onClick={() => updateField('pluginStore', 'githubApiMirrors', [])} />
             </div>
           </SettingRow>

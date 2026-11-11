@@ -18,13 +18,13 @@ export default defineConfig(({ mode }) => {
       host: true,
       proxy: {
         '/api/news': {
-          target: 'https://60s.fqy-jfb.workers.dev/v2',
+          target: 'https://60api.fqy-jfb.workers.dev/v2',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/news/, ''),
           secure: true,
         },
         '/api/news-fallback': {
-          target: 'https://60s.viki.moe/v2',
+          target: 'https://60s.okbaike.com/v2',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/news-fallback/, ''),
           secure: true,

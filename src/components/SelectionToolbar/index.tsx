@@ -57,11 +57,11 @@ export function SelectionToolbar({ enabled }: SelectionToolbarProps) {
   };
 
   const handleTranslate = async (text: string) => {
-    // 应用内划词直接传文本，不走系统取词
+    // 应用内划词直接传文本，不走系统取词；app-selection 触发的弹窗不因失焦自动隐藏
     await window.electron?.translate.open({
       text,
       autoTranslate: true,
-      trigger: 'selection',
+      trigger: 'app-selection',
     });
     finish();
   };

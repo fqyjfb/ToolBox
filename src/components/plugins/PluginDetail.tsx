@@ -9,6 +9,7 @@ import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
 import { translateTag } from '../../utils';
 import { pluginApi } from '../../services/pluginApi';
+import { openUrl } from '../../services/browserService';
 
 interface PluginDetailProps {
   isOpen: boolean;
@@ -152,7 +153,7 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
             {(plugin as PluginInfo).githubRepo && (
               <button
                 onClick={() => {
-                  window.electron?.openExternal(`https://github.com/${(plugin as PluginInfo).githubRepo}`);
+                  openUrl(`https://github.com/${(plugin as PluginInfo).githubRepo}`);
                 }}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-content-secondary bg-surface-secondary hover:bg-menu-hover transition-colors"
               >

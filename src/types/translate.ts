@@ -1,7 +1,8 @@
 /** 翻译源标识 */
 export type TranslateProviderId = 'online' | 'ai';
 
-export type TranslateTrigger = 'selection' | 'screenshot' | 'manual';
+/** 'app-selection'：主窗口划词工具条触发（弹窗不因失焦自动隐藏） */
+export type TranslateTrigger = 'selection' | 'app-selection' | 'screenshot' | 'manual';
 
 /** 翻译源展示名：设置页与翻译浮层共用 */
 export const PROVIDER_LABELS: Record<TranslateProviderId, string> = {
