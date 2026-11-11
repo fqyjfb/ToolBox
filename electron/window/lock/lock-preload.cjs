@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('lockElectron', {
   unlock: () => ipcRenderer.invoke('lock:unlock'),
   // 首帧前就要拿到主题，因此走同步通道
   getTheme: () => ipcRenderer.sendSync('lock:get-theme-sync'),
+  // 窗口重开时感知进行中的冷却（失败次数过多）
+  getStatus: () => ipcRenderer.invoke('lock:getStatus'),
   closeWindow: () => ipcRenderer.invoke('lock:closeWindow'),
   exitApp: () => ipcRenderer.invoke('lock:exitApp'),
   // 拖拽相关

@@ -1,3 +1,8 @@
+/* ============================================================
+   ToolBox 锁屏 —— 紧凑卡片 · 主题令牌 · 皮肤装饰层 · 动效
+   颜色一律取自 --color-*（由主进程主题快照注入），皮肤不写死颜色
+   ============================================================ */
+
 :root {
   --color-success: #22c55e;
   --color-error: #ef4444;
@@ -8,8 +13,6 @@
   --color-bg-secondary: #f8f9fa;
   --color-bg-tertiary: #f3f4f6;
   --color-border: #e5e7eb;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -20,13 +23,16 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
-  --space-6: 32px;
   --text-xs: 12px;
   --text-sm: 14px;
-  --text-base: 16px;
-  --text-lg: 20px;
   --transition-fast: 0.15s ease;
-  --transition-normal: 0.2s ease;
+
+  /* 锁屏令牌：由主题推导，明暗差异集中在这里 */
+  --lk-accent: var(--color-text-primary);
+  --lk-soft: rgba(255, 255, 255, 0.55);
+  --lk-grain-opacity: 0.04;
+  --lk-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --lk-ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .dark {
@@ -37,9 +43,10 @@
   --color-bg-secondary: #1f2937;
   --color-bg-tertiary: #374151;
   --color-border: #374151;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+
+  --lk-soft: rgba(255, 255, 255, 0.07);
+  --lk-grain-opacity: 0.06;
 }
 
 * {
@@ -62,16 +69,94 @@ body {
   justify-content: center;
 }
 
-.lock-container {
+/* ---------------- 卡片骨架 ---------------- */
+
+.lk-card {
+  position: relative;
   width: 100%;
   height: 100%;
-  max-width: 360px;
   background: var(--color-bg-primary);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  animation: lk-enter 300ms var(--lk-ease-out);
 }
+
+/* 成功时沿边框流过一圈 accent 光（conic-gradient + mask 只留边框） */
+@property --lk-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.lk-ring {
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--radius-xl);
+  padding: 1.5px;
+  pointer-events: none;
+  opacity: 0;
+  background: conic-gradient(
+    from var(--lk-ring-angle),
+    transparent 0deg,
+    transparent 300deg,
+    var(--lk-accent) 344deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* ---------------- 皮肤装饰层（颜色全部引用令牌） ---------------- */
+
+/* 墨（默认）：斜向柔光 + 噪点颗粒 */
+body.skin-ink .lk-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--lk-soft), transparent 55%);
+  pointer-events: none;
+}
+
+body.skin-ink .lk-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: var(--lk-grain-opacity);
+  pointer-events: none;
+}
+
+/* 极光：卡片上沿一条 accent 光带缓慢漂移 */
+body.skin-aurora .lk-card::before {
+  content: '';
+  position: absolute;
+  top: -34px;
+  left: -20%;
+  width: 140%;
+  height: 60px;
+  background: var(--lk-accent);
+  filter: blur(30px);
+  opacity: 0.4;
+  animation: lk-band-drift 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+body.dark.skin-aurora .lk-card::before {
+  opacity: 0.25;
+}
+
+/* 跟随主题：无装饰 */
+body.skin-theme .lk-card::before,
+body.skin-theme .lk-card::after {
+  content: none;
+}
+
+/* ---------------- 标题栏（保留拖拽区） ---------------- */
 
 .title-bar {
   display: flex;
@@ -83,10 +168,8 @@ body {
   user-select: none;
   -webkit-app-region: drag;
   border-bottom: 1px solid var(--color-border);
-}
-
-.title-bar:active {
-  cursor: grabbing;
+  opacity: 0;
+  animation: lk-fade-in 300ms var(--lk-ease-out) forwards;
 }
 
 .title-text {
@@ -137,229 +220,179 @@ body {
   height: 14px;
 }
 
-.lock-content {
-  padding: var(--space-5) var(--space-5);
-  position: relative;
-  height: calc(100% - 48px);
+/* ---------------- 主体 ---------------- */
+
+.lk-body {
+  flex: 1;
+  min-height: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  position: relative;
 }
 
-.lock-icon-wrapper {
+.lk-lock {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  color: var(--color-text-tertiary);
+  opacity: 0;
+  animation:
+    lk-fade-in 300ms var(--lk-ease-out) 120ms forwards,
+    lk-breathe 3s ease-in-out 800ms infinite;
+}
+
+.lk-lock-svg {
+  width: 100%;
+  height: 100%;
+  transition: opacity var(--transition-fast);
+}
+
+.lk-shackle {
+  transform-box: fill-box;
+  transform-origin: 90% 100%;
+}
+
+.lk-keyhole {
+  stroke: var(--lk-accent);
+}
+
+/* 验证中：锁图标退为剪影，叠一枚 accent 单色 spinner */
+.lk-lock::after {
+  content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 120px;
-  height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.6;
-}
-
-.lock-icon-wrapper .loader {
-  position: relative;
-  width: 12em;
-  height: 12em;
-  animation: rotate5123 2.4s linear infinite;
-}
-
-.lock-icon-wrapper .white {
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  animation: flash 2.4s linear infinite;
+  inset: 8px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--lk-accent);
   opacity: 0;
 }
 
-.lock-icon-wrapper .dot {
-  position: absolute;
-  margin: auto;
-  width: 2.4em;
-  height: 2.4em;
-  border-radius: 100%;
-  transition: all 1s ease;
+.lk-card[data-state="verifying"] .lk-lock-svg {
+  opacity: 0.25;
 }
 
-.lock-icon-wrapper .dot:nth-child(2) {
-  top: 0;
-  bottom: 0;
-  left: 0;
-  background: #FF4444;
-  animation: dotsY 2.4s linear infinite;
+.lk-card[data-state="verifying"] .lk-lock::after {
+  opacity: 1;
+  animation: lk-spin 800ms linear infinite;
 }
 
-.lock-icon-wrapper .dot:nth-child(3) {
-  left: 0;
-  right: 0;
-  top: 0;
-  background: #FFBB33;
-  animation: dotsX 2.4s linear infinite;
+/* 成功：锁扣弹开 */
+.lk-card[data-state="success"] .lk-shackle {
+  animation: lk-shackle-open 250ms var(--lk-ease-snap) forwards;
 }
 
-.lock-icon-wrapper .dot:nth-child(4) {
-  top: 0;
-  bottom: 0;
-  right: 0;
-  background: #99CC00;
-  animation: dotsY 2.4s linear infinite;
-}
-
-.lock-icon-wrapper .dot:nth-child(5) {
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #33B5E5;
-  animation: dotsX 2.4s linear infinite;
-}
-
-@keyframes rotate5123 {
-  0% {
-    transform: rotate( 0 );
-  }
-  10% {
-    width: 6.250em;
-    height: 6.250em;
-  }
-  66% {
-    width: 2.4em;
-    height: 2.4em;
-  }
-  100% {
-    transform: rotate(360deg);
-    width: 6.250em;
-    height: 6.250em;
-  }
-}
-
-@keyframes dotsY {
-  66% {
-    opacity: .1;
-    width: 2.4em;
-  }
-  77% {
-    opacity: 1;
-    width: 0;
-  }
-}
-
-@keyframes dotsX {
-  66% {
-    opacity: .1;
-    height: 2.4em;
-  }
-  77% {
-    opacity: 1;
-    height: 0;
-  }
-}
-
-@keyframes flash {
-  33% {
-    opacity: 0;
-    border-radius: 0%;
-  }
-  55% {
-    opacity: .6;
-    border-radius: 100%;
-  }
-  66% {
-    opacity: 0;
-  }
-}
-
-.lock-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  width: 100%;
-  max-width: 280px;
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  position: relative;
-  z-index: 10;
-}
-
-.lock-hint {
-  font-size: var(--text-sm);
+.lk-hint {
+  font-size: 13px;
   color: var(--color-text-secondary);
   text-align: center;
-  margin-bottom: var(--space-3);
+  opacity: 0;
+  animation: lk-fade-in 300ms var(--lk-ease-out) 200ms forwards;
 }
 
-.password-input-wrapper {
-  position: relative;
-}
-
-.password-input {
+.lk-form {
   width: 100%;
-  padding: var(--space-3) var(--space-4);
-  padding-left: 44px;
-  padding-right: 44px;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  outline: none;
+  max-width: 280px;
+  opacity: 0;
+  animation: lk-fade-in 300ms var(--lk-ease-out) 260ms forwards;
+}
+
+.lk-input-wrap {
+  position: relative;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
   background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.password-input::placeholder {
-  color: var(--color-text-tertiary);
-  font-weight: 400;
+.lk-input-wrap:focus-within {
+  border-color: var(--lk-accent);
 }
 
-.password-input:focus {
-  border-color: var(--color-text-secondary);
+.lk-card[data-state="error"] .lk-input-wrap {
+  border-color: var(--color-error);
+  animation: lk-shake 400ms var(--lk-ease-out);
 }
 
-.password-input:hover {
-  border-color: var(--color-text-tertiary);
-}
-
-.password-icon {
-  position: absolute;
-  left: var(--space-3);
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  color: var(--color-text-tertiary);
+.lk-card[data-state="cooldown"] .lk-input-wrap {
+  border-color: var(--color-border);
+  opacity: 0.45;
   pointer-events: none;
 }
 
-.error-msg {
-  font-size: var(--text-xs);
-  color: var(--color-error);
-  text-align: left;
-  min-height: 16px;
-  padding-left: var(--space-1);
+.lk-key-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 15px;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* 已输入字符显示为圆点 */
+.lk-dots {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  row-gap: 5px;
+  max-height: 24px;
+  overflow: hidden;
 }
 
-.error-msg.hidden {
-  visibility: hidden;
+.lk-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-text-primary);
+  flex-shrink: 0;
 }
 
-.unlock-btn {
+.lk-dot.is-fill {
+  animation: lk-pop 240ms var(--lk-ease-snap);
+}
+
+.lk-dot.is-out {
+  animation: lk-drop 240ms ease-in forwards;
+}
+
+.lk-card[data-state="error"] .lk-dot {
+  background: var(--color-error);
+}
+
+/* 原生输入隐藏铺满输入框，保留 password 语义与物理键盘输入 */
+.lk-native-input {
   position: absolute;
-  right: var(--space-2);
-  top: 50%;
-  transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+  cursor: text;
+}
+
+.lk-submit {
+  position: absolute;
+  right: 7px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 50%;
   cursor: pointer;
   transition: transform var(--transition-fast);
   display: flex;
@@ -367,35 +400,165 @@ body {
   justify-content: center;
 }
 
-.unlock-btn:hover {
-  transform: translateY(-50%) scale(1.1);
+.lk-submit:hover {
+  transform: scale(1.1);
 }
 
-.unlock-btn:active {
-  transform: translateY(-50%) scale(0.9);
+.lk-submit:active {
+  transform: scale(0.9);
 }
 
-.unlock-btn:disabled {
+.lk-submit:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  transform: translateY(-50%);
+  transform: none;
 }
 
-.unlock-icon {
-  width: 16px;
-  height: 16px;
+.lk-submit-icon {
+  width: 15px;
+  height: 15px;
   color: var(--color-text-tertiary);
   transition: color var(--transition-fast);
 }
 
-.unlock-btn:hover .unlock-icon {
-  color: var(--color-text-secondary);
+.lk-input-wrap:focus-within .lk-submit-icon {
+  color: var(--lk-accent);
 }
 
-.unlock-btn:active .unlock-icon {
-  color: var(--color-text-primary);
+/* ---------------- 错误 / 冷却文案 ---------------- */
+
+.lk-error {
+  font-size: var(--text-xs);
+  color: var(--color-error);
+  text-align: center;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  animation: lk-fade-in 300ms var(--lk-ease-out) 320ms forwards;
 }
 
-.password-input-wrapper:focus-within .unlock-icon {
-  color: var(--color-text-secondary);
+.lk-error.hidden {
+  visibility: hidden;
+}
+
+/* ---------------- 底部元信息 ---------------- */
+
+.lk-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  opacity: 0;
+  animation: lk-fade-in 300ms var(--lk-ease-out) 320ms forwards;
+}
+
+.lk-meta-sep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+/* ---------------- 成功揭示 ---------------- */
+
+.lk-card[data-state="success"] .lk-ring {
+  opacity: 1;
+  animation: lk-ring-sweep 500ms var(--lk-ease-out) forwards;
+}
+
+.lk-card[data-state="success"] .lk-form,
+.lk-card[data-state="success"] .lk-error {
+  animation: lk-fade-out 200ms ease forwards;
+}
+
+/* ---------------- 动效 ---------------- */
+
+@keyframes lk-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lk-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lk-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes lk-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+@keyframes lk-drop {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes lk-shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-8px); }
+  40%, 60% { transform: translateX(8px); }
+}
+
+@keyframes lk-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+@keyframes lk-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes lk-shackle-open {
+  to {
+    transform: translateY(-3px) rotate(-24deg);
+  }
+}
+
+@keyframes lk-ring-sweep {
+  to { --lk-ring-angle: 360deg; }
+}
+
+@keyframes lk-band-drift {
+  0%, 100% { transform: translateX(-6%); }
+  50% { transform: translateX(6%); }
+}
+
+/* 无障碍降级：去掉位移动画，仅保留瞬时状态切换 */
+@media (prefers-reduced-motion: reduce) {
+  .lk-card,
+  .lk-lock,
+  .lk-hint,
+  .lk-form,
+  .lk-error,
+  .lk-meta,
+  .lk-dot,
+  .lk-ring {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  body.skin-aurora .lk-card::before {
+    animation: none;
+  }
 }

@@ -6,8 +6,9 @@
   <title>ToolBox - 锁定</title>
   <link rel="stylesheet" href="lock.css">
 </head>
-<body>
-  <div class="lock-container">
+<body class="skin-ink">
+  <div class="lk-card" id="lkCard" data-state="idle">
+    <div class="lk-ring" aria-hidden="true"></div>
     <div class="title-bar" id="titleBar">
       <span class="title-text">
         <img src="./favicon.png" alt="ToolBox" class="title-icon" />
@@ -29,41 +30,45 @@
         </button>
       </div>
     </div>
-    <div class="lock-content">
-      <div class="lock-icon-wrapper">
-        <div class="loader">
-          <div class="dot white"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
-        </div>
+    <div class="lk-body" id="lkBody">
+      <div class="lk-lock" aria-hidden="true">
+        <svg class="lk-lock-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path class="lk-shackle" d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          <rect class="lk-lock-body" x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <line class="lk-keyhole" x1="12" y1="15" x2="12" y2="18"></line>
+        </svg>
       </div>
-      <form id="unlockForm" class="lock-form">
-        <p class="lock-hint">请输入密码以解锁应用</p>
-        <div class="password-input-wrapper">
-          <svg class="password-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <p class="lk-hint">请输入密码以解锁应用</p>
+      <form id="unlockForm" class="lk-form">
+        <div class="lk-input-wrap" id="lkInputWrap">
+          <svg class="lk-key-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
+          <div class="lk-dots" id="lkDots" aria-hidden="true"></div>
           <input
             type="password"
             id="passwordInput"
-            class="password-input"
-            placeholder="请输入密码"
+            class="lk-native-input"
+            aria-label="锁屏密码"
             autocomplete="off"
             autofocus
           >
-          <button type="submit" class="unlock-btn" title="解锁">
-            <svg class="unlock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button type="submit" class="lk-submit" id="lkSubmit" title="解锁">
+            <svg class="lk-submit-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
           </button>
         </div>
-        <p id="errorMsg" class="error-msg hidden">密码错误，请重试</p>
       </form>
+      <p id="lkError" class="lk-error hidden"></p>
     </div>
+    <footer class="lk-meta">
+      <span id="lkTime">--:--</span>
+      <span class="lk-meta-sep" aria-hidden="true"></span>
+      <span id="lkDate"></span>
+    </footer>
   </div>
   <script src="lock.cjs"></script>
 </body>

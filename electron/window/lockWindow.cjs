@@ -7,6 +7,9 @@ const { loadSettings, saveSettings, isDarkTheme, loadThemeSnapshot, saveThemeSna
 let lockWindow = null;
 let dragOffset = { x: 0, y: 0 };
 
+// 防暴力破解：连续失败达到上限后进入冷却，冷却时长每次翻倍（封顶 10 分钟）
+const MAX_LOCK_ATTEMPTS = 5;
+
 const getLockPasswordPath = () => {
   return path.join(app.getPath('userData'), 'lockPassword.json');
 };
@@ -44,7 +47,7 @@ const createLockWindow = () => {
   const { width, height } = primaryDisplay.workAreaSize;
 
   const windowWidth = 360;
-  const windowHeight = 280;
+  const windowHeight = 320;
   const x = Math.floor((width - windowWidth) / 2);
   const y = Math.floor((height - windowHeight) / 2);
 
@@ -197,9 +200,13 @@ const toggleLock = () => {
 
 const getLockStatus = () => {
   const settings = loadSettings();
+  const cooldownUntil = settings.lockCooldownUntil || 0;
   return {
     isLockEnabled: settings.isLockEnabled === 1,
     lockPassword: settings.lockPassword,
+    cooldownRemainingSeconds: cooldownUntil > Date.now()
+      ? Math.ceil((cooldownUntil - Date.now()) / 1000)
+      : 0,
   };
 };
 
@@ -210,18 +217,55 @@ const registerLockIpcHandlers = () => {
   lockIpcHandlersRegistered = true;
 
   ipcMain.handle('lock:verifyPassword', async (event, password) => {
-    const passwordFile = getLockPasswordPath();
-    if (!fs.existsSync(passwordFile)) {
-      return false;
+    const settings = loadSettings();
+    const now = Date.now();
+    const cooldownUntil = settings.lockCooldownUntil || 0;
+
+    // 冷却期内一律拒绝，不再做哈希比对
+    if (now < cooldownUntil) {
+      return {
+        success: false,
+        remainingAttempts: 0,
+        cooldownSeconds: Math.ceil((cooldownUntil - now) / 1000),
+      };
     }
 
+    const passwordFile = getLockPasswordPath();
+    if (!fs.existsSync(passwordFile)) {
+      return { success: false, remainingAttempts: MAX_LOCK_ATTEMPTS, cooldownSeconds: 0 };
+    }
+
+    let isValid = false;
     try {
       const data = JSON.parse(fs.readFileSync(passwordFile, 'utf-8'));
-      return verifyPassword(password, data.salt, data.passwordHash);
+      isValid = verifyPassword(password, data.salt, data.passwordHash);
     } catch (error) {
       console.error('Failed to verify password:', error);
-      return false;
+      return { success: false, remainingAttempts: MAX_LOCK_ATTEMPTS, cooldownSeconds: 0 };
     }
+
+    if (isValid) {
+      if (settings.lockFailedAttempts || settings.lockCooldownUntil) {
+        settings.lockFailedAttempts = 0;
+        settings.lockCooldownUntil = null;
+        saveSettings(settings);
+      }
+      return { success: true, remainingAttempts: MAX_LOCK_ATTEMPTS, cooldownSeconds: 0 };
+    }
+
+    // 失败计数持久化在 settings，重开锁屏窗口 / 重启应用都不清零
+    const attempts = (settings.lockFailedAttempts || 0) + 1;
+    settings.lockFailedAttempts = attempts;
+
+    if (attempts >= MAX_LOCK_ATTEMPTS) {
+      const cooldownSeconds = Math.min(30 * 2 ** (attempts - MAX_LOCK_ATTEMPTS), 600);
+      settings.lockCooldownUntil = now + cooldownSeconds * 1000;
+      saveSettings(settings);
+      return { success: false, remainingAttempts: 0, cooldownSeconds };
+    }
+
+    saveSettings(settings);
+    return { success: false, remainingAttempts: MAX_LOCK_ATTEMPTS - attempts, cooldownSeconds: 0 };
   });
 
   ipcMain.handle('lock:setPassword', async (event, password) => {
@@ -238,6 +282,9 @@ const registerLockIpcHandlers = () => {
 
         const settings = loadSettings();
         settings.lockPassword = hash;
+        // 换密码后旧的失败记录与冷却一并作废
+        settings.lockFailedAttempts = 0;
+        settings.lockCooldownUntil = null;
         saveSettings(settings);
 
         require('./mainWindow.cjs').resetAutoLockTimer();
@@ -249,6 +296,8 @@ const registerLockIpcHandlers = () => {
 
         const settings = loadSettings();
         settings.lockPassword = '';
+        settings.lockFailedAttempts = 0;
+        settings.lockCooldownUntil = null;
         saveSettings(settings);
 
         require('./mainWindow.cjs').stopAutoLock();
@@ -282,9 +331,15 @@ const registerLockIpcHandlers = () => {
     return { code: 0 };
   });
 
-  // 同步返回，保证锁屏首帧之前就能上色（避免明暗/自定义主题闪一下）
+  // 同步返回，保证锁屏首帧之前就能上色（避免明暗/自定义主题闪一下）；
+  // 顺带带上皮肤配置，锁屏窗口创建时只需这一次同步读取
   ipcMain.on('lock:get-theme-sync', (event) => {
-    event.returnValue = { isDark: isDarkTheme(), colors: loadThemeSnapshot() };
+    const settings = loadSettings();
+    event.returnValue = {
+      isDark: isDarkTheme(),
+      colors: loadThemeSnapshot(),
+      skin: settings.lockSkin || 'ink',
+    };
   });
 
   ipcMain.handle('lock:unlock', () => {

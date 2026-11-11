@@ -125,6 +125,11 @@ const defaultSettings = {
   isLockEnabled: 0,
   lockPassword: '',
   lockedAt: null,
+  // ── 锁屏防暴力破解：连续失败 5 次进入冷却（30s 起每次翻倍，封顶 10 分钟），重启不清零 ──
+  lockFailedAttempts: 0,
+  lockCooldownUntil: null,
+  // ── 锁屏皮肤：'ink'（默认）| 'aurora' | 'theme'，颜色一律跟随主题快照 ──
+  lockSkin: 'ink',
   isAutoLockEnabled: 0,
   autoLockTimeout: 600,
   dbPath: '',
