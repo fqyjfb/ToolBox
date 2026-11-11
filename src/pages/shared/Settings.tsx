@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft, Network, Palette, Sparkles, Languages } from 'lucide-react';
+import { Settings as SettingsIcon, Keyboard, Circle, Database, FileText, RefreshCw, PanelLeft, Network, Palette, Sparkles, Languages, Lock } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useToastStore } from '../../store/toastStore';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -17,6 +17,7 @@ import { logError } from '../../services/loggerService';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
 import {
   GeneralTab,
+  AppLockTab,
   ThemeTab,
   ShortcutsTab,
   FloatWindowTab,
@@ -422,6 +423,7 @@ const Settings: React.FC = () => {
   const tabs = [
     { id: 'theme' as const, label: '主题设置', icon: Palette },
     { id: 'general' as const, label: '通用设置', icon: SettingsIcon },
+    { id: 'appLock' as const, label: '应用锁', icon: Lock },
     { id: 'ai' as const, label: 'AI 设置', icon: Sparkles },
     { id: 'translate' as const, label: '翻译设置', icon: Languages },
     { id: 'storage' as const, label: '存储管理', icon: Database },
@@ -497,6 +499,8 @@ const Settings: React.FC = () => {
               onAutoLockTimeoutChange={handleAutoLockTimeoutChange}
             />
           )}
+
+          {activeTab === 'appLock' && <AppLockTab />}
 
           {activeTab === 'storage' && (
             <StorageTab

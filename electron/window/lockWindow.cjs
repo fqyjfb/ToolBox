@@ -130,6 +130,13 @@ const lock = () => {
   createLockWindow();
   require('./tray.cjs').refreshTrayMenu();
 
+  // 应用锁联动：锁定配置的外部应用（fire-and-forget，异常自吞不影响锁定主流程）
+  try {
+    require('../services/appLockService.cjs').onAppLocked();
+  } catch (error) {
+    console.error('[AppLock] 联动锁定外部应用失败:', error.message);
+  }
+
   return true;
 };
 
@@ -161,6 +168,13 @@ const lockOrPrompt = () => {
 };
 
 const unlock = () => {
+  // 应用锁联动：最先销毁遮罩并恢复外部应用（异步执行，不阻塞窗口恢复流程）
+  try {
+    require('../services/appLockService.cjs').onAppUnlocking();
+  } catch (error) {
+    console.error('[AppLock] 联动恢复外部应用失败:', error.message);
+  }
+
   const settings = loadSettings();
   settings.isLockEnabled = 0;
   settings.lockedAt = null;
@@ -382,8 +396,11 @@ const checkLockOnStartup = () => {
     saveSettings(settings);
     
     require('./mainWindow.cjs').resetAutoLockTimer();
-    
+
     createLockWindow();
+
+    // 注意：启动/重启即锁场景不联动锁定外部应用（用户明确要求），
+    // 仅托盘/悬浮球/快捷键/自动锁定等手动触发的 lock() 才执行联动
     return true;
   }
 

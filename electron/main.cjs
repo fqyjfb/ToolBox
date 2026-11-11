@@ -397,6 +397,7 @@ app.whenReady().then(async () => {
 
   safeRegister('日志初始化', initLogger);
   safeRegister('registerLockIpcHandlers', registerLockIpcHandlers);
+  safeRegister('registerAppLockIpc', () => require('./ipc/appLockIpc.cjs').registerAppLockIpc());
   safeRegister('registerSqliteIpc', registerSqliteIpc);
   safeRegister('registerOcrIpc', registerOcrIpc);
   safeRegister('registerFileManagerIpc', registerFileManagerIpc);

@@ -1,6 +1,38 @@
 // 自动拆分自 src/vite-env.d.ts（ambient 全局声明，勿加 import/export）
 // window.electron / window.translateAPI 全局注入声明
 
+/** 应用锁：外部应用配置条目（与主进程 appLock.json 单条结构一致） */
+interface AppLockAppConfig {
+  id: string;
+  name: string;
+  exePath: string;
+  /** 挂起目标进程名（exe 文件名去 .exe，可多个，兼容同名多进程应用） */
+  processNames: string[];
+  /** 应用图标（PNG 裸 base64，与快启动 QuickLaunchItem.icon 同约定；可能为空串） */
+  icon?: string;
+  enabled: boolean;
+  addedAt: number;
+}
+
+/** 应用锁：单条应用的运行/锁定状态（设置页轮询刷新） */
+interface AppLockStatus {
+  appId: string;
+  running: boolean;
+  locked: boolean;
+  /** 部分挂起成功（多实例中部分失败） */
+  partial: boolean;
+  /** 挂起完全失败（如目标以管理员权限运行） */
+  blocked: boolean;
+  pids: number[];
+}
+
+/** 应用锁：添加应用前的解析预览 */
+interface AppLockResolvedApp {
+  name: string;
+  processNames: string[];
+  protected: boolean;
+}
+
 declare interface Window {
   translateAPI?: TranslateAPI;
   electron?: {
@@ -371,6 +403,16 @@ declare interface Window {
       setDir: (dirPath: string) => Promise<{ success: boolean; error?: string }>;
       list: (dirPath: string) => Promise<{ success: boolean; files: OfflineToolFile[]; error?: string }>;
       open: (filePath: string) => Promise<{ success: boolean; error?: string }>;
+    };
+    /** 应用锁：本应用锁定时联动锁定/恢复外部应用 */
+    appLock: {
+      getConfig: () => Promise<{ masterEnabled: boolean; apps: AppLockAppConfig[] }>;
+      getStatus: () => Promise<AppLockStatus[]>;
+      setMasterEnabled: (enabled: boolean) => Promise<{ success: boolean }>;
+      addApp: (payload: { name?: string; exePath: string; processNames?: string[]; icon?: string }) => Promise<{ success: boolean; app?: AppLockAppConfig; error?: string }>;
+      removeApp: (id: string) => Promise<{ success: boolean; error?: string }>;
+      toggleApp: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+      resolveApp: (exePath: string) => Promise<AppLockResolvedApp>;
     };
   };
 }

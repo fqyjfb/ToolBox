@@ -20,6 +20,7 @@ import {
 } from '../../utils/quickLaunch';
 import { useNavSearch } from '../../contexts/NavSearchContext';
 import { useToastStore } from '../../store/toastStore';
+import { useAppLockStore } from '../../store/appLockStore';
 import { useQuickLaunchScanStore } from '../../store/quickLaunchScanStore';
 import localStorageService, { STORAGE_KEYS } from '../../services/localStorageService';
 import Modal from '../../components/ui/Modal';
@@ -47,6 +48,12 @@ import {
 const QuickLaunch: React.FC = () => {
   const { searchQuery, isSearchActive } = useNavSearch();
   const addToast = useToastStore(state => state.addToast);
+  // 应用锁联动（与设置页 AppLockTab 共享同一份 store，两页状态天然同步）
+  const appLockLoaded = useAppLockStore(s => s.loaded);
+  const reloadAppLockConfig = useAppLockStore(s => s.load);
+  const appLockApps = useAppLockStore(s => s.apps);
+  const addAppLockApp = useAppLockStore(s => s.addApp);
+  const removeAppLockApp = useAppLockStore(s => s.removeApp);
   // 小窗模式：分类栏改单行横向滚动、工具栏独立成行，避免头部占满整个可视高度
   const isCompact = useIsCompactMode();
   const [apps, setApps] = useState<QuickLaunchItem[]>([]);
@@ -286,7 +293,7 @@ const QuickLaunch: React.FC = () => {
     } catch (error) {
       logWarn(`[QuickLaunch] 拖拽处理异常: ${(error as Error).message}`, 'drag-drop');
     }
-  }, [collectDroppedPaths]);
+  }, [collectDroppedPaths, handleDropFiles]);
 
   // 文件夹弹层是 fixed 遮罩层，不在桌面网格的 onDrop 覆盖范围内。
   // 必须 preventDefault，否则 Electron 下拖入文件会触发浏览器默认导航（页面跳走）。
@@ -376,7 +383,7 @@ const QuickLaunch: React.FC = () => {
     if (filePaths.length > 0) {
       handleDropFiles(filePaths, openFolder.category.id);
     }
-  }, [collectDroppedPaths, openFolder]);
+  }, [collectDroppedPaths, handleDropFiles, openFolder]);
 
   /** 桌面磁贴排序：写回槽位（保留已归入文件夹的隐藏键）并锁定为自定义排序 */
   const reorderDesktopTiles = useCallback((fromKey: string, toKey: string) => {
@@ -520,6 +527,29 @@ const QuickLaunch: React.FC = () => {
     reorderDesktopTiles(activeKey, overKey);
   }, [openFolder, apps, categories, addToast, moveAppToContainer, insertTileAdjacentToFolder, reorderFolderApps, reorderDesktopTiles, endDrag]);
 
+  // 应用锁配置：首次进入快启动页时拉取一次，之后由 store 内变更自动保持同步
+  useEffect(() => {
+    if (!appLockLoaded) void reloadAppLockConfig();
+  }, [appLockLoaded, reloadAppLockConfig]);
+
+  const isAppLocked = useCallback(
+    (path: string) => appLockApps.some(a => a.exePath.toLowerCase() === path.toLowerCase()),
+    [appLockApps],
+  );
+
+  const handleToggleAppLock = useCallback(async (app: QuickLaunchItem) => {
+    const existing = appLockApps.find(a => a.exePath.toLowerCase() === app.path.toLowerCase());
+    if (existing) {
+      const result = await removeAppLockApp(existing.id);
+      if (result.success) addToast({ type: 'success', message: `已取消「${app.name}」的应用锁` });
+      else addToast({ type: 'error', message: result.error || '取消应用锁失败' });
+    } else {
+      const result = await addAppLockApp({ name: app.name, exePath: app.path, icon: app.icon || '' });
+      if (result.success) addToast({ type: 'success', message: `已添加「${app.name}」到应用锁` });
+      else addToast({ type: 'error', message: result.error || '添加应用锁失败' });
+    }
+  }, [appLockApps, addAppLockApp, removeAppLockApp, addToast]);
+
   const getContextMenuItems = useCallback((): ContextMenuItem[] =>
     buildContextMenuItems({
       type: contextMenu.type,
@@ -554,6 +584,8 @@ const QuickLaunch: React.FC = () => {
       setIconSize,
       setShowText,
       setSingleClickLaunch,
+      isAppLocked,
+      onToggleAppLock: handleToggleAppLock,
     }),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [
@@ -566,6 +598,7 @@ const QuickLaunch: React.FC = () => {
     handleRemoveInvalidApps, handleRepairInvalidApps,
     handleExportConfig, handleImportConfig, handleCloseContextMenu,
     scanDesktop, scanInstalled, setIconSize, setShowText, setSingleClickLaunch,
+    isAppLocked, handleToggleAppLock,
   ]);
 
   const renderTile = (tile: DesktopTile) => {

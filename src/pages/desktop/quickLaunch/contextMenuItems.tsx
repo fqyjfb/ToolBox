@@ -1,7 +1,7 @@
 import {
   Rocket, FolderPlus, Edit2, Trash2, Plus, Tag, Folder, Home,
   Monitor, Copy, AppWindow, Shield, FolderOpen, Keyboard,
-  Download, Upload, Wrench, Check, Settings, ArrowUpDown,
+  Download, Upload, Wrench, Check, Settings, ArrowUpDown, Lock, Unlock,
 } from 'lucide-react';
 import type { QuickLaunchItem, QuickLaunchCategory, QuickLaunchSortMode } from '../../../utils/quickLaunch';
 import type { ContextMenuItem } from '../../../components/ui/ContextMenu';
@@ -40,6 +40,9 @@ interface BuildParams {
   setIconSize: (size: 'small' | 'medium') => void;
   setShowText: (show: boolean) => void;
   setSingleClickLaunch: (single: boolean) => void;
+  /** 应用锁联动（与设置页 AppLockTab 共享同一份 store 状态） */
+  isAppLocked: (path: string) => boolean;
+  onToggleAppLock: (app: QuickLaunchItem) => void;
 }
 
 /** 生成 QuickLaunch 右键菜单项（原内联在 QuickLaunch.tsx getContextMenuItems 中） */
@@ -54,6 +57,7 @@ export function buildContextMenuItems(params: BuildParams): ContextMenuItem[] {
     handleRemoveInvalidApps, handleRepairInvalidApps,
     handleExportConfig, handleImportConfig, handleCloseContextMenu,
     scanDesktop, scanInstalled, setIconSize, setShowText, setSingleClickLaunch,
+    isAppLocked, onToggleAppLock,
   } = params;
 
   // ── 应用右键菜单 ──────────────────────────────────────────────────────
@@ -125,6 +129,15 @@ export function buildContextMenuItems(params: BuildParams): ContextMenuItem[] {
         icon: <Home className="w-4 h-4" />,
         onClick: () => {
           addHomeQuickLaunchApp(app);
+          handleCloseContextMenu();
+        },
+      },
+      {
+        id: 'toggle-app-lock',
+        label: isAppLocked(app.path) ? '取消应用锁' : '添加应用锁',
+        icon: isAppLocked(app.path) ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />,
+        onClick: () => {
+          onToggleAppLock(app);
           handleCloseContextMenu();
         },
       },

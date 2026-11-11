@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+  <title>已锁定</title>
+  <link rel="stylesheet" href="./overlay.css" />
+</head>
+<body>
+  <div class="overlay-backdrop">
+    <div class="lock-card">
+      <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+      <div class="lock-title">已锁定</div>
+      <div class="lock-app" id="app-name"></div>
+      <div class="lock-hint">解锁 ToolBox 后恢复使用</div>
+      <div class="lock-partial" id="partial-note" hidden>
+        未能完全锁定（目标可能以管理员权限运行）
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(location.search);
+        var name = params.get('name') || '';
+        var appName = document.getElementById('app-name');
+        if (name) appName.textContent = name; else appName.style.display = 'none';
+        if (params.get('partial') === '1') {
+          document.getElementById('partial-note').hidden = false;
+        }
+      } catch (e) { /* 纯视觉遮罩，参数缺失按默认文案渲染 */ }
+    })();
+  </script>
+</body>
+</html>

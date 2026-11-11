@@ -417,6 +417,15 @@ contextBridge.exposeInMainWorld('electron', {
     getStatus: () => ipcRenderer.invoke('lock:getStatus'),
     setPassword: (password) => ipcRenderer.invoke('lock:setPassword', password),
   },
+  appLock: {
+    getConfig: () => ipcRenderer.invoke('appLock:getConfig'),
+    getStatus: () => ipcRenderer.invoke('appLock:getStatus'),
+    setMasterEnabled: (enabled) => ipcRenderer.invoke('appLock:setMasterEnabled', enabled),
+    addApp: (payload) => ipcRenderer.invoke('appLock:addApp', payload),
+    removeApp: (id) => ipcRenderer.invoke('appLock:removeApp', id),
+    toggleApp: (id, enabled) => ipcRenderer.invoke('appLock:toggleApp', { id, enabled }),
+    resolveApp: (exePath) => ipcRenderer.invoke('appLock:resolveApp', exePath),
+  },
   offlineTools: {
     getDir: () => ipcRenderer.invoke('offline-tools:get-dir'),
     setDir: (dirPath) => ipcRenderer.invoke('offline-tools:set-dir', dirPath),
