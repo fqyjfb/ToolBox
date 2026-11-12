@@ -142,6 +142,10 @@ const scanQuickLaunchPaths = async (event, scanPaths) => {
 
 let mainWindow = null;
 let memoryCleanupTimer = null;
+// 内存优化：全隐藏起始时刻与上次回收时刻（用于 60s 空闲门槛与 10min 限流）
+let memoryIdleSince = 0;
+let lastMemoryCollectAt = 0;
+let backgroundThrottleTimer = null;
 let autoLockTimer = null;
 let lastActivityTime = Date.now();
 let isQuitting = false;
@@ -151,6 +155,8 @@ const COMPACT_WINDOW_SIZE = { width: 320, height: 725 };
 const COMPACT_MIN_SIZE = { width: 280, height: 480 };
 // 上限 480 必须恒小于 Tailwind md 断点 768：保证小窗内页面永远命中移动端样式分支
 const COMPACT_MAX_WIDTH = 480;
+// 大窗默认尺寸：设置项未配置时的兜底值，也是「恢复默认尺寸」的重置目标，单位 DIP
+const DEFAULT_LARGE_SIZE = { width: 1160, height: 800 };
 
 // 当前窗口模式；largeBounds = 进入小窗前的大窗尺寸快照，切回时原样恢复
 let windowMode = 'large';
@@ -167,8 +173,8 @@ const resolveLargeWindowSize = () => {
     ? (() => { try { return JSON.parse(raw); } catch { return null; } })()
     : (raw || null);
   return {
-    width: (size && typeof size.width === 'number') ? size.width : 1160,
-    height: (size && typeof size.height === 'number') ? size.height : 800,
+    width: (size && typeof size.width === 'number') ? size.width : DEFAULT_LARGE_SIZE.width,
+    height: (size && typeof size.height === 'number') ? size.height : DEFAULT_LARGE_SIZE.height,
   };
 };
 
@@ -285,12 +291,9 @@ const shortcutFunctions = {
         return;
       }
       const [width, height] = mainWindow.getSize();
-      const raw = loadSettings().defaultWindowSize;
-      const origin = typeof raw === 'string'
-        ? (() => { try { return JSON.parse(raw); } catch { return null; } })()
-        : (raw || null);
-      const originW = (origin && typeof origin.width === 'number') ? origin.width : 1160;
-      const originH = (origin && typeof origin.height === 'number') ? origin.height : 800;
+      const origin = resolveLargeWindowSize();
+      const originW = origin.width;
+      const originH = origin.height;
       if (width === originW && height === originH) {
         mainWindow.maximize();
       } else {
@@ -425,22 +428,66 @@ const isDisableShortcuts = (shortcut) => {
   return true;
 };
 
+// ── 内存优化：只在「全部窗口隐藏且持续 60s」时回收，每 10 分钟最多一次 ──
+// 提醒弹窗/锁屏窗口可见时不算全隐藏，天然跳过；主进程 Full GC 也就不会与提醒弹出撞车。
+const MEMORY_CHECK_INTERVAL_MS = 30 * 1000;
+const MEMORY_IDLE_DELAY_MS = 60 * 1000;
+const MEMORY_COLLECT_INTERVAL_MS = 10 * 60 * 1000;
+const MEMORY_WARN_THRESHOLD_MB = 300;
+
+const collectMemory = () => {
+  const { app } = require('electron');
+  const logger = require('../logs/logger.cjs');
+  const summarize = () => app.getAppMetrics().map((metric) => ({
+    pid: metric.pid,
+    type: metric.type,
+    mb: Math.round(((metric.memory && metric.memory.workingSetSize) || 0) / 1024),
+  }));
+
+  const before = summarize();
+  logger.addLog('info', `[MEMORY] 空闲回收前 ${JSON.stringify(before)}`, 'memory');
+  const heavy = before.filter((item) => item.mb > MEMORY_WARN_THRESHOLD_MB);
+  if (heavy.length > 0) {
+    logger.addLog('warn', `[MEMORY] 进程内存偏高 ${JSON.stringify(heavy)}`, 'memory');
+  }
+
+  const collectRenderer = (win) => {
+    if (!win || win.isDestroyed()) return;
+    win.webContents.executeJavaScript('window.gc && window.gc();').catch(() => {});
+  };
+  collectRenderer(mainWindow);
+  collectRenderer(getFloatWindow());
+
+  // 主进程是否暴露 gc 取决启动参数，探测后再调用，不为此新增参数
+  if (typeof global.gc === 'function') global.gc();
+
+  logger.addLog('info', `[MEMORY] 空闲回收后 ${JSON.stringify(summarize())}`, 'memory');
+};
+
 const startMemoryOptimization = () => {
   stopMemoryOptimization();
   const settings = loadSettings();
   if (!settings.isMemoryOptimizationEnabled) return;
 
-  const cleanupInterval = 5 * 60 * 1000;
-  const cleanup = () => {
-    try {
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.executeJavaScript('window.gc && window.gc();');
-      }
-    } catch (error) {
-      console.error('[MEMORY] Memory cleanup error:', error);
+  memoryIdleSince = 0;
+  lastMemoryCollectAt = 0;
+  memoryCleanupTimer = setInterval(() => {
+    const now = Date.now();
+    const windows = BrowserWindow.getAllWindows();
+    const busy = windows.length === 0 || windows.some((win) => !win.isDestroyed() && (win.isVisible() || win.isFocused()));
+    if (busy) {
+      memoryIdleSince = 0;
+      return;
     }
-  };
-  memoryCleanupTimer = setInterval(cleanup, cleanupInterval);
+    if (memoryIdleSince === 0) {
+      memoryIdleSince = now;
+      return;
+    }
+    if (now - memoryIdleSince < MEMORY_IDLE_DELAY_MS) return;
+    if (now - lastMemoryCollectAt < MEMORY_COLLECT_INTERVAL_MS) return;
+    lastMemoryCollectAt = now;
+    collectMemory();
+  }, MEMORY_CHECK_INTERVAL_MS);
   if (memoryCleanupTimer && memoryCleanupTimer.unref) memoryCleanupTimer.unref();
 };
 
@@ -449,6 +496,7 @@ const stopMemoryOptimization = () => {
     clearInterval(memoryCleanupTimer);
     memoryCleanupTimer = null;
   }
+  memoryIdleSince = 0;
 };
 
 const stopAutoLock = () => {
@@ -737,6 +785,48 @@ const showMainWindow = () => {
 
 const isWindowEdgeDocked = () => !!edgeDockedEdge;
 
+// 大窗手动拖拽改尺寸后把实际尺寸写回通用设置（重启沿用）。
+// 小窗尺寸固定；最大化/全屏/最小化/贴边停靠均非用户调整大窗尺寸的意图，直接忽略。
+const persistLargeWindowSize = () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (windowMode !== 'large' || mainWindow.isMinimized() || mainWindow.isMaximized()
+    || mainWindow.isFullScreen() || isWindowEdgeDocked()) return;
+  const size = toSizeObject(mainWindow.getSize());
+  if (!isValidSize(size)) return;
+  const settings = loadSettings();
+  settings.defaultWindowSize = { width: size.width, height: size.height };
+  saveSettings(settings);
+  if (!mainWindow.webContents.isDestroyed()) {
+    mainWindow.webContents.send('setting-changed', {
+      name: 'defaultWindowSize',
+      value: { width: size.width, height: size.height },
+    });
+  }
+};
+
+// 通用设置「恢复默认尺寸」：重置设置项，并把大窗立即恢复到默认尺寸（小窗尺寸固定，只改设置）
+const resetDefaultWindowSize = () => {
+  const settings = loadSettings();
+  settings.defaultWindowSize = { ...DEFAULT_LARGE_SIZE };
+  saveSettings(settings);
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (windowMode === 'large') {
+    clearEdgeDock(); // 停靠隐藏态先退出，否则 setSize/center 与实际显示位置冲突
+    if (mainWindow.isMaximized()) mainWindow.unmaximize();
+    mainWindow.setSize(DEFAULT_LARGE_SIZE.width, DEFAULT_LARGE_SIZE.height, true);
+    mainWindow.center();
+  } else {
+    // 小窗下重置：清掉大窗尺寸快照，切回大窗时按新的默认值打开
+    largeBounds = null;
+  }
+  if (!mainWindow.webContents.isDestroyed()) {
+    mainWindow.webContents.send('setting-changed', {
+      name: 'defaultWindowSize',
+      value: { ...DEFAULT_LARGE_SIZE },
+    });
+  }
+};
+
 // 停靠隐藏态轮询：光标进入停靠边感应区（纵向/横向落在窗口范围内）并停留 → 展开
 const pollEdgeWindowState = () => {
   if (!mainWindow || mainWindow.isDestroyed() || !edgeDockedEdge) {
@@ -893,8 +983,8 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   const initialSize = windowMode === 'compact'
     ? COMPACT_WINDOW_SIZE
     : {
-        width: (defaultWindowSize && typeof defaultWindowSize.width === 'number') ? defaultWindowSize.width : 1160,
-        height: (defaultWindowSize && typeof defaultWindowSize.height === 'number') ? defaultWindowSize.height : 800,
+        width: (defaultWindowSize && typeof defaultWindowSize.width === 'number') ? defaultWindowSize.width : DEFAULT_LARGE_SIZE.width,
+        height: (defaultWindowSize && typeof defaultWindowSize.height === 'number') ? defaultWindowSize.height : DEFAULT_LARGE_SIZE.height,
       };
 
   mainWindow = new BrowserWindow({
@@ -1009,6 +1099,30 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     if (edgeDockedEdge && !edgeHidden) clearEdgeDock();
   });
 
+  // 背景节流延迟生效：hide() 被截图、快速登录、锁屏、模式切换等瞬时流程复用，
+  // 立即节流会让这些流程回到窗口时出现重绘/动画停顿，故隐藏满 30s 才开启，show 时立刻还原。
+  // 边缘停靠用 setBounds 移出屏幕，不触发 hide，不受影响。
+  const BACKGROUND_THROTTLE_DELAY_MS = 30000;
+  mainWindow.on('hide', () => {
+    clearTimeout(backgroundThrottleTimer);
+    backgroundThrottleTimer = setTimeout(() => {
+      backgroundThrottleTimer = null;
+      if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isVisible()) return;
+      mainWindow.webContents.setBackgroundThrottling(true);
+    }, BACKGROUND_THROTTLE_DELAY_MS);
+    if (backgroundThrottleTimer && typeof backgroundThrottleTimer.unref === 'function') {
+      backgroundThrottleTimer.unref();
+    }
+  });
+
+  mainWindow.on('show', () => {
+    clearTimeout(backgroundThrottleTimer);
+    backgroundThrottleTimer = null;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.setBackgroundThrottling(false);
+    }
+  });
+
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -1017,6 +1131,8 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   });
 
   mainWindow.on('closed', () => {
+    clearTimeout(backgroundThrottleTimer);
+    backgroundThrottleTimer = null;
     stopAutoLock();
     clearEdgeDock();
     mainWindow = null;
@@ -1042,9 +1158,11 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   // 边缘吸附与贴边隐藏的入口挂载（核心逻辑见模块级 handleMainWindowMove / snapWindowToEdge）
   mainWindow.on('move', handleMainWindowMove);
 
-  // 停靠态下拖边改尺寸时同步更新吸附记录，保证还原尺寸与退出时一致
+  // 停靠态下拖边改尺寸时同步更新吸附记录，保证还原尺寸与退出时一致；
+  // 大窗（非停靠）拖拽结束则把尺寸写回通用设置（resized 只在用户拖拽结束时触发，程序性 setSize 不触发）
   mainWindow.on('resized', () => {
     if (edgeDockedEdge) persistDockState();
+    persistLargeWindowSize();
   });
 
   // 用户拖拽边界（Windows 窗口消息，程序性 setBounds 不触发，吸附/折叠动画不受影响）：
@@ -1442,6 +1560,12 @@ const registerIpcHandlers = () => {
   ipcMain.handle('get-settings', () => {
     const settings = loadSettings();
     return Object.keys(settings).map(key => ({ name: key, value: settings[key] }));
+  });
+
+  // 通用设置「恢复默认尺寸」：重置设置项并立即应用到大窗
+  ipcMain.handle('reset-default-window-size', () => {
+    resetDefaultWindowSize();
+    return { code: 0, msg: '已恢复默认尺寸' };
   });
 
   ipcMain.handle('get-float-config', () => { return loadFloatConfig(); });

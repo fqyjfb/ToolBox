@@ -35,7 +35,6 @@ export const ALL_TOOLS: ToolInfo[] = [
   { id: 'regex-tester', name: '正则测试器', path: '/tools/regex-tester', color: '#ef4444', iconName: 'Code' },
   { id: 'url-encode', name: 'URL编码解码', path: '/tools/url-encode', color: '#22d3ee', iconName: 'AtSign' },
   { id: 'meta-tags-generator', name: 'Meta标签生成', path: '/tools/meta-tags-generator', color: '#f43f5e', iconName: 'Tag' },
-  { id: 'markdown-to-text', name: 'MD转纯文本', path: '/tools/markdown-to-text', color: '#2563eb', iconName: 'AlignLeft' },
   { id: 'html-to-text', name: 'HTML转纯文本', path: '/tools/html-to-text', color: '#1d4ed8', iconName: 'AlignLeft' },
   { id: 'sql-minifier', name: 'SQL压缩器', path: '/tools/sql-minifier', color: '#059669', iconName: 'Code2' },
   { id: 'hex-encode', name: 'HEX编码', path: '/tools/hex-encode', color: '#dc2626', iconName: 'Binary' },

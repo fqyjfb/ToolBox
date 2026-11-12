@@ -5,7 +5,9 @@ const { loadSettings, saveSettings, loadFloatConfig } = require('../lib/config.c
 
 let floatWindow = null;
 let dragOffset = { x: 0, y: 0 };
-let pollIgnoring = true;
+let isIgnoringMouseEvents = false;
+let pointerInBall = false;
+let hoverWatchdogTimer = null;
 let isExpanded = false;
 let isDragging = false;
 let isDragOver = false;
@@ -29,6 +31,59 @@ const normalizeAppearance = (name) =>
 
 // 桌宠形象尺寸，与 float/float.css 中 .float-ball 保持一致
 const PET_SIZE = { width: 66, height: 90 };
+// 球体命中容差，与渲染层 float.cjs 的 BALL_HIT_PADDING 一致
+const PET_HIT_PADDING = 4;
+// 看门狗周期：渲染层 mousemove 中断时（光标快速移出、未触发 mouseleave）用系统光标复核
+const HOVER_WATCHDOG_MS = 800;
+
+// 系统光标是否落在球体矩形内（球心 = 窗口中心）
+const isCursorInBall = () => {
+  if (!floatWindow || floatWindow.isDestroyed()) return false;
+  const cursor = screen.getCursorScreenPoint();
+  const bounds = floatWindow.getBounds();
+  const dx = Math.abs(cursor.x - (bounds.x + Math.round(bounds.width / 2)));
+  const dy = Math.abs(cursor.y - (bounds.y + Math.round(bounds.height / 2)));
+  return dx <= PET_SIZE.width / 2 + PET_HIT_PADDING && dy <= PET_SIZE.height / 2 + PET_HIT_PADDING;
+};
+
+// 鼠标穿透的唯一出口：球内 / 文件拖入 / 菜单展开 / 拖拽 / 可交互卡片 → 接收鼠标事件，否则穿透
+const applyMousePassthrough = () => {
+  if (!floatWindow || floatWindow.isDestroyed()) return;
+  const keepInteractive = pointerInBall || isDragOver || isExpanded || isDragging || hasInteractiveCard;
+  if (keepInteractive) {
+    if (isIgnoringMouseEvents) {
+      isIgnoringMouseEvents = false;
+      floatWindow.setIgnoreMouseEvents(false);
+    }
+    return;
+  }
+  if (!isIgnoringMouseEvents) {
+    isIgnoringMouseEvents = true;
+    floatWindow.setIgnoreMouseEvents(true, { forward: true });
+  }
+};
+
+const stopHoverWatchdog = () => {
+  clearInterval(hoverWatchdogTimer);
+  hoverWatchdogTimer = null;
+};
+
+// 只在「指针在球内」期间运行：复核发现光标已离开才恢复穿透，
+// 避免光标静止在球上时被误穿透（那样会导致悬浮球点不动）
+const startHoverWatchdog = () => {
+  stopHoverWatchdog();
+  hoverWatchdogTimer = setInterval(() => {
+    if (!floatWindow || floatWindow.isDestroyed()) {
+      stopHoverWatchdog();
+      return;
+    }
+    if (isCursorInBall()) return;
+    pointerInBall = false;
+    stopHoverWatchdog();
+    applyMousePassthrough();
+  }, HOVER_WATCHDOG_MS);
+  if (hoverWatchdogTimer && typeof hoverWatchdogTimer.unref === 'function') hoverWatchdogTimer.unref();
+};
 
 const createFloatWindow = () => {
   if (floatWindow) {
@@ -86,37 +141,10 @@ const createFloatWindow = () => {
     floatWindow.setAlwaysOnTop(true);
   }
 
-  floatWindow.setIgnoreMouseEvents(false);
-
-  // 命中判定只依赖光标是否落在悬浮球矩形内，250ms 仍远快于人手移动，
-  // 相比 150ms 可减少约 40% 的主进程唤醒，hover 展开/移出收起的手感不变。
-  const POLL_INTERVAL = 250;
-  const pollTimer = setInterval(() => {
-    if (!floatWindow || floatWindow.isDestroyed()) return;
-    const cursor = screen.getCursorScreenPoint();
-
-    const bounds = floatWindow.getBounds();
-    const ballCenterX = bounds.x + Math.round(bounds.width / 2);
-    const ballCenterY = bounds.y + Math.round(bounds.height / 2);
-    const dx = Math.abs(cursor.x - ballCenterX);
-    const dy = Math.abs(cursor.y - ballCenterY);
-    const inBall = dx <= PET_SIZE.width / 2 + 4 && dy <= PET_SIZE.height / 2 + 4;
-    if (inBall || isDragOver) {
-      if (pollIgnoring) {
-        pollIgnoring = false;
-        floatWindow.setIgnoreMouseEvents(false);
-      }
-    } else if (!isExpanded && !isDragging && !hasInteractiveCard) {
-      // 球外、非展开态、非拖拽态、无可交互卡片 → 穿透
-      // hasInteractiveCard 时气泡带按钮，光标可能移到球外的按钮上，不能穿透
-      if (!pollIgnoring) {
-        pollIgnoring = true;
-        floatWindow.setIgnoreMouseEvents(true, { forward: true });
-      }
-    }
-  }, POLL_INTERVAL);
-  // 与 mainWindow 中其它定时器保持一致：定时器不阻止主进程退出
-  if (pollTimer && typeof pollTimer.unref === 'function') pollTimer.unref();
+  // 初始按系统光标位置判定一次：球内可点击、球外穿透（等价原 250ms 轮询的首次判定），
+  // 之后完全由渲染层的球体命中上报 + 800ms 看门狗驱动，主进程空闲时不再唤醒。
+  pointerInBall = isCursorInBall();
+  applyMousePassthrough();
 
   const floatHtmlPath = path.join(__dirname, './float/float.html');
   const packagedPath = path.join(process.resourcesPath, 'app', 'electron', 'window', 'float', 'float.html');
@@ -146,11 +174,15 @@ const createFloatWindow = () => {
   });
 
   floatWindow.on('closed', () => {
-    clearInterval(pollTimer);
+    stopHoverWatchdog();
     floatWindow = null;
-    // 窗口关闭时清掉拖拽态，避免下次打开时鼠标穿透判定被误跳过
+    // 窗口关闭时清掉拖拽/命中态，避免下次打开时鼠标穿透判定被误跳过
     isDragging = false;
     isExpanded = false;
+    isDragOver = false;
+    hasInteractiveCard = false;
+    pointerInBall = false;
+    isIgnoringMouseEvents = false;
     // 球都没了，面板也一并收起
     try { require('./floatPanelWindow.cjs').hidePanel(); } catch { /* 面板模块未加载时忽略 */ }
   });
@@ -260,28 +292,32 @@ const registerFloatIpcHandlers = () => {
     // 记录所在显示器：副屏拔掉后启动时可回落到主屏，不会把窗口留在屏幕外
     settings.floatBallPosition = { x: bx, y: by, displayId: display.id };
     saveSettings(settings);
+    applyMousePassthrough();
   });
 
   ipcMain.handle('float:gestures-enabled', () => loadSettings().floatGesturesEnabled === 1);
 
-  // P2-3：文件拖入悬停期间强制窗口接收鼠标事件，否则穿透轮询会吞掉 drop
+  // 球体命中（渲染层 mousemove 命中检测后上报）：取代原 250ms 全量轮询
+  ipcMain.on('float:ball-hover', (_event, active) => {
+    pointerInBall = Boolean(active);
+    applyMousePassthrough();
+    if (pointerInBall) {
+      startHoverWatchdog();
+    } else {
+      stopHoverWatchdog();
+    }
+  });
+
+  // P2-3：文件拖入悬停期间强制窗口接收鼠标事件，否则穿透判定会吞掉 drop
   ipcMain.on('float:drag-over', (_event, active) => {
     isDragOver = Boolean(active);
-    if (!floatWindow || floatWindow.isDestroyed()) return;
-    if (isDragOver) {
-      pollIgnoring = false;
-      floatWindow.setIgnoreMouseEvents(false);
-    }
+    applyMousePassthrough();
   });
 
   // P2-5：气泡带按钮时 renderer 通知主进程 — 保持窗口可点击直到卡片过期
   ipcMain.on('float:interactive-card', (_event, active) => {
     hasInteractiveCard = Boolean(active);
-    if (!floatWindow || floatWindow.isDestroyed()) return;
-    if (hasInteractiveCard && pollIgnoring) {
-      pollIgnoring = false;
-      floatWindow.setIgnoreMouseEvents(false);
-    }
+    applyMousePassthrough();
   });
 
   ipcMain.on('float-show-context-menu', () => {
@@ -351,9 +387,8 @@ const registerFloatIpcHandlers = () => {
 
   ipcMain.on('float-expanded', (_event, expanded) => {
     isExpanded = expanded;
-    if (expanded && floatWindow) {
-      floatWindow.setIgnoreMouseEvents(false);
-    }
+    // 展开/收起都会改变是否需要接收鼠标事件（收起时若光标在球外应立即恢复穿透）
+    applyMousePassthrough();
   });
 
   ipcMain.handle('toggle-float-window', () => { return toggleFloatWindow(); });

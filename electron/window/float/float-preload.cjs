@@ -71,5 +71,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   shelfAdd: (paths) => ipcRenderer.invoke('float:shelf-add', paths),
   setDragOver: (active) => ipcRenderer.send('float:drag-over', Boolean(active)),
+  // 球体命中上报：替代主进程 250ms 光标轮询，决定窗口是否穿透
+  setBallHover: (active) => ipcRenderer.send('float:ball-hover', Boolean(active)),
   getGesturesEnabled: () => ipcRenderer.invoke('float:gestures-enabled'),
 });

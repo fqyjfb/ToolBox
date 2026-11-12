@@ -1,11 +1,28 @@
 import { useEffect } from 'react';
 
+// 常驻预载：只保留首页高频入口（待办、快捷回复）。
+// notes / cloud-clipboard 属于重型或低频页，改为意图预载 / 首次访问加载。
 const PRELOAD_MODULES = [
   () => import('../pages/tools/todo'),
-  () => import('../pages/tools/notes'),
   () => import('../pages/tools/quick-reply'),
-  () => import('../pages/tools/cloud-clipboard'),
 ];
+
+// 悬停意图预载：命中入口后延迟 180ms 再加载，避免光标快速划过造成无谓解析
+const INTENT_DELAY_MS = 180;
+
+const INTENT_MODULES = {
+  notes: () => import('../pages/tools/notes'),
+};
+
+const loadedIntents = new Set<keyof typeof INTENT_MODULES>();
+
+export const preloadToolByIntent = (key: keyof typeof INTENT_MODULES) => {
+  if (loadedIntents.has(key)) return;
+  loadedIntents.add(key);
+  setTimeout(() => {
+    INTENT_MODULES[key]().catch(() => {});
+  }, INTENT_DELAY_MS);
+};
 
 export const usePreloadTools = () => {
   useEffect(() => {

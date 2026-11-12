@@ -6,6 +6,7 @@ import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDndSensors } from '../../hooks/useDndSensors';
+import { preloadToolByIntent } from '../../hooks/usePreloadTools';
 import { useAuthStore } from '../../store/AuthStore';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { useIsCompactMode } from '../../store/windowModeStore';
@@ -137,7 +138,16 @@ const Sidebar: React.FC<{ forceCollapsed?: boolean; hideLogo?: boolean }> = ({ f
 
       <nav className="sidebar-fixed" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {fixedItems.map((item) => (
-          <NavItem key={item.id} icon={item.icon} title={item.title} active={item.active} collapsed={collapsed} onClick={() => navigate(item.path)} />
+          <NavItem
+            key={item.id}
+            icon={item.icon}
+            title={item.title}
+            active={item.active}
+            collapsed={collapsed}
+            onClick={() => navigate(item.path)}
+            // 记事本已从常驻预载改为意图预载：悬停侧栏入口时提前拉取页面模块
+            onMouseEnter={item.id === 'notes' ? () => preloadToolByIntent('notes') : undefined}
+          />
         ))}
       </nav>
 
@@ -229,9 +239,10 @@ interface NavItemProps {
   collapsed: boolean;
   onClick: () => void;
   onRemove?: () => void;
+  onMouseEnter?: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, title, active, collapsed, onClick, onRemove }) => (
+const NavItem: React.FC<NavItemProps> = ({ icon, title, active, collapsed, onClick, onRemove, onMouseEnter }) => (
   <div className="relative group">
     {/* 收起态图标旁没有文字，用自定义气泡补提示；展开态文案已可见，不再提示 */}
     <Tooltip title={collapsed ? title : ''} position="right" className="w-full">
@@ -240,6 +251,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, title, active, collapsed, onCli
           active ? 'sidebar-nav-item--active text-button-text shadow-sm' : 'text-content-primary'
         } ${collapsed ? 'justify-center' : ''}`}
         onClick={onClick}
+        onMouseEnter={onMouseEnter}
       >
         {collapsed ? <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{icon}</span> : icon}
         {!collapsed && <span className="whitespace-nowrap">{title}</span>}

@@ -108,7 +108,7 @@ const invalidateNetworkConfigCache = () => { cachedNetworkConfig = null; };
 
 const defaultSettings = {
   isWindowEdgeAdsorption: 0,
-  isMemoryOptimizationEnabled: 0,
+  isMemoryOptimizationEnabled: 1,
   isOpenDevTools: 0,
   isOpenZoom: 0,
   isAutoLaunch: 0,
@@ -117,7 +117,7 @@ const defaultSettings = {
   systemTheme: 'system',
   leftMenuPosition: 'left',
   howLinkOpenMethod: 'internal',
-  defaultWindowSize: { width: 1024, height: 800 },
+  defaultWindowSize: { width: 1160, height: 800 },
   windowMode: 'large', // 窗口模式：'large' 大窗（默认） | 'compact' 小窗
   // 上次退出时的边缘吸附状态 { mode, edge, bounds } | null：null 表示未吸附，下次按默认方式启动
   windowDockState: null,

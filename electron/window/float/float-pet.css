@@ -435,3 +435,10 @@
 .float-ball.pet-listening .float-pet .tail {
   animation-duration: 3.4s;
 }
+
+/* ── 空闲暂停：连续 5s 无交互时暂停循环动画，降低透明窗合成开销 ──
+   状态机（思考/说话/开心/难过）、气泡、展开菜单、拖拽期间不会加 .anim-idle */
+.anim-idle .float-pet *,
+.anim-idle .pet-thinking-dots span {
+  animation-play-state: paused;
+}

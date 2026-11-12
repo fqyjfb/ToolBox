@@ -22,6 +22,7 @@ export type {
 export { renderSafeMarkdown } from "./safe-markdown.ts";
 export { buildExportHtml, wrapHtml } from "./export.ts";
 export type { BuildExportHtmlOptions } from "./export.ts";
+export { markdownToPlainText } from "./toPlainText.ts";
 
 // ---- 块投影（块级编辑的算法核心）----
 export {

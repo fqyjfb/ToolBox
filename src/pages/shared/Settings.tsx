@@ -31,6 +31,18 @@ import {
 
 import './Settings.css';
 
+// defaultWindowSize 兼容对象（新）与 JSON 字符串（旧版本）两种落库形式，无效值返回 null
+const parseWindowSize = (value: unknown): WindowSize | null => {
+  const size = typeof value === 'string'
+    ? (() => { try { return JSON.parse(value); } catch { return null; } })()
+    : value;
+  return size && typeof size === 'object'
+    && typeof (size as WindowSize).width === 'number'
+    && typeof (size as WindowSize).height === 'number'
+    ? { width: (size as WindowSize).width, height: (size as WindowSize).height }
+    : null;
+};
+
 const Settings: React.FC = () => {
   const addToast = useToastStore(state => state.addToast);
   const { isVisible: isMenuVisible, position: leftMenuPosition, setVisible, setPosition } = useSidebarStore(useShallow((s) => ({
@@ -87,7 +99,8 @@ const Settings: React.FC = () => {
         setVisible(getValue('isMenuVisible') !== false);
         setPosition(((getValue('leftMenuPosition') as string) || 'left') as 'left' | 'right');
         const windowSize = getValue('defaultWindowSize');
-        setDefaultWindowSize(typeof windowSize === 'object' ? (windowSize as WindowSize) : DEFAULT_WINDOW_SIZE);
+        // 尺寸可能以对象（新）或 JSON 字符串（旧版本）落库，两种都要正确回显
+        setDefaultWindowSize(parseWindowSize(windowSize) ?? DEFAULT_WINDOW_SIZE);
         setAutostartEnabled(Boolean(getValue('isAutoLaunch')));
         setAutoLockEnabled(Boolean(getValue('isAutoLockEnabled')));
         const timeout = getValue('autoLockTimeout');
@@ -145,6 +158,18 @@ const Settings: React.FC = () => {
     loadQuickLaunchApps();
   }, [loadSettings, loadShortcuts, loadFloatConfig, loadQuickLaunchApps]);
 
+  // 主窗口拖拽调整大窗尺寸后，主进程会把实际尺寸回写到默认尺寸设置，这里实时回显到「启动窗口」
+  useEffect(() => {
+    const unsubscribe = window.electron?.onSettingChanged((setting) => {
+      if (setting.name !== 'defaultWindowSize') return;
+      const size = parseWindowSize(setting.value);
+      if (size) setDefaultWindowSize(size);
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, []);
+
   
   // Event handlers
   const handleAutostartToggle = async (enabled: boolean) => {
@@ -171,7 +196,7 @@ const Settings: React.FC = () => {
     addToast({ type: 'success', message: '通知设置已更新' });
   };
 
-  const handleSettingUpdate = async (name: string, value: string | number | boolean) => {
+  const handleSettingUpdate = async (name: string, value: string | number | boolean | object) => {
     try {
       if (window.electron) {
         await window.electron.updateSetting({ name, value });
@@ -237,7 +262,20 @@ const Settings: React.FC = () => {
     }
     const newSize = { ...defaultWindowSize, [key]: numValue };
     setDefaultWindowSize(newSize);
-    handleSettingUpdate('defaultWindowSize', JSON.stringify(newSize));
+    handleSettingUpdate('defaultWindowSize', newSize);
+  };
+
+  // 恢复默认尺寸：主进程重置设置项并立即应用到大窗，此处同步本地显示
+  const handleWindowSizeReset = async () => {
+    if (!window.electron) return;
+    setDefaultWindowSize(DEFAULT_WINDOW_SIZE);
+    try {
+      await window.electron.resetDefaultWindowSize();
+      addToast({ type: 'success', message: '已恢复默认尺寸' });
+    } catch (error) {
+      logError('Failed to reset window size', 'Settings', error as Error);
+      addToast({ type: 'error', message: '恢复默认尺寸失败，请重试' });
+    }
   };
 
   const handleClearCache = async () => {
@@ -494,6 +532,7 @@ const Settings: React.FC = () => {
               onMenuPositionChange={handleMenuPositionChange}
               onSelectionToolbarChange={handleSelectionToolbarChange}
               onWindowSizeChange={handleWindowSizeChange}
+              onWindowSizeReset={handleWindowSizeReset}
               onBrowserModeChange={handleBrowserModeChange}
               onAutoLockChange={handleAutoLockChange}
               onAutoLockTimeoutChange={handleAutoLockTimeoutChange}

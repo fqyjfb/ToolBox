@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, MapPin, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, MapPin, Loader2, RotateCcw } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import RadioGroup from './RadioGroup';
 import Modal from '../ui/Modal';
@@ -32,6 +32,7 @@ interface GeneralTabProps {
   onMenuPositionChange: (position: string) => void;
   onSelectionToolbarChange: (enabled: boolean) => void;
   onWindowSizeChange: (key: 'width' | 'height', value: string) => void;
+  onWindowSizeReset: () => void;
   onBrowserModeChange: (value: string) => void;
   onAutoLockChange: (enabled: boolean) => void;
   onAutoLockTimeoutChange: (timeout: number) => void;
@@ -65,6 +66,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   onMenuPositionChange,
   onSelectionToolbarChange,
   onWindowSizeChange,
+  onWindowSizeReset,
   onBrowserModeChange,
   onAutoLockChange,
   onAutoLockTimeoutChange,
@@ -188,6 +190,15 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
       <SettingSection title="窗口设置">
         <SettingRow label="启动窗口">
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onWindowSizeReset}
+              className="p-1 text-xs bg-surface-secondary hover:bg-menu-hover text-content-secondary rounded-md transition-colors"
+              title="恢复默认尺寸"
+              aria-label="恢复默认尺寸"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
             <input
               type="number"
               min={300}

@@ -29,6 +29,7 @@
   var SAD_THRESHOLD = 22;
   var BUBBLE_HOLD_MS = 4200;
   var IDLE_POLL_MS = 1000;
+  var IDLE_ANIM_DELAY_MS = 5000;
   var ENTER_POP_MS = 600;
 
   var eyeX = 0;
@@ -41,6 +42,8 @@
   var talkUntil = 0;
   var bubbleTimer = null;
   var stateTimer = null;
+  var idleTimer = null;
+  var lastActivity = Date.now();
   var currentState = 'idle';
   var STATE_CLASSES = ['pet-thinking', 'pet-speaking', 'pet-happy', 'pet-sad', 'pet-listening'];
 
@@ -70,6 +73,8 @@
   }
 
   function handleMouseMove(e) {
+    // 鼠标活动即视为非空闲（暂停态下也要能立刻恢复动画）
+    touchActivity();
     if (pendingFrame) return;
     pendingFrame = true;
     var mx = e.clientX;
@@ -111,6 +116,7 @@
 
   function say(text) {
     if (!text) return;
+    wakeAnimations();
     clearActions();
     bubbleText.textContent = text;
     startTailTalk();
@@ -124,6 +130,7 @@
   // 带按钮的卡片：actions = [{ label, action }]，action 交回主进程分发（卡片只负责展示）
   function showCard(card) {
     if (!card || !card.text) return;
+    wakeAnimations();
     clearActions();
     bubbleText.textContent = card.text;
     var hasActions = false;
@@ -179,6 +186,47 @@
     if (ttl > 0) {
       stateTimer = setTimeout(function () { setState('idle'); }, ttl);
     }
+    wakeAnimations();
+  }
+
+  // ── 空闲暂停循环动画：透明悬浮窗常驻合成的主要开销来自循环 animation，
+  //    连续 5s 无交互且无状态/气泡/菜单/拖拽时暂停，任一交互或状态变化立即恢复 ──
+  function isAnimBusy() {
+    return dragging
+      || currentState !== 'idle'
+      || bubble.classList.contains('show')
+      || ball.classList.contains('expanded');
+  }
+
+  function markAnimIdle(idle) {
+    document.documentElement.classList.toggle('anim-idle', !!idle);
+  }
+
+  function touchActivity() {
+    lastActivity = Date.now();
+    markAnimIdle(false);
+    // 已处于暂停态时没有在跑的检查定时器，交互唤醒后必须续订，否则不会再进入空闲
+    if (!idleTimer) scheduleIdleCheck();
+  }
+
+  function scheduleIdleCheck() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function () {
+      idleTimer = null;
+      // 忙碌或刚有交互：保持播放并续订下一轮检查
+      if (isAnimBusy() || Date.now() - lastActivity < IDLE_ANIM_DELAY_MS) {
+        markAnimIdle(false);
+        scheduleIdleCheck();
+        return;
+      }
+      markAnimIdle(true);
+    }, IDLE_ANIM_DELAY_MS);
+  }
+
+  // 状态切换/展开等入口统一唤醒：立即恢复动画并重新计时
+  function wakeAnimations() {
+    touchActivity();
+    scheduleIdleCheck();
   }
 
   // ── 拖拽状态：举手惊讶，拖久了难过 ──
@@ -201,6 +249,7 @@
 
   function setDragging(next) {
     dragging = next;
+    wakeAnimations();
     if (!dragging) return;
     sadCount = 0;
     ball.classList.remove('drag-sad');
@@ -227,6 +276,10 @@
   render();
   window.addEventListener('mousemove', handleMouseMove, { passive: true });
   setInterval(tickIdle, IDLE_POLL_MS);
+  // 点击/滚轮同属交互：立即恢复被空闲暂停的动画（mousemove 在 handleMouseMove 内处理）
+  document.addEventListener('mousedown', touchActivity, { passive: true });
+  document.addEventListener('wheel', touchActivity, { passive: true });
+  scheduleIdleCheck();
 
   if (window.electronAPI.getAppearance) {
     window.electronAPI.getAppearance().then(function (data) {
@@ -269,6 +322,7 @@
     setDragging: setDragging,
     clearBubble: clearBubble,
     setState: setState,
-    showCard: showCard
+    showCard: showCard,
+    wakeAnimations: wakeAnimations
   };
 })();

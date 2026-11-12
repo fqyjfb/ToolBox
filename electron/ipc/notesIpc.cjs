@@ -126,6 +126,9 @@ const { registerNotesIpc } = (() => {
       ipcMain.handle('notes-export-html', async (_event, payload) => {
         return notesExportService.exportHtml(payload || {});
       });
+      ipcMain.handle('notes-export-txt', async (_event, payload) => {
+        return notesExportService.exportTxt(payload || {});
+      });
     },
   };
 })();

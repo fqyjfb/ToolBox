@@ -126,4 +126,28 @@ async function exportHtml(payload) {
   return { success: true, canceled: false, filePath: target.filePath };
 }
 
-module.exports = { exportPdf, exportHtml };
+/**
+ * 导出为纯文本文件（渲染层已剥离 Markdown 语法标记）。
+ *
+ * 复用 exportHtml 的保存对话框 + utf8 落盘，避免重复实现。
+ */
+async function exportTxt(payload) {
+  const text = payload && typeof payload.text === 'string' ? payload.text : '';
+  if (!text) return { success: false, error: '导出内容为空' };
+
+  const target = await dialog.showSaveDialog({
+    title: '导出 TXT',
+    defaultPath: payload.defaultPath || 'note.txt',
+    filters: [{ name: '文本文件', extensions: ['txt'] }],
+  });
+  if (target.canceled || !target.filePath) return { success: true, canceled: true };
+
+  try {
+    await fsp.writeFile(target.filePath, text, 'utf8');
+  } catch (error) {
+    return { success: false, error: (error && error.message) || '写入文件失败' };
+  }
+  return { success: true, canceled: false, filePath: target.filePath };
+}
+
+module.exports = { exportPdf, exportHtml, exportTxt };

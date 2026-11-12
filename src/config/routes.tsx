@@ -47,7 +47,6 @@ const QrGeneratorPage = React.lazy(() => import('../pages/tools/qr-generator'));
 const RegexTesterPage = React.lazy(() => import('../pages/tools/regex-tester'));
 const UrlEncodePage = React.lazy(() => import('../pages/tools/url-encode'));
 const MetaTagsGeneratorPage = React.lazy(() => import('../pages/tools/meta-tags-generator'));
-const MarkdownToTextPage = React.lazy(() => import('../pages/tools/markdown-to-text'));
 const HtmlToTextPage = React.lazy(() => import('../pages/tools/html-to-text'));
 const SqlMinifierPage = React.lazy(() => import('../pages/tools/sql-minifier'));
 const HexEncodePage = React.lazy(() => import('../pages/tools/hex-encode'));
@@ -101,7 +100,6 @@ const authRequiredRoutes: RouteConfig[] = [
   { path: '/tools/regex-tester', element: <RegexTesterPage />, requiresAuth: true },
   { path: '/tools/url-encode', element: <UrlEncodePage />, requiresAuth: true },
   { path: '/tools/meta-tags-generator', element: <MetaTagsGeneratorPage />, requiresAuth: true },
-  { path: '/tools/markdown-to-text', element: <MarkdownToTextPage />, requiresAuth: true },
   { path: '/tools/html-to-text', element: <HtmlToTextPage />, requiresAuth: true },
   { path: '/tools/sql-minifier', element: <SqlMinifierPage />, requiresAuth: true },
   { path: '/tools/hex-encode', element: <HexEncodePage />, requiresAuth: true },

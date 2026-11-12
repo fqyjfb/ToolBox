@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { FileText, Save, Edit3, PanelLeft, FileText as FileWord, Table2, FileImage, Code, Play, FileDown, FileCode2, Eye, ImageOff } from 'lucide-react';
-import { buildExportHtml, repairBrokenImageSyntax } from '@/lib/markdown';
+import { buildExportHtml, markdownToPlainText, repairBrokenImageSyntax } from '@/lib/markdown';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import PlainTextEditor from '@/components/PlainTextEditor';
 import OverflowMenu, { type OverflowMenuItem } from '@/components/ui/OverflowMenu';
@@ -224,22 +224,30 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
     return repaired === content ? null : repaired;
   }, [content, fileMetadata?.fileType]);
 
-  // 导出：渲染层构建 HTML（图片内联为 data-uri）→ 主进程打印并弹保存对话框落盘
+  // 导出：PDF 走 HTML 打印 / HTML 直接落盘 / TXT 在渲染层剥离 Markdown 标记后落盘
   const exportingRef = useRef(false);
   const handleExport = useCallback(
-    async (kind: 'pdf' | 'html') => {
+    async (kind: 'pdf' | 'html' | 'txt') => {
       // 一次导出可能几十秒（内联图片 / PDF 打印），连点会叠出多个保存对话框
       if (!selectedFile || exportingRef.current) return;
       exportingRef.current = true;
-      const noteDir = selectedFile.path.replace(/[\\/][^\\/]*$/, '');
       const baseName = selectedFile.name.replace(/\.[^.]+$/, '') || 'note';
       try {
-        const html = await buildExportHtml(content, { noteDir, title: baseName });
         const api = window.electron?.notes;
-        const result =
-          kind === 'pdf'
-            ? await api?.exportPdf({ html, defaultPath: `${baseName}.pdf` })
-            : await api?.exportHtml({ html, defaultPath: `${baseName}.html` });
+        let result;
+        if (kind === 'txt') {
+          result = await api?.exportTxt({
+            text: markdownToPlainText(content),
+            defaultPath: `${baseName}.txt`,
+          });
+        } else {
+          const noteDir = selectedFile.path.replace(/[\\/][^\\/]*$/, '');
+          const html = await buildExportHtml(content, { noteDir, title: baseName });
+          result =
+            kind === 'pdf'
+              ? await api?.exportPdf({ html, defaultPath: `${baseName}.pdf` })
+              : await api?.exportHtml({ html, defaultPath: `${baseName}.html` });
+        }
         if (result && result.success === false) {
           addToast({ type: 'error', message: result.error || '导出失败' });
         }
@@ -267,6 +275,12 @@ const NotesEditor: React.FC<NotesEditorProps> = ({
         label: '导出 HTML',
         icon: <FileCode2 className="h-4 w-4" />,
         onClick: () => void handleExport('html'),
+      },
+      {
+        key: 'export-txt',
+        label: '导出 TXT',
+        icon: <FileText className="h-4 w-4" />,
+        onClick: () => void handleExport('txt'),
       },
     ],
     [handleExport],

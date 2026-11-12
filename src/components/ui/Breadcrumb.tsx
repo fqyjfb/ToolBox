@@ -44,7 +44,6 @@ const routeLabelMap: Record<string, string> = {
   '/tools/regex-tester': '正则表达式测试器',
   '/tools/url-encode': 'URL编码',
   '/tools/meta-tags-generator': '元标签生成器',
-  '/tools/markdown-to-text': 'Markdown转文本',
   '/tools/html-to-text': 'HTML转文本',
   '/tools/sql-minifier': 'SQL压缩',
   '/tools/hex-encode': '十六进制编码',

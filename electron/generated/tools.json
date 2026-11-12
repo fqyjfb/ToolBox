@@ -196,13 +196,6 @@
     "iconName": "Tag"
   },
   {
-    "id": "markdown-to-text",
-    "name": "MD转纯文本",
-    "path": "/tools/markdown-to-text",
-    "color": "#2563eb",
-    "iconName": "AlignLeft"
-  },
-  {
     "id": "html-to-text",
     "name": "HTML转纯文本",
     "path": "/tools/html-to-text",

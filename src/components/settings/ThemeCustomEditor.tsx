@@ -598,13 +598,13 @@ const ThemeCustomEditor: React.FC = () => {
           disabled={isCompressing}
           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-primary text-button-text hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Save size={12} /> 保存主题
+          <Save size={12} /> 保存
         </button>
         <button type="button" onClick={handleDiscard} disabled={!isDirty} className={ACTION_CLASS}>
-          <X size={12} /> 放弃修改
+          <X size={12} /> 放弃
         </button>
         <button type="button" onClick={handleReset} className={ACTION_CLASS}>
-          <RotateCcw size={12} /> 恢复默认
+          <RotateCcw size={12} /> 默认
         </button>
         <button type="button" onClick={handleExport} className={ACTION_CLASS}>
           <Download size={12} /> 导出
@@ -624,7 +624,7 @@ const ThemeCustomEditor: React.FC = () => {
           onClick={handleDelete}
           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-error text-error hover:bg-menu-hover"
         >
-          <Trash2 size={12} /> 删除并切回预设
+          <Trash2 size={12} /> 预设
         </button>
       </div>
     </div>

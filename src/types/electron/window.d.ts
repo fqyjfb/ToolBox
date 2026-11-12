@@ -81,6 +81,8 @@ declare interface Window {
     setAutostartStatus: (enable: boolean) => Promise<boolean>;
     getSettings: () => Promise<SettingItem[]>;
     updateSetting: (setting: { name: string; value: string | number | boolean | object }) => Promise<UpdateResult>;
+    /** 恢复默认窗口尺寸：重置设置项并立即把大窗恢复到默认尺寸 */
+    resetDefaultWindowSize: () => Promise<UpdateResult>;
     setThemeSnapshot: (colors: Record<string, string> | null) => Promise<{ code: number }>;
     setAIConfigSnapshot: (config: import('./types/ai').AIConfig) => Promise<{ success: boolean }>;
     clearCache: () => Promise<UpdateResult>;
@@ -193,6 +195,8 @@ declare interface Window {
       exportPdf: (payload: { html: string; defaultPath?: string }) => Promise<{ success: boolean; canceled?: boolean; filePath?: string; error?: string }>;
       /** 导出独立 HTML（图片已内联为 data-uri，单文件可分发） */
       exportHtml: (payload: { html: string; defaultPath?: string }) => Promise<{ success: boolean; canceled?: boolean; filePath?: string; error?: string }>;
+      /** 导出 TXT：渲染层已剥离 Markdown 语法标记，主进程弹保存对话框落盘 */
+      exportTxt: (payload: { text: string; defaultPath?: string }) => Promise<{ success: boolean; canceled?: boolean; filePath?: string; error?: string }>;
       saveFile: (filePath: string, content: string) => Promise<NotesSaveResult>;
       renameItem: (oldPath: string, newName: string) => Promise<NotesRenameResult>;
       deleteItem: (itemPath: string) => Promise<NotesDeleteResult>;

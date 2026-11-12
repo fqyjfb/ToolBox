@@ -374,14 +374,14 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
           className="inline-flex items-center gap-1.5 px-3 py-1 text-xs text-content-secondary bg-surface-secondary hover:bg-menu-hover rounded-md transition-colors"
         >
           <RotateCcw size={14} />
-          重置全部配置
+          重置
         </button>
         <button
           onClick={onSave}
           className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-button-text bg-primary rounded-md hover:bg-primary-hover transition-colors"
         >
           <Save size={14} />
-          保存全部配置
+          保存
         </button>
       </div>
     </div>

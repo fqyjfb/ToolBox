@@ -6,6 +6,29 @@ let moved = false;
 let floatConfig = [];
 let collapseTimer = null;
 let dragPendingFrame = false;
+
+// ── 球体命中上报（替代主进程 250ms 光标轮询）──
+// 窗口 300×300、球体 66×90 居中：渲染层只在命中状态变化时发一次 IPC，
+// 主进程据此决定窗口是否穿透（穿透态下 forward 仍会转发 mousemove，因此可行）。
+const BALL_HIT_WIDTH = 66;
+const BALL_HIT_HEIGHT = 90;
+const BALL_HIT_PADDING = 4;
+let ballHover = false;
+
+function reportBallHover(active) {
+  if (active === ballHover) return;
+  ballHover = active;
+  if (window.electronAPI.setBallHover) window.electronAPI.setBallHover(active);
+}
+
+function updateBallHover(clientX, clientY) {
+  const dx = Math.abs(clientX - window.innerWidth / 2);
+  const dy = Math.abs(clientY - window.innerHeight / 2);
+  reportBallHover(
+    dx <= BALL_HIT_WIDTH / 2 + BALL_HIT_PADDING && dy <= BALL_HIT_HEIGHT / 2 + BALL_HIT_PADDING
+  );
+}
+
 function getTooltipContainer() {
   return document.getElementById('tooltipContainer');
 }
@@ -143,6 +166,8 @@ function handleItemClick(e) {
 function toggleExpand() {
   isExpanded = !isExpanded;
   window.electronAPI.setExpanded(isExpanded);
+  // 展开/收起都算交互：恢复可能被空闲暂停的形象动画
+  if (window.FloatPet.wakeAnimations) window.FloatPet.wakeAnimations();
   // 展开时让桌宠闭嘴，避免台词气泡和菜单项叠在一起
   if (isExpanded) window.FloatPet.clearBubble();
   // 兜底：配置还没加载完就点击时，菜单项尚未构建，先补一次构建
@@ -297,6 +322,8 @@ function scheduleDragMove() {
 }
 
 function handleDocumentMouseMove(e) {
+  // 命中判定必须先于拖拽早退：球外/球内的穿透切换与是否拖拽无关
+  updateBallHover(e.clientX, e.clientY);
   if (!isDragging) return;
   // 快速甩动时 mouseup 可能落在窗口外丢失，按按键状态兜底结束拖拽
   if (e.buttons === 0) {
@@ -362,8 +389,13 @@ function initFloatBall() {
   document.addEventListener('dragover', handleDragOver);
   document.addEventListener('dragleave', handleDragLeave);
   document.addEventListener('drop', handleDrop);
-  // 兜底：失焦时 mouseup 可能收不到，防止一直卡在拖拽态
-  window.addEventListener('blur', stopDrag);
+  // 光标移出窗口：不再收到 mousemove，必须主动上报离开，避免主进程一直保持可点击
+  document.addEventListener('mouseleave', function () { reportBallHover(false); });
+  // 兜底：失焦时 mouseup 可能收不到，防止一直卡在拖拽态；同时复位球体命中态
+  window.addEventListener('blur', function () {
+    stopDrag();
+    reportBallHover(false);
+  });
 
   if (window.electronAPI.getGesturesEnabled) {
     window.electronAPI.getGesturesEnabled()
