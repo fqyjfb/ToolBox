@@ -34,7 +34,7 @@ html, body {
   align-items: center;
   justify-content: center;
   user-select: none;
-  overflow: visible;
+  overflow: hidden;
   cursor: default;
 }
 
