@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { HelpCircle, type LucideIcon } from 'lucide-react';
 import { NAV_ACTIONS, SYSTEM_ACTIONS, AI_ACTIONS } from '../constants/settings';
 import { ALL_TOOLS } from '../constants/tools';
-import { iconMap } from './iconMap';
+import { kubaiIconToDataUrl } from './kubaiIconData';
+import { TOOL_KUBAI_MAP, FALLBACK_ICON } from './kubaiIconMap';
 
 // 悬浮窗功能图标统一蓝色：与既有图标集一致，在白/深色菜单项与深色预览球上均可清晰显示
 const FLOAT_ICON_COLOR = '#00A2FF';
@@ -39,9 +40,9 @@ export const getTargetIcon = (type: string, action: string): string => {
     return lucideIconToDataUrl(target.icon);
   }
   if (type === 'tool') {
+    // 工具项统一使用工具中心的 kubai 图标，序列化为静态 data URI 供悬浮球 <img> 渲染
     const tool = ALL_TOOLS.find(item => item.id === action) || ALL_TOOLS[0];
-    const Icon = iconMap[tool.iconName] || iconMap.Package;
-    return lucideIconToDataUrl(Icon);
+    return kubaiIconToDataUrl(TOOL_KUBAI_MAP[tool.id] || FALLBACK_ICON, tool.color);
   }
   return '';
 };

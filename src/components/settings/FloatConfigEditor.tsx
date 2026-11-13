@@ -11,11 +11,12 @@ import {
 import { ALL_TOOLS } from '../../constants/tools';
 import { lucideIconToDataUrl, getTargetIcon } from '../../utils/floatIconRenderer';
 import { usePluginStore } from '../../store/pluginStore';
+import KubaiIcon from '../ui/KubaiIcon';
+import { TOOL_KUBAI_MAP, FALLBACK_ICON } from '../../utils/kubaiIconMap';
 import CachedIcon from '../ui/CachedIcon';
 import { getLocalPluginIcon } from '../../generated/pluginLocalIcons';
-import FloatIconView from '../ui/FloatIconView';
+import FloatConfigIcon from '../ui/FloatConfigIcon';
 import Select from '../ui/Select';
-import { iconMap } from '../../utils/iconMap';
 
 interface FloatConfigEditorProps {
   config: FloatConfigItem;
@@ -102,14 +103,14 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
   const handleToolSelect = (toolId: string) => {
     const tool = ALL_TOOLS.find(t => t.id === toolId);
     if (tool) {
-      const Icon = iconMap[tool.iconName] || iconMap.Package;
       const newConfig: FloatConfigItem = {
         ...localConfig,
         type: 'tool',
         action: tool.id,
         name: tool.name,
         path: tool.path,
-        icon: lucideIconToDataUrl(Icon),
+        // 与工具中心同款 kubai 图标，悬浮球 <img> 直接复用该 data URI
+        icon: getTargetIcon('tool', tool.id),
         color: tool.color || localConfig.color
       };
       setLocalConfig(newConfig);
@@ -157,16 +158,12 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
       <div className="flex items-center gap-3 pb-3">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-          style={{ backgroundColor: 'var(--color-primary)' }}
+          style={{
+            backgroundColor:
+              localConfig.type === 'tool' && localConfig.color ? localConfig.color : 'var(--color-primary)'
+          }}
         >
-          <FloatIconView
-            icon={localConfig.icon}
-            path={localConfig.path}
-            isPlugin={localConfig.type === 'plugin'}
-            name={localConfig.name}
-            size={20}
-            className="text-white"
-          />
+          <FloatConfigIcon config={localConfig} size={20} className="text-white" />
         </div>
         <div>
           <div className="font-medium text-content-primary text-sm">{localConfig.name}</div>
@@ -314,7 +311,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
             ) : (
               <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-5px p-1">
                 {installedPlugins.map((plugin) => {
-                  const PluginIcon = iconMap[plugin.iconName] || iconMap.Package;
+                  const kubaiName = TOOL_KUBAI_MAP[plugin.id] || FALLBACK_ICON;
                   // 与插件商店一致：优先用包内本地图标，没有再走网络图标缓存
                   const pluginIcon = getLocalPluginIcon(plugin.id, plugin.iconUrl) ?? plugin.iconUrl;
                   return (
@@ -333,11 +330,11 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
                           name={plugin.name}
                           type="plugin"
                           className="w-4 h-4"
-                          fallbackIcon={<PluginIcon className="w-4 h-4" />}
+                          fallbackIcon={<KubaiIcon name={kubaiName} size={16} />}
                           iconOnly
                         />
                       ) : (
-                        <PluginIcon className="w-4 h-4" />
+                        <KubaiIcon name={kubaiName} size={16} />
                       )}
                       {plugin.name}
                     </button>
@@ -352,14 +349,7 @@ const FloatConfigEditor: React.FC<FloatConfigEditorProps> = ({
           <label className="block text-xs text-content-secondary mb-1">图标</label>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded flex items-center justify-center bg-surface-secondary overflow-hidden">
-              <FloatIconView
-                icon={localConfig.icon}
-                path={localConfig.path}
-                isPlugin={localConfig.type === 'plugin'}
-                name={localConfig.name}
-                size={20}
-                className="text-content-secondary"
-              />
+              <FloatConfigIcon config={localConfig} size={20} className="text-content-secondary" />
             </div>
             <span className="flex-1 text-xs text-content-secondary">
               {AUTO_ICON_LABELS[localConfig.type]}

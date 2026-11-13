@@ -2,8 +2,9 @@ import React from 'react';
 import { Download, Pin, PinOff, ExternalLink, Star, Play } from 'lucide-react';
 import Modal from '../ui/Modal';
 import CachedIcon from '../ui/CachedIcon';
+import KubaiIcon from '../ui/KubaiIcon';
 import { PluginInfo, InstalledPlugin } from '../../types/plugin';
-import { iconMap } from '../../utils/iconMap';
+import { TOOL_KUBAI_MAP, FALLBACK_ICON } from '../../utils/kubaiIconMap';
 import { getLocalPluginIcon } from '../../generated/pluginLocalIcons';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { usePluginStore } from '../../store/pluginStore';
@@ -37,7 +38,8 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
 
   if (!plugin) return null;
 
-  const Icon = iconMap[plugin.iconName] || iconMap.Package;
+  const kubaiName = TOOL_KUBAI_MAP[plugin.id] || FALLBACK_ICON;
+  const fallbackIcon = <KubaiIcon name={kubaiName} size={32} />;
   const isInSidebar = pinnedToolIds.includes(plugin.id);
   // 本地图标优先（public/plugins/icons/{id}/icon.*），缺失时回退到网络图标缓存
   const pluginIcon = getLocalPluginIcon(plugin.id, plugin.iconUrl) ?? plugin.iconUrl;
@@ -72,10 +74,10 @@ const PluginDetail: React.FC<PluginDetailProps> = ({
               name={plugin.name}
               type="plugin"
               className="w-full h-full object-contain"
-              fallbackIcon={<Icon className="w-8 h-8 text-content-secondary" />}
+              fallbackIcon={fallbackIcon}
             />
           ) : (
-            <Icon className="w-8 h-8 text-content-secondary" />
+            fallbackIcon
           )}
         </div>
 

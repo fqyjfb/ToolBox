@@ -32,7 +32,7 @@ export const defaultHomeTools: HomeToolItem[] = [
   weatherHomeTool,
   { id: 'cloud-clipboard', name: '云剪贴板', path: '/tools/cloud-clipboard', color: '#67aaf7', textColor: '#fff', iconName: 'Clipboard' },
   { id: 'todo', name: '待办事项', path: '/tools/todo', color: '#bc8acf', textColor: '#fff', iconName: 'CheckSquare' },
-  { id: 'navigation', name: '导航', path: '/nav', color: '#4caf50', textColor: '#fff', iconName: 'Navigation' },
+  { id: 'navigation', name: '网站导航', path: '/nav', color: '#4caf50', textColor: '#fff', iconName: 'Navigation' },
   { id: 'account', name: '账号', path: '/tools/account', color: '#00bcd4', textColor: '#fff', iconName: 'Rocket' },
   { id: 'translate', name: '在线翻译', path: '/tools/translate', color: '#2196F3', textColor: '#fff', iconName: 'Languages' },
   { id: 'news', name: '新闻', path: '/news', color: '#e91e63', textColor: '#fff', iconName: 'MessageSquare' },
@@ -69,7 +69,7 @@ const normalizeHomeTools = (raw: unknown): HomeToolItem[] | null => {
     seen.add(id);
     tools.push({
       id,
-      name: typeof tool.name === 'string' && tool.name ? tool.name : tool.id,
+      name: id === 'navigation' ? '网站导航' : (typeof tool.name === 'string' && tool.name ? tool.name : tool.id),
       path: typeof tool.path === 'string' && tool.path ? tool.path : '/',
       color: typeof tool.color === 'string' && tool.color ? tool.color : FALLBACK_COLOR,
       textColor: typeof tool.textColor === 'string' && tool.textColor ? tool.textColor : '#ffffff',

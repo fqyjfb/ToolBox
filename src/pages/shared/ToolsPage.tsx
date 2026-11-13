@@ -1,12 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Phone, RefreshCw, MessageSquare, Clipboard, CheckSquare, Key,
-  FileCode, Globe, Smile, Clock, ArrowUpDown, Hash, Copy,
-  Table, Link, Map, QrCode, Code, AtSign, Tag, AlignLeft,
-  Code2, Binary, Braces, Navigation, Newspaper, Languages, Cloud, FileText, Scan, Folder, StickyNote,
-  Home, Download, Bell, ExternalLink, Minus, PanelLeft
+  ExternalLink, Minus, Home, PanelLeft,
 } from 'lucide-react';
+import KubaiIcon from '../../components/ui/KubaiIcon';
+import { TOOL_KUBAI_MAP } from '../../utils/kubaiIconMap';
 import ContextMenu, { ContextMenuItem } from '../../components/ui/ContextMenu';
 import type { HomeToolItem } from '../../utils/homeTools';
 import { ALL_TOOLS } from '../../constants/tools';
@@ -16,44 +14,6 @@ import { useSidebarStore } from '../../store/sidebarStore';
 import { useHomeToolsStore } from '../../store/homeToolsStore';
 import { useToastStore } from '../../store/toastStore';
 import './ToolsPage.css';
-
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Phone,
-  RefreshCw,
-  MessageSquare,
-  Clipboard,
-  CheckSquare,
-  Key,
-  FileCode,
-  Globe,
-  Smile,
-  Clock,
-  ArrowUpDown,
-  Hash,
-  Copy,
-  Table,
-  Link,
-  Map,
-  QrCode,
-  Code,
-  AtSign,
-  Tag,
-  AlignLeft,
-  Code2,
-  Binary,
-  Braces,
-  Navigation,
-  Newspaper,
-  Languages,
-  Cloud,
-  FileText,
-  Scan,
-  Folder,
-  StickyNote,
-  Home,
-  Download,
-  Bell,
-};
 
 const BASE_TOOLS_IDS = ['todo', 'memo', 'quick-reply', 'cloud-clipboard', 'account', 'weather', 'navigation', 'news', 'reminder'];
 
@@ -83,8 +43,7 @@ const ToolsPage = () => {
       .filter(tool => BASE_TOOLS_IDS.includes(tool.id))
       .map(tool => ({
         ...tool,
-        icon: iconMap[tool.iconName] || Clipboard,
-        textColor: 'var(--color-bg-primary)' as const,
+        kubaiName: TOOL_KUBAI_MAP[tool.id] || '文件夹',
       }));
   }, []);
 
@@ -93,8 +52,7 @@ const ToolsPage = () => {
       .filter(tool => !BASE_TOOLS_IDS.includes(tool.id) && !(tool.id === 'notes' && !isDesktop))
       .map(tool => ({
         ...tool,
-        icon: iconMap[tool.iconName] || Clipboard,
-        textColor: 'var(--color-bg-primary)' as const,
+        kubaiName: TOOL_KUBAI_MAP[tool.id] || '文件夹',
       }));
   }, [isDesktop]);
 
@@ -183,7 +141,6 @@ const ToolsPage = () => {
   };
 
   const renderToolCard = (tool: typeof myTools[0]) => {
-    const Icon = tool.icon;
     const isPinned = pinnedToolIds.includes(tool.id);
     const isOnHome = homeToolIds.has(tool.id);
 
@@ -200,15 +157,13 @@ const ToolsPage = () => {
             <Home className="w-3 h-3 text-blue-500" />
           </div>
         )}
-        <Icon className="tools-grid-item-icon" />
-        <span className="tools-grid-item-name" style={{ color: tool.textColor }}>{tool.name}</span>
+        <KubaiIcon name={tool.kubaiName} color={tool.color} size={26} className="tools-grid-item-icon-kubai" />
+        <span className="tools-grid-item-name" style={{ color: '#ffffff' }}>{tool.name}</span>
       </div>
     );
   };
 
   const renderDownloadCard = (card: typeof downloadCard) => {
-    const Icon = card.icon;
-
     return (
       <div
         key={card.id}
@@ -216,8 +171,8 @@ const ToolsPage = () => {
         style={{ backgroundColor: card.color }}
         onClick={() => navigate(card.path)}
       >
-        <Icon className="tools-grid-item-icon" />
-        <span className="tools-grid-item-name" style={{ color: card.textColor }}>{card.name}</span>
+        <KubaiIcon name={card.kubaiName} color={card.color} size={26} className="tools-grid-item-icon-kubai" />
+        <span className="tools-grid-item-name" style={{ color: '#ffffff' }}>{card.name}</span>
       </div>
     );
   };
@@ -227,8 +182,7 @@ const ToolsPage = () => {
     name: '工具下载',
     path: '/tools/tool-downloads',
     color: '#059669',
-    icon: Download,
-    textColor: 'var(--color-bg-primary)' as const,
+    kubaiName: '下载',
   };
 
   return (

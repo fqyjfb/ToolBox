@@ -1,7 +1,8 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import type { HomeToolItem } from '../../utils/homeTools';
-import { iconMap } from '../../utils/iconMap';
+import KubaiIcon from '../ui/KubaiIcon';
+import { TOOL_KUBAI_MAP, FALLBACK_ICON } from '../../utils/kubaiIconMap';
 
 interface ToolCardProps {
   tool: HomeToolItem;
@@ -13,7 +14,7 @@ interface ToolCardProps {
 
 /** 首页单个工具的独立 2×2 卡片（原 3×3 工具网格已拆散为独立卡片） */
 const ToolCard: React.FC<ToolCardProps> = ({ tool, onClick, onContextMenu, onAdd }) => {
-  const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
+  const kubaiName = TOOL_KUBAI_MAP[tool.id] || FALLBACK_ICON;
 
   return (
     <div
@@ -22,7 +23,7 @@ const ToolCard: React.FC<ToolCardProps> = ({ tool, onClick, onContextMenu, onAdd
       onClick={onClick}
       onContextMenu={onContextMenu}
     >
-      <IconComponent className="home-tool-card__icon" />
+      <KubaiIcon name={kubaiName} color={tool.color} size={32} className="home-tool-card__icon" />
       <span className="home-tool-card__name">{tool.name}</span>
       {onAdd && (
         <button

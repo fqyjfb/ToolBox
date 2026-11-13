@@ -28,6 +28,11 @@
   color: white !important;
 }
 
+.tools-grid-item-icon-kubai {
+  margin-bottom: var(--space-1);
+  flex-shrink: 0;
+}
+
 .tools-grid-item:hover {
   transform: scale(1.05);
   z-index: 10;

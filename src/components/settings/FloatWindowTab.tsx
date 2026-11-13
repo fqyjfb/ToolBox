@@ -5,7 +5,7 @@ import SettingRow from './SettingRow';
 import ToggleSwitch from './ToggleSwitch';
 import { FloatConfigItem } from '../../types/settings';
 import { QuickLaunchItem } from '../../utils/quickLaunch';
-import FloatIconView from '../ui/FloatIconView';
+import FloatConfigIcon from '../ui/FloatConfigIcon';
 
 // 圆形按钮内径 40px，图标统一 20px（与真实悬浮窗菜单项一致）
 const BALL_ICON_SIZE = 20;
@@ -143,7 +143,8 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
                     style={{
                       width: 40,
                       height: 40,
-                      backgroundColor: 'var(--color-primary)',
+                      backgroundColor:
+                        config.type === 'tool' && config.color ? config.color : 'var(--color-primary)',
                       left: '50%',
                       top: '50%',
                       transform: `translate(-50%, -50%) translate(${pos.x}px, ${pos.y}px) scale(${isActive ? 1.1 : 1})`,
@@ -151,11 +152,8 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
                     }}
                     title={config.name}
                   >
-                    <FloatIconView
-                      icon={config.icon}
-                      path={config.path}
-                      isPlugin={config.type === 'plugin'}
-                      name={config.name}
+                    <FloatConfigIcon
+                      config={config}
                       size={BALL_ICON_SIZE}
                       className="text-white"
                     />

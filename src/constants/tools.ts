@@ -15,7 +15,7 @@ export const ALL_TOOLS: ToolInfo[] = [
   { id: 'cloud-clipboard', name: '云剪贴板', path: '/tools/cloud-clipboard', color: '#67aaf7', iconName: 'Clipboard' },
   { id: 'account', name: '账号管理', path: '/tools/account', color: '#00bcd4', iconName: 'Key' },
   { id: 'weather', name: '天气预报', path: '/tools/weather', color: '#3b82f6', iconName: 'Cloud' },
-  { id: 'navigation', name: '导航', path: '/nav', color: '#4caf50', iconName: 'Navigation' },
+  { id: 'navigation', name: '网站导航', path: '/nav', color: '#4caf50', iconName: 'Navigation' },
   { id: 'news', name: '新闻', path: '/news', color: '#ff9800', iconName: 'Newspaper' },
   { id: 'exchange', name: '汇率换算', path: '/tools/exchange', color: '#f5a623', iconName: 'RefreshCw' },
   { id: 'translate', name: '在线翻译', path: '/tools/translate', color: '#3b82f6', iconName: 'Languages' },

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Plus } from 'lucide-react';
-import { iconMap } from '../../utils/iconMap';
+import KubaiIcon from '../ui/KubaiIcon';
+import { TOOL_KUBAI_MAP, FALLBACK_ICON } from '../../utils/kubaiIconMap';
 import type { HomeToolItem } from '../../utils/homeTools';
 
 export type PreviewItemType = 'todo' | 'memo' | 'reminder' | 'quick-reply' | 'clipboard';
@@ -38,7 +39,7 @@ interface ExpandedToolCardProps {
 const ExpandedToolCard: React.FC<ExpandedToolCardProps> = ({
   tool, items, totalCount, onClick, onAdd, onItemTap, onContextMenu, onItemContextMenu,
 }) => {
-  const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
+  const kubaiName = TOOL_KUBAI_MAP[tool.id] || FALLBACK_ICON;
 
   // 固定随机预览（useMemo 防止鼠标交互时重排导致跳动）
   const previewItems = useMemo(() => {
@@ -54,7 +55,7 @@ const ExpandedToolCard: React.FC<ExpandedToolCardProps> = ({
       onContextMenu={onContextMenu}
     >
       <div className="expanded-tool-card__header">
-        <IconComponent className="expanded-tool-card__icon" />
+        <KubaiIcon name={kubaiName} color={tool.color} size={28} className="expanded-tool-card__icon" />
         <span className="expanded-tool-card__name">{tool.name}</span>
         {totalCount > 0 && <span className="expanded-tool-card__count">{totalCount}</span>}
         <button

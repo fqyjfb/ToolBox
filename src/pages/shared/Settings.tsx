@@ -15,6 +15,7 @@ import {
 import { DEFAULT_SHORTCUTS, DEFAULT_WINDOW_SIZE } from '../../constants/settings';
 import { logError } from '../../services/loggerService';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
+import { syncToolFloatIcon } from '../../utils/kubaiIconData';
 import {
   GeneralTab,
   AppLockTab,
@@ -132,7 +133,14 @@ const Settings: React.FC = () => {
       if (window.electron) {
         // 图标解析（含旧配置迁移）统一由主进程 loadFloatConfig 完成
         const config = await window.electron.getFloatConfig();
-        setFloatConfig(config);
+        // 工具项图标与工具中心统一：迁移老配置并静默回写一次，让悬浮球立即同步
+        const synced = config.map(syncToolFloatIcon);
+        setFloatConfig(synced);
+        if (synced.some((item, i) => item.icon !== config[i].icon)) {
+          void window.electron
+            .updateFloatConfig(synced)
+            .catch((error) => logError('Failed to sync float tool icon', 'Settings', error as Error));
+        }
       }
     } catch (error) {
       console.error('Failed to load float config:', error);

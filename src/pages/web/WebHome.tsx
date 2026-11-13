@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Clock, Zap, BookOpen, Sparkles, ChevronRight } from 'lucide-react';
 import { hotNewsApi } from '../../services/hotNews';
 import { loadHomeTools, WEATHER_TOOL_ID, type HomeToolItem } from '../../utils/homeTools';
-import { iconMap } from '../../utils/iconMap';
+import KubaiIcon from '../../components/ui/KubaiIcon';
+import { TOOL_KUBAI_MAP, FALLBACK_ICON } from '../../utils/kubaiIconMap';
 import type { ItNewsItem, AiNewsItem, TodayInHistoryItem } from '../../types/hotNews';
 import WeatherCard from '../../components/home/WeatherCard';
 import FavoritesBar from '../../components/home/FavoritesBar';
@@ -323,7 +324,7 @@ const WebHome: React.FC = () => {
 
               <div className="web-home__tools-grid">
                 {quickTools.map((tool) => {
-                  const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
+                  const kubaiName = TOOL_KUBAI_MAP[tool.id] || FALLBACK_ICON;
                   return (
                     <button
                       key={tool.id}
@@ -331,7 +332,7 @@ const WebHome: React.FC = () => {
                       className="web-home__tool-btn"
                     >
                       <div className="web-home__tool-icon" style={{ backgroundColor: tool.color }}>
-                        <IconComponent className="w-6 h-6 text-white" />
+                        <KubaiIcon name={kubaiName} color={tool.color} size={24} />
                       </div>
                       <span className="web-home__tool-name">{tool.name}</span>
                     </button>

@@ -57,7 +57,7 @@
   },
   {
     "id": "navigation",
-    "name": "导航",
+    "name": "网站导航",
     "path": "/nav",
     "color": "#4caf50",
     "iconName": "Navigation"

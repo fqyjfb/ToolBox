@@ -14,9 +14,10 @@ import { usePluginStore } from '../../store/pluginStore';
 import { ALL_TOOLS, ToolInfo } from '../../constants/tools';
 import CachedIcon from '../ui/CachedIcon';
 import { getLocalPluginIcon } from '../../generated/pluginLocalIcons';
+import KubaiIcon from '../ui/KubaiIcon';
+import { TOOL_KUBAI_MAP, FALLBACK_ICON } from '../../utils/kubaiIconMap';
 import Tooltip from '../ui/Tooltip';
 import { isElectron } from '../../utils/environment';
-import { iconMap } from '../../utils/iconMap';
 import { pluginApi } from '../../services/pluginApi';
 import './Sidebar.css';
 
@@ -77,8 +78,8 @@ const Sidebar: React.FC<{ forceCollapsed?: boolean; hideLogo?: boolean }> = ({ f
   // 插件图标优先取本地（public/plugins/icons），其余远程地址走 CachedIcon（主进程本地缓存），
   // 避免国内网络下破图
   const renderToolIcon = (tool: ToolInfo & { iconUrl?: string }) => {
-    const Icon = iconMap[tool.iconName] || iconMap.Package;
-    const fallbackIcon = <Icon className="w-4 h-4 flex-shrink-0" style={{ color: tool.color }} />;
+    const kubaiName = TOOL_KUBAI_MAP[tool.id] || FALLBACK_ICON;
+    const fallbackIcon = <KubaiIcon name={kubaiName} color={tool.color} size={16} />;
     const toolIcon = getLocalPluginIcon(tool.id, tool.iconUrl) ?? tool.iconUrl;
     if (!toolIcon) return fallbackIcon;
     return (
@@ -97,15 +98,12 @@ const Sidebar: React.FC<{ forceCollapsed?: boolean; hideLogo?: boolean }> = ({ f
 
   useEffect(() => {
     const handleButtonsChange = (buttons: { id: string; icon: string; label: string; onClick: () => void }[]) => {
-      const pluginButtonsData = buttons.map(btn => {
-        const Icon = iconMap[btn.icon] || iconMap.Package;
-        return {
-          id: btn.id,
-          icon: <Icon className="w-4 h-4" />,
-          label: btn.label,
-          onClick: () => btn.onClick(),
-        };
-      });
+      const pluginButtonsData = buttons.map(btn => ({
+        id: btn.id,
+        icon: <KubaiIcon name={TOOL_KUBAI_MAP[btn.id] || FALLBACK_ICON} size={16} />,
+        label: btn.label,
+        onClick: () => btn.onClick(),
+      }));
       setPluginButtons(pluginButtonsData);
     };
 

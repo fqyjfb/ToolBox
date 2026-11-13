@@ -9,7 +9,8 @@ import { isWeb } from '../../utils/environment';
 import { getWeatherCity } from '../../utils/weatherLocation';
 import type { WeatherInfo } from '../../types/weather';
 import { localStorageService, STORAGE_KEYS } from '../../services/localStorageService';
-import { iconMap } from '../../utils/iconMap';
+import KubaiIcon from '../../components/ui/KubaiIcon';
+import { TOOL_KUBAI_MAP, FALLBACK_ICON } from '../../utils/kubaiIconMap';
 import FavoritesBar from '../../components/home/FavoritesBar';
 import { useHomeFavorites } from '../../hooks/useHomeFavorites';
 import { DISPLAY_LIMITS } from '../../constants/timers';
@@ -217,7 +218,7 @@ const MobileHome: React.FC = () => {
           
           <div className="grid grid-cols-3" style={{ gap: 'var(--space-2)' }}>
             {quickTools.map((tool) => {
-              const IconComponent = iconMap[tool.iconName] || iconMap.Clipboard;
+              const kubaiName = TOOL_KUBAI_MAP[tool.id] || FALLBACK_ICON;
               return (
                 <button
                   key={tool.id}
@@ -229,7 +230,7 @@ const MobileHome: React.FC = () => {
                     className="rounded-xl flex items-center justify-center"
                     style={{ width: 'calc(var(--space-5) * 1.4)', height: 'calc(var(--space-5) * 1.4)', backgroundColor: tool.color }}
                   >
-                    <IconComponent className="w-6 h-6 text-white" />
+                    <KubaiIcon name={kubaiName} color={tool.color} size={24} />
                   </div>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>{tool.name}</span>
                 </button>
