@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 let configChangedCallback = null;
-let appearanceChangedCallback = null;
+let outfitChangedCallback = null;
 let themeChangedCallback = null;
 let petStateCallback = null;
 let petCardCallback = null;
@@ -12,9 +12,9 @@ ipcRenderer.on('float-config-changed', (event, config) => {
   }
 });
 
-ipcRenderer.on('appearance-changed', (event, data) => {
-  if (appearanceChangedCallback) {
-    appearanceChangedCallback(data);
+ipcRenderer.on('outfit-changed', (event, data) => {
+  if (outfitChangedCallback) {
+    outfitChangedCallback(data);
   }
 });
 
@@ -51,9 +51,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onConfigChanged: (callback) => {
     configChangedCallback = callback;
   },
-  getAppearance: () => ipcRenderer.invoke('float-get-appearance'),
-  onAppearanceChanged: (callback) => {
-    appearanceChangedCallback = callback;
+  getOutfit: () => ipcRenderer.invoke('float-get-outfit'),
+  onOutfitChanged: (callback) => {
+    outfitChangedCallback = callback;
   },
   getTheme: () => ipcRenderer.invoke('float-get-theme'),
   onThemeChanged: (callback) => {

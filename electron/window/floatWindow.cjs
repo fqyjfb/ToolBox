@@ -2,6 +2,7 @@ const { BrowserWindow, Menu, screen, ipcMain, app, nativeTheme } = require('elec
 const path = require('path');
 const fs = require('fs');
 const { loadSettings, saveSettings, loadFloatConfig } = require('../lib/config.cjs');
+const PetCatalog = require('./float/pet-catalog.cjs');
 
 let floatWindow = null;
 let dragOffset = { x: 0, y: 0 };
@@ -17,22 +18,11 @@ let hasInteractiveCard = false;
 const WINDOW_SIZE = 300;
 
 // ── 悬浮球形象（桌宠换装）──
-// name 与桌宠 .float-pet 的 data-fit 一一对应，空字符串表示无装饰
-const FLOAT_APPEARANCE_LIST = [
-  { name: '', label: '无装饰' },
-  { name: 'ears', label: '🐱 猫耳' },
-  { name: 'hat', label: '🎩 帽子' },
-  { name: 'scarf', label: '🧣 围巾' }
-];
-
-// 兼容旧版本遗留的 PNG 形象名，命不中一律回落到默认形象
-const normalizeAppearance = (name) =>
-  FLOAT_APPEARANCE_LIST.some(item => item.name === name) ? name : '';
-
-// 桌宠形象尺寸，与 float/float.css 中 .float-ball 保持一致
-const PET_SIZE = { width: 66, height: 90 };
+// 清单、槽位、预设与几何全部来自 float/pet-catalog.cjs，此处不再维护第二份形象列表
+// 桌宠形象尺寸，与 float/float.css 的 --pet-w/--pet-h 保持同一来源
+const PET_SIZE = { width: PetCatalog.geometry.width, height: PetCatalog.geometry.height };
 // 球体命中容差，与渲染层 float.cjs 的 BALL_HIT_PADDING 一致
-const PET_HIT_PADDING = 4;
+const PET_HIT_PADDING = PetCatalog.geometry.hitPadding;
 // 看门狗周期：渲染层 mousemove 中断时（光标快速移出、未触发 mouseleave）用系统光标复核
 const HOVER_WATCHDOG_MS = 800;
 
@@ -211,24 +201,48 @@ const toggleFloatWindow = () => {
   return settings.isFloatWindowEnabled;
 };
 
-// 构建「切换形象」子菜单，选中后同步给悬浮窗渲染进程的 .float-pet
-const buildAppearanceMenu = (settings) => {
-  const current = normalizeAppearance(settings.floatBallAppearance || '');
-  return [{
-    label: '切换形象',
-    submenu: FLOAT_APPEARANCE_LIST.map(({ name, label }) => ({
-      label,
+// ── 换装：预设与槽位菜单均由清单生成，选中后落盘并同步给悬浮窗 ──
+const outfitSnapshot = () => PetCatalog.normalizeOutfit(loadSettings().floatBallOutfit);
+
+const sendOutfit = (outfit, phrase) => {
+  if (floatWindow && !floatWindow.isDestroyed()) {
+    floatWindow.webContents.send('outfit-changed', { outfit, phrase });
+  }
+};
+
+const applyOutfitPatch = (patch, phrase) => {
+  const next = PetCatalog.normalizeOutfit({ ...outfitSnapshot(), ...patch });
+  const settings = loadSettings();
+  settings.floatBallOutfit = next;
+  saveSettings(settings);
+  sendOutfit(next, phrase);
+};
+
+// 结构：换装 → 整套 / 头部 / 颈部 / 躯干 / 尾部，每槽 radio 互斥，槽间可叠加
+const buildOutfitMenu = () => {
+  const current = outfitSnapshot();
+  const presets = PetCatalog.presets.map((preset) => ({
+    label: preset.label,
+    type: 'radio',
+    checked: PetCatalog.isSameOutfit(current, preset.outfit),
+    click: () => applyOutfitPatch(preset.outfit, preset.phrase)
+  }));
+  const slots = PetCatalog.slots.map((slot) => ({
+    label: slot.label,
+    submenu: PetCatalog.itemsForSlot(slot.id).map((item) => ({
+      label: item.label,
       type: 'radio',
-      checked: current === name,
-      click: () => {
-        const s = loadSettings();
-        s.floatBallAppearance = name;
-        saveSettings(s);
-        if (floatWindow && !floatWindow.isDestroyed()) {
-          floatWindow.webContents.send('appearance-changed', { name });
-        }
-      }
+      checked: current[slot.id] === item.id,
+      click: () => applyOutfitPatch({ [slot.id]: item.id }, item.phrase)
     }))
+  }));
+  return [{
+    label: '换装',
+    submenu: [
+      { label: '整套', submenu: presets },
+      { type: 'separator' },
+      ...slots
+    ]
   }];
 };
 
@@ -365,7 +379,7 @@ const registerFloatIpcHandlers = () => {
         label: '定时提醒',
         click: () => checkLockAndShow(() => showMainAndNavigate('/tools/reminder'))
       },
-      ...buildAppearanceMenu(settings),
+      ...buildOutfitMenu(),
       { type: 'separator' },
       {
         label: '关闭',
@@ -399,9 +413,7 @@ const registerFloatIpcHandlers = () => {
     }
   });
 
-  ipcMain.handle('float-get-appearance', () => ({
-    name: normalizeAppearance(loadSettings().floatBallAppearance || '')
-  }));
+  ipcMain.handle('float-get-outfit', () => ({ outfit: outfitSnapshot() }));
 
   ipcMain.handle('float-get-theme', () => ({ isDark: nativeTheme.shouldUseDarkColors }));
 };

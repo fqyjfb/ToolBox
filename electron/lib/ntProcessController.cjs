@@ -4,7 +4,7 @@
 // koffi 初始化失败时自动降级为内联 PowerShell（Add-Type P/Invoke ntdll）。
 // 注意：仅 win32 有效；所有 hwnd/handle 一律用 uintptr 整型承载（BigInt），
 // 避免 koffi 指针对象跨调用身份不稳定的问题。
-const { execFile, spawn } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
 
 const PROCESS_SUSPEND_RESUME = 0x0800;
@@ -267,20 +267,19 @@ async function resumePids(pids) {
 }
 
 /**
- * 以 detached 子进程执行恢复脚本：父进程退出（before-quit）后仍能继续执行完。
- * 用于应用退出时的兜底恢复；崩溃恢复仍由下次启动的 recover 逻辑负责。
+ * 同步强制终止指定 PID 列表（Windows 下即 TerminateProcess）。
+ * 必须同步执行：before-quit 时主进程随即退出，detached 子进程（PowerShell/taskkill）
+ * 在宿主退出后不会真正执行，清理只能在主进程存活期间完成。
  */
-function resumeDetached(pids) {
+function terminatePids(pids) {
   const targets = sanitizePids(pids);
   if (process.platform !== 'win32' || !targets.length) return;
-  try {
-    const child = spawn('powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
-        '-Command', buildSuspendResumeScript(targets, 'NtResumeProcess')],
-      { detached: true, stdio: 'ignore', windowsHide: true });
-    child.unref();
-  } catch (error) {
-    console.error('[AppLock] detached 恢复进程失败:', error.message);
+  for (const pid of targets) {
+    try {
+      process.kill(pid, 'SIGKILL');
+    } catch (error) {
+      console.error(`[AppLock] 终止进程 ${pid} 失败:`, error.message);
+    }
   }
 }
 
@@ -343,7 +342,7 @@ module.exports = {
   listAllProcessImages,
   suspendPids,
   resumePids,
-  resumeDetached,
+  terminatePids,
   findVisibleWindows,
   isWindowAlive,
   getWindowsAvailable,

@@ -147,6 +147,11 @@ register('clipboard', (payload) => {
     require('../floatPanelWindow.cjs').openPanel({ mode: 'selection', text, preset: payload });
     return;
   }
+  if (payload === 'open-url') {
+    const url = text.match(/^https?:\/\//i) ? text : `https://${text}`;
+    shell.openExternal(url).catch(() => sendCard('链接打开失败'));
+    return;
+  }
   if (payload === 'note') {
     const result = service.captureCommit({ kind: 'note', title: '' }, text);
     if (!result.ok) sendCard(result.error);

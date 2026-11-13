@@ -8,11 +8,13 @@ let collapseTimer = null;
 let dragPendingFrame = false;
 
 // ── 球体命中上报（替代主进程 250ms 光标轮询）──
-// 窗口 300×300、球体 66×90 居中：渲染层只在命中状态变化时发一次 IPC，
+// 窗口 300×300、球体尺寸居中：渲染层只在命中状态变化时发一次 IPC，
 // 主进程据此决定窗口是否穿透（穿透态下 forward 仍会转发 mousemove，因此可行）。
-const BALL_HIT_WIDTH = 66;
-const BALL_HIT_HEIGHT = 90;
-const BALL_HIT_PADDING = 4;
+// 尺寸唯一来源：pet-catalog.cjs 的 geometry
+const PET_GEOMETRY = (window.PetCatalog && window.PetCatalog.geometry) || {};
+const BALL_HIT_WIDTH = PET_GEOMETRY.width || 66;
+const BALL_HIT_HEIGHT = PET_GEOMETRY.height || 90;
+const BALL_HIT_PADDING = PET_GEOMETRY.hitPadding || 4;
 let ballHover = false;
 
 function reportBallHover(active) {
@@ -69,12 +71,12 @@ const escapeHtml = (value) => String(value == null ? '' : value)
 function renderFloatBall() {
   const tooltipContainer = getTooltipContainer();
   if (floatConfig.length === 0) {
-    tooltipContainer.innerHTML = '<div class="tooltip-item"><span style="color: var(--float-fallback-text); font-size: 12px;">暂无配置</span></div>';
+    tooltipContainer.innerHTML = '<div class="tooltip-item"><span class="float-empty">暂无配置</span></div>';
   } else {
     const itemsHTML = floatConfig.map((item, index) => {
       const iconHTML = getIconByName(item.icon, item);
       const name = escapeHtml(item.name);
-      const body = iconHTML || '<span style="color: var(--float-fallback-text);">' + escapeHtml(item.name.charAt(0)) + '</span>';
+      const body = iconHTML || '<span class="float-fallback-char">' + escapeHtml(item.name.charAt(0)) + '</span>';
       // 名称仅用自定义 .tooltip-label 展示，不再加原生 title，避免悬浮时出现两个提示
       return '<div class="tooltip-item" data-index="' + index + '">' + body + '<span class="tooltip-label">' + name + '</span></div>';
     }).join('');

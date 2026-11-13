@@ -4,6 +4,7 @@ const fs = require('fs');
 const { https, http } = require('follow-redirects');
 const { getTargetIconData, getLegacyIconData } = require('./icon-data.cjs');
 const { hasLocalPluginIcon } = require('./pluginLocalIcons.cjs');
+const petCatalog = require('../window/float/pet-catalog.cjs');
 
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 // 自定义主题配色快照：锁屏等独立窗口读不到渲染层的 localStorage，靠这份快照上色
@@ -138,8 +139,8 @@ const defaultSettings = {
   supabaseConfig: { url: '', anonKey: '' },
   // 加密密钥桌面端用户自定义配置（空字符串表示使用打包时的环境变量值）
   encryptionKey: '',
-  // 悬浮球形象（'' 无装饰 / ears 猫耳 / hat 帽子 / scarf 围巾）
-  floatBallAppearance: '',
+  // 悬浮球形象：分槽位换装（尾部/躯干/颈部/头部），槽位与装扮清单见 window/float/pet-catalog.cjs
+  floatBallOutfit: { ...petCatalog.defaults },
   // ── 划词翻译：总开关 ──
   translateEnabled: 1, // 0 关闭时释放翻译快捷键并收起翻译弹窗
   // ── 划词翻译：取词 ──
@@ -225,12 +226,23 @@ const defaultShortcuts = [
   { id: 17, tag: '悬浮球截图问答', cmd: 'Alt+Shift+A', isOpen: 1, isGlobal: 1, name: 'floatScreenshotQA' },
 ];
 
+// 旧版单选形象（floatBallAppearance）迁移为分槽位装扮，幂等：已有 floatBallOutfit 时只做合法化
+const migrateFloatOutfit = (merged, raw) => {
+  const hasOutfit = raw && raw.floatBallOutfit && typeof raw.floatBallOutfit === 'object';
+  merged.floatBallOutfit = petCatalog.normalizeOutfit(
+    hasOutfit ? raw.floatBallOutfit : petCatalog.fromLegacyAppearance(raw && raw.floatBallAppearance)
+  );
+  delete merged.floatBallAppearance;
+};
+
 const loadSettings = () => {
   if (settingsCache) return settingsCache;
   try {
     if (fs.existsSync(settingsPath)) {
       const data = fs.readFileSync(settingsPath, 'utf-8');
-      settingsCache = { ...defaultSettings, ...JSON.parse(data) };
+      const parsed = JSON.parse(data);
+      settingsCache = { ...defaultSettings, ...parsed };
+      migrateFloatOutfit(settingsCache, parsed);
       return settingsCache;
     }
   } catch (error) {

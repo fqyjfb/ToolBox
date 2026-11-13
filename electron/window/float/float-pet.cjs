@@ -1,27 +1,30 @@
 /* 悬浮球形象「桌面伙伴小橘」的交互逻辑
-   来源：doc/悬浮球.html（眼神跟随 / 台词气泡 / 尾巴说话 / 拖拽表情 / 换装）。
-   装扮由主进程右键「切换形象」菜单下发，对应 .float-pet 的 data-fit。 */
+   眼神跟随 / 台词气泡 / 尾巴说话 / 拖拽表情 / 换装。
+   装扮清单与 SVG 片段统一来自 pet-catalog.cjs，这里只负责注入与状态表达。 */
 
 (function () {
   'use strict';
 
+  var catalog = window.PetCatalog || null;
+  // preload 未就绪时降级为纯展示形象，避免整页脚本中断
+  var api = window.electronAPI || null;
   var ball = document.getElementById('floatBall');
   var pet = document.getElementById('floatPet');
   var bubble = document.getElementById('petBubble');
   var bubbleText = document.getElementById('petBubbleText') || bubble;
   var bubbleActions = document.getElementById('petBubbleActions');
+  var svg = pet.querySelector('#petSvg');
   var eyes = pet.querySelector('#eyes');
   var mouth = pet.querySelector('.mouth-group');
-  var tailEl = pet.querySelector('.tail');
-  var pupils = eyes.querySelectorAll('.pupil');
+  var tailEl = null;
+  var pupils = eyes ? eyes.querySelectorAll('.pupil') : [];
+  var slotHosts = {};
 
-  // 装扮取值需与 floatWindow.cjs 的 FLOAT_APPEARANCE_LIST 保持一致
-  var FIT_PHRASES = {
-    '': '右键我可以换装哦～试试看！',
-    'ears': '喵～摸摸耳朵会呼噜哦！',
-    'hat': '这是施了魔法的帽子，帅不帅！',
-    'scarf': '围巾是莓果味的，暖暖的～'
-  };
+  if (catalog) {
+    catalog.slots.forEach(function (slot) {
+      slotHosts[slot.id] = pet.querySelector('[data-slot="' + slot.id + '"]');
+    });
+  }
 
   var EYE_RADIUS = 2.2;
   var TAIL_TALK_MS = 3000;
@@ -39,14 +42,16 @@
   var sadTimer = null;
   var talkTimer = null;
   var bubbleTimer = null;
+  var bubbleTtl = 0;
+  var bubbleHasActions = false;
   var stateTimer = null;
   var idleTimer = null;
   var lastActivity = Date.now();
   var currentState = 'idle';
-  var STATE_CLASSES = ['pet-thinking', 'pet-speaking', 'pet-happy', 'pet-sad', 'pet-listening'];
 
   // ── 眼神跟随鼠标 ──
   function render() {
+    if (!eyes || !mouth) return;
     for (var i = 0; i < pupils.length; i++) {
       pupils[i].setAttribute('transform', 'translate(' + eyeX.toFixed(2) + ',' + eyeY.toFixed(2) + ')');
     }
@@ -93,7 +98,6 @@
 
   function stopTailTalk() {
     if (!tailEl) return;
-    // 移除后由 CSS 自动回落到 tailWag
     tailEl.classList.remove('talking');
   }
 
@@ -104,8 +108,8 @@
     bubbleActions.hidden = true;
     bubble.classList.remove('has-actions');
     // 无按钮时通知主进程可以恢复穿透（气泡本身可能还在显示，但按钮已清除）
-    if (window.electronAPI && window.electronAPI.setInteractiveCard) {
-      window.electronAPI.setInteractiveCard(false);
+    if (api && api.setInteractiveCard) {
+      api.setInteractiveCard(false);
     }
   }
 
@@ -116,10 +120,7 @@
     bubbleText.textContent = text;
     startTailTalk();
     bubble.classList.add('show');
-    clearTimeout(bubbleTimer);
-    bubbleTimer = setTimeout(function () {
-      bubble.classList.remove('show');
-    }, BUBBLE_HOLD_MS);
+    scheduleBubbleHide(BUBBLE_HOLD_MS, false);
   }
 
   // 带按钮的卡片：actions = [{ label, action }]，action 交回主进程分发（卡片只负责展示）
@@ -140,8 +141,8 @@
         btn.textContent = item.label;
         btn.addEventListener('click', function (event) {
           event.stopPropagation();
-          if (item.action && window.electronAPI && window.electronAPI.floatAction) {
-            window.electronAPI.floatAction(item.action);
+          if (item.action && api && api.floatAction) {
+            api.floatAction(item.action);
           }
           clearBubble();
         });
@@ -151,33 +152,44 @@
       bubble.classList.add('has-actions');
     }
     // 告诉主进程当前气泡是否有可点按钮 — 主进程据此保持窗口不穿透
-    if (window.electronAPI && window.electronAPI.setInteractiveCard) {
-      window.electronAPI.setInteractiveCard(hasActions);
+    if (api && api.setInteractiveCard) {
+      api.setInteractiveCard(hasActions);
     }
     startTailTalk();
     bubble.classList.add('show');
-    clearTimeout(bubbleTimer);
+    scheduleBubbleHide(card.ttl || BUBBLE_HOLD_MS, hasActions);
+  }
+
+  function scheduleBubbleHide(ttl, hasActions) {
+    bubbleTtl = ttl;
+    bubbleHasActions = !!hasActions;
+    unscheduleBubbleHide();
     bubbleTimer = setTimeout(function () {
+      bubbleTimer = null;
       bubble.classList.remove('show');
-      clearActions();
-    }, card.ttl || BUBBLE_HOLD_MS);
+      if (bubbleHasActions) clearActions();
+    }, ttl);
+  }
+
+  function unscheduleBubbleHide() {
+    if (bubbleTimer) {
+      clearTimeout(bubbleTimer);
+      bubbleTimer = null;
+    }
   }
 
   function clearBubble() {
-    clearTimeout(bubbleTimer);
+    unscheduleBubbleHide();
     bubble.classList.remove('show');
     clearActions();
   }
 
-  // ── 状态机：由主进程按事件驱动，到时自动回落 idle ──
+  // ── 状态机：单一 data-mood 驱动 CSS，到期自动回落 idle ──
   function setState(name, ttl) {
     clearTimeout(stateTimer);
     stateTimer = null;
-    STATE_CLASSES.forEach(function (cls) { ball.classList.remove(cls); });
     currentState = name || 'idle';
-    if (currentState !== 'idle') {
-      ball.classList.add('pet-' + currentState);
-    }
+    ball.setAttribute('data-mood', currentState);
     if (ttl > 0) {
       stateTimer = setTimeout(function () { setState('idle'); }, ttl);
     }
@@ -252,34 +264,65 @@
     if (!sadTimer) sadTimer = setInterval(tickSad, SAD_TICK_MS);
   }
 
-  // ── 换装 ──
-  function normalizeFit(name) {
-    return Object.prototype.hasOwnProperty.call(FIT_PHRASES, name) ? name : '';
+  // ── 换装：按槽位注入装扮片段，缺少清单时保持默认静态形象 ──
+  function applyOutfit(input, phrase) {
+    if (!catalog) return;
+    try {
+      var outfit = catalog.normalizeOutfit(input);
+      catalog.slots.forEach(function (slot) {
+        var host = slotHosts[slot.id];
+        if (!host) return;
+        var item = catalog.getItem(outfit[slot.id]);
+        host.innerHTML = item && item.svg ? item.svg : '';
+      });
+      pet.setAttribute('data-outfit', catalog.slots
+        .map(function (slot) { return outfit[slot.id]; })
+        .filter(Boolean)
+        .join(' '));
+      tailEl = pet.querySelector('#slot-tail .pet-tail');
+    } catch (error) {
+      console.warn('[float-pet] 装扮渲染失败，保留上一帧', error);
+    }
+    if (phrase) say(phrase);
   }
 
-  function applyFit(name) {
-    var fit = normalizeFit(name);
-    pet.setAttribute('data-fit', fit === '' ? 'none' : fit);
+  function checkGeometry() {
+    if (!catalog || !catalog.geometry || !svg) return;
+    var geo = catalog.geometry;
+    svg.setAttribute('viewBox', geo.viewBox);
+    var box = pet.getBoundingClientRect();
+    if (Math.round(box.width) !== geo.width || Math.round(box.height) !== geo.height) {
+      console.warn('[float-pet] 形象尺寸与清单不一致', box.width, box.height, geo.width, geo.height);
+    }
   }
 
+  applyOutfit(catalog ? catalog.defaults : null);
+  checkGeometry();
   render();
   window.addEventListener('mousemove', handleMouseMove, { passive: true });
+  // 气泡悬浮期间暂停倒计时，离开后从原始 ttl 重新开始
+  if (bubble) {
+    bubble.addEventListener('mouseenter', unscheduleBubbleHide);
+    bubble.addEventListener('mouseleave', function () {
+      if (bubble.classList.contains('show') && bubbleTtl > 0) {
+        scheduleBubbleHide(bubbleTtl, bubbleHasActions);
+      }
+    });
+  }
   // 点击/滚轮同属交互：立即恢复被空闲暂停的动画（mousemove 在 handleMouseMove 内处理）
   document.addEventListener('mousedown', touchActivity, { passive: true });
   document.addEventListener('wheel', touchActivity, { passive: true });
   scheduleIdleCheck();
 
-  if (window.electronAPI.getAppearance) {
-    window.electronAPI.getAppearance().then(function (data) {
-      applyFit((data && data.name) || '');
+  if (api && api.getOutfit) {
+    api.getOutfit().then(function (data) {
+      applyOutfit(data && data.outfit);
     }).catch(function () {});
   }
 
-  if (window.electronAPI.onAppearanceChanged) {
-    window.electronAPI.onAppearanceChanged(function (data) {
-      var name = normalizeFit((data && data.name) || '');
-      applyFit(name);
-      say(FIT_PHRASES[name]);
+  if (api && api.onOutfitChanged) {
+    api.onOutfitChanged(function (data) {
+      applyOutfit(data && data.outfit, data && data.phrase);
     });
   }
 
@@ -292,14 +335,14 @@
     }, ENTER_POP_MS);
   });
 
-  if (window.electronAPI.onPetState) {
-    window.electronAPI.onPetState(function (data) {
+  if (api && api.onPetState) {
+    api.onPetState(function (data) {
       setState((data && data.state) || 'idle', data && data.ttl);
     });
   }
 
-  if (window.electronAPI.onPetCard) {
-    window.electronAPI.onPetCard(function (card) {
+  if (api && api.onPetCard) {
+    api.onPetCard(function (card) {
       // 拖拽时优先保证跟手体验，卡片等下次事件再说
       if (dragging) return;
       showCard(card);

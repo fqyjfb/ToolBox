@@ -308,11 +308,14 @@ function handleClipboardText(raw) {
   if (text.length < minLen || text.length > maxLen || duplicated) return;
   if (!enabled('floatClipboardHintEnabled')) return;
   remember();
-  card(`已复制 ${text.length} 字`, [
+  const isUrl = /^https?:\/\//i.test(text) || /^ftp:\/\//i.test(text);
+  const actions = [
+    ...(isUrl ? [{ label: '打开', action: 'clipboard:open-url' }] : []),
     { label: '翻译', action: 'clipboard:translate' },
     { label: '总结', action: 'clipboard:summarize' },
     { label: '存笔记', action: 'clipboard:note' },
-  ], 6000);
+  ];
+  card(isUrl ? `检测到网址，可直接打开` : `已复制 ${text.length} 字`, actions, 6000);
 }
 
 let lastReplies = [];

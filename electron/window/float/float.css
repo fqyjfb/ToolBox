@@ -39,10 +39,10 @@ html, body {
 }
 
 /* ── 悬浮球 ──
-   尺寸与内部 .float-pet 保持一致（见 float-pet.css） */
+   尺寸与应用窗口内的形象共用 --pet-w / --pet-h（见 float-pet.css） */
 .float-ball {
-  width: 66px;
-  height: 90px;
+  width: var(--pet-w, 66px);
+  height: var(--pet-h, 90px);
   background: transparent;
   display: flex;
   align-items: center;
@@ -164,6 +164,20 @@ html, body {
   color: var(--float-fallback-text);
   background: var(--float-fallback-bg);
   border-radius: 4px;
+}
+
+/* 无图标 / 无配置时的文字兜底（禁止行内样式） */
+.tooltip-item .float-fallback-char {
+  color: var(--float-fallback-text);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.tooltip-item .float-empty {
+  color: var(--float-fallback-text);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 /* ── 拖放激活态 ── */

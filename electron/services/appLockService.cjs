@@ -4,7 +4,7 @@
 // - 挂载点：lockWindow.cjs 的 lock()/unlock()/checkLockOnStartup() 三处钩子（fire-and-forget，
 //   本模块内部自吞异常，任何失败都不影响锁定/解锁主流程）
 // - 崩溃自愈：runtime.lockedPids 落盘，启动时无条件恢复（宁可多恢复，不可把用户进程永久冻结）
-const { app } = require('electron');
+const { app, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -203,6 +203,31 @@ async function watchTick() {
 
 // ── 挂载点 API（lockWindow.cjs 钩子调用） ─────────────────────────────────────
 
+let lockedNotification = null;
+
+/** 锁定成功后弹常驻通知：解释被挂起应用窗口/托盘图标点击无响应属正常，避免误以为卡死 */
+function notifyLocked(names) {
+  if (!names.length) return;
+  try {
+    closeLockedNotification();
+    const preview = names.slice(0, 3).join('、');
+    const suffix = names.length > 3 ? ` 等 ${names.length} 个应用` : '';
+    lockedNotification = new Notification({
+      title: '应用已锁定',
+      body: `${preview}${suffix}已被挂起，窗口与托盘图标点击无响应属正常，解锁 ToolBox 后自动恢复`,
+      timeoutType: 'never',
+      silent: true,
+    });
+    lockedNotification.show();
+  } catch { /* 通知不可用仅忽略，不影响锁定主流程 */ }
+}
+
+/** 收起常驻通知（解锁 / 退出锁定时调用；无通知时为空操作） */
+function closeLockedNotification() {
+  try { lockedNotification?.close(); } catch { /* 已关闭仅忽略 */ }
+  lockedNotification = null;
+}
+
 /** 本应用进入锁定态（仅手动锁入口调用；启动/重启即锁场景不联动，见 lockWindow.cjs） */
 function onAppLocked() {
   try {
@@ -212,13 +237,17 @@ function onAppLocked() {
     ensureQuitHook();
 
     const run = async () => {
+      const lockedNames = [];
       for (const appEntry of config.apps) {
         if (!appEntry.enabled) continue;
         await lockAppEntry(appEntry);
+        // 仅统计确实挂起成功的应用，避免管理员权限目标误报「已被挂起」
+        if (config.runtime.lockedPids[appEntry.id]?.pids?.length) lockedNames.push(appEntry.name);
       }
       saveConfig();
       getOverlay().syncOverlays(buildOverlaySnapshot());
       startWatchTimer();
+      notifyLocked(lockedNames);
     };
     run().catch((error) => console.error('[AppLock] 联动锁定失败:', error.message));
   } catch (error) {
@@ -232,6 +261,7 @@ function onAppUnlocking() {
     lockedActive = false;
     stopWatchTimer();
     getOverlay().destroyAllOverlays();
+    closeLockedNotification();
 
     const config = loadConfig();
     const ids = Object.keys(config.runtime.lockedPids);
@@ -277,7 +307,8 @@ async function recoverOnStartup() {
   return { recovered };
 }
 
-/** 应用正常退出兜底：detached 子进程执行恢复（父进程退出后仍会执行完） */
+/** 应用正常退出兜底：强制终止所有被联动挂起的外部进程，防止成为孤儿；
+ * 恢复逻辑由下次启动时 recoverOnStartup 负责（崩溃/强杀残留场景）。 */
 function ensureQuitHook() {
   if (quitHookInstalled) return;
   quitHookInstalled = true;
@@ -287,7 +318,7 @@ function ensureQuitHook() {
       const pids = Object.values(config.runtime.lockedPids)
         .flatMap((entry) => entry.pids || []);
       if (pids.length) {
-        nt.resumeDetached(pids);
+        nt.terminatePids(pids);
         config.runtime.lockedPids = {};
         saveConfig();
       }
