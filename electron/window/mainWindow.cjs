@@ -883,7 +883,6 @@ const dockToEdge = (edge) => {
   edgeDockedEdge = edge;
   edgeHidden = false; // 停靠从展开态开始
   mainWindow.setSkipTaskbar(true); // 停靠期不占用任务栏（含 Alt+Tab），由贴边感应与托盘接管唤出
-  startEdgePoll();
 };
 
 // 拖动停止后的吸附判定：贴边则对齐并进入停靠管理，未贴边则保持原位
@@ -1674,6 +1673,8 @@ const registerIpcHandlers = () => {
     // 悬浮球进阶功能的剪贴板订阅跟随开关即时启停（关闭即解绑，不留后台监听）
     if (typeof setting.name === 'string' && setting.name.startsWith('float')) {
       require('../services/floatFeatureService.cjs').syncClipboardSubscription();
+      // 洞察间隔/总开关等变化时立即重算下一到期时间
+      try { require('../services/floatInsightService.cjs').rescheduleInspect(); } catch { /* 服务未加载时静默 */ }
     }
 
     mainWindow?.webContents.send('setting-changed', { name: setting.name, value: setting.value });

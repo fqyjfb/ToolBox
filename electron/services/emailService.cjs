@@ -16,7 +16,6 @@ const { resolveCredential } = require('./emailOAuthService.cjs');
 
 const CONNECT_TIMEOUT = 15000; // 连接/握手总超时（毫秒）
 const POOL_IDLE_TTL = 2 * 60 * 1000; // 空闲连接回收阈值（毫秒）
-const POOL_REAP_INTERVAL = 60 * 1000; // 空闲回收巡检周期
 
 // —— 客户端构造 ——
 
@@ -69,10 +68,30 @@ function poolKey(imap, credential) {
 function getOrCreateEntry(key) {
   let entry = pool.get(key);
   if (!entry) {
-    entry = { client: null, busy: false, lastUsed: Date.now(), tail: Promise.resolve() };
+    entry = { client: null, busy: false, lastUsed: Date.now(), tail: Promise.resolve(), reapTimer: null };
     pool.set(key, entry);
+  } else if (entry.reapTimer) {
+    clearTimeout(entry.reapTimer);
+    entry.reapTimer = null;
   }
   return entry;
+}
+
+function scheduleEntryReap(key) {
+  const entry = pool.get(key);
+  if (!entry) return;
+  if (entry.reapTimer) clearTimeout(entry.reapTimer);
+  entry.reapTimer = setTimeout(() => {
+    entry.reapTimer = null;
+    if (entry.busy || !entry.client) return;
+    try {
+      entry.client.close();
+    } catch {
+      /* ignore */
+    }
+    entry.client = null;
+    pool.delete(key);
+  }, POOL_IDLE_TTL);
 }
 
 // 在同一账号连接上串行执行 fn(client)，连接按需创建/复用，出错自动断开重建
@@ -109,29 +128,17 @@ async function withClient(imap, credential, fn) {
     entry.busy = false;
     entry.lastUsed = Date.now();
     release();
+    scheduleEntryReap(poolKey(imap, credential));
   }
 }
-
-// 空闲回收：关闭超过阈值的空闲连接，释放服务端资源
-function reapIdle() {
-  const now = Date.now();
-  for (const [key, entry] of pool) {
-    if (!entry.busy && entry.client && now - entry.lastUsed > POOL_IDLE_TTL) {
-      try {
-        entry.client.close();
-      } catch {
-        /* ignore */
-      }
-      entry.client = null;
-    }
-  }
-}
-const reapTimer = setInterval(reapIdle, POOL_REAP_INTERVAL);
-if (reapTimer.unref) reapTimer.unref();
 
 // 退出时关闭池中所有连接，释放服务端资源
 function disposePool() {
   for (const [, entry] of pool) {
+    if (entry.reapTimer) {
+      clearTimeout(entry.reapTimer);
+      entry.reapTimer = null;
+    }
     try {
       entry.client?.close();
     } catch {
@@ -140,9 +147,6 @@ function disposePool() {
     entry.client = null;
   }
   pool.clear();
-  if (reapTimer) {
-    clearInterval(reapTimer);
-  }
 }
 
 // —— 连接 / 文件夹 ——

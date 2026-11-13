@@ -34,14 +34,13 @@ const num = (value, fallback, min, max) => {
 // ── 频控状态 ──
 const GLOBAL_MIN_INTERVAL_MS = 10 * 60 * 1000; // 全局最小间隔，防事件风暴刷屏
 const SCENE_COOLDOWN_MS = 20 * 60 * 1000;      // 同类场景冷却
-const TICK_MS = 60 * 1000;                     // 调度心跳：每分钟检查一次是否到巡检点
 const REMINDER_SOON_MS = 60 * 60 * 1000;       // 临近提醒窗口：未来 60 分钟
 const WEATHER_STALE_MS = 30 * 60 * 1000;       // 天气快照过期阈值
 let lastAnyCardAt = 0;
 const lastSceneAt = new Map();
 let lastAllDoneDate = '';                      // 「待办清空」每天最多一次
 let lastWeeklyDigestDate = '';                 // 周摘要当天只推一次
-let tickTimer = null;
+let inspectTimer = null;
 let lastInspectAt = 0;
 
 // ── 时间工具：项目内提醒时间统一用本地 naive 字符串（见 reminderScheduler 注释）──
@@ -360,14 +359,30 @@ function registerFloatInsightIpc() {
     notifyEvent(payload.type, payload);
   });
 
-  const intervalMin = () => num(loadSettings().floatInsightIntervalMin, 30, 15, 120);
-  tickTimer = setInterval(() => {
-    const now = Date.now();
-    if (now - lastInspectAt < intervalMin() * 60 * 1000) return;
-    lastInspectAt = now;
-    inspect().catch(() => { /* 采集失败本轮跳过，下轮再说 */ });
-  }, TICK_MS);
-  if (tickTimer && typeof tickTimer.unref === 'function') tickTimer.unref();
+  rescheduleInspect();
 }
 
-module.exports = { registerFloatInsightIpc, notifyEvent, pushStartupCard };
+/**
+ * 重新计算下一到期时间并安排调度。
+ * - lastInspectAt === 0 时立即执行一次（首次启动语义）。
+ * - 每次 inspect() 完成后自续调用，保证任意时刻最多一个定时器和一次执行。
+ * - 设置变更/锁屏/悬浮窗状态变化时可被外部调用来立即响应新间隔。
+ */
+function rescheduleInspect() {
+  if (inspectTimer) {
+    clearTimeout(inspectTimer);
+    inspectTimer = null;
+  }
+  const intervalMs = num(loadSettings().floatInsightIntervalMin, 30, 15, 120) * 60 * 1000;
+  const elapsed = Date.now() - lastInspectAt;
+  const delay = lastInspectAt === 0 ? 0 : Math.max(0, intervalMs - elapsed);
+  inspectTimer = setTimeout(() => {
+    lastInspectAt = Date.now();
+    inspect()
+      .catch(() => { /* 采集失败本轮跳过，按当前间隔继续 */ })
+      .finally(() => rescheduleInspect());
+  }, delay);
+  if (inspectTimer && typeof inspectTimer.unref === 'function') inspectTimer.unref();
+}
+
+module.exports = { registerFloatInsightIpc, rescheduleInspect, notifyEvent, pushStartupCard };

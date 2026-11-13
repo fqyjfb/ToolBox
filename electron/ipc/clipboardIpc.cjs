@@ -1,14 +1,20 @@
 // clipboardIpc —— 系统剪贴板监听/写入 IPC（从 pluginIpc.cjs 拆出，通道与行为完全一致）
 // 自包含：watchers 表 + 3 个 clipboard:* 通道
+// 采样策略：所有消费者共享一个定时器，按活跃 watcher 的最短间隔调度
 
-const { ipcMain, clipboard, nativeImage } = require('electron');
+const { ipcMain, clipboard } = require('electron');
 
-// 系统级剪贴板监听：key = webContents.id，value = { timer, lastText }
-// 让插件窗口在失焦/最小化时也能捕获系统剪贴板变化
+// 活跃消费者：key = webContents.id，value = { interval, webContents }
 const clipboardWatchers = new Map();
-// 主进程内部订阅者（悬浮球提示等）：复用同一个剪贴板检测，不新增常驻轮询
+// 主进程内部订阅者（悬浮球提示等）
 const textListeners = new Set();
-let globalWatcher = null;
+
+// 共享采样状态
+let sharedTimer = null;
+let sharedLastText = '';
+let sharedLastImgFp = '';
+
+// ── 内部事件分发 ──
 
 function notifyText(text) {
   textListeners.forEach((cb) => {
@@ -16,11 +22,21 @@ function notifyText(text) {
   });
 }
 
-function stopClipboardWatcher(wcId) {
-  const watcher = clipboardWatchers.get(wcId);
-  if (!watcher) return;
-  clearInterval(watcher.timer);
-  clipboardWatchers.delete(wcId);
+// 计算当前消费者中最短间隔（内部订阅固定 800ms）
+function getMinInterval() {
+  let min = Infinity;
+  for (const w of clipboardWatchers.values()) {
+    if (w.interval < min) min = w.interval;
+  }
+  if (textListeners.size > 0) min = Math.min(min, 800);
+  return Number.isFinite(min) ? min : 0;
+}
+
+function stopSharedTimer() {
+  if (sharedTimer) {
+    clearInterval(sharedTimer);
+    sharedTimer = null;
+  }
 }
 
 // 图片廉价指纹：尺寸 + 位图长度 + 步进采样哈希。
@@ -39,47 +55,78 @@ function imageFingerprint(img) {
     }
     return `${width}x${height}:${bitmap.length}:${h >>> 0}`;
   } catch {
-    // 指纹失败按「内容已变化」处理，保守降级，不影响正确性
     return `t${Date.now()}`;
   }
 }
 
+// 启动 / 重排共享定时器：由消费者增删触发；只有存在消费者时才运行
+function rescheduleSharedTimer() {
+  const interval = getMinInterval();
+  if (interval === 0) { stopSharedTimer(); return; }
+  if (sharedTimer) {
+    clearInterval(sharedTimer);
+    sharedTimer = null;
+  }
+  try { sharedLastText = clipboard.readText() || ''; } catch { /* ignore */ }
+  sharedTimer = setInterval(() => {
+    // 文本采样：读一次，分发给所有 watcher + 内部订阅
+    let text = '';
+    try { text = clipboard.readText() || ''; } catch { return; }
+    if (text && text !== sharedLastText) {
+      sharedLastText = text;
+      for (const [wcId, w] of clipboardWatchers) {
+        const wc = w.webContents;
+        if (!wc || wc.isDestroyed()) {
+          clipboardWatchers.delete(wcId);
+          continue;
+        }
+        wc.send('clipboard:changed', text);
+      }
+      notifyText(text);
+    }
+    // 图片采样：仅在存在 watcher 时才执行，内部纯文本订阅不承担图片成本
+    if (clipboardWatchers.size > 0) {
+      try {
+        const img = clipboard.readImage();
+        if (!img.isEmpty()) {
+          const fp = imageFingerprint(img);
+          if (fp !== sharedLastImgFp) {
+            sharedLastImgFp = fp;
+            const dataUrl = img.toDataURL();
+            for (const [wcId, w] of clipboardWatchers) {
+              const wc = w.webContents;
+              if (!wc || wc.isDestroyed()) {
+                clipboardWatchers.delete(wcId);
+                continue;
+              }
+              wc.send('clipboard:image-changed', dataUrl);
+            }
+          }
+        }
+      } catch { /* ignore */ }
+    }
+  }, interval);
+  if (sharedTimer.unref) sharedTimer.unref();
+}
+
+// 移除一个窗口 watcher（只清 entry，reschedule 处理停表）
+function stopClipboardWatcher(wcId) {
+  if (!clipboardWatchers.has(wcId)) return;
+  clipboardWatchers.delete(wcId);
+  rescheduleSharedTimer();
+}
+
+// ── 公开 IPC 注册 ──
+
 function registerClipboardIpc() {
-  // 系统级剪贴板监听：主进程通过 Electron clipboard 模块轮询，失焦/最小化亦可捕获
-  // 与 renderer 内 navigator.clipboard.readText() 不同，主进程不受窗口聚焦限制
   ipcMain.handle('clipboard:watch:start', (event, opts = {}) => {
     const wc = event.sender;
     const wcId = wc.id;
     if (clipboardWatchers.has(wcId)) return { success: true, active: true };
     const interval = Math.max(300, Number(opts?.interval) || 800);
-    let lastText = '';
-    let lastImgFp = '';
-    try { lastText = clipboard.readText() || ''; } catch { /* ignore */ }
-    const timer = setInterval(() => {
-      if (wc.isDestroyed()) { stopClipboardWatcher(wcId); return; }
-      // 文本检测
-      let text = '';
-      try { text = clipboard.readText() || ''; } catch { return; }
-      if (text && text !== lastText) {
-        lastText = text;
-        wc.send('clipboard:changed', text);
-        notifyText(text);
-      }
-      // 图片检测：截图等图片剪贴板内容，与文本检测不互斥（同一剪贴板可能文本+图片并存）
-      // 先比廉价指纹，仅变化时才生成 dataURL（此前每 tick 无条件编码大 base64 字符串）
-      try {
-        const img = clipboard.readImage();
-        if (!img.isEmpty()) {
-          const fp = imageFingerprint(img);
-          if (fp !== lastImgFp) {
-            lastImgFp = fp;
-            wc.send('clipboard:image-changed', img.toDataURL());
-          }
-        }
-      } catch { /* ignore */ }
-    }, interval);
-    clipboardWatchers.set(wcId, { timer, lastText });
+    clipboardWatchers.set(wcId, { interval, webContents: wc });
     wc.once('destroyed', () => stopClipboardWatcher(wcId));
+    rescheduleSharedTimer();
     return { success: true };
   });
 
@@ -91,6 +138,7 @@ function registerClipboardIpc() {
   // 主进程写入图片到剪贴板（绕过 navigator.clipboard.write 浏览器权限限制）
   // 注意：必须用 clipboard.write({ image }) 一次性原子写入；
   // 若先 writeImage 再 writeText，后一次调用会整体替换剪贴板内容，把图片清掉，导致外部粘贴为空
+  const { nativeImage } = require('electron');
   ipcMain.handle('clipboard:writeImage', (_event, dataUrl) => {
     try {
       const img = nativeImage.createFromDataURL(dataUrl);
@@ -105,30 +153,15 @@ function registerClipboardIpc() {
 
 /**
  * 供主进程内部功能订阅文本变化。返回退订函数。
- * 只有订阅者存在时才启动一个共享 watcher；没有任何订阅时定时器立即释放。
+ * 与窗口 watcher 共用同一个共享采样器，不新增常驻轮询。
  */
 function subscribeClipboardText(callback) {
   if (typeof callback !== 'function') return () => {};
   textListeners.add(callback);
-  if (!globalWatcher) {
-    let lastText = '';
-    try { lastText = clipboard.readText() || ''; } catch { /* ignore */ }
-    const timer = setInterval(() => {
-      let text = '';
-      try { text = clipboard.readText() || ''; } catch { return; }
-      if (text && text !== lastText) {
-        lastText = text;
-        notifyText(text);
-      }
-    }, 800);
-    globalWatcher = { timer, lastText };
-  }
+  rescheduleSharedTimer();
   return () => {
     textListeners.delete(callback);
-    if (textListeners.size === 0 && globalWatcher) {
-      clearInterval(globalWatcher.timer);
-      globalWatcher = null;
-    }
+    rescheduleSharedTimer();
   };
 }
 

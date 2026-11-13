@@ -147,16 +147,27 @@ async function resumeAppEntry(appId) {
   delete config.runtime.lockedPids[appId];
 }
 
+function scheduleWatch() {
+  if (!lockedActive) return;
+  if (watchTimer) clearTimeout(watchTimer);
+  watchTimer = setTimeout(() => {
+    watchTimer = null;
+    watchTick()
+      .catch((error) => console.error('[AppLock] 轮询异常:', error.message))
+      .finally(() => {
+        if (lockedActive) scheduleWatch();
+      });
+  }, WATCH_INTERVAL_MS);
+}
+
 function startWatchTimer() {
   if (watchTimer) return;
-  watchTimer = setInterval(() => {
-    watchTick().catch((error) => console.error('[AppLock] 轮询异常:', error.message));
-  }, WATCH_INTERVAL_MS);
+  scheduleWatch();
 }
 
 function stopWatchTimer() {
   if (watchTimer) {
-    clearInterval(watchTimer);
+    clearTimeout(watchTimer);
     watchTimer = null;
   }
 }

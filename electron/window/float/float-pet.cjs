@@ -28,7 +28,6 @@
   var SAD_TICK_MS = 60;
   var SAD_THRESHOLD = 22;
   var BUBBLE_HOLD_MS = 4200;
-  var IDLE_POLL_MS = 1000;
   var IDLE_ANIM_DELAY_MS = 5000;
   var ENTER_POP_MS = 600;
 
@@ -39,7 +38,6 @@
   var sadCount = 0;
   var sadTimer = null;
   var talkTimer = null;
-  var talkUntil = 0;
   var bubbleTimer = null;
   var stateTimer = null;
   var idleTimer = null;
@@ -88,8 +86,6 @@
   // ── 尾巴说话 ──
   function startTailTalk() {
     if (!tailEl) return;
-    // 时间戳守卫，避免多次说话时定时器相互竞态
-    talkUntil = Date.now() + TAIL_TALK_MS;
     tailEl.classList.add('talking');
     clearTimeout(talkTimer);
     talkTimer = setTimeout(stopTailTalk, TAIL_TALK_MS);
@@ -97,7 +93,6 @@
 
   function stopTailTalk() {
     if (!tailEl) return;
-    talkUntil = 0;
     // 移除后由 CSS 自动回落到 tailWag
     tailEl.classList.remove('talking');
   }
@@ -267,15 +262,8 @@
     pet.setAttribute('data-fit', fit === '' ? 'none' : fit);
   }
 
-  // ── 空闲巡检：气泡内容全部由主进程 floatInsightService 推送（功能联动卡片），
-  //    渲染层不再随机播放语录；这里只保留「尾巴说话超时归位」的兜底 ──
-  function tickIdle() {
-    if (talkUntil && Date.now() > talkUntil) stopTailTalk();
-  }
-
   render();
   window.addEventListener('mousemove', handleMouseMove, { passive: true });
-  setInterval(tickIdle, IDLE_POLL_MS);
   // 点击/滚轮同属交互：立即恢复被空闲暂停的动画（mousemove 在 handleMouseMove 内处理）
   document.addEventListener('mousedown', touchActivity, { passive: true });
   document.addEventListener('wheel', touchActivity, { passive: true });
