@@ -1,0 +1,592 @@
+/* 便签页面 + 便签墙共用样式；所有尺寸走 4px 网格与主题变量 */
+
+/* 便签配色令牌：主窗口取色器与便签墙右键菜单共用；
+   定义在 :root 上，Portal 到 body 的右键菜单也能取到 */
+:root {
+  --sticky-color-amber: #fde68a;
+  --sticky-color-blue: #bfdbfe;
+  --sticky-color-green: #bbf7d0;
+  --sticky-color-gray: #e5e7eb;
+  --sticky-color-rose: #fecdd3;
+  --sticky-color-purple: #ddd6fe;
+  --sticky-color-cyan: #a5f3fc;
+  --sticky-color-orange: #fed7aa;
+}
+
+.sticky-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: 100%;
+  min-height: 0;
+  padding: var(--space-5);
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+}
+
+/* 表单控件默认不继承字体 */
+.sticky-page input,
+.sticky-page textarea,
+.sticky-page button {
+  font-family: inherit;
+}
+
+.sticky-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sticky-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.sticky-count {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.sticky-search {
+  position: relative;
+  flex: 0 0 auto;
+  height: 32px;
+  min-width: 200px;
+  max-width: 360px;
+}
+
+.sticky-search-icon {
+  position: absolute;
+  top: 50%;
+  left: var(--space-2);
+  transform: translateY(-50%);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+.sticky-search input {
+  width: 100%;
+  height: 32px;
+  padding: 0 var(--space-3) 0 var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  outline: none;
+}
+
+.sticky-search input:focus {
+  border-color: var(--color-secondary);
+}
+
+.sticky-filter-group {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--color-bg-secondary);
+  border-radius: 6px;
+}
+
+.sticky-filter {
+  height: 28px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sticky-filter.active {
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sticky-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
+}
+
+.sticky-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.sticky-capture {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-bg-secondary);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sticky-capture textarea {
+  width: 100%;
+  min-height: 64px;
+  max-height: 160px;
+  padding: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  outline: none;
+  resize: vertical;
+}
+
+.sticky-capture textarea:focus {
+  border-color: var(--color-secondary);
+}
+
+.sticky-capture-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sticky-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.sticky-primary-btn {
+  height: 32px;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  color: #ffffff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sticky-primary-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.sticky-primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sticky-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.sticky-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  text-align: left;
+  background: var(--color-bg-primary);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+.sticky-card:hover {
+  background: var(--color-card-hover);
+}
+
+.sticky-card.active {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.sticky-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sticky-card-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sticky-card-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.sticky-card-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.sticky-pin-mark {
+  flex-shrink: 0;
+  color: var(--color-secondary);
+}
+
+.sticky-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex: 1;
+  padding: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.sticky-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-bg-primary);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sticky-editor-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sticky-title-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  outline: none;
+}
+
+.sticky-title-input:hover {
+  border-color: var(--color-border);
+}
+
+.sticky-title-input:focus {
+  border-color: var(--color-secondary);
+  background: var(--color-bg-primary);
+}
+
+.sticky-color-group {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-1);
+}
+
+.sticky-color-dot {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.sticky-color-dot.active {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.sticky-color-amber { background: var(--sticky-color-amber); }
+.sticky-color-blue { background: var(--sticky-color-blue); }
+.sticky-color-green { background: var(--sticky-color-green); }
+.sticky-color-gray { background: var(--sticky-color-gray); }
+.sticky-color-rose { background: var(--sticky-color-rose); }
+.sticky-color-purple { background: var(--sticky-color-purple); }
+.sticky-color-cyan { background: var(--sticky-color-cyan); }
+.sticky-color-orange { background: var(--sticky-color-orange); }
+
+.sticky-editor-textarea {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+}
+
+.sticky-editor-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.sticky-status {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.sticky-status.error {
+  color: var(--color-error);
+}
+
+.sticky-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.sticky-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sticky-icon-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+}
+
+.sticky-icon-btn.active {
+  color: var(--color-secondary);
+}
+
+.sticky-icon-btn.danger:hover {
+  color: var(--color-error);
+}
+
+/* ── 便签墙：透明窗口 + 绝对定位卡片 ── */
+
+/* 便签墙画布：铺满窗口，默认穿透（透明区域不拦截桌面操作）。
+   窗口透明度由 theme.css 的 html.sticky-wall-mode 规则保证。 */
+.sticky-wall {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sticky-wall-card {
+  position: absolute;
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  /* 便签纸固定浅色底，文字用固定深色，不随主题文字色变化，避免深色主题下不可读 */
+  color: #1f2937;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: default;
+  pointer-events: auto;
+  user-select: none;
+  overflow: hidden;
+}
+
+.sticky-wall-card-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+  max-height: 480px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  cursor: text;
+}
+
+.sticky-wall-card-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sticky-wall-card-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.sticky-wall-card-textarea {
+  width: 100%;
+  min-height: 80px;
+  max-height: 480px;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: inherit;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.sticky-wall-card-textarea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sticky-wall-card-textarea::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+/* 便签颜色（便签墙专用） */
+.sticky-wall-card-amber { background: #fff9e6; }
+.sticky-wall-card-blue { background: #eef5ff; }
+.sticky-wall-card-green { background: #f0fbf3; }
+.sticky-wall-card-gray { background: #f3f4f6; }
+.sticky-wall-card-rose { background: #fff1f2; }
+.sticky-wall-card-purple { background: #f6f3ff; }
+.sticky-wall-card-cyan { background: #eefbfd; }
+.sticky-wall-card-orange { background: #fff6ec; }
+
+/* 暗色主题覆盖：便签墙内卡片背景微调以保持可见 */
+.dark .sticky-wall-card-amber { background: #3a3520; }
+.dark .sticky-wall-card-blue { background: #1a2332; }
+.dark .sticky-wall-card-green { background: #1a2b22; }
+.dark .sticky-wall-card-gray { background: #26282d; }
+.dark .sticky-wall-card-rose { background: #3a2530; }
+.dark .sticky-wall-card-purple { background: #2b2439; }
+.dark .sticky-wall-card-cyan { background: #173034; }
+.dark .sticky-wall-card-orange { background: #3a2b1d; }
+
+/* 拖拽/调整尺寸状态 */
+.sticky-wall-card--dragging {
+  cursor: grabbing;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+.sticky-wall-card--resizing {
+  cursor: ew-resize;
+  z-index: 100;
+}
+
+/* 操作浮层：hover 卡片时出现 */
+.sticky-wall-card-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sticky-wall-card:hover .sticky-wall-card-actions {
+  opacity: 1;
+}
+
+.sticky-wall-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sticky-wall-card-action:hover {
+  color: var(--color-error);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* 调整尺寸热区（右侧 8px） */
+.sticky-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  cursor: ew-resize;
+  z-index: 2;
+}
+
+/* 错误提示（便签墙内） */
+.sticky-wall-card-error {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  font-size: var(--text-xs);
+  color: var(--color-error);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.dark .sticky-wall-card-error {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* 复制成功等轻提示，复用错误提示的定位 */
+.sticky-wall-card-hint {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  font-size: var(--text-xs);
+  color: var(--color-success);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.dark .sticky-wall-card-hint {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+@media (max-width: 900px) {
+  .sticky-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sticky-sidebar {
+    max-height: 320px;
+  }
+}

@@ -14,6 +14,13 @@
     "iconName": "StickyNote"
   },
   {
+    "id": "sticky-note",
+    "name": "便签",
+    "path": "/tools/sticky-note",
+    "color": "#b45309",
+    "iconName": "StickyNote"
+  },
+  {
     "id": "notes",
     "name": "记事本",
     "path": "/tools/notes",

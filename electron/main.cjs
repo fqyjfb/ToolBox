@@ -69,6 +69,8 @@ const { checkLockOnStartup, registerLockIpcHandlers, createLockWindow } = requir
 const { registerQuickLoginIpcHandlers } = require('./window/quickLoginWindow.cjs');
 const { registerOfflineToolsIpc } = require('./ipc/offlineToolsIpc.cjs');
 const { registerReminderIpc } = require('./ipc/reminderIpc.cjs');
+const { registerStickyNotesIpc } = require('./ipc/stickyNotesIpc.cjs');
+const stickyNoteWallWindow = require('./window/stickyNoteWallWindow.cjs');
 const { registerAIIpc } = require('./ipc/aiIpc.cjs');
 const { registerTranslateIpc } = require('./ipc/translateIpc.cjs');
 const translateHistoryService = require('./services/translateHistoryService.cjs');
@@ -81,6 +83,8 @@ const reminderScheduler = require('./services/reminderScheduler.cjs');
 
 const DELAY_CREATE_TRAY = 500;
 const DELAY_CREATE_FLOAT_WINDOW = 1000;
+// 钉桌面便签恢复：等主窗口首帧稳定后再建置顶窗，避免与启动渲染争抢
+const DELAY_RESTORE_STICKY_NOTES = 800;
 // 提醒对账延后执行的兜底时限：主页面加载失败时 did-finish-load 永不触发，
 // 仍需保证对账最终执行一次，不能因为窗口没加载出来就永久跳过。
 const DELAY_RECONCILE_FALLBACK = 30000;
@@ -381,6 +385,21 @@ function onWindowReady() {
       createFloatWindow();
     }
   }, DELAY_CREATE_FLOAT_WINDOW);
+
+  // 恢复上次钉在桌面的便签（应用锁启用时保持隐藏，解锁后展示）
+  setTimeout(() => {
+    try {
+      const service = require('./services/stickyNotesService.cjs');
+      const pinned = service.listPinned();
+      if (pinned.length > 0) {
+        const locked = loadSettings().isLockEnabled === 1;
+        const wall = stickyNoteWallWindow.openWall();
+        if (locked && wall && !wall.isDestroyed()) wall.hide();
+      }
+    } catch (error) {
+      console.error('[Main] 恢复钉桌面便签失败:', error.message);
+    }
+  }, DELAY_RESTORE_STICKY_NOTES);
 }
 
 // 逐步注册：任何一步出错都只记日志并跳过，绝不能连带中断后面的主窗口创建。
@@ -406,6 +425,7 @@ app.whenReady().then(async () => {
   safeRegister('registerQuickLoginIpcHandlers', registerQuickLoginIpcHandlers);
   safeRegister('registerOfflineToolsIpc', registerOfflineToolsIpc);
   safeRegister('registerReminderIpc', registerReminderIpc);
+  safeRegister('registerStickyNotesIpc', registerStickyNotesIpc);
   safeRegister('registerEmailIpc', () => require('./ipc/emailIpc.cjs').registerEmailIpc());
   safeRegister('registerAIIpc', registerAIIpc);
   safeRegister('registerTranslateIpc', registerTranslateIpc);
@@ -490,6 +510,12 @@ app.on('before-quit', () => {
     disposeTranslateWindow();
   } catch (e) {
     console.error('[Main] 翻译浮层关闭失败:', e.message);
+  }
+  try {
+    // 强制关闭便签墙：跳过 hideWall 逻辑，保留 pinned 供下次启动恢复
+    stickyNoteWallWindow.closeWall(true);
+  } catch (e) {
+    console.error('[Main] 关闭钉桌面便签失败:', e.message);
   }
   try {
     // 退出前补写落盘：写入走 2s 去抖，close() 只关闭连接不会触发去抖，

@@ -41,8 +41,8 @@ html, body {
 /* ── 悬浮球 ──
    尺寸与应用窗口内的形象共用 --pet-w / --pet-h（见 float-pet.css） */
 .float-ball {
-  width: var(--pet-w, 66px);
-  height: var(--pet-h, 90px);
+  width: var(--pet-w, 42px);
+  height: var(--pet-h, 57px);
   background: transparent;
   display: flex;
   align-items: center;
@@ -80,7 +80,7 @@ html, body {
   opacity: 0;
   visibility: hidden;
   background: var(--float-menu-bg);
-  padding: 10px;
+  padding: 8px;
   border-radius: 50px;
   /* 折叠态：缩回中心 */
   transform: translate(-50%, -50%) scale(0);
@@ -118,7 +118,7 @@ html, body {
 
 .tooltip-item .tooltip-label {
   position: absolute;
-  bottom: -28px;
+  bottom: -24px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--float-tip-bg);

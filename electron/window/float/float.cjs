@@ -12,8 +12,8 @@ let dragPendingFrame = false;
 // 主进程据此决定窗口是否穿透（穿透态下 forward 仍会转发 mousemove，因此可行）。
 // 尺寸唯一来源：pet-catalog.cjs 的 geometry
 const PET_GEOMETRY = (window.PetCatalog && window.PetCatalog.geometry) || {};
-const BALL_HIT_WIDTH = PET_GEOMETRY.width || 66;
-const BALL_HIT_HEIGHT = PET_GEOMETRY.height || 90;
+const BALL_HIT_WIDTH = PET_GEOMETRY.width || 42;
+const BALL_HIT_HEIGHT = PET_GEOMETRY.height || 57;
 const BALL_HIT_PADDING = PET_GEOMETRY.hitPadding || 4;
 let ballHover = false;
 
@@ -92,8 +92,8 @@ function positionTooltipItems() {
   const items = tooltipContainer.querySelectorAll('.tooltip-item');
   items.forEach((item, index) => {
     const angle = (index * 360 / items.length) - 90;
-    // 半径需让菜单项完全避开中间的桌宠形象（66x90）
-    const radius = 78;
+    // 半径只需让菜单项贴住桌宠形象（42x57）外沿，紧凑排布
+    const radius = 52;
     const x = Math.cos((angle * Math.PI) / 180) * radius;
     const y = Math.sin((angle * Math.PI) / 180) * radius;
     item.style.setProperty('--dx', x + 'px');

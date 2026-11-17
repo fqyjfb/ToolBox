@@ -3,8 +3,8 @@
    装扮片段来自 pet-catalog.cjs，新增装扮不需要在此新增任何选择器。 */
 
 :root {
-  --pet-w: 66px;
-  --pet-h: 90px;
+  --pet-w: 42px;
+  --pet-h: 57px;
 }
 
 .float-ball {

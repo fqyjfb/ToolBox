@@ -3,6 +3,7 @@
 export const TOOL_KUBAI_MAP: Record<string, string> = {
   'todo': '剪贴板',
   'memo': '便签',
+  'sticky-note': '便签',
   'notes': '笔记本',
   'reminder': '闹钟',
   'quick-reply': '聊天',

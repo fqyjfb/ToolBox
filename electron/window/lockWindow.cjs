@@ -127,6 +127,13 @@ const lock = () => {
     floatWindow.hide();
   }
 
+  // 钉桌面便签跟随应用锁隐藏，避免锁屏后便签内容仍暴露在桌面上
+  try {
+    require('./stickyNoteWallWindow.cjs').hideWall();
+  } catch (error) {
+    console.error('[Lock] 隐藏钉桌面便签失败:', error.message);
+  }
+
   createLockWindow();
   require('./tray.cjs').refreshTrayMenu();
 
@@ -194,6 +201,12 @@ const unlock = () => {
   setTimeout(() => {
     if (settings.isFloatWindowEnabled === 1) {
       require('./floatWindow.cjs').createFloatWindow();
+    }
+    // 解锁后恢复钉桌面便签
+    try {
+      require('./stickyNoteWallWindow.cjs').showWall();
+    } catch (error) {
+      console.error('[Lock] 恢复钉桌面便签失败:', error.message);
     }
   }, 500);
 };

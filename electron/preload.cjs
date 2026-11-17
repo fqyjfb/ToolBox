@@ -17,12 +17,12 @@ const settingChangedCallbacks = new Set();
 let showReminderCallback = null;
 let pendingReminder = null;
 
-// 托盘「新建」子菜单的三个动作：回调由目标页面挂载后才注册，而主进程是「先 navigate-to、
+// 托盘「新建」子菜单的四个动作：回调由目标页面挂载后才注册，而主进程是「先 navigate-to、
 // 紧接着（300ms 后）发 open-add-*」。首次进入时页面还要加载路由模块，往往赶不上，
 // 槽位为空时消息被直接丢弃 —— 表现为「只跳转、不弹窗」，再点一次才正常（页面已挂载）。
 // 与 show-reminder 同样处理：暂存待办动作，等页面注册回调时补发。
-const openAddCallbacks = { todo: null, memo: null, reminder: null };
-const pendingOpenAdd = { todo: false, memo: false, reminder: false };
+const openAddCallbacks = { todo: null, memo: null, reminder: null, sticky: null };
+const pendingOpenAdd = { todo: false, memo: false, reminder: false, sticky: false };
 
 ipcRenderer.on('navigate-to', (event, path) => {
   navigateCallbacks.forEach((cb) => cb(path));
@@ -452,6 +452,20 @@ contextBridge.exposeInMainWorld('electron', {
   onOpenAddTodo: (callback) => registerOpenAddCallback('todo', callback),
   onOpenAddMemo: (callback) => registerOpenAddCallback('memo', callback),
   onOpenAddReminder: (callback) => registerOpenAddCallback('reminder', callback),
+  onOpenAddSticky: (callback) => registerOpenAddCallback('sticky', callback),
+  stickyNotes: {
+    list: () => ipcRenderer.invoke('sticky-notes:list'),
+    get: (id) => ipcRenderer.invoke('sticky-notes:get', id),
+    create: (input) => ipcRenderer.invoke('sticky-notes:create', input),
+    update: (input) => ipcRenderer.invoke('sticky-notes:update', input),
+    remove: (id) => ipcRenderer.invoke('sticky-notes:remove', id),
+    setPinned: (id, pinned) => ipcRenderer.invoke('sticky-notes:set-pinned', { id, pinned }),
+    onChanged: (callback) => {
+      const listener = (_event, payload) => callback(payload);
+      ipcRenderer.on('sticky-notes:changed', listener);
+      return () => ipcRenderer.removeListener('sticky-notes:changed', listener);
+    },
+  },
   onShowReminder: (callback) => {
     showReminderCallback = callback;
     if (pendingReminder) {

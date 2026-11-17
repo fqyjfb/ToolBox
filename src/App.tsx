@@ -26,6 +26,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { websiteBookmarksQuery, websiteCategoriesQuery } from './services/websiteQueries';
 const LogsPage = React.lazy(() => import('./pages/logs/index'));
 const ReminderPopup = React.lazy(() => import('./pages/tools/reminder/ReminderPopup'));
+const StickyNoteWall = React.lazy(() => import('./pages/tools/sticky-note/StickyNoteWall'));
 import { isElectron } from './utils/environment';
 import { usePreloadTools } from './hooks/usePreloadTools';
 import { useFloatAiActions } from './hooks/useFloatAiActions';
@@ -199,7 +200,11 @@ const isStandaloneLogWindow = (): boolean => getStandaloneMode() === 'logs';
 // 定时提醒弹窗：独立 BrowserWindow 加载 ?standalone=reminder-popup
 const isStandaloneReminderPopup = (): boolean => getStandaloneMode() === 'reminder-popup';
 
-const isStandaloneWindow = (): boolean => isStandaloneLogWindow() || isStandaloneReminderPopup();
+// 便签墙：独立 BrowserWindow 加载 ?standalone=sticky-wall
+const isStandaloneStickyWall = (): boolean => getStandaloneMode() === 'sticky-wall';
+
+const isStandaloneWindow = (): boolean =>
+  isStandaloneLogWindow() || isStandaloneReminderPopup() || isStandaloneStickyWall();
 
 function App() {
   const queryClient = useQueryClient();
@@ -405,6 +410,16 @@ function App() {
       >
         <RouteBoundary>
           <ReminderPopup />
+        </RouteBoundary>
+      </Suspense>
+    );
+  }
+
+  if (isStandaloneStickyWall()) {
+    return (
+      <Suspense fallback={<div className="sticky-wall" />}>
+        <RouteBoundary>
+          <StickyNoteWall />
         </RouteBoundary>
       </Suspense>
     );

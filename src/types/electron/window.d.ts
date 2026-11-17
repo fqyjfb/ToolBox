@@ -33,8 +33,30 @@ interface AppLockResolvedApp {
   protected: boolean;
 }
 
+/** 便签墙 preload 暴露的 API（electron/window/sticky-note-preload.cjs） */
+interface StickyWallAPI {
+  listPinned: () => Promise<{ ok: boolean; notes?: import('../stickyNote').StickyNote[]; origin?: { x: number; y: number }; error?: string }>;
+  get: (id: string) => Promise<{ ok: boolean; note?: import('../stickyNote').StickyNote; error?: string }>;
+  update: (input: import('../stickyNote').StickyNoteUpdateInput) => Promise<{ ok: boolean; note?: import('../stickyNote').StickyNote; error?: string }>;
+  saveBounds: (input: { id: string; bounds: Partial<import('../stickyNote').StickyNoteBounds> }) => Promise<{ ok: boolean; error?: string }>;
+  unpin: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  openInApp: (id: string) => void;
+  /** 鼠标命中卡片/菜单切换穿透状态（mousemove 单源判定） */
+  setInteractive: (value: boolean) => Promise<{ ok: boolean }>;
+  /** 拖拽/编辑/菜单期间 forceInteractive */
+  setDragActive: (value: boolean) => Promise<{ ok: boolean }>;
+  /** 进入/退出编辑：桌面层子窗口需临时解挂才能拿到键盘焦点 */
+  setEditing: (value: boolean) => Promise<{ ok: boolean }>;
+  /** 复制正文（主进程 clipboard） */
+  copyText: (text: string) => Promise<{ ok: boolean }>;
+  /** 窗口坐标原点变化（显示器分辨率/排列变化） */
+  onOriginChanged: (callback: (origin: { x: number; y: number }) => void) => () => void;
+  onChanged: (callback: (payload: import('../stickyNote').StickyNoteChangedPayload) => void) => () => void;
+}
+
 declare interface Window {
   translateAPI?: TranslateAPI;
+  stickyWallAPI?: StickyWallAPI;
   electron?: {
     minimize: () => void;
     maximize: () => void;
@@ -345,6 +367,17 @@ declare interface Window {
     // 定时提醒：托盘/悬浮球触发新建（data 可选预填数据）；主进程 show-reminder 事件下发弹窗内容
     // data 使用宽松类型避免与 CreateReminderRequest 的字面量联合类型冲突；调用方按需断言
     onOpenAddReminder: (callback: (data?: unknown) => void) => void;
+    onOpenAddSticky: (callback: () => void) => void;
+    // 便签：主进程唯一写入，渲染层只通过这组 API 读写
+    stickyNotes: {
+      list: () => Promise<{ ok: boolean; notes?: import('../stickyNote').StickyNote[]; error?: string }>;
+      get: (id: string) => Promise<{ ok: boolean; note?: import('../stickyNote').StickyNote; error?: string }>;
+      create: (input: import('../stickyNote').StickyNoteCreateInput) => Promise<{ ok: boolean; note?: import('../stickyNote').StickyNote; error?: string }>;
+      update: (input: import('../stickyNote').StickyNoteUpdateInput) => Promise<{ ok: boolean; note?: import('../stickyNote').StickyNote; error?: string }>;
+      remove: (id: string) => Promise<{ ok: boolean; error?: string }>;
+      setPinned: (id: string, pinned: boolean) => Promise<{ ok: boolean; note?: import('../stickyNote').StickyNote; error?: string }>;
+      onChanged: (callback: (payload: import('../stickyNote').StickyNoteChangedPayload) => void) => () => void;
+    };
     onShowReminder: (callback: (reminder: { title: string; content: string; id?: string }) => void) => void;
     sqlite: {
       invoke: <T>(channel: string, payload?: unknown) => Promise<T>;

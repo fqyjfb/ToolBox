@@ -155,6 +155,15 @@ register('clipboard', (payload) => {
   if (payload === 'note') {
     const result = service.captureCommit({ kind: 'note', title: '' }, text);
     if (!result.ok) sendCard(result.error);
+    return;
+  }
+  if (payload === 'sticky') {
+    try {
+      const result = require('../../services/stickyNotesService.cjs').create({ content: text });
+      sendCard(result.ok ? '已存为便签' : result.error || '保存便签失败');
+    } catch (error) {
+      sendCard('保存便签失败');
+    }
   }
 });
 

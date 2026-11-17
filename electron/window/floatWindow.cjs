@@ -368,16 +368,25 @@ const registerFloatIpcHandlers = () => {
         click: () => checkLockAndShow(() => showMainAndNavigate())
       },
       {
-        label: '记事本',
-        click: () => checkLockAndShow(() => showMainAndNavigate('/tools/notes'))
-      },
-      {
-        label: '备忘录',
-        click: () => checkLockAndShow(() => showMainAndNavigate('/tools/memo'))
-      },
-      {
-        label: '定时提醒',
-        click: () => checkLockAndShow(() => showMainAndNavigate('/tools/reminder'))
+        label: '打开',
+        submenu: [
+          {
+            label: '记事本',
+            click: () => checkLockAndShow(() => showMainAndNavigate('/tools/notes'))
+          },
+          {
+            label: '备忘录',
+            click: () => checkLockAndShow(() => showMainAndNavigate('/tools/memo'))
+          },
+          {
+            label: '便签',
+            click: () => checkLockAndShow(() => showMainAndNavigate('/tools/sticky-note'))
+          },
+          {
+            label: '定时提醒',
+            click: () => checkLockAndShow(() => showMainAndNavigate('/tools/reminder'))
+          },
+        ],
       },
       ...buildOutfitMenu(),
       { type: 'separator' },

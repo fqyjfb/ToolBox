@@ -25,6 +25,7 @@ const routeLabelMap: Record<string, string> = {
   '/tools/quick-reply': '快捷回复',
   '/tools/todo': '待办事项',
   '/tools/memo': '备忘录',
+  '/tools/sticky-note': '便签',
   '/tools/country-code': '国家区号查询',
   '/tools/account': '账号管理',
   '/tools/weather': '天气预报',

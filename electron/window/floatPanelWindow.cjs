@@ -248,6 +248,34 @@ const registerFloatPanelIpc = () => {
     }
   });
 
+  // 存为便签：直接写本地便签文件，不依赖登录；成功后面板可跳转定位该条
+  ipcMain.handle('float:save-sticky', (event, payload = {}) => {
+    if (!isPanelSender(event)) return { ok: false, error: '非法调用' };
+    const content = typeof payload.content === 'string' ? payload.content : '';
+    if (!content.trim()) return { ok: false, error: '没有可保存的内容' };
+    try {
+      return require('../services/stickyNotesService.cjs').create({
+        content,
+        title: typeof payload.title === 'string' ? payload.title : undefined,
+      });
+    } catch (error) {
+      return { ok: false, error: error?.message || '保存便签失败' };
+    }
+  });
+
+  ipcMain.handle('float:open-sticky', (event, noteId) => {
+    if (!isPanelSender(event)) return { ok: false, error: '非法调用' };
+    const target = typeof noteId === 'string' ? noteId.trim() : '';
+    if (!target) return { ok: false, error: '缺少便签标识' };
+    const mainWindowModule = require('./mainWindow.cjs');
+    const mainWindow = mainWindowModule.getMainWindow();
+    if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, error: '主窗口未就绪' };
+    mainWindowModule.showMainWindow();
+    mainWindow.webContents.send('navigate-to', '/tools/sticky-note?focus=' + encodeURIComponent(target));
+    hidePanel();
+    return { ok: true };
+  });
+
   // 面板内保存成功后跳转：复用主窗口 + 既有 navigate-to，不在主进程解析笔记内容
   ipcMain.handle('float:open-note', (event, filePath) => {
     if (!isPanelSender(event)) return { ok: false, error: '非法调用' };

@@ -224,6 +224,10 @@
     todoBtn.textContent = '存为待办';
     todoBtn.onclick = function () { saveTodo(content, todoBtn); };
 
+    var stickyBtn = document.createElement('button');
+    stickyBtn.textContent = '存为便签';
+    stickyBtn.onclick = function () { saveSticky(content, stickyBtn); };
+
     var followBtn = document.createElement('button');
     followBtn.textContent = '继续追问';
     followBtn.onclick = function () { els.input.focus(); };
@@ -231,6 +235,7 @@
     bar.appendChild(copyBtn);
     bar.appendChild(noteBtn);
     bar.appendChild(todoBtn);
+    bar.appendChild(stickyBtn);
     bar.appendChild(followBtn);
     root.appendChild(bar);
     scrollToBottom();
@@ -255,7 +260,11 @@
 
   // 保存成功后跳转：主窗口前置并进入对应模块，面板随之隐藏
   function openSaved(kind, target, btn) {
-    var action = kind === 'note' ? api.openNote(target) : api.openTodo(target);
+    var action = kind === 'note'
+      ? api.openNote(target)
+      : kind === 'sticky'
+        ? api.openSticky(target)
+        : api.openTodo(target);
     action.then(function (res) {
       if (!res || !res.ok) btn.textContent = (res && res.error) || '打开失败';
     }).catch(function () { btn.textContent = '打开失败'; });
@@ -299,18 +308,38 @@
     });
   }
 
-  // 输入框上方筹码的快捷保存：复用结果操作条的两套保存逻辑，不重复实现
+  function saveSticky(content, btn) {
+    btn.onclick = null; // 防重入
+    btn.textContent = '保存中…';
+    api.saveSticky({ content: content }).then(function (result) {
+      if (result && result.ok) {
+        var noteId = result.note && result.note.id;
+        btn.textContent = '查看便签';
+        btn.title = '已保存到便签';
+        btn.onclick = function () { openSaved('sticky', noteId, btn); };
+      } else {
+        btn.textContent = (result && result.error) || '保存失败';
+        btn.onclick = function () { saveSticky(content, btn); };
+      }
+    }).catch(function () {
+      btn.textContent = '保存失败';
+      btn.onclick = function () { saveSticky(content, btn); };
+    });
+  }
+
+  // 输入框上方筹码的快捷保存：复用结果操作条的三套保存逻辑，不重复实现
   function bindQuickSave(btn) {
     btn.onclick = function () { quickSave(btn); };
   }
 
   function resetQuickSaveButtons() {
+    var labels = { 'save-note': '存笔记', 'save-todo': '存待办', 'save-sticky': '存便签' };
     els.chatPresets.querySelectorAll('[data-action]').forEach(function (btn) {
-      var label = btn.dataset.action === 'save-note' ? '存笔记' : '存待办';
+      var label = labels[btn.dataset.action] || '存待办';
       if (btn.textContent === label) return;
       btn.textContent = label;
       btn.title = '';
-      bindQuickSave(btn); // 「打开笔记 / 查看待办 / 保存失败」都恢复成保存入口
+      bindQuickSave(btn); // 「打开笔记 / 查看待办 / 查看便签 / 保存失败」都恢复成保存入口
     });
   }
 
@@ -321,6 +350,7 @@
       return;
     }
     if (btn.dataset.action === 'save-note') saveNote(text, btn);
+    else if (btn.dataset.action === 'save-sticky') saveSticky(text, btn);
     else saveTodo(text, btn);
   }
 

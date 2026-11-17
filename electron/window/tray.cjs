@@ -114,6 +114,14 @@ const refreshTrayMenu = () => {
             });
           },
         },
+        {
+          label: '新建便签',
+          click: () => {
+            checkLockAndShow(() => {
+              showMainAndNavigate('/tools/sticky-note', (mw) => mw.webContents.send('open-add-sticky'));
+            });
+          },
+        },
       ],
     },
     { type: 'separator' },

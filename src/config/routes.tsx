@@ -30,6 +30,7 @@ const TodoManagerPage = React.lazy(() => import('../pages/tools/todo'));
 const NotesPage = React.lazy(() => import('../pages/tools/notes'));
 const MemoPage = React.lazy(() => import('../pages/tools/memo'));
 const ReminderPage = React.lazy(() => import('../pages/tools/reminder'));
+const StickyNotePage = React.lazy(() => import('../pages/tools/sticky-note'));
 const ProfilePage = React.lazy(() => import('../pages/tools/profile'));
 const AccountManagerPage = React.lazy(() => import('../pages/tools/account'));
 const IPInfoPage = React.lazy(() => import('../pages/tools/ip-info'));
@@ -113,6 +114,12 @@ const publicToolsRoutes: RouteConfig[] = [
   { path: '/tools/weather', element: <WeatherPage /> },
 ];
 
+// 仅桌面端注册：依赖 Electron IPC 与本地文件，Web/移动端不暴露该路由。
+// 必须排在 /tools/:pluginId 之前，否则会被动态路由截获。
+const desktopOnlyRoutes: RouteConfig[] = [
+  { path: '/tools/sticky-note', element: <StickyNotePage /> },
+];
+
 export const desktopRoutes: RouteConfig[] = [
   { path: '/', element: <Home /> },
   { path: '/launch', element: <QuickLaunch /> },
@@ -120,6 +127,7 @@ export const desktopRoutes: RouteConfig[] = [
   { path: '/logs', element: <LogsPage /> },
   ...sharedRoutes,
   ...publicToolsRoutes,
+  ...desktopOnlyRoutes,
   ...authRequiredRoutes,
 ];
 

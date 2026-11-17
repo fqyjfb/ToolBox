@@ -15,7 +15,7 @@ import { useHomeToolsStore } from '../../store/homeToolsStore';
 import { useToastStore } from '../../store/toastStore';
 import './ToolsPage.css';
 
-const BASE_TOOLS_IDS = ['todo', 'memo', 'quick-reply', 'cloud-clipboard', 'account', 'weather', 'navigation', 'news', 'reminder'];
+const BASE_TOOLS_IDS = ['todo', 'memo', 'quick-reply', 'cloud-clipboard', 'account', 'weather', 'navigation', 'news', 'reminder', 'sticky-note'];
 
 const ToolsPage = () => {
   const navigate = useNavigate();
@@ -40,12 +40,13 @@ const ToolsPage = () => {
 
   const myTools = useMemo(() => {
     return ALL_TOOLS
-      .filter(tool => BASE_TOOLS_IDS.includes(tool.id))
+      // 便签依赖桌面端本地存储，Web 端不展示卡片
+      .filter(tool => BASE_TOOLS_IDS.includes(tool.id) && (tool.id !== 'sticky-note' || isDesktop))
       .map(tool => ({
         ...tool,
         kubaiName: TOOL_KUBAI_MAP[tool.id] || '文件夹',
       }));
-  }, []);
+  }, [isDesktop]);
 
   const newTools = useMemo(() => {
     return ALL_TOOLS

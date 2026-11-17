@@ -13,8 +13,9 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  // 形象外框：与 .float-ball / 命中判定 / viewBox 共用，改这里即全局生效
-  var GEOMETRY = { width: 66, height: 90, hitPadding: 4, viewBox: '0 0 66 90' };
+  // 形象外框：width/height 为显示尺寸，与 .float-ball / 命中判定共用；
+  // viewBox 是绘制坐标系，保持不变，只做等比缩放
+  var GEOMETRY = { width: 42, height: 57, hitPadding: 4, viewBox: '0 0 66 90' };
 
   // 槽位按 z 从小到大绘制；allowEmpty 为 false 的槽位必须有装扮
   var SLOTS = [

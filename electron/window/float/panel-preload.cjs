@@ -40,8 +40,10 @@ contextBridge.exposeInMainWorld('panelAPI', {
   openSettings: () => ipcRenderer.invoke('float:panel-open-settings'),
   saveNote: (payload) => ipcRenderer.invoke('float:save-note', payload),
   saveTodo: (payload) => ipcRenderer.invoke('float:save-todo', payload),
+  saveSticky: (payload) => ipcRenderer.invoke('float:save-sticky', payload),
   openNote: (path) => ipcRenderer.invoke('float:open-note', path),
   openTodo: (id) => ipcRenderer.invoke('float:open-todo', id),
+  openSticky: (id) => ipcRenderer.invoke('float:open-sticky', id),
 
   aiStatus: () => ipcRenderer.invoke('float:ai-status'),
   // P1/P2 进阶功能：统一走 floatFeatureService 的注册入口
