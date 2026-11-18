@@ -1,59 +1,9 @@
 /* ============================================================
-   ToolBox 锁屏 —— 紧凑卡片 · 主题令牌 · 皮肤装饰层 · 动效
-   颜色一律取自 --color-*（由主进程主题快照注入），皮肤不写死颜色
+   ToolBox Lock Window — fully transparent window body
+   SVG shield colors match doc/图案动画.md exactly.
    ============================================================ */
 
-:root {
-  --color-success: #22c55e;
-  --color-error: #ef4444;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f8f9fa;
-  --color-bg-tertiary: #f3f4f6;
-  --color-border: #e5e7eb;
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --text-xs: 12px;
-  --text-sm: 14px;
-  --transition-fast: 0.15s ease;
-
-  /* 锁屏令牌：由主题推导，明暗差异集中在这里 */
-  --lk-accent: var(--color-text-primary);
-  --lk-soft: rgba(255, 255, 255, 0.55);
-  --lk-grain-opacity: 0.04;
-  --lk-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --lk-ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.dark {
-  --color-text-primary: #f9fafb;
-  --color-text-secondary: #d1d5db;
-  --color-text-tertiary: #9ca3af;
-  --color-bg-primary: #111827;
-  --color-bg-secondary: #1f2937;
-  --color-bg-tertiary: #374151;
-  --color-border: #374151;
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-
-  --lk-soft: rgba(255, 255, 255, 0.07);
-  --lk-grain-opacity: 0.06;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
   width: 100%;
@@ -62,503 +12,403 @@ html, body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: var(--color-text-primary, #111827);
 }
 
-/* ---------------- 卡片骨架 ---------------- */
-
+/* ── 窗口骨架：全透明，上下布局 ───────────────────────────── */
 .lk-card {
   position: relative;
-  width: 100%;
-  height: 100%;
-  background: var(--color-bg-primary);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-  border: 1px solid var(--color-border);
+  width: 208px;
+  height: 248px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
-  animation: lk-enter 300ms var(--lk-ease-out);
-}
-
-/* 成功时沿边框流过一圈 accent 光（conic-gradient + mask 只留边框） */
-@property --lk-ring-angle {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
-}
-
-.lk-ring {
-  position: absolute;
-  inset: -1px;
-  border-radius: var(--radius-xl);
-  padding: 1.5px;
-  pointer-events: none;
-  opacity: 0;
-  background: conic-gradient(
-    from var(--lk-ring-angle),
-    transparent 0deg,
-    transparent 300deg,
-    var(--lk-accent) 344deg,
-    transparent 360deg
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-
-/* ---------------- 皮肤装饰层（颜色全部引用令牌） ---------------- */
-
-/* 墨（默认）：斜向柔光 + 噪点颗粒 */
-body.skin-ink .lk-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--lk-soft), transparent 55%);
-  pointer-events: none;
-}
-
-body.skin-ink .lk-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-  opacity: var(--lk-grain-opacity);
-  pointer-events: none;
-}
-
-/* 极光：卡片上沿一条 accent 光带缓慢漂移 */
-body.skin-aurora .lk-card::before {
-  content: '';
-  position: absolute;
-  top: -34px;
-  left: -20%;
-  width: 140%;
-  height: 60px;
-  background: var(--lk-accent);
-  filter: blur(30px);
-  opacity: 0.4;
-  animation: lk-band-drift 8s ease-in-out infinite;
-  pointer-events: none;
-}
-
-body.dark.skin-aurora .lk-card::before {
-  opacity: 0.25;
-}
-
-/* 跟随主题：无装饰 */
-body.skin-theme .lk-card::before,
-body.skin-theme .lk-card::after {
-  content: none;
-}
-
-/* ---------------- 标题栏（保留拖拽区） ---------------- */
-
-.title-bar {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-bg-secondary);
-  cursor: move;
+  padding-top: 6px;
+  gap: 6px;
+  animation: lk-enter 320ms cubic-bezier(0.22, 1, 0.36, 1);
   user-select: none;
-  -webkit-app-region: drag;
-  border-bottom: 1px solid var(--color-border);
-  opacity: 0;
-  animation: lk-fade-in 300ms var(--lk-ease-out) forwards;
+  cursor: default;
 }
 
-.title-text {
-  font-size: var(--text-sm);
+@keyframes lk-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+/* ── 时间：盾正上方 ─────────────────────────────────────── */
+.lk-clock {
+  text-align: center;
+  line-height: 1;
+}
+.lk-time {
+  font-size: 14px;
   font-weight: 600;
-  color: var(--color-text-primary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  color: var(--color-text-secondary, #6b7280);
+  letter-spacing: 0.06em;
 }
 
-.title-icon {
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-sm);
+/* ── 上方：SVG盾徽（缩小后居中） ──────────────────────────────── */
+.lk-shield-svg {
+  width: 112px;
+  height: 112px;
+  flex-shrink: 0;
+  pointer-events: none;
+  overflow: visible;
 }
 
-.title-actions {
-  display: flex;
-  gap: var(--space-1);
-  -webkit-app-region: no-drag;
+/* Shield background track — 白色半透明填充 */
+.shield-track {
+  fill: rgba(255, 255, 255, 0.22);
+  stroke: #d0d0d0;
+  stroke-width: 2.5;
 }
 
-.close-btn,
-.exit-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Animated shield border */
+.shield {
+  fill: none;
+  stroke: #4f8cff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 30 70;
+  animation: shieldMove 2s linear infinite;
+}
+
+/* Lock body */
+.lock-body {
+  fill: #4f8cff;
+  animation: lockPulse 1.5s ease-in-out infinite;
+}
+
+/* Lock shackle */
+.lock {
+  fill: none;
+  stroke: #666;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: transform 220ms ease;
+  transform-origin: 32px 28px;
+}
+
+[data-state="success"] .lock {
+  animation: lock-shackle-open 360ms ease forwards;
+}
+
+/* Keyhole */
+.keyhole {
+  fill: #fff;
+  animation: keyPulse 1.5s ease-in-out infinite;
+}
+
+.keyhole-line {
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Scanning line */
+.scan {
+  stroke: #4f8cff;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: scan 1.8s ease-in-out infinite;
+}
+
+@keyframes shieldMove {
+  from { stroke-dashoffset: 100; }
+  to   { stroke-dashoffset: 0;   }
+}
+
+@keyframes lockPulse {
+  0%, 100% { opacity: 0.65; transform: scale(1);    transform-origin: center; }
+  50%       { opacity: 1;    transform: scale(1.08); transform-origin: center; }
+}
+
+@keyframes keyPulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1;  }
+}
+
+@keyframes scan {
+  0%   { opacity: 0;  transform: translateY(-5px); }
+  20%  { opacity: 1;  }
+  80%  { opacity: 1;  }
+  100% { opacity: 0;  transform: translateY(35px); }
+}
+
+@keyframes lock-shackle-open {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(-32deg); }
+}
+
+/* ── 退出按钮（盾内左侧） ──────────────────────────────────────
+   窗口 208，SVG 112 居中 → SVG 左 48、右 160
+   内缩 4px，按钮宽 20 → left: 48+4=52
+   top 与 close 对称，统一 */
+.lk-btn.lk-exit {
+  position: absolute;
+  top: 24px;
+  left: 60px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
   border: none;
   background: transparent;
-  border-radius: var(--radius-md);
+  color: #888;
   cursor: pointer;
-  color: var(--color-text-tertiary);
-  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 150ms ease, background 150ms ease;
+  outline: none;
+  z-index: 10;
 }
 
-.close-btn:hover,
-.exit-btn:hover {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
+/* ── 关闭按钮（盾内右侧） ──────────────────────────────────────
+   SVG 右 160，按钮宽 20，内缩 4px → left: 160-20-4=136 */
+.lk-btn.lk-close {
+  position: absolute;
+  top: 24px;
+  left: 128px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 150ms ease, background 150ms ease;
+  outline: none;
+  z-index: 10;
 }
 
-.close-btn svg,
-.exit-btn svg {
-  width: 14px;
-  height: 14px;
+.lk-btn:hover {
+  background: transparent;
+  color: #ef4444;
 }
 
-/* ---------------- 主体 ---------------- */
+.dark .lk-btn:hover {
+  background: transparent;
+  color: #ef4444;
+}
 
-.lk-body {
-  flex: 1;
-  min-height: 0;
+/* ── 下方密码面板 ───────────────────────────────────────────── */
+.lk-panel {
+  position: relative;
+  z-index: 2;
+  width: 152px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  position: relative;
+  gap: 4px;
 }
 
-.lk-lock {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  color: var(--color-text-tertiary);
-  opacity: 0;
-  animation:
-    lk-fade-in 300ms var(--lk-ease-out) 120ms forwards,
-    lk-breathe 3s ease-in-out 800ms infinite;
-}
+.lk-form { width: 100%; }
 
-.lk-lock-svg {
-  width: 100%;
-  height: 100%;
-  transition: opacity var(--transition-fast);
-}
-
-.lk-shackle {
-  transform-box: fill-box;
-  transform-origin: 90% 100%;
-}
-
-.lk-keyhole {
-  stroke: var(--lk-accent);
-}
-
-/* 验证中：锁图标退为剪影，叠一枚 accent 单色 spinner */
-.lk-lock::after {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  border-top-color: var(--lk-accent);
-  opacity: 0;
-}
-
-.lk-card[data-state="verifying"] .lk-lock-svg {
-  opacity: 0.25;
-}
-
-.lk-card[data-state="verifying"] .lk-lock::after {
-  opacity: 1;
-  animation: lk-spin 800ms linear infinite;
-}
-
-/* 成功：锁扣弹开 */
-.lk-card[data-state="success"] .lk-shackle {
-  animation: lk-shackle-open 250ms var(--lk-ease-snap) forwards;
-}
-
-.lk-hint {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  text-align: center;
-  opacity: 0;
-  animation: lk-fade-in 300ms var(--lk-ease-out) 200ms forwards;
-}
-
-.lk-form {
-  width: 100%;
-  max-width: 280px;
-  opacity: 0;
-  animation: lk-fade-in 300ms var(--lk-ease-out) 260ms forwards;
-}
-
+/* ── 输入框容器：半透明效果 ────────────────────────────────── */
 .lk-input-wrap {
   position: relative;
-  height: 44px;
+  height: 36px;
   display: flex;
   align-items: center;
-  border: 1.5px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-bg-primary);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  border: 1px solid rgba(128, 128, 128, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+  overflow: hidden;
+}
+
+.dark .lk-input-wrap {
+  background: rgba(30, 35, 45, 0.55);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .lk-input-wrap:focus-within {
-  border-color: var(--lk-accent);
+  border-color: #4f8cff;
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.15);
 }
 
-.lk-card[data-state="error"] .lk-input-wrap {
-  border-color: var(--color-error);
-  animation: lk-shake 400ms var(--lk-ease-out);
-}
-
-.lk-card[data-state="cooldown"] .lk-input-wrap {
-  border-color: var(--color-border);
-  opacity: 0.45;
-  pointer-events: none;
-}
-
-.lk-key-icon {
-  width: 16px;
-  height: 16px;
-  margin-left: 15px;
-  color: var(--color-text-tertiary);
-  pointer-events: none;
-  flex-shrink: 0;
-}
-
-/* 已输入字符显示为圆点 */
+/* ── 圆点指示器（避开 submit 按钮区域） ──────────────────── */
 .lk-dots {
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  inset: 0 36px 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 7px;
-  row-gap: 5px;
-  max-height: 24px;
-  overflow: hidden;
+  gap: 6px;
+  pointer-events: none;
 }
 
 .lk-dot {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: var(--color-text-primary);
-  flex-shrink: 0;
-}
-
-.lk-dot.is-fill {
-  animation: lk-pop 240ms var(--lk-ease-snap);
+  background: #4f8cff;
+  animation: lk-dot-pop 180ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .lk-dot.is-out {
-  animation: lk-drop 240ms ease-in forwards;
+  animation: lk-dot-drop 240ms ease-in forwards;
 }
 
-.lk-card[data-state="error"] .lk-dot {
-  background: var(--color-error);
+.lk-dot.error {
+  background: #ef4444;
 }
 
-/* 原生输入隐藏铺满输入框，保留 password 语义与物理键盘输入 */
+@keyframes lk-dot-pop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes lk-dot-drop {
+  to { transform: translateY(18px) scale(0.6); opacity: 0; }
+}
+
+/* ── 原生密码输入：隐藏浏览器 bullet + 浏览器自动注入的密码管理器图标 ── */
 .lk-native-input {
   position: absolute;
-  inset: 0;
-  width: 100%;
+  inset: 0 36px 0 0;
+  width: auto;
   height: 100%;
+  background: transparent;
   border: none;
   outline: none;
-  background: transparent;
-  color: transparent;
+  /* 彻底隐藏浏览器原生密码 bullet，让蓝点指示器独占 */
+  -webkit-text-security: none;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  text-align: center;
+  color: transparent;        /* 让密码字符本身不可见 */
   caret-color: transparent;
-  font-size: 16px;
+  z-index: 1;
   cursor: text;
+  padding: 0;
 }
 
+/* 抑制 Chrome/Edge 自动注入的密码填充/显示图标 */
+.lk-native-input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  pointer-events: none;
+  visibility: hidden;
+}
+.lk-native-input::-webkit-textfield-decoration-container {
+  display: none;
+}
+/* Edge 旧版 reveal 按钮 */
+.lk-native-input::-ms-reveal,
+.lk-native-input::-ms-clear {
+  display: none !important;
+}
+
+.lk-native-input::placeholder {
+  color: var(--color-text-tertiary, #9ca3af);
+  letter-spacing: 0;
+  font-size: 13px;
+}
+
+.lk-native-input:disabled { cursor: not-allowed; }
+
+/* ── 提交按钮 ───────────────────────────────────────────────── */
 .lk-submit {
   position: absolute;
-  right: 7px;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  background: transparent;
+  right: 4px;
+  width: 26px;
+  height: 28px;
+  border-radius: 6px;
+  background: #4f8cff;
+  color: #fff;
   border: none;
-  border-radius: 50%;
   cursor: pointer;
-  transition: transform var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  transition: opacity 150ms ease, transform 150ms ease;
+  z-index: 2;
 }
 
-.lk-submit:hover {
-  transform: scale(1.1);
-}
-
-.lk-submit:active {
-  transform: scale(0.9);
+.lk-submit:not(:disabled):hover {
+  opacity: 0.88;
+  transform: scale(1.08);
 }
 
 .lk-submit:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
-  transform: none;
 }
 
-.lk-submit-icon {
-  width: 15px;
-  height: 15px;
-  color: var(--color-text-tertiary);
-  transition: color var(--transition-fast);
-}
-
-.lk-input-wrap:focus-within .lk-submit-icon {
-  color: var(--lk-accent);
-}
-
-/* ---------------- 错误 / 冷却文案 ---------------- */
-
+/* ── 错误提示 ───────────────────────────────────────────────── */
 .lk-error {
-  font-size: var(--text-xs);
-  color: var(--color-error);
+  font-size: 12px;
+  color: #ef4444;
   text-align: center;
   min-height: 18px;
-  display: flex;
-  align-items: center;
-  opacity: 0;
-  animation: lk-fade-in 300ms var(--lk-ease-out) 320ms forwards;
+  line-height: 1.4;
 }
 
-.lk-error.hidden {
-  visibility: hidden;
+.lk-error.hidden { display: none; }
+
+/* ── 状态：验证中 / 成功 / 冷却 ───────────────────────────── */
+[data-state="verifying"] .lk-input-wrap {
+  border-color: #4f8cff;
+  animation: lk-pulse-border 900ms ease infinite;
 }
 
-/* ---------------- 底部元信息 ---------------- */
-
-.lk-meta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border-top: 1px solid var(--color-border);
-  font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
-  opacity: 0;
-  animation: lk-fade-in 300ms var(--lk-ease-out) 320ms forwards;
+@keyframes lk-pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%       { box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.18); }
 }
 
-.lk-meta-sep {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.5;
+/* 成功：图案整体微缩放+淡出 */
+[data-state="success"] .lk-shield-svg {
+  animation: lk-success-fade 520ms ease forwards;
 }
 
-/* ---------------- 成功揭示 ---------------- */
-
-.lk-card[data-state="success"] .lk-ring {
-  opacity: 1;
-  animation: lk-ring-sweep 500ms var(--lk-ease-out) forwards;
+@keyframes lk-success-fade {
+  0%   { filter: brightness(1);    }
+  50%  { filter: brightness(1.35); }
+  100% { filter: brightness(1);     opacity: 1; }
 }
 
-.lk-card[data-state="success"] .lk-form,
-.lk-card[data-state="success"] .lk-error {
-  animation: lk-fade-out 200ms ease forwards;
-}
-
-/* ---------------- 动效 ---------------- */
-
-@keyframes lk-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes lk-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes lk-fade-out {
-  to { opacity: 0; }
-}
-
-@keyframes lk-pop {
-  0% { transform: scale(0); }
-  60% { transform: scale(1.25); }
-  100% { transform: scale(1); }
-}
-
-@keyframes lk-drop {
-  to {
-    opacity: 0;
-    transform: translateY(6px);
-  }
+/* 失败抖动：作用于输入框区域 */
+[data-state="error"] .lk-input-wrap {
+  animation: lk-shake 420ms cubic-bezier(.36,.07,.19,.97) both;
 }
 
 @keyframes lk-shake {
-  10%, 90% { transform: translateX(-2px); }
-  20%, 80% { transform: translateX(4px); }
-  30%, 50%, 70% { transform: translateX(-8px); }
-  40%, 60% { transform: translateX(8px); }
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
 }
 
-@keyframes lk-breathe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.65; }
+/* 冷却态 */
+[data-state="cooldown"] .lk-error {
+  color: #f59e0b;
 }
 
-@keyframes lk-spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes lk-shackle-open {
-  to {
-    transform: translateY(-3px) rotate(-24deg);
-  }
-}
-
-@keyframes lk-ring-sweep {
-  to { --lk-ring-angle: 360deg; }
-}
-
-@keyframes lk-band-drift {
-  0%, 100% { transform: translateX(-6%); }
-  50% { transform: translateX(6%); }
-}
-
-/* 无障碍降级：去掉位移动画，仅保留瞬时状态切换 */
+/* ── 减少动效偏好 ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .lk-card,
-  .lk-lock,
-  .lk-hint,
-  .lk-form,
-  .lk-error,
-  .lk-meta,
-  .lk-dot,
-  .lk-ring {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
-    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
-  }
-
-  body.skin-aurora .lk-card::before {
-    animation: none;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -147,7 +147,7 @@ const Pagination: React.FC<PaginationProps> = ({
           value={String(pageSize)}
           onChange={(v) => onPageSizeChange(Number(v))}
           options={pageSizeOptions.map((size) => ({ value: String(size), label: String(size) }))}
-          className={`${isCompact ? 'h-7' : 'h-8'} px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface-secondary text-content-primary`}
+          className={`${isCompact ? 'h-7' : 'h-8'} px-2 py-1 text-sm rounded-md focus:outline-none bg-surface-secondary text-content-primary`}
           size="sm"
         />
       </div>

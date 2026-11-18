@@ -46,8 +46,8 @@ const createLockWindow = () => {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
-  const windowWidth = 360;
-  const windowHeight = 320;
+  const windowWidth = 208;
+  const windowHeight = 248;
   const x = Math.floor((width - windowWidth) / 2);
   const y = Math.floor((height - windowHeight) / 2);
 
@@ -60,11 +60,10 @@ const createLockWindow = () => {
     x: x,
     y: y,
     frame: false,
+    transparent: true,
+    hasShadow: false,
     resizable: false,
     show: false,
-    backgroundColor: themeSnapshot && themeSnapshot.colorBgPrimary
-      ? themeSnapshot.colorBgPrimary
-      : (isDarkTheme() ? '#16181D' : '#FFFFFF'),
     alwaysOnTop: true,
     skipTaskbar: true,
     titleBarStyle: 'hidden',

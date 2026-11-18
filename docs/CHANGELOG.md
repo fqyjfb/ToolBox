@@ -30,6 +30,7 @@
 - 图标按钮状态流转复用单一 `setButtonState()` 辅助函数，区分图标 / 文字两种 chip 形态，不破坏原有文字链路线上入口
 - 悬浮球展开菜单收拢为紧凑型：径向半径 78 → 52，按钮内边距 10 → 8px，名称标签间距 28 → 24px
 - 新增 `todo:create` IPC：Notes 页存待办复用既有 `float-ai-save-todo` 广播通道（主进程 notesService 向 mainWindow.send → 渲染层 App.tsx useFloatAiActions 监听 → todoService 写入），避免在主进程重复实现 Todo 模块逻辑；preload 暴露 `window.electron.todo.create`，`ALLOWED_INVOKE_CHANNELS` 同步放行
+- 重构锁屏界面UI
 
 ## \[3.1.3]
 
@@ -115,7 +116,7 @@
   - 主窗口贴边轮询生命周期收窄为「隐藏动画完成 → 展开/退出停靠」，展开停靠态不再执行 200ms 检测
   - 剪贴板窗口 watcher 与主进程内部文本订阅收敛为单共享采样器，按最短消费者间隔调度，图片仅在存在 watcher 时检测
   - 邮件连接池由全局每分钟 `reapIdle` 改为按 entry 到期回收：空池零唤醒，活跃连接在操作结束后按真实 TTL 安排一次性 timeout
-  - 悬浮洞察由每分钟 tick + 到期判断改为一次性 timeout 自续调度，每天唤醒 ~48 次（原 ~1440 次），设置变更即时重算下一到期时间
+  - 悬浮洞察由每分钟 tick + 到期判断改为一次性 timeout 自续调度，每天唤醒 \~48 次（原 \~1440 次），设置变更即时重算下一到期时间
   - 应用锁轮询由 `setInterval` 改为异步自续 `setTimeout`：上一轮 `watchTick` 结束后再安排下一轮，消除 `tasklist` 并发重入风险
 
 ### 重构
@@ -453,4 +454,3 @@
 
 - 移除未使用的 Search import、调试日志和无用资源
 - SettingRow hover 背景统一为半透明；清理魔法数字和重复模块
-

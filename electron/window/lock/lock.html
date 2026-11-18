@@ -1,75 +1,77 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ToolBox - 锁定</title>
-  <link rel="stylesheet" href="lock.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToolBox 安全锁</title>
+  <link rel="stylesheet" href="./lock.css" />
 </head>
-<body class="skin-ink">
-  <div class="lk-card" id="lkCard" data-state="idle">
-    <div class="lk-ring" aria-hidden="true"></div>
-    <div class="title-bar" id="titleBar">
-      <span class="title-text">
-        <img src="./favicon.png" alt="ToolBox" class="title-icon" />
-        ToolBox - 解锁
-      </span>
-      <div class="title-actions">
-        <button class="exit-btn" id="exitBtn" title="退出">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
-        </button>
-        <button class="close-btn" id="closeBtn" title="关闭">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-    </div>
-    <div class="lk-body" id="lkBody">
-      <div class="lk-lock" aria-hidden="true">
-        <svg class="lk-lock-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path class="lk-shackle" d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          <rect class="lk-lock-body" x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-          <line class="lk-keyhole" x1="12" y1="15" x2="12" y2="18"></line>
-        </svg>
-      </div>
-      <p class="lk-hint">请输入密码以解锁应用</p>
-      <form id="unlockForm" class="lk-form">
-        <div class="lk-input-wrap" id="lkInputWrap">
-          <svg class="lk-key-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-          <div class="lk-dots" id="lkDots" aria-hidden="true"></div>
-          <input
-            type="password"
-            id="passwordInput"
-            class="lk-native-input"
-            aria-label="锁屏密码"
-            autocomplete="off"
-            autofocus
-          >
-          <button type="submit" class="lk-submit" id="lkSubmit" title="解锁">
-            <svg class="lk-submit-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </div>
-      </form>
-      <p id="lkError" class="lk-error hidden"></p>
-    </div>
-    <footer class="lk-meta">
-      <span id="lkTime">--:--</span>
-      <span class="lk-meta-sep" aria-hidden="true"></span>
-      <span id="lkDate"></span>
-    </footer>
+<body id="lkBody">
+<div class="lk-card" id="lkCard" data-state="idle">
+
+  <!-- ── 时间（盾正上方） ──────────────────────────────────────────────── -->
+  <div class="lk-clock">
+    <span id="lkTime" class="lk-time"></span>
   </div>
-  <script src="lock.cjs"></script>
+
+  <!-- ── 盾牌左右对称：exit在左，close在右 ───────────────────────────── -->
+  <button class="lk-btn lk-exit" id="exitBtn" title="退出应用" type="button" aria-label="退出应用">
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  </button>
+  <button class="lk-btn lk-close" id="closeBtn" title="关闭" type="button" aria-label="关闭">
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  </button>
+
+  <!-- ── SVG 盾徽动画 ─────────────────────────────────────────────────── -->
+  <svg class="lk-shield-svg" viewBox="0 0 64 64" fill="none"
+       xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path class="shield-track"
+          d="M32 4L52 12V28C52 42 44 52 32 59C20 52 12 42 12 28V12L32 4Z" />
+    <path class="shield" pathLength="100"
+          d="M32 4L52 12V28C52 42 44 52 32 59C20 52 12 42 12 28V12L32 4Z" />
+    <rect class="lock-body" x="23" y="28" width="18" height="15" rx="3" />
+    <path class="lock"
+          d="M27 28V23C27 20.2 29.2 18 32 18C34.8 18 37 20.2 37 23V28" />
+    <circle class="keyhole" cx="32" cy="34" r="2" />
+    <path class="keyhole-line" d="M32 36V39" />
+    <line class="scan" x1="16" y1="16" x2="48" y2="16" />
+  </svg>
+
+  <!-- ── 下方：密码面板 ──────────────────────────────────────────────── -->
+  <div class="lk-panel">
+    <form id="unlockForm" class="lk-form" autocomplete="off">
+      <div class="lk-input-wrap" id="lkInputWrap">
+        <div class="lk-dots" id="lkDots" aria-hidden="true"></div>
+        <input type="password"
+               id="passwordInput"
+               class="lk-native-input"
+               placeholder="输入密码"
+               maxlength="50"
+               autocomplete="off"
+               spellcheck="false"
+               autofocus />
+        <button type="submit" class="lk-submit" id="lkSubmit" title="解锁" disabled aria-label="解锁">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+          </svg>
+        </button>
+      </div>
+    </form>
+    <p id="lkError" class="lk-error hidden" role="alert"></p>
+  </div>
+
+</div>
+
+<script src="./lock.cjs" defer></script>
 </body>
 </html>

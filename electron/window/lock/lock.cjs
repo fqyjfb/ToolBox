@@ -6,7 +6,6 @@ const submitBtn = document.getElementById('lkSubmit');
 const errorEl = document.getElementById('lkError');
 const closeBtn = document.getElementById('closeBtn');
 const exitBtn = document.getElementById('exitBtn');
-const titleBar = document.getElementById('titleBar');
 const bodyEl = document.getElementById('lkBody');
 
 // 状态机：idle ⇄ typing(经 input 事件) → verifying → { success | error → cooldown? → idle }
@@ -34,6 +33,9 @@ const hideError = () => {
 const syncDots = () => {
   const len = passwordInput.value.length;
 
+  // 同步启用/禁用提交按钮
+  submitBtn.disabled = len === 0;
+
   if (len > dotCount) {
     for (let i = dotCount; i < len; i++) {
       const dot = document.createElement('i');
@@ -50,9 +52,8 @@ const syncDots = () => {
       dotCount = 0;
       break;
     }
-    last.classList.add('is-out');
+    last.remove();
     dotCount--;
-    setTimeout(() => last.remove(), 150);
   }
 };
 
@@ -173,6 +174,8 @@ const handleFailure = (result) => {
     const dropDuration = dropDots();
     setTimeout(() => {
       passwordInput.readOnly = false;
+      passwordInput.value = '';
+      syncDots();
       if (cooldownSeconds > 0) {
         startCooldown(cooldownSeconds);
       } else {
@@ -194,7 +197,7 @@ window.addEventListener('focus', () => {
   if (state === 'idle' && !passwordInput.disabled) passwordInput.focus();
 });
 
-// ---------------- 标题栏按钮与拖拽 ----------------
+// ---------------- 关闭 / 退出应用 ----------------
 
 closeBtn.addEventListener('click', () => {
   window.lockElectron.closeWindow();
@@ -204,18 +207,20 @@ exitBtn.addEventListener('click', () => {
   window.lockElectron.exitApp();
 });
 
+// ---------------- 拖拽（整卡区域，button/input 点击不触发） ----------------
+
 let isDragging = false;
 
-titleBar.addEventListener('mousedown', (e) => {
-  if (closeBtn.contains(e.target) || exitBtn.contains(e.target)) return;
+card.addEventListener('mousedown', (e) => {
+  // 点交互控件时不启动拖拽
+  if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
   isDragging = true;
   window.lockElectron.dragStart();
 });
 
 document.addEventListener('mousemove', () => {
-  if (isDragging) {
-    window.lockElectron.dragMove();
-  }
+  if (!isDragging) return;
+  window.lockElectron.dragMove();
 });
 
 document.addEventListener('mouseup', () => {
@@ -223,18 +228,14 @@ document.addEventListener('mouseup', () => {
   isDragging = false;
 });
 
-// ---------------- 底部时间 ----------------
+// ---------------- 时钟（盾正上方） ----------------
 
 const timeEl = document.getElementById('lkTime');
-const dateEl = document.getElementById('lkDate');
-const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-
 const pad = (n) => String(n).padStart(2, '0');
 
 const renderClock = () => {
   const now = new Date();
   timeEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  dateEl.textContent = `${now.getMonth() + 1}月${now.getDate()}日 ${WEEKDAYS[now.getDay()]}`;
 };
 
 renderClock();
