@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Store, Globe, Mail, Phone, Building, FileText, Layers, Plus, Share2 } from 'lucide-react';
+import { Store, Globe, Mail, Phone, Building, FileText, Layers, Plus, Share2, Columns2, Rows3 } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -8,7 +8,7 @@ import { PlatformVisibility } from '../../../types/account';
 import { useAuthStore } from '../../../store/AuthStore';
 import { useRequireAuth } from '../../../hooks/useRequireAuth';
 import { localStorageService, STORAGE_KEYS } from '../../../services/localStorageService';
-import WebsitePanel from './panels/WebsitePanel';
+import WebsitePanel, { type WebsiteListLayout } from './panels/WebsitePanel';
 import ShopPanel from './panels/ShopPanel';
 import SocialPanel from './panels/SocialPanel';
 import EmailPanel from './panels/EmailPanel';
@@ -170,6 +170,9 @@ const AccountManagerPage: React.FC = () => {
   const isCompact = useIsCompactMode();
 
   const [activePlatform, setActivePlatform] = useState<PlatformType>('website_account');
+  const [websiteListLayout, setWebsiteListLayout] = useState<WebsiteListLayout>(() =>
+    localStorageService.getString(STORAGE_KEYS.WEBSITE_ACCOUNT_LIST_LAYOUT) === 'double' ? 'double' : 'single'
+  );
   const savedColumns = loadSavedColumns();
   
   const [visibleColumns, setVisibleColumns] = useState<Record<PlatformType, string[]>>(() => {
@@ -359,7 +362,7 @@ const AccountManagerPage: React.FC = () => {
     
     switch (activePlatform) {
       case 'website_account':
-        return <WebsitePanel userId={user.id} ref={websitePanelRef} />;
+        return <WebsitePanel userId={user.id} ref={websitePanelRef} listLayout={websiteListLayout} />;
       case 'shops':
         return <ShopPanel userId={user.id} ref={shopPanelRef} />;
       case 'social':
@@ -384,6 +387,7 @@ const AccountManagerPage: React.FC = () => {
     .sort((a, b) => platformOrder.indexOf(a.id) - platformOrder.indexOf(b.id));
 
   const currentPlatform = platforms.find(p => p.id === activePlatform);
+  const websiteLayoutToggleLabel = websiteListLayout === 'single' ? '切换为双列' : '切换为单列';
 
   // 小窗：平台页签按可用宽度收拢，放不下的进「更多」下拉（大窗模式）
   const { containerRef, visible, overflow } = useOverflowItems(visiblePlatforms, (platform) => platform.id, { enabled: isCompact });
@@ -442,6 +446,22 @@ const AccountManagerPage: React.FC = () => {
                 </DndContext>
               )}
               <div className={`flex items-center gap-1 ${isCompact ? 'justify-end' : ''}`}>
+                {activePlatform === 'website_account' && !isCompact && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextLayout = websiteListLayout === 'single' ? 'double' : 'single';
+                      setWebsiteListLayout(nextLayout);
+                      localStorageService.setString(STORAGE_KEYS.WEBSITE_ACCOUNT_LIST_LAYOUT, nextLayout);
+                    }}
+                    className="p-2 text-content-secondary hover:text-content-primary hover:bg-menu-hover rounded-full transition-colors"
+                    title={websiteLayoutToggleLabel}
+                    aria-label={websiteLayoutToggleLabel}
+                    aria-pressed={websiteListLayout === 'double'}
+                  >
+                    {websiteListLayout === 'single' ? <Columns2 size={16} /> : <Rows3 size={16} />}
+                  </button>
+                )}
                 <PlatformVisibilitySelector
                   platforms={platforms}
                   visibility={platformVisibility}

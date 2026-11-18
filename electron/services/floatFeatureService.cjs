@@ -315,6 +315,7 @@ function handleClipboardText(raw) {
     { label: '总结', action: 'clipboard:summarize' },
     { label: '存笔记', action: 'clipboard:note' },
     { label: '存便签', action: 'clipboard:sticky' },
+    { label: '搜索', action: 'clipboard:search' },
   ];
   card(isUrl ? `检测到网址，可直接打开` : `已复制 ${text.length} 字`, actions, 6000);
 }

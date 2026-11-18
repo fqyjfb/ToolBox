@@ -18,6 +18,14 @@ const sendCard = (text, actions = [], ttl = 5000) => {
   if (win && !win.isDestroyed()) win.webContents.send('float-pet-card', { text, actions, ttl });
 };
 
+// 搜索动作：模板与剪贴板提示共用 floatClipboardSearchUrl；缺 {q} 时补齐，非法协议回退百度
+const DEFAULT_SEARCH_URL = 'https://www.baidu.com/s?wd={q}';
+const buildSearchUrl = (template, text) => {
+  const base = typeof template === 'string' && /^https?:\/\//i.test(template) ? template : DEFAULT_SEARCH_URL;
+  const withQuery = base.includes('{q}') ? base : `${base}${base.includes('?') ? '&' : '?'}q={q}`;
+  return withQuery.replace('{q}', encodeURIComponent(text));
+};
+
 const register = (prefix, handler) => {
   if (typeof prefix !== 'string' || typeof handler !== 'function') return;
   handlers.set(prefix, handler);
@@ -150,6 +158,12 @@ register('clipboard', (payload) => {
   if (payload === 'open-url') {
     const url = text.match(/^https?:\/\//i) ? text : `https://${text}`;
     shell.openExternal(url).catch(() => sendCard('链接打开失败'));
+    return;
+  }
+  if (payload === 'search') {
+    const { loadSettings } = require('../../lib/config.cjs');
+    shell.openExternal(buildSearchUrl(loadSettings().floatClipboardSearchUrl, text))
+      .catch(() => sendCard('搜索打开失败'));
     return;
   }
   if (payload === 'note') {

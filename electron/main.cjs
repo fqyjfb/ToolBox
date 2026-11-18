@@ -512,6 +512,12 @@ app.on('before-quit', () => {
     console.error('[Main] 翻译浮层关闭失败:', e.message);
   }
   try {
+    // 释放取词用的原生钩子，避免退出后残留全局输入监听
+    require('./services/selectionHookProvider.cjs').dispose();
+  } catch (e) {
+    console.error('[Main] 取词钩子释放失败:', e.message);
+  }
+  try {
     // 强制关闭便签墙：跳过 hideWall 逻辑，保留 pinned 供下次启动恢复
     stickyNoteWallWindow.closeWall(true);
   } catch (e) {

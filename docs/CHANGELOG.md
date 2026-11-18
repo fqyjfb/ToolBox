@@ -4,19 +4,32 @@
 
 ### 新功能
 
-- 便签配色由 4 种扩展至 8 种：新增粉色 / 紫色 / 青色 / 橙色，主窗口取色器与便签墙同步生效
-- 钉在桌面的便签右键菜单新增「颜色」子菜单：可直接切换配色，主窗口编辑区实时跟随
-- 悬浮球形象尺寸缩减至宽 42px × 高 57px（原 66×90），按 viewBox 等比缩放不变形；命中区域与穿透判定同步收敛
+- 网站账号列表支持单列/双列切换，每页分别显示 10/20 条，布局选择跨页面与重启保留
+- 云剪贴板列表新增统一详情预览，支持内容复制、链接操作与快捷编辑
+- 悬浮窗设置 / 主题设置的搜索引擎下拉列表统一复用项目通用 `<Select>` 组件，与「自动锁定时间」等下拉口径一致
+- 小橘对话框输入框上方六个快捷动作（解释 / 翻译 / 总结 / 存笔记 / 存待办 / 存便签）由文字筹码改为 16px Lucide 图标按钮，支持 busy / done / error 三种状态与屏幕阅读器语义
+- 划词取词接入 `selection-hook@2.1.2`：主进程懒加载单例、被动模式（不污染应用剪贴板），Windows UIA / macOS AX / Linux AT-SPI 三端同源；非 UIA 窗口由库内置剪贴板兜底自动接管，Word / WPS / VS Code / 微信 / QQ 均可正常取词
+- 记事本 AI 对话输入框底部新增 6 个快捷图标（解释 / 翻译 / 总结 / 存笔记 / 存待办 / 存便签），按钮各自执行对应动作：存笔记直连本地落盘、存待办走 IPC 触发 Todo 页弹窗创建、存便签直连 stickyNotes IPC、解释/翻译/总结带指令前缀调用面板 AI 能力，保持布局左密右疏
+- 打包体积优化：构建产物排除 darwin/linux/win32-arm64 预编译二进制及 source/docs/build 目录
 
 ### Bug 修复
 
+- 修复快捷键划词翻译时触发悬浮球气泡提示：剪贴板链路由主进程注入改为选择钩子内部读取，去除冗余广播路径
+- 修复方案文档多处仍引用旧剪贴板备份链路的描述，现已同步更新至纯 UIA 语义
 - 修复桌面便签始终遮挡其他应用窗口：便签墙挂到 Windows 桌面层，按 `Win+D` 仍可见但位于应用窗口之下
 - 修复鼠标移到桌面便签上时桌面图标全部消失：交互切换只改 `WS_EX_TRANSPARENT`，保留 `WS_EX_LAYERED` 逐像素透明
 - 修复桌面便签双击编辑时无法输入中文：编辑期间临时解挂桌面层以取得键盘焦点
+- 修复记事本对话输入框 6 个快捷按钮解释/翻译/总结改为带指令前缀调用面板 AI，不再空文本开面板
 
 ### 优化
 
+- 移除失效的配置项 `translateChoiceDelay` 及相关死代码（config / TranslateTab）
+- 新增 `selectionHookProvider.cjs` / `selectionReader.cjs`，删除原剪贴板链路约 300 行自研逻辑；清理 `clipboardIpc.cjs` 中的验证用内部抑制计数
+- `main.cjs` before-quit 钩子接入 provider dispose，避免原生资源泄漏
+- 存笔记落盘路径升级为「对话整理 / 小橘AI笔记」子目录：`getOrganizePath()` 新增二级子路径，悬浮球面板与记事本输入框的存笔记统一落地到该目录
+- 图标按钮状态流转复用单一 `setButtonState()` 辅助函数，区分图标 / 文字两种 chip 形态，不破坏原有文字链路线上入口
 - 悬浮球展开菜单收拢为紧凑型：径向半径 78 → 52，按钮内边距 10 → 8px，名称标签间距 28 → 24px
+- 新增 `todo:create` IPC：Notes 页存待办复用既有 `float-ai-save-todo` 广播通道（主进程 notesService 向 mainWindow.send → 渲染层 App.tsx useFloatAiActions 监听 → todoService 写入），避免在主进程重复实现 Todo 模块逻辑；preload 暴露 `window.electron.todo.create`，`ALLOWED_INVOKE_CHANNELS` 同步放行
 
 ## \[3.1.3]
 

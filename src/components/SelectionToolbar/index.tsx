@@ -1,10 +1,12 @@
 import { useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Copy, Languages, ListTodo, NotebookPen, Sparkles } from 'lucide-react';
+import { Copy, Languages, ListTodo, NotebookPen, Search, Sparkles, StickyNote } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/AuthStore';
 import { useToastStore } from '@/store/toastStore';
 import { todoServiceWrapper } from '@/services/TodoService';
+import { stickyNotesService } from '@/services/stickyNotesService';
+import { openUrl } from '@/services/browserService';
 import { logError } from '@/services/loggerService';
 import { queryKeys } from '@/queries/keys';
 import { useSelectionToolbar } from './useSelectionToolbar';
@@ -14,10 +16,20 @@ import './SelectionToolbar.css';
 const TODO_TITLE_MAX = 200;
 const TEXT_MAX = 4000;
 
-/** 定位常量：上下间距 8px；水平夹紧左右各留 100px（工具条约 170px 宽，含半宽余量） */
+/** 定位常量：上下间距 8px；水平夹紧左右各留 112px（7 个按钮约 216px 宽，含半宽余量） */
 const GAP = 8;
 const TOOLBAR_HEIGHT = 36;
-const EDGE_MARGIN = 100;
+const EDGE_MARGIN = 112;
+
+/** 搜索模板兜底：与 config.cjs 的 floatClipboardSearchUrl 默认值保持一致 */
+const DEFAULT_SEARCH_URL = 'https://www.baidu.com/s?wd={q}';
+
+/** 仅接受 http(s) 模板；模板缺 {q} 时补齐，避免打开搜索引擎首页 */
+const buildSearchUrl = (template: unknown, query: string) => {
+  const base = typeof template === 'string' && /^https?:\/\//i.test(template) ? template : DEFAULT_SEARCH_URL;
+  const withQuery = base.includes('{q}') ? base : `${base}${base.includes('?') ? '&' : '?'}q={q}`;
+  return withQuery.replace('{q}', encodeURIComponent(query));
+};
 
 interface SelectionToolbarProps {
   /** 通用设置开关；关闭时组件仍挂载但不监听、不渲染 */
@@ -26,10 +38,11 @@ interface SelectionToolbarProps {
 
 /**
  * 全局划词工具条：任意支持区域内框选文字后浮出，提供
- * 复制 / 翻译 / 转待办 / 转笔记 / 问AI 五个动作。
+ * 复制 / 翻译 / 搜索 / 转待办 / 转笔记 / 转便签 / 问AI 七个动作。
  *
- * 五个动作全部复用既有链路（clipboard / translate.open / todoServiceWrapper /
- * notes.saveOrganizedNote / floatPanel.openChat），本组件只做选区监听与分发。
+ * 七个动作全部复用既有链路（clipboard / translate.open / browserService.openUrl /
+ * todoServiceWrapper / notes.saveOrganizedNote / stickyNotesService.create / floatPanel.openChat），
+ * 本组件只做选区监听与分发。
  * 视觉对齐 .mde-inline-toolbar，仅用主题 CSS 变量，明暗主题自动适配。
  */
 export function SelectionToolbar({ enabled }: SelectionToolbarProps) {
@@ -63,6 +76,16 @@ export function SelectionToolbar({ enabled }: SelectionToolbarProps) {
       autoTranslate: true,
       trigger: 'app-selection',
     });
+    finish();
+  };
+
+  const handleSearch = async (text: string) => {
+    const query = text.trim();
+    if (!query) return;
+    // 每次点击重新读设置，切换搜索引擎后无需重启
+    const settings = await window.electron?.getSettings?.();
+    const template = settings?.find((item) => item.name === 'floatClipboardSearchUrl')?.value;
+    openUrl(buildSearchUrl(template, query));
     finish();
   };
 
@@ -107,6 +130,17 @@ export function SelectionToolbar({ enabled }: SelectionToolbarProps) {
     }
   };
 
+  const handleSticky = async (text: string) => {
+    // 服务层已统一处理 bridge 缺失、异常与业务错误，此处只做结果分支
+    const result = await stickyNotesService.create({ content: text });
+    if (result.ok) {
+      showToast('success', '已存为便签');
+      finish();
+    } else {
+      showToast('error', result.error || '保存便签失败');
+    }
+  };
+
   const handleAi = async (text: string) => {
     // 打开小橘面板（chat 模式，输入框预填）；悬浮球开关关闭时面板按需创建
     await window.electron?.floatPanel?.openChat(text);
@@ -124,8 +158,10 @@ export function SelectionToolbar({ enabled }: SelectionToolbarProps) {
   const actions = [
     { icon: Copy, title: '复制', run: handleCopy },
     { icon: Languages, title: '翻译', run: handleTranslate },
+    { icon: Search, title: '搜索', run: handleSearch },
     { icon: ListTodo, title: '转待办', run: handleTodo },
     { icon: NotebookPen, title: '转笔记', run: handleNote },
+    { icon: StickyNote, title: '转便签', run: handleSticky },
     { icon: Sparkles, title: '问AI', run: handleAi },
   ];
 

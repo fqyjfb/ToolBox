@@ -54,10 +54,10 @@ function getRootPath() {
   return getSetting('notes_root_path');
 }
 
-// 「对话整理」目录：与 对话.md 同级，AI 对话生成的笔记统一落在这里
+// 「对话整理 / 小橘AI笔记」目录：与 对话.md 同级，AI 对话生成的笔记统一落在这里
 function getOrganizePath() {
   const chatPath = getSetting('notes_chat_path');
-  return chatPath ? path.join(chatPath, '对话整理') : null;
+  return chatPath ? path.join(chatPath, '对话整理', '小橘AI笔记') : null;
 }
 
 function isInsideRoot(targetPath, rootPath) {
@@ -461,6 +461,19 @@ function saveOrganizedNote(content, namePrefix = 'AI 对话') {
   const parentPath = organizePath && fs.existsSync(organizePath) ? organizePath : '';
   // mode=rename：同一分钟多次保存时自动加序号，不覆盖已有笔记
   return createNoteForce(parentPath, name, 'rename', content);
+}
+
+/** Notes 页「存待办」：向主窗口广播 float-ai-save-todo，触发 Todo 页弹窗创建。 */
+async function saveTodo(title) {
+  const mainMod = require('../window/mainWindow.cjs');
+  const mainWindow = mainMod.getMainWindow();
+  if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, error: '主窗口未就绪' };
+  try {
+    mainWindow.webContents.send('float-ai-save-todo', { title });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
 }
 
 function readFile(filePath) {
@@ -907,6 +920,7 @@ module.exports = {
   createNote,
   createNoteForce,
   saveOrganizedNote,
+  saveTodo,
   readFile,
   saveFile,
   renameItem,

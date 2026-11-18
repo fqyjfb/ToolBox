@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Clipboard, Plus, Trash2, Edit, ClipboardPaste, Tag } from 'lucide-react';
+import { Clipboard, Plus, Trash2, Edit, ClipboardPaste, Tag, Copy } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -38,7 +38,10 @@ const LinkWithCopy: React.FC<{ url: string; onCopy: (url: string) => void }> = (
         <Clipboard className="w-3 h-3 text-content-secondary" />
       </button>
       <button
-        onClick={() => openUrl(url)}
+        onClick={(e) => {
+          e.stopPropagation();
+          openUrl(url);
+        }}
         className="text-primary hover:text-primary-hover transition-colors text-sm bg-transparent border-none p-0 cursor-pointer"
       >
         {url}
@@ -109,6 +112,8 @@ const CloudClipboardPage: React.FC = () => {
   const [showEditItemModal, setShowEditItemModal] = useState<boolean>(false);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState<boolean>(false);
   const [showEditCategoryModal, setShowEditCategoryModal] = useState<boolean>(false);
+  const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
+  const [previewItem, setPreviewItem] = useState<ClipboardItem | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -499,6 +504,16 @@ const CloudClipboardPage: React.FC = () => {
     setEditingCategory(null);
   };
 
+  const handleOpenPreview = (item: ClipboardItem) => {
+    setPreviewItem(item);
+    setShowPreviewModal(true);
+  };
+
+  const handleClosePreview = () => {
+    setShowPreviewModal(false);
+    setPreviewItem(null);
+  };
+
   // 小窗：分类收进 CompactSelector 下拉（与账号管理一致），大窗保持横向胶囊
   const compactCategoryItems: CompactSelectorItem[] = [
     {
@@ -594,13 +609,16 @@ const CloudClipboardPage: React.FC = () => {
             items.map((item) => (
               <div 
                 key={item.id} 
-                className="rounded-md p-3"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 60%, transparent)' }}
+                className="rounded-md p-3 cursor-pointer bg-card-60 hover:bg-surface-secondary dark:hover:bg-surface-50 transition-colors"
+                onClick={() => handleOpenPreview(item)}
                 onContextMenu={(e) => handleContextMenu(e, 'item', item.id)}
               >
                 <div className="flex items-start gap-3">
                   <button 
-                    onClick={() => handleCopyItem(item.content)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyItem(item.content);
+                    }}
                     className="p-2 text-content-secondary hover:text-primary rounded transition-colors flex-shrink-0"
                   >
                     <Clipboard className="w-4 h-4" />
@@ -668,6 +686,62 @@ const CloudClipboardPage: React.FC = () => {
           modalTitle="编辑项目"
           confirmText="保存"
         />
+
+        <Modal
+          isOpen={showPreviewModal}
+          onClose={handleClosePreview}
+          title="剪贴板详情"
+          showCancel={false}
+          showConfirm={false}
+        >
+          {previewItem && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {previewItem.category_id && (
+                    <span className="text-xs font-medium bg-toast-info-bg text-toast-info-text px-2 py-0.5 rounded-full">
+                      {categories.find(c => c.id === previewItem.category_id)?.name}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-content-secondary">
+                    {new Date(previewItem.created_at).toLocaleString()}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setEditingItem(previewItem);
+                      setEditingItemCategoryId(previewItem.category_id);
+                      setShowEditItemModal(true);
+                      handleClosePreview();
+                    }}
+                    className="p-1 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary transition-colors"
+                    title="编辑"
+                  >
+                    <Edit size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="rounded-lg p-4 min-h-[120px] max-h-64 overflow-auto relative group scrollbar-hide bg-card-60">
+                <button
+                  onClick={() => handleCopyItem(previewItem.content)}
+                  className="absolute top-2 right-2 p-1.5 text-content-tertiary hover:text-content-secondary dark:hover:text-content-secondary opacity-0 group-hover:opacity-100 transition-opacity rounded hover:bg-menu-hover dark:hover:bg-surface"
+                  title="复制内容"
+                >
+                  <Copy size={14} />
+                </button>
+                <p className="text-sm text-content-primary whitespace-pre-wrap break-words">
+                  {(previewItem.content || '暂无内容').split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+                    if (part.match(/^https?:\/\/[^\s]+$/)) {
+                      return <LinkWithCopy key={index} url={part} onCopy={handleCopyUrl} />;
+                    }
+                    return part;
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
+        </Modal>
 
         <Modal
           isOpen={showAddCategoryModal}

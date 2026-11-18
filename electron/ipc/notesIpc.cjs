@@ -46,6 +46,12 @@ const { registerNotesIpc } = (() => {
         if (!content) return { success: false, error: '没有可保存的内容' };
         return notesService.saveOrganizedNote(content, '划词笔记');
       });
+      // 记事本「存待办」：向主窗口广播 float-ai-save-todo，触发 Todo 页弹窗创建
+      ipcMain.handle('todo:create', (event, payload = {}) => {
+        const title = typeof payload.title === 'string' ? payload.title.trim() : '';
+        if (!title) return { ok: false, error: '没有可保存的内容' };
+        return notesService.saveTodo(title);
+      });
 
       // ── 异步扫描 / 文件树 ──
       ipcMain.handle('notes-scan-folder-async', async (_event, payload) => {

@@ -41,6 +41,7 @@ export const STORAGE_KEYS = {
   PLATFORM_VISIBILITY: 'account_platform_visibility',
   PLATFORM_ORDER: 'account_platform_order',
   WEBSITE_ACCOUNT_CATEGORY_ORDER: 'websiteAccountCategoryOrder',
+  WEBSITE_ACCOUNT_LIST_LAYOUT: 'websiteAccountListLayout',
 
   NOTES_SIDEBAR_VISIBLE: 'notes_sidebar_visible',
   NOTES_PINNED_FOLDERS: 'notes_pinned_folders',
@@ -64,6 +65,8 @@ export const STORAGE_KEYS = {
   CUSTOM_BG_IMAGES: 'toolbox_custom_bg_images',
   // AI 模型配置（含 API 密钥）；缓存清理时需保留
   AI_CONFIG: 'toolbox_ai_config',
+  // 记事本对话输入框未发送文本：跨路由保留 + 窗口意外关闭后兜底恢复
+  CHAT_DRAFT: 'toolbox_chat_draft',
 };
 
 export const localStorageService = {

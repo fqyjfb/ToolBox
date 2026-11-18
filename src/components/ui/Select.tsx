@@ -16,6 +16,7 @@ interface SelectProps {
   className?: string;
   size?: 'sm' | 'md';
   dense?: boolean;
+  ariaLabel?: string;
 }
 
 // 下拉列表与触发器的间距
@@ -34,6 +35,7 @@ const Select: React.FC<SelectProps> = ({
   className = '',
   size = 'md',
   dense = false,
+  ariaLabel,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
@@ -142,6 +144,7 @@ const Select: React.FC<SelectProps> = ({
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
+          aria-label={ariaLabel}
           className={`w-full flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none whitespace-nowrap rounded-lg ${dense ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'} ${className}`}
         >
           <span className={`truncate text-left ${selectedOption ? 'text-content-primary' : 'text-content-secondary'}`}>

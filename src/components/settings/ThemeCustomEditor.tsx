@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/shallow';
 import ColorPicker from './ColorPicker';
 import SettingCard from './SettingCard';
 import ThemePreview from './ThemePreview';
+import Select from '../ui/Select';
 import { useThemeStore } from '../../store/themeStore';
 import { useToastStore } from '../../store/toastStore';
 import {
@@ -38,7 +39,7 @@ let bgImageSeq = 0;
 const newBgImageId = () => `bg-${Date.now()}-${++bgImageSeq}`;
 
 const SELECT_CLASS =
-  'text-xs px-1.5 py-0.5 rounded border border-content bg-surface text-content-primary focus:outline-none focus:border-primary';
+  'border border-content bg-surface text-content-primary focus:outline-none focus:ring-1 focus:ring-blue-500';
 const ACTION_CLASS =
   'inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-content bg-surface text-content-primary hover:bg-menu-hover disabled:opacity-50 disabled:cursor-not-allowed';
 
@@ -512,36 +513,33 @@ const ThemeCustomEditor: React.FC = () => {
           onChange={(value) => update('bgOpacity', value)}
         />
         <FieldRow label="铺放方式">
-          <select
+          <Select
             value={draft.bgSize}
-            onChange={(e) => update('bgSize', e.target.value as CustomTheme['bgSize'])}
-            aria-label="背景图尺寸"
+            onChange={(value) => update('bgSize', value as CustomTheme['bgSize'])}
+            options={BACKGROUND_SIZE_OPTIONS}
+            size="sm"
+            dense
+            ariaLabel="背景图尺寸"
             className={SELECT_CLASS}
-          >
-            {BACKGROUND_SIZE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <select
+          />
+          <Select
             value={draft.bgPosition}
-            onChange={(e) => update('bgPosition', e.target.value as CustomTheme['bgPosition'])}
-            aria-label="背景图位置"
+            onChange={(value) => update('bgPosition', value as CustomTheme['bgPosition'])}
+            options={BACKGROUND_POSITION_OPTIONS}
+            size="sm"
+            dense
+            ariaLabel="背景图位置"
             className={SELECT_CLASS}
-          >
-            {BACKGROUND_POSITION_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <select
+          />
+          <Select
             value={draft.bgRepeat}
-            onChange={(e) => update('bgRepeat', e.target.value as CustomTheme['bgRepeat'])}
-            aria-label="背景图重复"
+            onChange={(value) => update('bgRepeat', value as CustomTheme['bgRepeat'])}
+            options={BACKGROUND_REPEAT_OPTIONS}
+            size="sm"
+            dense
+            ariaLabel="背景图重复"
             className={SELECT_CLASS}
-          >
-            {BACKGROUND_REPEAT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
+          />
         </FieldRow>
       </SettingCard>
 

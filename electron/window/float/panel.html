@@ -104,12 +104,63 @@
 
   <footer class="composer" id="composer">
     <div class="preset-row" id="chatPresets">
-      <button class="chip" data-preset="explain">解释</button>
-      <button class="chip" data-preset="translate">翻译</button>
-      <button class="chip" data-preset="summarize">总结</button>
-      <button class="chip" data-action="save-note">存笔记</button>
-      <button class="chip" data-action="save-todo">存待办</button>
-      <button class="chip" data-action="save-sticky">存便签</button>
+      <button class="chip chip-icon" data-preset="explain" title="解释" aria-label="解释">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </svg>
+      </button>
+      <button class="chip chip-icon" data-preset="translate" title="翻译" aria-label="翻译">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m5 8 6 6" />
+          <path d="m4 14 6-6 2-3" />
+          <path d="M2 5h12" />
+          <path d="M7 2h1" />
+          <path d="m22 22-5-10-5 10" />
+          <path d="M14 18h6" />
+        </svg>
+      </button>
+      <button class="chip chip-icon" data-preset="summarize" title="总结" aria-label="总结">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 6h13" />
+          <path d="M8 12h13" />
+          <path d="M8 18h13" />
+          <path d="M3 6h.01" />
+          <path d="M3 12h.01" />
+          <path d="M3 18h.01" />
+        </svg>
+      </button>
+      <button class="chip chip-icon" data-action="save-note" title="存笔记" aria-label="存笔记">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+          <path d="M14 2v5h5" />
+          <path d="M16 13H8" />
+          <path d="M16 17H8" />
+          <path d="M10 9H8" />
+        </svg>
+      </button>
+      <button class="chip chip-icon" data-action="save-todo" title="存待办" aria-label="存待办">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m3 17 2 2 4-4" />
+          <path d="m3 7 2 2 4-4" />
+          <path d="M13 6h8" />
+          <path d="M13 12h8" />
+          <path d="M13 18h8" />
+        </svg>
+      </button>
+      <button class="chip chip-icon" data-action="save-sticky" title="存便签" aria-label="存便签">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9.5l5-5V5a2 2 0 0 0-2-2Z" />
+          <path d="M15 21v-4a2 2 0 0 1 2-2h4" />
+        </svg>
+      </button>
     </div>
     <div class="input-wrapper">
       <textarea id="input" rows="1" placeholder="问点什么…（Enter 发送，Shift+Enter 换行）"></textarea>

@@ -143,8 +143,6 @@ const defaultSettings = {
   floatBallOutfit: { ...petCatalog.defaults },
   // ── 划词翻译：总开关 ──
   translateEnabled: 1, // 0 关闭时释放翻译快捷键并收起翻译弹窗
-  // ── 划词翻译：取词 ──
-  translateChoiceDelay: 600, // 前后各 floor(x/2)，范围 100–1000（对齐 TTime 默认 600）
   // ── 划词翻译：浮层窗口 ──
   translatePositionType: 'mouse', // 'mouse' | 'center' | 'last'
   translatePopupWidth: 460,
@@ -164,6 +162,8 @@ const defaultSettings = {
   floatClipboardHintMinLen: 10,
   floatClipboardHintMaxLen: 2000,
   floatClipboardHintCooldownMs: 8000,
+  // 搜索动作的 URL 模板：{q} 为查询占位符，设置页、划词工具条、气泡共用
+  floatClipboardSearchUrl: 'https://www.baidu.com/s?wd={q}',
   floatShopAssistantEnabled: 0,
   floatScreenshotQAEnabled: 0,
   // 交互类默认开启：均需用户主动触发，不改变既有单击/双击行为

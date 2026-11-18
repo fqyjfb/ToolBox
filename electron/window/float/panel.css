@@ -256,6 +256,41 @@ textarea:focus-visible {
   color: var(--color-text-primary);
 }
 
+/* 图标筹码：输入框上方的快捷动作，状态只改颜色/动画，不用文字覆盖图标 */
+.chip-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chip-icon svg { pointer-events: none; }
+
+.chip-icon[data-state='busy'] {
+  cursor: progress;
+}
+
+.chip-icon[data-state='busy'] svg {
+  animation: chip-spin 1s linear infinite;
+  opacity: 0.6;
+}
+
+.chip-icon[data-state='done'] {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.chip-icon[data-state='error'] {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+@keyframes chip-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── 进阶功能面板（命令面板 / 快速捕捉 / 收件箱 / 截图问答）── */
 .feature-panel {
   flex: 1 1 auto;

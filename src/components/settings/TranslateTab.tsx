@@ -15,7 +15,6 @@ type SettingValue = string | number | boolean;
 
 const SETTING_DEFAULTS: Record<string, SettingValue> = {
   translateEnabled: 1,
-  translateChoiceDelay: 600,
   translatePositionType: 'mouse',
   translatePopupWidth: 460,
   translatePopupHideOnBlur: 1,
@@ -285,17 +284,6 @@ const TranslateTab: React.FC = () => {
       </SettingSection>
 
       <SettingSection title="取词与浮层" icon={<SlidersHorizontal size={14} />}>
-        <SettingRow label="取词延迟（毫秒）">
-          <input
-            type="number"
-            min={100}
-            max={3000}
-            className={`${inputClass} w-24`}
-            value={draft.translateChoiceDelay}
-            onChange={(event) => updateDraft('translateChoiceDelay', event.target.value)}
-            onBlur={() => commitNumber('translateChoiceDelay', 100, 3000)}
-          />
-        </SettingRow>
         <SettingRow label="浮层宽度（像素）">
           <input
             type="number"

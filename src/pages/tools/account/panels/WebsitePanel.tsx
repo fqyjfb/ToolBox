@@ -43,8 +43,11 @@ const findCategoryById = (catList: WebsiteAccountCategory[], targetId: string): 
   return undefined;
 };
 
+export type WebsiteListLayout = 'single' | 'double';
+
 interface WebsitePanelProps {
   userId: string;
+  listLayout: WebsiteListLayout;
 }
 
 interface WebsitePanelRef {
@@ -103,10 +106,11 @@ const SortableCategoryItem: React.FC<{
   );
 };
 
-const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId }, ref) => {
+const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId, listLayout }, ref) => {
   const addToast = useToastStore((state) => state.addToast);
   const isDark = useThemeStore((state) => state.isDark);
   const isCompact = useIsCompactMode();
+  const isDoubleColumn = listLayout === 'double' && !isCompact;
   const { searchQuery, isSearchActive } = useNavSearch();
 
   const [categories, setCategories] = useState<WebsiteAccountCategory[]>([]);
@@ -291,6 +295,11 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
       setLoading(false);
     }
   }, [userId, isSearchActive, searchQuery, categories, selectedCategory, pageSize, addToast]);
+
+  // 仅更新每页条数，由现有加载逻辑统一重置页码并刷新数据
+  useEffect(() => {
+    setPageSize(isDoubleColumn ? 20 : 10);
+  }, [isDoubleColumn]);
 
   useEffect(() => {
     if (categories.length > 0) {
@@ -779,7 +788,7 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-hide space-y-1.5">
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner size="lg" />
@@ -795,7 +804,9 @@ const WebsitePanel = forwardRef<WebsitePanelRef, WebsitePanelProps>(({ userId },
             <p className="text-content-secondary text-sm">暂无网站账号</p>
           </div>
         ) : (
-          accounts.map(renderAccountItem)
+          <div className={`grid content-start gap-2 ${isDoubleColumn ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {accounts.map(renderAccountItem)}
+          </div>
         )}
       </div>
 

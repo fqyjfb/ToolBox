@@ -132,8 +132,8 @@
     var hasActions = false;
     if (bubbleActions && Array.isArray(card.actions) && card.actions.length > 0) {
       hasActions = true;
-      // 最多渲染 5 个按钮（剪贴板提示为 打开/翻译/总结/存笔记/存便签，店铺话术为 回复1~3），超出部分丢弃
-      card.actions.slice(0, 5).forEach(function (item) {
+      // 最多渲染 6 个按钮（剪贴板提示为 打开/翻译/总结/存笔记/存便签/搜索，店铺话术为 回复1~3），超出部分丢弃
+      card.actions.slice(0, 6).forEach(function (item) {
         if (!item || !item.label) return;
         var btn = document.createElement('button');
         btn.type = 'button';

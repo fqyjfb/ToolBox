@@ -208,6 +208,18 @@
   }
 
   // ── 结果操作条 ──
+  // 图标筹码没有文字位：状态写入 title / aria-label / data-state，避免 textContent 覆盖 SVG
+  function setButtonState(btn, label, state, hint) {
+    if (btn.classList.contains('chip-icon')) {
+      btn.title = hint ? label + ' · ' + hint : label;
+      btn.setAttribute('aria-label', label);
+      btn.dataset.state = state || '';
+      return;
+    }
+    btn.textContent = label;
+    btn.title = hint || '';
+  }
+
   function addActions(root, content) {
     var bar = document.createElement('div');
     bar.className = 'msg-actions';
@@ -266,24 +278,23 @@
         ? api.openSticky(target)
         : api.openTodo(target);
     action.then(function (res) {
-      if (!res || !res.ok) btn.textContent = (res && res.error) || '打开失败';
-    }).catch(function () { btn.textContent = '打开失败'; });
+      if (!res || !res.ok) setButtonState(btn, (res && res.error) || '打开失败', 'error');
+    }).catch(function () { setButtonState(btn, '打开失败', 'error'); });
   }
 
   function saveNote(content, btn) {
     btn.onclick = null; // 防重入
-    btn.textContent = '保存中…';
+    setButtonState(btn, '保存中…', 'busy');
     api.saveNote({ content: content }).then(function (result) {
       if (result && result.ok) {
-        btn.textContent = '打开笔记';
-        btn.title = result.path || ''; // 悬停可见保存位置，便于核对
+        setButtonState(btn, '打开笔记', 'done', result.path || '');
         btn.onclick = function () { openSaved('note', result.path, btn); };
       } else {
-        btn.textContent = (result && result.error) || '保存失败';
+        setButtonState(btn, (result && result.error) || '保存失败', 'error');
         btn.onclick = function () { saveNote(content, btn); };
       }
     }).catch(function () {
-      btn.textContent = '保存失败';
+      setButtonState(btn, '保存失败', 'error');
       btn.onclick = function () { saveNote(content, btn); };
     });
   }
@@ -291,38 +302,36 @@
   function saveTodo(content, btn) {
     var title = content.split('\n')[0].replace(/^[#*\s]+/, '').slice(0, 60) || content.slice(0, 60);
     btn.onclick = null; // 防重入
-    btn.textContent = '保存中…';
+    setButtonState(btn, '保存中…', 'busy');
     api.saveTodo({ title: title, content: content }).then(function (result) {
       if (result && result.ok) {
         var todoId = result.todo && result.todo.id;
-        btn.textContent = '查看待办';
-        btn.title = '已保存到待办事项';
+        setButtonState(btn, '查看待办', 'done', '已保存到待办事项');
         btn.onclick = function () { openSaved('todo', todoId, btn); };
       } else {
-        btn.textContent = (result && result.error) || '保存失败';
+        setButtonState(btn, (result && result.error) || '保存失败', 'error');
         btn.onclick = function () { saveTodo(content, btn); };
       }
     }).catch(function () {
-      btn.textContent = '保存失败';
+      setButtonState(btn, '保存失败', 'error');
       btn.onclick = function () { saveTodo(content, btn); };
     });
   }
 
   function saveSticky(content, btn) {
     btn.onclick = null; // 防重入
-    btn.textContent = '保存中…';
+    setButtonState(btn, '保存中…', 'busy');
     api.saveSticky({ content: content }).then(function (result) {
       if (result && result.ok) {
         var noteId = result.note && result.note.id;
-        btn.textContent = '查看便签';
-        btn.title = '已保存到便签';
+        setButtonState(btn, '查看便签', 'done', '已保存到便签');
         btn.onclick = function () { openSaved('sticky', noteId, btn); };
       } else {
-        btn.textContent = (result && result.error) || '保存失败';
+        setButtonState(btn, (result && result.error) || '保存失败', 'error');
         btn.onclick = function () { saveSticky(content, btn); };
       }
     }).catch(function () {
-      btn.textContent = '保存失败';
+      setButtonState(btn, '保存失败', 'error');
       btn.onclick = function () { saveSticky(content, btn); };
     });
   }
@@ -335,10 +344,8 @@
   function resetQuickSaveButtons() {
     var labels = { 'save-note': '存笔记', 'save-todo': '存待办', 'save-sticky': '存便签' };
     els.chatPresets.querySelectorAll('[data-action]').forEach(function (btn) {
-      var label = labels[btn.dataset.action] || '存待办';
-      if (btn.textContent === label) return;
-      btn.textContent = label;
-      btn.title = '';
+      if (btn.dataset.state === 'busy') return; // 保存中不打断，也不重复绑定
+      setButtonState(btn, labels[btn.dataset.action] || '存待办', '');
       bindQuickSave(btn); // 「打开笔记 / 查看待办 / 查看便签 / 保存失败」都恢复成保存入口
     });
   }

@@ -4,6 +4,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set([
   'clipboard:writeImage',
   'clipboard:watch:start',
   'clipboard:watch:stop',
+  'todo:create',
 ]);
 const ALLOWED_LISTEN_CHANNELS = new Set(['clipboard:changed', 'clipboard:image-changed']);
 
@@ -360,6 +361,10 @@ contextBridge.exposeInMainWorld('electron', {
   // 划词工具条「问AI」：主窗口带文本打开小橘面板（chat 模式，输入框预填）
   floatPanel: {
     openChat: (text) => ipcRenderer.invoke('float-panel-open-chat', { text }),
+  },
+  // 记事本「存待办」：向主窗口广播 float-ai-save-todo，触发 Todo 页弹窗创建
+  todo: {
+    create: (payload) => ipcRenderer.invoke('todo:create', payload),
   },
   notes: {
     hasRootPath: () => ipcRenderer.invoke('notes-has-root-path'),

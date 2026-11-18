@@ -296,6 +296,10 @@ declare interface Window {
     floatPanel?: {
       openChat: (text: string) => Promise<{ ok: boolean; error?: string }>;
     };
+    /** 记事本「存待办」：向主窗口广播触发 Todo 页弹窗创建 */
+    todo?: {
+      create: (payload: { title: string }) => Promise<{ ok: boolean; error?: string }>;
+    };
     /** 悬浮球洞察气泡：每日快照（天气/黄历/打卡，预格式化文案，主进程合并写） */
     floatDailySnapshot?: (payload: {
       weather?: { summary: string; updatedAt: number };

@@ -6,6 +6,7 @@ import ToggleSwitch from './ToggleSwitch';
 import { FloatConfigItem } from '../../types/settings';
 import { QuickLaunchItem } from '../../utils/quickLaunch';
 import FloatConfigIcon from '../ui/FloatConfigIcon';
+import Select from '../ui/Select';
 
 // 圆形按钮内径 40px，图标统一 20px（与真实悬浮窗菜单项一致）
 const BALL_ICON_SIZE = 20;
@@ -29,6 +30,14 @@ const CLIPBOARD_SETTING_NAMES = [
   'floatClipboardHintCooldownMs',
 ];
 
+// 搜索引擎预设：value 即 URL 模板，{q} 由点击时替换，设置页与两处搜索按钮共用同一份配置
+const SEARCH_ENGINE_OPTIONS = [
+  { label: '百度', value: 'https://www.baidu.com/s?wd={q}' },
+  { label: '谷歌', value: 'https://www.google.com/search?q={q}' },
+  { label: '必应', value: 'https://cn.bing.com/search?q={q}' },
+  { label: 'GitHub', value: 'https://github.com/search?q={q}' },
+];
+
 interface FloatWindowTabProps {
   floatConfig: FloatConfigItem[];
   quickLaunchApps: QuickLaunchItem[];
@@ -46,6 +55,7 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
 }) => {
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const [featureValues, setFeatureValues] = useState<Record<string, number>>({});
+  const [searchUrl, setSearchUrl] = useState(SEARCH_ENGINE_OPTIONS[0].value);
   const [shortcutCmds, setShortcutCmds] = useState<Record<string, string>>({});
 
   // 加载当前快捷键映射 — 用于动态展示功能开关旁边的快捷键提示
@@ -81,6 +91,9 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
             : (value === true || value === '1' ? 1 : 0);
         });
         setFeatureValues(next);
+        // 字符串配置单独读取：上面的 names 分支只收数值，不能把 URL 混进去
+        const savedSearchUrl = settings.find((item) => item.name === 'floatClipboardSearchUrl')?.value;
+        if (typeof savedSearchUrl === 'string' && savedSearchUrl) setSearchUrl(savedSearchUrl);
       })
       .catch(() => {});
     return () => { alive = false; };
@@ -266,6 +279,19 @@ const FloatWindowTab: React.FC<FloatWindowTabProps> = ({
                       8000,
                     )}
                     className="w-24 px-2 py-1 text-sm border border-content rounded-md focus:outline-none focus:border-primary bg-surface text-content-primary"
+                  />
+                </SettingRow>
+                <SettingRow label="搜索引擎">
+                  <Select
+                    value={searchUrl}
+                    onChange={(value) => {
+                      setSearchUrl(value);
+                      void window.electron?.updateSetting?.({ name: 'floatClipboardSearchUrl', value });
+                    }}
+                    options={SEARCH_ENGINE_OPTIONS}
+                    size="sm"
+                    dense
+                    className="border border-content bg-surface text-content-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </SettingRow>
               </div>
