@@ -4,6 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  NPM_CONFIG_IGNORE_SCRIPTS = "true"
 
 # HotNews API 代理：规避浏览器 CORS 限制（同源转发到真实 API）
 [[redirects]]
