@@ -195,6 +195,19 @@ body {
   z-index: 10;
 }
 
+/* 默认隐藏，聚焦后渐显 */
+.lk-btn.lk-exit,
+.lk-btn.lk-close {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+body.lk-focused .lk-btn.lk-exit,
+body.lk-focused .lk-btn.lk-close {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .lk-btn:hover {
   background: transparent;
   color: #ef4444;

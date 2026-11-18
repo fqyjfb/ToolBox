@@ -194,7 +194,12 @@ bodyEl.addEventListener('click', (e) => {
 });
 
 window.addEventListener('focus', () => {
+  document.body.classList.add('lk-focused');
   if (state === 'idle' && !passwordInput.disabled) passwordInput.focus();
+});
+
+window.addEventListener('blur', () => {
+  document.body.classList.remove('lk-focused');
 });
 
 // ---------------- 关闭 / 退出应用 ----------------

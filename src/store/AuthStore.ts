@@ -9,6 +9,11 @@ import localStorageService, { STORAGE_KEYS } from '../services/localStorageServi
 import { queryClient } from '../services/queryClient'
 import { queryKeys } from '../queries/keys'
 
+/** 登录态有效期：2 天未访问则清除，需重新登录 */
+const AUTH_TIMEOUT_MS = 2 * 24 * 60 * 60 * 1000
+/** 与登录态绑定的最近访问时间戳（毫秒数，字符串存储） */
+const AUTH_LAST_ACTIVE_KEY = 'toolbox_auth_last_active'
+
 interface AuthStateData {
   user: User | null
   admin: Admin | null
@@ -27,67 +32,95 @@ interface AuthState extends AuthStateData {
   handleAuthSuccess: (user: User, admin: Admin | undefined) => Promise<void>
 }
 
+/** 清除与登录态相关的所有 localStorage 条目 */
+const clearAuthStorage = (): void => {
+  localStorageService.remove(STORAGE_KEYS.USER)
+  localStorageService.remove(STORAGE_KEYS.ADMIN)
+  localStorageService.remove(AUTH_LAST_ACTIVE_KEY)
+}
+
 const authStorage = {
   getItem: (key: string): StorageValue<AuthStateData> | null => {
-    if (key === 'auth') {
-      const storedUser = localStorageService.getString(STORAGE_KEYS.USER)
-      if (storedUser) {
-        try {
-          const user = JSON.parse(storedUser)
-          return {
-            state: {
-              user,
-              admin: user.role ? { ...user, role: user.role as 'super' | 'normal' } : null,
-              isAuthenticated: true,
-              isAdmin: !!(user.role && (user.role === 'super' || user.role === 'normal')),
-              isLoading: false,
-              error: null
-            },
-            version: 0
-          }
-        } catch {
-          return null
-        }
+    if (key !== 'auth') return null
+
+    const storedUser = localStorageService.getString(STORAGE_KEYS.USER)
+    const storedAdmin = localStorageService.getString(STORAGE_KEYS.ADMIN)
+    if (!storedUser && !storedAdmin) return null
+
+    // 2 天未访问：丢弃残留的登录态数据
+    const lastActive = localStorageService.getString(AUTH_LAST_ACTIVE_KEY)
+    if (lastActive) {
+      const elapsed = Date.now() - parseInt(lastActive, 10)
+      if (elapsed > AUTH_TIMEOUT_MS) {
+        clearAuthStorage()
+        return null
       }
-      const storedAdmin = localStorageService.getString(STORAGE_KEYS.ADMIN)
-      if (storedAdmin) {
-        try {
-          const admin = JSON.parse(storedAdmin)
-          return {
-            state: {
-              user: null,
-              admin,
-              isAuthenticated: true,
-              isAdmin: admin.role === 'super' || admin.role === 'normal',
-              isLoading: false,
-              error: null
-            },
-            version: 0
-          }
-        } catch {
-          return null
+    }
+    // 每次访问自动续期，给持续使用的用户滚动宽限期
+    localStorageService.setString(AUTH_LAST_ACTIVE_KEY, Date.now().toString())
+
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser)
+        return {
+          state: {
+            user,
+            admin: user.role ? { ...user, role: user.role as 'super' | 'normal' } : null,
+            isAuthenticated: true,
+            isAdmin: !!(user.role && (user.role === 'super' || user.role === 'normal')),
+            isLoading: false,
+            error: null
+          },
+          version: 0
         }
+      } catch {
+        clearAuthStorage()
+        return null
+      }
+    }
+    if (storedAdmin) {
+      try {
+        const admin = JSON.parse(storedAdmin)
+        return {
+          state: {
+            user: null,
+            admin,
+            isAuthenticated: true,
+            isAdmin: admin.role === 'super' || admin.role === 'normal',
+            isLoading: false,
+            error: null
+          },
+          version: 0
+        }
+      } catch {
+        clearAuthStorage()
+        return null
       }
     }
     return null
   },
 
   setItem: (key: string, value: StorageValue<AuthStateData>): void => {
-    if (key === 'auth' && value.state) {
-      if (value.state.user) {
-        localStorageService.setString(STORAGE_KEYS.USER, JSON.stringify(value.state.user))
-      }
-      if (value.state.admin) {
-        localStorageService.setString(STORAGE_KEYS.ADMIN, JSON.stringify(value.state.admin))
-      }
+    if (key !== 'auth' || !value.state) return
+
+    const { user, admin } = value.state
+    if (!user && !admin) {
+      // 登出或重置：同步清除 localStorage 残留，避免下次启动误恢复
+      clearAuthStorage()
+      return
     }
+
+    if (user) {
+      localStorageService.setString(STORAGE_KEYS.USER, JSON.stringify(user))
+    }
+    if (admin) {
+      localStorageService.setString(STORAGE_KEYS.ADMIN, JSON.stringify(admin))
+    }
+    localStorageService.setString(AUTH_LAST_ACTIVE_KEY, Date.now().toString())
   },
 
   removeItem: (key: string): void => {
-    if (key === 'auth') {
-      localStorageService.remove(STORAGE_KEYS.USER)
-      localStorageService.remove(STORAGE_KEYS.ADMIN)
-    }
+    if (key === 'auth') clearAuthStorage()
   }
 }
 
