@@ -4,6 +4,7 @@
 const { ipcMain, dialog, screen, clipboard, nativeImage, BrowserWindow, app } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { performance } = require('perf_hooks');
 const { loadSettings } = require('../lib/config.cjs');
 
 let preScreenshotBounds = null;
@@ -20,7 +21,36 @@ let pluginWindowsRef = null;
 // 截图问答的一次性标记：只影响下一次 screenshot:translate 的落点，不改变既有翻译路径
 let pendingFloatScreenshot = false;
 
+// 截图会话互斥：从隐藏窗口开始到 restoreAfterScreenshot 结束前，拒绝新的截图请求
+let screenshotSessionActive = false;
+
+// Phase 0：仅调试开关下记录分阶段耗时，关闭时不产生计时对象
+const SCREENSHOT_DEBUG_TIMING = process.env.TOOLBOX_SCREENSHOT_DEBUG === '1';
+let activeScreenshotTiming = null;
+
+function beginScreenshotTiming() {
+  if (!SCREENSHOT_DEBUG_TIMING) return null;
+  const startedAt = performance.now();
+  const marks = {};
+  const meta = {};
+  return {
+    mark(name) {
+      marks[name] = Math.round((performance.now() - startedAt) * 100) / 100;
+    },
+    setMeta(key, value) {
+      meta[key] = value;
+    },
+    log(errorCode, errorMessage) {
+      const payload = errorCode ? { ...marks, ...meta, errorCode, errorMessage } : { ...marks, ...meta };
+      console.info('[Screenshot][timing]', JSON.stringify(payload));
+    },
+  };
+}
+
 async function startScreenshotCapture(options) {
+  if (screenshotSessionActive) {
+    return { success: false, error: '截图会话进行中', code: 'SHOT_BUSY' };
+  }
   // P1-4：截图问答复用 translate 选区 + OCR 流程（overlay 不必认识新 mode），
   // 但不受「翻译总开关」约束，且结果改投 AI 面板而不是翻译浮层。
   const forFloat = options && options.mode === 'float';
@@ -29,6 +59,9 @@ async function startScreenshotCapture(options) {
   if (mode === 'translate' && !forFloat && loadSettings().translateEnabled === 0) {
     return { success: false, error: '翻译功能已关闭' };
   }
+  screenshotSessionActive = true;
+  activeScreenshotTiming = beginScreenshotTiming();
+  activeScreenshotTiming?.mark('t_hotkey');
   try {
     // OS 级全屏窗口只能落在单个显示器上：遮罩固定在鼠标所在屏
     const cursorDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
@@ -58,15 +91,25 @@ async function startScreenshotCapture(options) {
         window.hide();
       }
     });
+    activeScreenshotTiming?.mark('t_hide');
 
     await new Promise(resolve => setTimeout(resolve, 300));
+    activeScreenshotTiming?.mark('t_wait');
 
     const initScreenShot = require('../services/screenShotService.cjs').init;
     const screenShot = initScreenShot();
     const shotResult = await screenShot([{ id, bounds, scaleFactor }]);
-    if (!shotResult.success) throw new Error(shotResult.error || '截图失败');
+    activeScreenshotTiming?.mark('t_capture');
+    activeScreenshotTiming?.mark('t_encode');
+    if (shotResult.timings) activeScreenshotTiming?.setMeta('captureService', shotResult.timings);
+    if (!shotResult.success) {
+      const error = new Error(shotResult.error || '截图失败');
+      error.code = shotResult.code || 'SHOT_CAPTURE_FAIL';
+      throw error;
+    }
     const captureData = shotResult.captures;
 
+    // 正常情况下不会有旧遮罩（会话互斥 + restore 已置空），这里只清理异常残留
     if (screenshotOverlayWindow && !screenshotOverlayWindow.isDestroyed()) {
       screenshotOverlayWindow.destroy();
     }
@@ -335,6 +378,7 @@ async function startScreenshotCapture(options) {
         contextIsolation: true,
       },
     });
+    activeScreenshotTiming?.mark('t_overlay_created');
 
     // Esc 退出兜底（主进程层拦截）：全局快捷键（Alt+W）触发截图时，Windows 下遮罩窗可能
     // 未真正获得键盘焦点，页面内的 document keydown 收不到事件，可选链会静默吞掉退出请求。
@@ -359,6 +403,7 @@ async function startScreenshotCapture(options) {
 
     // 页面加载完成后立即显示并进入 OS 级全屏，随后通过 IPC 发送截图数据，避免超长 data URL 嵌入 HTML
     screenshotOverlayWindow.webContents.once('did-finish-load', () => {
+      activeScreenshotTiming?.mark('t_overlay_loaded');
       const win = screenshotOverlayWindow;
       if (!win || win.isDestroyed() || win.isVisible()) return;
       win.setAlwaysOnTop(true, 'screen-saver', 1);
@@ -367,53 +412,78 @@ async function startScreenshotCapture(options) {
       win.focus();
       // 通过 IPC 将截图数据异步注入渲染进程，渲染进程收到后渲染选区 UI
       win.webContents.send('screenshot:data', { capture: captureData[0], mode });
+      activeScreenshotTiming?.mark('t_overlay_shown');
     });
 
     // 兜底：页面加载失败时关闭遮罩并恢复主窗口
     screenshotOverlayWindow.webContents.once('did-fail-load', (_event, errorCode, errorDesc) => {
       console.error('[Screenshot] overlay did-fail-load:', errorCode, errorDesc);
-      restoreAfterScreenshot();
+      restoreAfterScreenshot({ errorCode: 'SHOT_OVERLAY_LOAD_FAIL', errorMessage: `${errorCode} ${errorDesc}` });
+    });
+
+    // 遮罩被外部关闭（Alt+F4 等）时兜底释放会话，避免互斥标志把后续截图永久挡住；
+    // 正常收尾时 restoreAfterScreenshot 已先复位标志，旧窗口的延迟事件也不会误伤新会话
+    const overlayWindow = screenshotOverlayWindow;
+    overlayWindow.once('closed', () => {
+      if (!screenshotSessionActive || screenshotOverlayWindow !== overlayWindow) return;
+      console.warn('[Screenshot] overlay closed unexpectedly, restoring windows');
+      restoreAfterScreenshot({ errorCode: 'SHOT_OVERLAY_CLOSED' });
     });
 
   } catch (error) {
-    console.error('[Screenshot] startScreenshotCapture failed:', error.message);
-    restoreAfterScreenshot();
-    return { success: false, error: error.message };
+    const code = error.code || 'SHOT_UNKNOWN';
+    console.error('[Screenshot] startScreenshotCapture failed:', code, error.message);
+    restoreAfterScreenshot({ errorCode: code, errorMessage: error.message });
+    return { success: false, error: error.message, code };
   }
 }
 
 /** 结束截图会话：退出全屏 → 关闭遮罩 → 还原截图前可见的主窗口 / 插件窗口；翻译流程用 showInactive 避免抢焦点 */
-function restoreAfterScreenshot({ showMain = true } = {}) {
-  const overlay = screenshotOverlayWindow;
-  if (overlay && !overlay.isDestroyed()) {
-    // 先退出全屏再关闭，防止 Windows 残留全屏状态
-    try { overlay.setSimpleFullScreen(false); } catch { /* 全屏状态已丢失时忽略 */ }
-    overlay.close();
-  }
-  screenshotOverlayWindow = null;
+function restoreAfterScreenshot({ showMain = true, errorCode = null, errorMessage = '' } = {}) {
+  // 会话唯一性的统一释放点：无论走正常完成、取消还是异常路径，都在这里复位
+  screenshotSessionActive = false;
+  const timing = activeScreenshotTiming;
+  activeScreenshotTiming = null;
 
-  const mainWindow = require('../window/mainWindow.cjs').getMainWindow();
-  if (mainWindow) {
-    // 停靠态的位置/置顶由停靠管理独占维护，截图结束不回写，否则会被还原到屏幕外的折叠位
-    if (!preScreenshotMainDocked) {
-      if (preScreenshotBounds) mainWindow.setBounds(preScreenshotBounds);
-      mainWindow.setAlwaysOnTop(preScreenshotAlwaysOnTop);
+  try {
+    const overlay = screenshotOverlayWindow;
+    if (overlay && !overlay.isDestroyed()) {
+      // 先退出全屏再关闭，防止 Windows 残留全屏状态
+      try { overlay.setSimpleFullScreen(false); } catch { /* 全屏状态已丢失时忽略 */ }
+      overlay.close();
     }
-    // 截图前主窗口不可见（托盘 / Win+D 桌面态）时保持隐藏，避免误弹出；
-    // 停靠态必须原样显示回去：pollEdgeWindowState 有 isVisible() 守卫，不显示则停靠永不展开
-    if (preScreenshotMainVisible) {
-      if (showMain) mainWindow.show();
-      else mainWindow.showInactive();
+    screenshotOverlayWindow = null;
+
+    const mainWindow = require('../window/mainWindow.cjs').getMainWindow();
+    if (mainWindow) {
+      // 停靠态的位置/置顶由停靠管理独占维护，截图结束不回写，否则会被还原到屏幕外的折叠位
+      if (!preScreenshotMainDocked) {
+        if (preScreenshotBounds) mainWindow.setBounds(preScreenshotBounds);
+        mainWindow.setAlwaysOnTop(preScreenshotAlwaysOnTop);
+      }
+      // 截图前主窗口不可见（托盘 / Win+D 桌面态）时保持隐藏，避免误弹出；
+      // 停靠态必须原样显示回去：pollEdgeWindowState 有 isVisible() 守卫，不显示则停靠永不展开
+      if (preScreenshotMainVisible) {
+        if (showMain) mainWindow.show();
+        else mainWindow.showInactive();
+      }
+    }
+    pluginWindowsRef.forEach((window) => {
+      if (window.isDestroyed()) return;
+      // 仅恢复截图前可见的插件窗口
+      if (preScreenshotVisiblePluginIds.has(window.id)) {
+        if (showMain) window.show();
+        else window.showInactive();
+      }
+    });
+  } catch (error) {
+    console.error('[Screenshot] restore failed:', errorCode || 'SHOT_RESTORE_FAIL', error.message);
+  } finally {
+    if (timing) {
+      timing.mark('t_restore');
+      timing.log(errorCode, errorMessage);
     }
   }
-  pluginWindowsRef.forEach((window) => {
-    if (window.isDestroyed()) return;
-    // 仅恢复截图前可见的插件窗口
-    if (preScreenshotVisiblePluginIds.has(window.id)) {
-      if (showMain) window.show();
-      else window.showInactive();
-    }
-  });
 }
 
 /**
@@ -449,7 +519,7 @@ function registerScreenshotIpc({ pluginWindows }) {
   pluginWindowsRef = pluginWindows;
 
   ipcMain.handle('start-screenshot-capture', () => {
-    if (loadSettings().isLockEnabled === 1) return { success: false, error: '应用已锁定' };
+    if (loadSettings().isLockEnabled === 1) return { success: false, error: '应用已锁定', code: 'SHOT_LOCKED' };
     return startScreenshotCapture();
   });
 
