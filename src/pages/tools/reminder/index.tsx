@@ -39,6 +39,8 @@ const ReminderPage: React.FC = () => {
 
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [showFormModal, setShowFormModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
   const [formData, setFormData] = useState<CreateReminderRequest & { is_enabled?: boolean }>(EMPTY_FORM);
 
@@ -157,8 +159,10 @@ const ReminderPage: React.FC = () => {
   }, []);
 
   const handleConfirm = async () => {
-    if (!user || !formData.title.trim() || !formData.remind_time) return;
-
+    if (!user || !formData.title.trim() || !formData.remind_time || submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
     if (editingReminder) {
       const result = await reminderService.updateReminder(user.id, editingReminder.id, {
         title: formData.title,
@@ -170,6 +174,7 @@ const ReminderPage: React.FC = () => {
       });
       if (result.success) {
         addToast({ message: '提醒修改成功', type: 'success' });
+        if (result.scheduleWarning) addToast({ message: result.scheduleWarning, type: 'warning' });
         logInfo('提醒修改成功', 'ReminderPage');
         handleCloseFormModal();
         loadReminders();
@@ -188,12 +193,17 @@ const ReminderPage: React.FC = () => {
       });
       if (result.success) {
         addToast({ message: '提醒创建成功', type: 'success' });
+        if (result.scheduleWarning) addToast({ message: result.scheduleWarning, type: 'warning' });
         logInfo('提醒创建成功', 'ReminderPage');
         handleCloseFormModal();
         loadReminders();
       } else {
         addToast({ message: result.error || '创建提醒失败', type: 'error' });
       }
+    }
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -354,6 +364,7 @@ const ReminderPage: React.FC = () => {
         formData={formData}
         onFormDataChange={setFormData}
         onConfirm={handleConfirm}
+        loading={submitting}
       />
 
       <ContextMenu

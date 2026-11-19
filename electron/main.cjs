@@ -416,6 +416,8 @@ app.whenReady().then(async () => {
   safeRegister('local-media 协议注册', () => protocol.handle('local-media', handleLocalMediaRequest));
 
   safeRegister('日志初始化', initLogger);
+  // 图标缓存索引预加载：不 await、失败只记日志；让首批图标解析不再现场读 index.json
+  safeRegister('图标缓存索引预加载', () => require('./lib/config.cjs').preloadIconCacheIndex());
   safeRegister('registerLockIpcHandlers', registerLockIpcHandlers);
   safeRegister('registerAppLockIpc', () => require('./ipc/appLockIpc.cjs').registerAppLockIpc());
   safeRegister('registerSqliteIpc', registerSqliteIpc);
@@ -497,6 +499,13 @@ app.on('activate', () => {
 
 app.on('before-quit', () => {
   setIsQuitting(true);
+  // 显式关闭插件窗口：让 closed 清理（临时 HTML、邮件订阅/IDLE）在退出前完成，
+  // 而不是依赖 Electron 退出时的被动销毁。按 pluginId 遍历，不触碰其它窗口。
+  try {
+    require('./ipc/pluginIpc.cjs').closeAllPluginWindows();
+  } catch (e) {
+    console.error('[Main] 关闭插件窗口失败:', e.message);
+  }
   stopBackendServices();
   stopMemoryOptimization();
   cleanupQuickLaunchHotkeys();

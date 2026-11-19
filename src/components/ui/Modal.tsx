@@ -15,6 +15,8 @@ interface ModalProps {
   showCancel?: boolean;
   showConfirm?: boolean;
   confirmDisabled?: boolean;
+  /** 提交进行中：禁用确认按钮与 Enter 触发，避免重复创建/重复保存 */
+  loading?: boolean;
   clickOutsideToClose?: boolean;
   confirmVariant?: 'primary' | 'danger';
   /** 渲染到 body：父级存在 transform（如首页卡片重排动画）时必须开启，否则 fixed 定位会被该包含块捕获 */
@@ -37,6 +39,7 @@ const Modal: React.FC<ModalProps> = ({
   showCancel = true,
   showConfirm = true,
   confirmDisabled = false,
+  loading = false,
   clickOutsideToClose = false,
   confirmVariant = 'primary',
   portal = false,
@@ -44,13 +47,15 @@ const Modal: React.FC<ModalProps> = ({
   bodyClassName = 'p-4',
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         onClose();
       }
-      if (e.key === 'Enter' && isOpen && !e.shiftKey && !confirmDisabled && !(e.target instanceof HTMLTextAreaElement)) {
+      if (e.key === 'Enter' && isOpen && !e.shiftKey && !confirmDisabled && !loadingRef.current && !(e.target instanceof HTMLTextAreaElement)) {
         onConfirm?.();
       }
     };
@@ -135,7 +140,7 @@ const Modal: React.FC<ModalProps> = ({
             {showConfirm && onConfirm && (
               <button
                 onClick={onConfirm}
-                disabled={confirmDisabled}
+                disabled={confirmDisabled || loading}
                 className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   confirmVariant === 'danger'
                     ? 'text-white bg-red-600 hover:bg-red-700'

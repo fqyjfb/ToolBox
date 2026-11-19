@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { useNavSearch } from '../../contexts/NavSearchContext';
@@ -8,14 +8,20 @@ import { isSearchRoute } from '../../constants/searchRoutes';
 // 头部搜索框：原样抽取自 Content.tsx，非搜索路由渲染 null
 const HeaderSearchBox: React.FC = () => {
   const location = useLocation();
-  const { searchQuery, setSearchQuery, performSearch, clearSearch, handleSearch } = useNavSearch();
+  const { searchQuery, performSearch, clearSearch, handleSearch } = useNavSearch();
+  // 输入框保留即时值；Context 中的 searchQuery 是防抖后的提交值，避免逐字触发查询
+  const [inputValue, setInputValue] = useState(searchQuery);
   // 小窗下标题栏宽度有限：搜索框占满可用宽度，不再用固定 224px/聚焦 256px 撑出横向溢出
   const isCompact = useIsCompactMode();
+
+  useEffect(() => {
+    setInputValue(searchQuery);
+  }, [searchQuery]);
 
   if (!isSearchRoute(location.pathname)) return null;
 
   const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
+    setInputValue(query);
     handleSearch(query);
   };
 
@@ -28,17 +34,17 @@ const HeaderSearchBox: React.FC = () => {
         }`}
         name="search"
         type="search"
-        value={searchQuery}
+        value={inputValue}
         onChange={(e) => handleSearchChange(e.target.value)}
-        onKeyPress={(e) => e.key === 'Enter' && performSearch()}
+        onKeyPress={(e) => e.key === 'Enter' && performSearch(inputValue)}
         style={{ height: '28px' } as React.CSSProperties}
       />
-      {searchQuery && (
+      {inputValue && (
         <button onClick={clearSearch} className="absolute right-9 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary transition-all duration-300 ease-in-out">
           <X size={14} />
         </button>
       )}
-      <button onClick={performSearch} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary transition-all duration-300 ease-in-out">
+      <button onClick={() => performSearch(inputValue)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-content-secondary hover:text-content-primary transition-all duration-300 ease-in-out">
         <Search size={16} />
       </button>
     </div>

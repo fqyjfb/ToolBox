@@ -24,13 +24,18 @@ const WebNavbar: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
   const admin = useAuthStore((s) => s.admin);
-  const { searchQuery, setSearchQuery, handleSearch, clearSearch, performSearch } = useNavSearch();
+  const { searchQuery, handleSearch, clearSearch, performSearch } = useNavSearch();
+  const [inputValue, setInputValue] = useState(searchQuery);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setInputValue(searchQuery);
+  }, [searchQuery]);
 
   const showSearch = SEARCH_ENABLED_PATHS.some(path => location.pathname.startsWith(path));
 
   const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
+    setInputValue(query);
     handleSearch(query);
   };
 
@@ -104,11 +109,11 @@ const WebNavbar: React.FC = () => {
                   className="web-navbar__search-input"
                   name="search"
                   type="search"
-                  value={searchQuery}
+                  value={inputValue}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && performSearch()}
+                  onKeyPress={(e) => e.key === 'Enter' && performSearch(inputValue)}
                 />
-                {searchQuery && (
+                {inputValue && (
                   <button
                     onClick={clearSearch}
                     className="absolute right-7 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-[var(--color-bg-tertiary)] transition-colors"
@@ -117,7 +122,7 @@ const WebNavbar: React.FC = () => {
                   </button>
                 )}
                 <button
-                  onClick={performSearch}
+                  onClick={() => performSearch(inputValue)}
                   className="web-navbar__search-btn"
                 >
                   <Search className="w-3.5 h-3.5" />

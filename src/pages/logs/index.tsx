@@ -2,6 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Trash2, Download, AlertCircle, AlertTriangle, Info, Bug, Minus, X } from 'lucide-react';
 import { loggerService, LogEntry, LogLevel } from '../../services/loggerService';
 
+// 渲染层展示上限：主进程日志可继续按自身策略保留完整历史，
+// 页面只保留最近 N 条用于渲染，避免长时间运行后 DOM 与数组无界增长。
+// 导出始终走 loggerService.exportLogs()，不受此上限影响。
+const LOG_DISPLAY_LIMIT = 2000;
+const capDisplayLogs = (list: LogEntry[]): LogEntry[] =>
+  list.length > LOG_DISPLAY_LIMIT ? list.slice(-LOG_DISPLAY_LIMIT) : list;
+
 const LogsPage: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +19,7 @@ const LogsPage: React.FC = () => {
     setLoading(true);
     try {
       const fetchedLogs = await loggerService.getLogs();
-      setLogs(fetchedLogs);
+      setLogs(capDisplayLogs(fetchedLogs));
       const newStats = await loggerService.getStats();
       setStats(newStats);
     } catch (error) {
@@ -57,7 +64,7 @@ const LogsPage: React.FC = () => {
     loadLogs();
 
     const unsubscribe = loggerService.subscribe((newLogs) => {
-      setLogs(newLogs);
+      setLogs(capDisplayLogs(newLogs));
       const newStats = {
         total: newLogs.length,
         byLevel: {
@@ -73,7 +80,7 @@ const LogsPage: React.FC = () => {
     const logApi = window.electron?.log;
     if (logApi) {
       const handleNewEntry = (entry: LogEntry) => {
-        setLogs(prev => [...prev, entry]);
+        setLogs(prev => capDisplayLogs([...prev, entry]));
         setStats(prev => ({
           total: prev.total + 1,
           byLevel: {

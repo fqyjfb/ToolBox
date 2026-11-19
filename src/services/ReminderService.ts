@@ -22,7 +22,7 @@ export const reminderService = {
     }
   },
 
-  async createReminder(userId: string, req: CreateReminderRequest): Promise<{ success: boolean; data?: Reminder; error?: string }> {
+  async createReminder(userId: string, req: CreateReminderRequest): Promise<{ success: boolean; data?: Reminder; error?: string; scheduleWarning?: string }> {
     try {
       const dal = getDataAccessLayer(userId);
       const reminder = await dal.create<Reminder>('reminders', {
@@ -37,24 +37,26 @@ export const reminderService = {
         source_id: req.source_id ?? null,
       } as Omit<Reminder, 'id' | 'user_id' | 'created_at' | 'updated_at'>);
 
-      // 通知主进程注册 Windows 计划任务（失败不阻断业务流程）
+      // 通知主进程注册 Windows 计划任务（失败不阻断业务落盘，但必须让 UI 感知）
+      let scheduleWarning: string | undefined;
       if (isElectron() && window.electron?.reminder) {
         try {
           await window.electron.reminder.schedule(reminder);
         } catch (e) {
           logError('注册计划任务失败', 'ReminderService', e as Error);
+          scheduleWarning = '已保存，但系统提醒注册失败，重启后可能无法自动提醒';
         }
       }
 
       logInfo(`创建提醒成功: ${req.title}`, 'ReminderService');
-      return { success: true, data: reminder };
+      return { success: true, data: reminder, ...(scheduleWarning ? { scheduleWarning } : {}) };
     } catch (error) {
       logError('创建提醒失败', 'ReminderService', error as Error);
       return { success: false, error: error instanceof Error ? error.message : '创建提醒失败' };
     }
   },
 
-  async updateReminder(userId: string, id: string, req: UpdateReminderRequest): Promise<{ success: boolean; data?: Reminder; error?: string }> {
+  async updateReminder(userId: string, id: string, req: UpdateReminderRequest): Promise<{ success: boolean; data?: Reminder; error?: string; scheduleWarning?: string }> {
     try {
       const dal = getDataAccessLayer(userId);
       const current = await dal.get<Reminder>('reminders', id);
@@ -70,38 +72,42 @@ export const reminderService = {
       const reminder = await dal.update<Reminder>('reminders', id, patch);
 
       // 通知主进程更新计划任务（先删除旧的再创建新的）
+      let scheduleWarning: string | undefined;
       if (isElectron() && window.electron?.reminder) {
         try {
           await window.electron.reminder.schedule(reminder);
         } catch (e) {
           logError('更新计划任务失败', 'ReminderService', e as Error);
+          scheduleWarning = '已保存，但系统提醒注册失败，重启后可能无法自动提醒';
         }
       }
 
       logInfo(`更新提醒成功: ID=${id}`, 'ReminderService');
-      return { success: true, data: reminder };
+      return { success: true, data: reminder, ...(scheduleWarning ? { scheduleWarning } : {}) };
     } catch (error) {
       logError('更新提醒失败', 'ReminderService', error as Error);
       return { success: false, error: error instanceof Error ? error.message : '更新提醒失败' };
     }
   },
 
-  async deleteReminder(userId: string, id: string): Promise<{ success: boolean; error?: string }> {
+  async deleteReminder(userId: string, id: string): Promise<{ success: boolean; error?: string; scheduleWarning?: string }> {
     try {
       const dal = getDataAccessLayer(userId);
       await dal.delete('reminders', id);
 
       // 通知主进程删除计划任务
+      let scheduleWarning: string | undefined;
       if (isElectron() && window.electron?.reminder) {
         try {
           await window.electron.reminder.remove(id);
         } catch (e) {
           logError('删除计划任务失败', 'ReminderService', e as Error);
+          scheduleWarning = '记录已删除，但系统计划任务清理失败';
         }
       }
 
       logInfo(`删除提醒成功: ID=${id}`, 'ReminderService');
-      return { success: true };
+      return { success: true, ...(scheduleWarning ? { scheduleWarning } : {}) };
     } catch (error) {
       logError('删除提醒失败', 'ReminderService', error as Error);
       return { success: false, error: error instanceof Error ? error.message : '删除提醒失败' };

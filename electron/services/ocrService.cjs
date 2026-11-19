@@ -14,6 +14,40 @@ let rapidocrMod = null;
 let ocr = null;
 let initPromise = null;
 
+// 引擎空闲释放：OCR 插件窗口关闭不会自动释放原生引擎，长时间不用会常驻主进程。
+// 采用「引用计数 + 空闲超时」而不是关窗即 terminate，避免打断截图翻译等复用路径。
+const OCR_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+let activeRequests = 0;
+let lastUsedAt = 0;
+let idleTimer = null;
+
+function clearIdleTimer() {
+  if (!idleTimer) return;
+  clearTimeout(idleTimer);
+  idleTimer = null;
+}
+
+function scheduleIdleRelease() {
+  if (idleTimer || !ocr) return;
+  idleTimer = setTimeout(() => {
+    idleTimer = null;
+    if (activeRequests > 0 || !ocr) return;
+    if (Date.now() - lastUsedAt < OCR_IDLE_TIMEOUT_MS) {
+      scheduleIdleRelease();
+      return;
+    }
+    terminate().catch((err) => {
+      console.error('[OCR] 空闲释放失败:', err && err.message ? err.message : err);
+    });
+  }, OCR_IDLE_TIMEOUT_MS);
+  if (typeof idleTimer.unref === 'function') idleTimer.unref();
+}
+
+function markUsed() {
+  lastUsedAt = Date.now();
+  scheduleIdleRelease();
+}
+
 function getModelCacheDir() {
   return path.join(app.getPath('userData'), 'RapidOCR');
 }
@@ -30,46 +64,61 @@ async function ensureInit() {
       fs.mkdirSync(modelDir, { recursive: true });
     }
     ocr = await rapidocrMod.RapidOCR.create({ modelDirectory: modelDir });
+    markUsed();
     return ocr;
   })();
   return initPromise;
 }
 
 async function recognizeBase64(imageBase64) {
-  const instance = await ensureInit();
-  // strip data URI prefix (e.g. "data:image/png;base64,...")
-  const raw = imageBase64.replace(/^data:[^;]+;base64,/, '');
-  const buffer = Buffer.from(raw, 'base64');
-  const result = await instance.recognize(buffer);
-  if (result.type !== 'ocr') {
-    return { success: true, text: '', blocks: [] };
+  activeRequests++;
+  let instance;
+  try {
+    instance = await ensureInit();
+    markUsed();
+    // strip data URI prefix (e.g. "data:image/png;base64,...")
+    const raw = imageBase64.replace(/^data:[^;]+;base64,/, '');
+    const buffer = Buffer.from(raw, 'base64');
+    const result = await instance.recognize(buffer);
+    if (result.type !== 'ocr') {
+      return { success: true, text: '', blocks: [] };
+    }
+    return {
+      success: true,
+      text: result.txts?.join('\n') || '',
+      blocks: (result.lines || []).map(line => ({
+        text: line.text,
+        confidence: line.confidence,
+        bbox: line.box,
+      })),
+    };
+  } finally {
+    activeRequests--;
   }
-  return {
-    success: true,
-    text: result.txts?.join('\n') || '',
-    blocks: (result.lines || []).map(line => ({
-      text: line.text,
-      confidence: line.confidence,
-      bbox: line.box,
-    })),
-  };
 }
 
 async function recognizeFile(filePath) {
-  const instance = await ensureInit();
-  const result = await instance.recognize(filePath);
-  if (result.type !== 'ocr') {
-    return { success: true, text: '', blocks: [] };
+  activeRequests++;
+  let instance;
+  try {
+    instance = await ensureInit();
+    markUsed();
+    const result = await instance.recognize(filePath);
+    if (result.type !== 'ocr') {
+      return { success: true, text: '', blocks: [] };
+    }
+    return {
+      success: true,
+      text: result.txts?.join('\n') || '',
+      blocks: (result.lines || []).map(line => ({
+        text: line.text,
+        confidence: line.confidence,
+        bbox: line.box,
+      })),
+    };
+  } finally {
+    activeRequests--;
   }
-  return {
-    success: true,
-    text: result.txts?.join('\n') || '',
-    blocks: (result.lines || []).map(line => ({
-      text: line.text,
-      confidence: line.confidence,
-      bbox: line.box,
-    })),
-  };
 }
 
 function isRunning() {
@@ -81,6 +130,7 @@ function getStatus() {
 }
 
 async function terminate() {
+  clearIdleTimer();
   if (ocr) {
     await ocr.close();
     ocr = null;

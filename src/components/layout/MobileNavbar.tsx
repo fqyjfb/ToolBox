@@ -21,13 +21,18 @@ const MobileNavbar: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
-  const { searchQuery, setSearchQuery, handleSearch, clearSearch, performSearch } = useNavSearch();
+  const { searchQuery, handleSearch, clearSearch, performSearch } = useNavSearch();
+  const [inputValue, setInputValue] = useState(searchQuery);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setInputValue(searchQuery);
+  }, [searchQuery]);
 
   const showSearch = SEARCH_ENABLED_PATHS.some(path => location.pathname.startsWith(path));
 
   const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
+    setInputValue(query);
     handleSearch(query);
   };
 
@@ -103,9 +108,9 @@ const MobileNavbar: React.FC = () => {
                     className="w-full px-3 py-1.5 pr-9 rounded-lg text-sm outline-none"
                     name="search"
                     type="search"
-                    value={searchQuery}
+                    value={inputValue}
                     onChange={(e) => handleSearchChange(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && performSearch()}
+                    onKeyPress={(e) => e.key === 'Enter' && performSearch(inputValue)}
                     style={{
                       backgroundColor: 'var(--color-bg-tertiary)',
                       color: 'var(--color-text-primary)',
@@ -113,7 +118,7 @@ const MobileNavbar: React.FC = () => {
                       fontSize: 'var(--text-xs)',
                     }}
                   />
-                  {searchQuery && (
+                  {inputValue && (
                     <button
                       onClick={clearSearch}
                       className="absolute right-7 top-1/2 transform -translate-y-1/2"
@@ -123,7 +128,7 @@ const MobileNavbar: React.FC = () => {
                     </button>
                   )}
                   <button
-                    onClick={performSearch}
+                    onClick={() => performSearch(inputValue)}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2"
                     style={{ color: 'var(--color-text-tertiary)' }}
                   >

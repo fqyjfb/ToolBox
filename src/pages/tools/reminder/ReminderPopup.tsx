@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, Bell } from 'lucide-react';
 
 interface ReminderData {
@@ -8,12 +8,21 @@ interface ReminderData {
 }
 
 const ReminderPopup: React.FC = () => {
-  const [reminder, setReminder] = useState<ReminderData | null>(null);
+  const [current, setCurrent] = useState<ReminderData | null>(null);
+  const [pending, setPending] = useState<ReminderData[]>([]);
+  const currentRef = useRef<ReminderData | null>(null);
+  const pendingRef = useRef<ReminderData[]>([]);
 
   useEffect(() => {
     const handleShow = (data: ReminderData) => {
-      if (!data || reminder) return;
-      setReminder(data);
+      if (!data) return;
+      // 新到提醒优先展示；正在展示的提醒压入待看队列，避免并发时直接丢弃。
+      const previous = currentRef.current;
+      const nextPending = previous ? [...pendingRef.current, previous] : pendingRef.current;
+      currentRef.current = data;
+      pendingRef.current = nextPending;
+      setCurrent(data);
+      setPending(nextPending);
     };
     window.electron?.onShowReminder?.(handleShow);
     return () => {
@@ -22,10 +31,18 @@ const ReminderPopup: React.FC = () => {
   }, []);
 
   const handleClose = () => {
+    if (pendingRef.current.length > 0) {
+      const [next, ...rest] = pendingRef.current;
+      currentRef.current = next;
+      pendingRef.current = rest;
+      setCurrent(next);
+      setPending(rest);
+      return;
+    }
     window.close();
   };
 
-  if (!reminder) {
+  if (!current) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-bg-primary text-text-secondary text-sm">
         加载中...
@@ -44,12 +61,18 @@ const ReminderPopup: React.FC = () => {
         <div className="flex items-center gap-1.5 text-text-primary text-sm font-semibold">
           <Bell size={14} className="text-primary" />
           定时提醒
+          {pending.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[11px] font-medium">
+              还有 {pending.length} 条
+            </span>
+          )}
         </div>
         <button
           onClick={handleClose}
           className="p-1 rounded hover:bg-bg-secondary text-text-tertiary hover:text-text-primary transition-colors"
           style={{ ['-webkit-app-region' as string]: 'no-drag' } as React.CSSProperties}
           title="关闭"
+          aria-label="关闭提醒"
         >
           <X size={14} />
         </button>
@@ -58,11 +81,11 @@ const ReminderPopup: React.FC = () => {
       {/* 内容区 */}
       <div className="flex-1 px-4 py-3 overflow-y-auto scrollbar-hide">
         <h3 className="text-base font-semibold text-text-primary mb-2 break-words">
-          {reminder.title}
+          {current.title}
         </h3>
-        {reminder.content ? (
+        {current.content ? (
           <p className="text-sm text-text-secondary whitespace-pre-wrap break-words leading-relaxed">
-            {reminder.content}
+            {current.content}
           </p>
         ) : (
           <p className="text-sm text-text-tertiary italic">（无内容）</p>
@@ -75,7 +98,7 @@ const ReminderPopup: React.FC = () => {
           onClick={handleClose}
           className="px-4 py-1.5 rounded-md text-sm font-medium bg-primary text-button-text hover:brightness-110 transition-all"
         >
-          知道了
+          {pending.length > 0 ? '下一条' : '知道了'}
         </button>
       </div>
     </div>

@@ -53,7 +53,7 @@ function registerS3Ipc() {
       console.log('[S3 Proxy] listBuckets called with config:', {
         endpoint: config.endpoint,
         region: config.region,
-        accessKeyId: config.accessKeyId?.substring?.(0, 8) + '...',
+        hasAccessKeyId: Boolean(config.accessKeyId),
         bucketName: config.bucketName
       });
 

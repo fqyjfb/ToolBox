@@ -45,6 +45,8 @@ const CachedIcon: React.FC<CachedIconProps> = ({
   const [hasError, setHasError] = useState(false);
   const [isVisible, setIsVisible] = useState(iconOnly);
   const iconRef = React.useRef<HTMLDivElement>(null);
+  // 持久化映射可能比磁盘缓存更旧；每个 src 只允许失效重试一次，避免死循环
+  const retriedRef = React.useRef(false);
 
   const fetchImage = useCallback(async () => {
     if (!trimmedSrc) {
@@ -102,10 +104,21 @@ const CachedIcon: React.FC<CachedIconProps> = ({
     fetchImage();
   }, [isVisible, fetchImage]);
 
+  useEffect(() => {
+    retriedRef.current = false;
+  }, [trimmedSrc, type]);
+
   const handleError = useCallback(() => {
+    // 首帧命中持久化映射但文件已被磁盘缓存淘汰时，清掉映射并重新解析一次
+    if (isRemote && !retriedRef.current) {
+      retriedRef.current = true;
+      iconResolver.forget(trimmedSrc, type);
+      void fetchImage();
+      return;
+    }
     setHasError(true);
     onError?.();
-  }, [onError]);
+  }, [isRemote, trimmedSrc, type, fetchImage, onError]);
 
   if (iconOnly) {
     if (hasError || !imageSrc) {

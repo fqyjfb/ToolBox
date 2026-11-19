@@ -22,13 +22,14 @@ interface MemoFormModalProps {
   modalTitle?: string;
   /** 确认按钮文案，默认「添加」 */
   confirmText?: string;
+  loading?: boolean;
 }
 
 /** 备忘录新增表单：工具页与首页卡片新增入口共用 */
 const MemoFormModal: React.FC<MemoFormModalProps> = ({
   isOpen, onClose, title, content, priority, categoryId, categories,
   onTitleChange, onContentChange, onPriorityChange, onCategoryChange, onConfirm,
-  modalTitle = '添加备忘', confirmText = '添加',
+  modalTitle = '添加备忘', confirmText = '添加', loading = false,
 }) => (
   <Modal
     isOpen={isOpen}
@@ -37,6 +38,7 @@ const MemoFormModal: React.FC<MemoFormModalProps> = ({
     confirmText={confirmText}
     onConfirm={onConfirm}
     confirmDisabled={!title.trim()}
+    loading={loading}
     clickOutsideToClose={false}
   >
     <div className="space-y-2">

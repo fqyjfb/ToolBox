@@ -524,6 +524,15 @@ const loadIconCacheIndex = () => {
   return iconCacheIndex;
 };
 
+// 启动期预加载索引：原本首次 icon:resolve 才懒读 index.json，
+// 与冷启动首批图标解析叠加；提前到建窗前完成，失败不阻断启动。
+const preloadIconCacheIndex = () => {
+  if (!iconCacheInitPromise) {
+    iconCacheInitPromise = Promise.resolve().then(() => { loadIconCacheIndex(); });
+  }
+  return iconCacheInitPromise;
+};
+
 const saveIconCacheIndex = () => {
   try {
     ensureIconCacheDir();
@@ -1115,6 +1124,7 @@ module.exports = {
   saveFloatConfig,
   clearIconCacheByType,
   clearAllIconCache,
+  preloadIconCacheIndex,
   resolveIconUrls,
   cachePluginIcon,
   getIconCacheStats,

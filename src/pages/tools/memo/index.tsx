@@ -154,6 +154,8 @@ const MemoPage: React.FC = () => {
   const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
   const [previewMemo, setPreviewMemo] = useState<Memo | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [submittingMemo, setSubmittingMemo] = useState(false);
+  const submittingMemoRef = useRef(false);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -395,14 +397,14 @@ const MemoPage: React.FC = () => {
   }, [user, selectedCategory, addToast, loadCategories]);
 
   const handleCreateMemo = async () => {
-    if (!user || !newMemoTitle.trim()) {
+    if (!user || !newMemoTitle.trim() || submittingMemoRef.current) {
       consoleLog('handleCreateMemo skipped', { user: !!user, hasTitle: !!newMemoTitle.trim() });
       return;
     }
-    
+    submittingMemoRef.current = true;
+    setSubmittingMemo(true);
     try {
       consoleLog('handleCreateMemo called', { userId: user.id, title: newMemoTitle, content: newMemoContent, categoryId: newMemoCategoryId, priority: newMemoPriority });
-      setLoading(true);
       await memoService.createMemo(user.id, {
         category_id: newMemoCategoryId,
         title: newMemoTitle.trim(),
@@ -425,15 +427,16 @@ const MemoPage: React.FC = () => {
       logError('Error creating memo', 'MemoPage', error as Error);
       addToast({ message: '添加备忘录失败', type: 'error' });
     } finally {
-      setLoading(false);
+      submittingMemoRef.current = false;
+      setSubmittingMemo(false);
     }
   };
 
   const handleUpdateMemo = async () => {
-    if (!editingMemo || !user) return;
-    
+    if (!editingMemo || !user || submittingMemoRef.current) return;
+    submittingMemoRef.current = true;
+    setSubmittingMemo(true);
     try {
-      setLoading(true);
       await memoService.updateMemo(user.id, editingMemo.id, {
         title: editingMemo.title,
         content: editingMemo.content,
@@ -452,7 +455,8 @@ const MemoPage: React.FC = () => {
       logError('Error updating memo', 'MemoPage', error as Error);
       addToast({ message: '修改备忘录失败', type: 'error' });
     } finally {
-      setLoading(false);
+      submittingMemoRef.current = false;
+      setSubmittingMemo(false);
     }
   };
 
@@ -816,6 +820,7 @@ const MemoPage: React.FC = () => {
           onPriorityChange={setNewMemoPriority}
           onCategoryChange={setNewMemoCategoryId}
           onConfirm={handleCreateMemo}
+          loading={submittingMemo}
         />
 
         {/* 编辑复用与新增/首页同一个表单组件，避免两套 UI 各自演进 */}
@@ -832,6 +837,7 @@ const MemoPage: React.FC = () => {
           onPriorityChange={setEditingMemoPriority}
           onCategoryChange={setEditingMemoCategoryId}
           onConfirm={handleUpdateMemo}
+          loading={submittingMemo}
           modalTitle="编辑备忘录"
           confirmText="保存"
         />

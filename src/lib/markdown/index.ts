@@ -19,7 +19,6 @@ export type {
   InlineFootnoteContext,
   MarkdownRenderOptions,
 } from "./render.ts";
-export { renderSafeMarkdown } from "./safe-markdown.ts";
 export { buildExportHtml, wrapHtml } from "./export.ts";
 export type { BuildExportHtmlOptions } from "./export.ts";
 export { markdownToPlainText } from "./toPlainText.ts";

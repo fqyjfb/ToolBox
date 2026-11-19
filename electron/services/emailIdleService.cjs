@@ -8,7 +8,9 @@ const { resolveCredential } = require('./emailOAuthService.cjs');
 const CONNECT_TIMEOUT = 15000;
 const MAX_RECONNECT_DELAY = 30000;
 
-// id -> { imap, credential, onEvent, client, running, reconnectDelay }
+// id -> { imap, credential, onEvent, client, running, reconnectDelay, owners }
+// owners 为发起监听的 webContents.id 集合；窗口关闭时只移除该 owner，
+// 最后一个 owner 离开才真正断开长连接，避免误伤仍在使用的窗口。
 const watches = new Map();
 
 function createClient(imap, credential) {
@@ -77,8 +79,12 @@ async function runLoop(id, state) {
   }
 }
 
-function startWatch(id, imap, credential, onEvent) {
-  if (watches.has(id)) return;
+function startWatch(id, imap, credential, onEvent, ownerKey = 'default') {
+  const existing = watches.get(id);
+  if (existing) {
+    existing.owners.add(ownerKey);
+    return;
+  }
   const state = {
     imap,
     credential,
@@ -86,6 +92,7 @@ function startWatch(id, imap, credential, onEvent) {
     client: null,
     running: true,
     reconnectDelay: 1000,
+    owners: new Set([ownerKey]),
   };
   watches.set(id, state);
   runLoop(id, state).catch((err) => {
@@ -93,9 +100,13 @@ function startWatch(id, imap, credential, onEvent) {
   });
 }
 
-function stopWatch(id) {
+function stopWatch(id, ownerKey) {
   const state = watches.get(id);
   if (!state) return;
+  if (ownerKey !== undefined) {
+    state.owners.delete(ownerKey);
+    if (state.owners.size > 0) return;
+  }
   state.running = false;
   const client = state.client;
   state.client = null;
@@ -109,8 +120,17 @@ function stopWatch(id) {
   }
 }
 
+function stopWatchByOwner(ownerKey) {
+  if (ownerKey === undefined) return;
+  for (const [id, state] of Array.from(watches.entries())) {
+    if (!state.owners.has(ownerKey)) continue;
+    state.owners.delete(ownerKey);
+    if (state.owners.size === 0) stopWatch(id);
+  }
+}
+
 function stopAll() {
   for (const id of Array.from(watches.keys())) stopWatch(id);
 }
 
-module.exports = { startWatch, stopWatch, stopAll };
+module.exports = { startWatch, stopWatch, stopWatchByOwner, stopAll };

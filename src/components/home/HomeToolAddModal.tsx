@@ -174,11 +174,11 @@ const HomeToolAddModal: React.FC<HomeToolAddModalProps> = ({ toolId, editingItem
           is_enabled: reminderForm.is_enabled !== false,
         });
         if (!result.success) throw new Error(result.error ?? 'update reminder failed');
-        finish('提醒更新成功');
+        finish(result.scheduleWarning ? `提醒更新成功；${result.scheduleWarning}` : '提醒更新成功');
       } else {
         const result = await reminderService.createReminder(user.id, reminderForm);
         if (!result.success) throw new Error(result.error ?? 'create reminder failed');
-        finish('提醒添加成功');
+        finish(result.scheduleWarning ? `提醒添加成功；${result.scheduleWarning}` : '提醒添加成功');
       }
     } catch (error) {
       fail(error, isEdit ? '更新提醒失败' : '添加提醒失败');

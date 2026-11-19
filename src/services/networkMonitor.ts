@@ -55,9 +55,29 @@ function handleOffline(): void {
   updateOnlineStatus(false);
 }
 
-export function startNetworkMonitor(): void {
+let started = false;
+let probeTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function startNetworkMonitor(): () => void {
+  if (started) return stopNetworkMonitor;
+  started = true;
   window.addEventListener('online', handleOnline);
   window.addEventListener('offline', handleOffline);
   // 启动后 1s 探测一次，确认真在线状态（失败不影响在线判定）
-  setTimeout(probe, 1000);
+  probeTimer = setTimeout(() => {
+    probeTimer = null;
+    void probe();
+  }, 1000);
+  return stopNetworkMonitor;
+}
+
+export function stopNetworkMonitor(): void {
+  if (!started) return;
+  started = false;
+  window.removeEventListener('online', handleOnline);
+  window.removeEventListener('offline', handleOffline);
+  if (probeTimer) {
+    clearTimeout(probeTimer);
+    probeTimer = null;
+  }
 }

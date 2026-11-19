@@ -10,6 +10,44 @@ let idleService = null;
 let oauth = null;
 let emailIpcRegistered = false;
 
+// 新邮件订阅者：watch id -> Set<WebContents>。
+// 插件窗口与主窗口都可能调用 watchStart；事件必须发给所有存活订阅者，
+// 同时保留对主窗口的既有发送行为（去重后统一发送）。
+const newMailSubscribers = new Map();
+
+function addNewMailSubscriber(id, webContents) {
+  if (!id || !webContents || webContents.isDestroyed?.()) return;
+  let set = newMailSubscribers.get(id);
+  if (!set) {
+    set = new Set();
+    newMailSubscribers.set(id, set);
+  }
+  set.add(webContents);
+  webContents.once('destroyed', () => removeNewMailSubscriber(id, webContents));
+}
+
+function removeNewMailSubscriber(id, webContents) {
+  const set = newMailSubscribers.get(id);
+  if (!set) return;
+  set.delete(webContents);
+  if (set.size === 0) newMailSubscribers.delete(id);
+}
+
+function removeNewMailSubscribers(webContents) {
+  if (!webContents) return;
+  for (const id of Array.from(newMailSubscribers.keys())) {
+    removeNewMailSubscriber(id, webContents);
+  }
+  // 窗口关闭时同步释放该 owner 持有的 IDLE 长连接，最后一个 owner 离开才真正断开。
+  try {
+    if (idleService && typeof idleService.stopWatchByOwner === 'function') {
+      idleService.stopWatchByOwner(String(webContents.id));
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 const getEmailService = () => {
   if (!svc) svc = require('../services/emailService.cjs');
   return svc;
@@ -78,10 +116,26 @@ function register(name, handler) {
   });
 }
 
-// 新邮件事件推送到主窗口（供插件前端 onNewMail 订阅）
+// 新邮件事件推送：主窗口 + 所有存活的插件订阅者，统一去重后发送。
+// 通道名与载荷结构保持不变，插件无需任何改动。
 function pushNewMail(id, evt) {
+  const payload = { id, ...evt };
+  const targets = new Set();
   const mainWindow = require('../window/mainWindow.cjs').getMainWindow();
-  mainWindow?.webContents.send('email:new-mail', { id, ...evt });
+  if (mainWindow && !mainWindow.isDestroyed()) targets.add(mainWindow.webContents);
+  const subscribers = newMailSubscribers.get(id);
+  if (subscribers) {
+    for (const webContents of subscribers) {
+      if (webContents && !webContents.isDestroyed()) targets.add(webContents);
+    }
+  }
+  for (const webContents of targets) {
+    try {
+      webContents.send('email:new-mail', payload);
+    } catch {
+      /* 单个窗口发送失败不影响其余订阅者 */
+    }
+  }
 }
 
 function registerEmailIpc() {
@@ -110,11 +164,12 @@ function registerEmailIpc() {
   registerService('email:searchMessages', 'searchMessages');
 
   // IDLE 实时推送：启动监听（每个账号一个长连接），新邮件经主窗口 webContents 推送
-  ipcMain.handle('email:watchStart', async (_event, payload) => {
+  ipcMain.handle('email:watchStart', async (event, payload) => {
     const { id, imap, credential } = payload || {};
     if (!id) return { ok: false, error: '缺少监听标识', code: 'UNKNOWN' };
     try {
-      getEmailIdleService().startWatch(id, imap, credential, (evt) => pushNewMail(id, evt));
+      addNewMailSubscriber(id, event.sender);
+      getEmailIdleService().startWatch(id, imap, credential, (evt) => pushNewMail(id, evt), String(event.sender.id));
       return { ok: true, data: true };
     } catch (err) {
       console.error('[emailIpc] email:watchStart 失败:', err);
@@ -122,9 +177,10 @@ function registerEmailIpc() {
     }
   });
 
-  ipcMain.handle('email:watchStop', async (_event, payload) => {
+  ipcMain.handle('email:watchStop', async (event, payload) => {
     const { id } = payload || {};
-    if (idleService) idleService.stopWatch(id);
+    if (id) removeNewMailSubscriber(id, event.sender);
+    if (idleService) idleService.stopWatch(id, String(event.sender.id));
     return { ok: true, data: true };
   });
 
@@ -173,8 +229,9 @@ function registerEmailIpc() {
 }
 
 function disposeEmailServices() {
+  newMailSubscribers.clear();
   if (idleService && typeof idleService.stopAll === 'function') idleService.stopAll();
   if (svc && typeof svc.disposePool === 'function') svc.disposePool();
 }
 
-module.exports = { registerEmailIpc, disposeEmailServices };
+module.exports = { registerEmailIpc, disposeEmailServices, removeNewMailSubscribers };

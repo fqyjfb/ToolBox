@@ -368,6 +368,11 @@ async function openPluginWindow(pluginId, userId) {
 
     pluginWindow.on('closed', () => {
       pluginWindows.delete(pluginId);
+      // 插件窗口关闭时释放该窗口持有的邮件新消息订阅与 IDLE 监听，
+      // 不依赖插件渲染层的 React 清理是否执行。
+      try {
+        require('./emailIpc.cjs').removeNewMailSubscribers(pluginWindow.webContents);
+      } catch { /* ignore */ }
       if (fs.existsSync(tempHtmlPath)) {
         fs.unlinkSync(tempHtmlPath);
       }
@@ -607,6 +612,12 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
       const extensionsDir = getExtensionsDir();
       const pluginDir = path.join(extensionsDir, pluginId);
 
+      // 先关闭该插件已打开的窗口，避免目录删除后留下无法交互的窗口
+      const openWindow = pluginWindows.get(pluginId);
+      if (openWindow && !openWindow.isDestroyed()) {
+        openWindow.close();
+      }
+
       // 卸载 orc-plugin 前先停止共用引擎，避免模型缓存被占用
       if (pluginId === 'plugin-orc' && isRunning()) {
         await stopOcrService();
@@ -766,8 +777,20 @@ ipcMain.handle('plugin:install', async (event, { pluginId, repo, releaseUrl }) =
 
 }
 
+function closeAllPluginWindows() {
+  for (const [pluginId, win] of Array.from(pluginWindows.entries())) {
+    try {
+      if (win && !win.isDestroyed()) win.close();
+    } catch {
+      /* 退出流程中单个窗口关闭失败不阻断其余清理 */
+    }
+    pluginWindows.delete(pluginId);
+  }
+}
+
 module.exports = {
   registerPluginIpc,
   openPluginWindow,
   startScreenshotCapture,
+  closeAllPluginWindows,
 };

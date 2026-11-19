@@ -8,11 +8,53 @@ const WEB_FETCH_TIMEOUT_MS = 8000;
 // 结果条数上限，与磁盘缓存 maxItems 对齐；超出按最早写入淘汰
 const MAX_RESOLVED = 500;
 
+// 已解析地址的跨进程持久化：主进程磁盘缓存只有 IPC 异步通道可取，
+// 这里在渲染层同步回填一份地址映射，让重启后首帧即可出图。
+// TTL 与主进程 iconCache.ttl（config.cjs）保持一致为 7 天；
+// 仅 Electron 持久化 local-media: 地址，Web 的 blob: 重启后必然失效。
+const PERSIST_KEY = 'toolbox_icon_resolved_v1';
+const PERSIST_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+type PersistedEntry = { value: string; ts: number };
+
 const cacheKey = (url: string, type: IconCacheType) => `${type}:${url}`;
 
 // 解析结果：{ key => 可直接用于 <img> 的地址 }。
 // Electron 为 local-media://，Web 为 blob:；解析失败不记录，下次挂载可重试。
 const resolved = new Map<string, string>();
+let persisted: Record<string, PersistedEntry> | null = null;
+
+const loadPersisted = (): Record<string, PersistedEntry> => {
+  if (persisted) return persisted;
+  persisted = {};
+  if (!isElectron() || typeof localStorage === 'undefined') return persisted;
+  try {
+    const raw = localStorage.getItem(PERSIST_KEY);
+    if (!raw) return persisted;
+    const parsed = JSON.parse(raw) as Record<string, PersistedEntry>;
+    const now = Date.now();
+    for (const [key, entry] of Object.entries(parsed || {})) {
+      if (!entry || typeof entry.value !== 'string' || !entry.value.startsWith('local-media:')) continue;
+      if (!Number.isFinite(entry.ts) || now - entry.ts > PERSIST_TTL_MS) continue;
+      // 直接写入内存表，不再走 remember()，避免启动期重复落盘
+      resolved.set(key, entry.value);
+      persisted[key] = entry;
+    }
+  } catch {
+    persisted = {};
+  }
+  return persisted;
+};
+
+const savePersisted = (): void => {
+  if (!persisted || !isElectron() || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(persisted));
+  } catch {
+    // 配额不足时退化为「仅内存表」，不影响图标渲染
+  }
+};
+
+if (isElectron()) loadPersisted();
 
 const revoke = (value: string) => {
   if (value.startsWith('blob:')) URL.revokeObjectURL(value);
@@ -23,12 +65,29 @@ const remember = (key: string, value: string) => {
   if (previous !== undefined) revoke(previous);
   resolved.set(key, value);
 
+  if (isElectron()) {
+    const store = loadPersisted();
+    if (value.startsWith('local-media:')) store[key] = { value, ts: Date.now() };
+    else delete store[key];
+    savePersisted();
+  }
+
   if (resolved.size <= MAX_RESOLVED) return;
   const oldest = resolved.keys().next().value;
   if (oldest === undefined || oldest === key) return;
   const oldestValue = resolved.get(oldest);
   if (oldestValue !== undefined) revoke(oldestValue);
   resolved.delete(oldest);
+  if (persisted && delete persisted[oldest]) savePersisted();
+};
+
+/** 地址失效（磁盘缓存被淘汰/文件缺失）时清除映射，供组件重试解析 */
+const forget = (url: string, type: IconCacheType): void => {
+  const key = cacheKey(url, type);
+  const value = resolved.get(key);
+  if (value !== undefined) revoke(value);
+  resolved.delete(key);
+  if (persisted && delete persisted[key]) savePersisted();
 };
 
 /** 同步读取已解析结果，供首帧直接出图；未解析过返回 undefined */
@@ -198,5 +257,5 @@ const ensure = (urls: string[], type: IconCacheType): Promise<void> => {
   return Promise.all(promises).then(() => undefined);
 };
 
-export const iconResolver = { peek, ensure };
+export const iconResolver = { peek, ensure, forget };
 export type { IconCacheType };

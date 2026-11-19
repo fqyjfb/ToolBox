@@ -14,6 +14,7 @@ interface ReminderFormModalProps {
   formData: CreateReminderRequest & { is_enabled?: boolean };
   onFormDataChange: (data: CreateReminderRequest & { is_enabled?: boolean }) => void;
   onConfirm: () => void;
+  loading?: boolean;
 }
 
 const labelClass = 'block text-xs font-medium text-text-secondary mb-1';
@@ -25,6 +26,7 @@ const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
   formData,
   onFormDataChange,
   onConfirm,
+  loading = false,
 }) => {
   const isEdit = !!editingReminder;
   const confirmDisabled = !formData.title.trim() || !formData.remind_time;
@@ -70,6 +72,7 @@ const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
       confirmText={isEdit ? '保存' : '添加'}
       onConfirm={onConfirm}
       confirmDisabled={confirmDisabled}
+      loading={loading}
       clickOutsideToClose={false}
     >
       <div className="space-y-2">

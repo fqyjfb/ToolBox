@@ -15,11 +15,13 @@ import { useAuthStore } from './store/AuthStore';
 import { useSidebarStore } from './store/sidebarStore';
 import { useWindowModeStore } from './store/windowModeStore';
 import { useSyncStore } from './store/syncStore';
+import { useToastStore } from './store/toastStore';
 import { logError, logInfo } from './services/loggerService';
 import { syncManager } from './services/syncManager';
 import { startNetworkMonitor } from './services/networkMonitor';
 import { validateEncryptionKey, setEncryptionKey } from './utils/crypto';
 import { reinitSupabase } from './services/supabase';
+import { iconResolver } from './services/iconResolver';
 import { NavSearchProvider } from './contexts/NavSearchContext';
 import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes, RouteConfig } from './config/routes';
 import { useQueryClient } from '@tanstack/react-query';
@@ -220,7 +222,9 @@ function App() {
   const user = useAuthStore((state) => state.user);
   const isAdmin = useAuthStore((state) => state.isAdmin);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const addToast = useToastStore((state) => state.addToast);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [startupIssue, setStartupIssue] = useState<string | null>(null);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   // 划词工具条开关：初始化读设置（未落库默认开启），onSettingChanged 实时同步
   const [isSelectionToolbarEnabled, setIsSelectionToolbarEnabled] = useState(true);
@@ -293,11 +297,10 @@ function App() {
   }, [setVisible, setPosition, setBaseTheme]);
 
   useEffect(() => {
+    // 网络监控幂等：返回 stop 供 effect cleanup 使用，避免 StrictMode/重入时重复注册。
+    const stopMonitor = startNetworkMonitor();
     const initialize = async () => {
       try {
-        // 启动网络可达性监控
-        startNetworkMonitor();
-
         // 桌面端：优先应用用户自定义的 Supabase 和加密密钥配置
         if (isElectron() && window.electron?.getSettings) {
           try {
@@ -318,6 +321,7 @@ function App() {
             setIsSelectionToolbarEnabled(selectionRaw === undefined || (selectionRaw !== 0 && selectionRaw !== false));
           } catch (error) {
             logError('加载桌面端自定义配置失败', 'App', error as Error);
+            setStartupIssue('读取本地配置失败，已按默认配置启动');
           }
         }
 
@@ -327,23 +331,53 @@ function App() {
           logError('加密密钥加载失败，桌面端请在设置中配置', 'App');
         }
 
-        useAuthStore.getState().getCurrentUser().catch(() => {
-          logError('初始化认证状态失败', 'App');
+        useAuthStore.getState().getCurrentUser().catch((error: unknown) => {
+          logError('初始化认证状态失败', 'App', error as Error);
+          setStartupIssue('登录状态恢复失败，请重新登录');
+          addToast({ message: '登录状态恢复失败，请重新登录', type: 'error' });
         });
 
         // 该调用的作用仅是让主进程扫描一次已安装插件目录；返回值在此处并不使用：
         // 侧边栏插件项由 pluginStore 从 localStorage 恢复首帧内容，插件商店页会自行刷新 store。
         // 因此不 await —— 避免一次目录扫描阻塞首屏初始化。
-        if (isElectron() && window.electron?.plugin?.getInstalled) {
-          window.electron.plugin.getInstalled().catch((error: unknown) => {
-            logError('获取插件列表失败', 'App', error as Error);
-          });
+        const getInstalledPlugins = window.electron?.plugin?.getInstalled;
+        if (isElectron() && getInstalledPlugins) {
+          // 目录扫描 + 图标补齐不阻塞首屏：放到空闲期执行。
+          const scanInstalledPlugins = () => {
+            getInstalledPlugins().catch((error: unknown) => {
+              logError('获取插件列表失败', 'App', error as Error);
+            });
+          };
+          if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(scanInstalledPlugins, { timeout: 5000 });
+          } else {
+            setTimeout(scanInstalledPlugins, 0);
+          }
         }
 
         // 预加载网址导航数据：走 React Query 预取，与 NavPage 共用 queryKey，
         // 用户切到该页时直接命中缓存（不进 React Query 的话 NavPage 仍会独立再请求一次）
         void queryClient.prefetchQuery(websiteCategoriesQuery);
-        void queryClient.prefetchQuery(websiteBookmarksQuery);
+        const bookmarksPrefetch = queryClient.prefetchQuery(websiteBookmarksQuery);
+        void bookmarksPrefetch;
+
+        // 书签落地后批量预热图标：命中磁盘缓存时一次 IPC 即可回填渲染层同步表，
+        // 不阻塞首屏；失败时 NavPage 的 CachedIcon 仍按原链路解析并回退默认图。
+        if (isElectron()) {
+          void bookmarksPrefetch.then(() => {
+            const bookmarks = queryClient.getQueryData<Array<{ ico_url?: string | null }>>(websiteBookmarksQuery.queryKey);
+            const urls = (bookmarks || [])
+              .map((bookmark) => bookmark.ico_url)
+              .filter((url): url is string => typeof url === 'string' && /^https?:\/\//i.test(url));
+            if (urls.length === 0) return;
+            const warm = () => void iconResolver.ensure(urls, 'general');
+            if (typeof window.requestIdleCallback === 'function') {
+              window.requestIdleCallback(warm, { timeout: 3000 });
+            } else {
+              setTimeout(warm, 0);
+            }
+          }).catch(() => { /* 预取失败不改变图标回退行为 */ });
+        }
       } catch (error) {
         logError('初始化失败', 'App', error as Error);
       } finally {
@@ -352,7 +386,8 @@ function App() {
     };
 
     initialize();
-  }, [queryClient]);
+    return stopMonitor;
+  }, [queryClient, addToast]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
@@ -456,6 +491,26 @@ function App() {
     <ErrorBoundary>
       <Router>
         <NavSearchProvider>
+          {startupIssue && (
+            <div className="flex items-center justify-center gap-3 px-4 py-2 bg-toast-warning-bg text-toast-warning-text text-xs border-b border-toast-warning-border">
+              <span>{startupIssue}</span>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="px-2 py-0.5 rounded border border-toast-warning-border hover:brightness-110"
+              >
+                重试
+              </button>
+              <button
+                type="button"
+                onClick={() => setStartupIssue(null)}
+                className="px-2 py-0.5 rounded hover:brightness-110"
+                aria-label="忽略启动提示"
+              >
+                忽略
+              </button>
+            </div>
+          )}
           {isDesktopApp && !isStandaloneWindow() && <TrayNavigationHandler />}
           <Routes>
             <Route

@@ -13,6 +13,7 @@ interface TodoFormModalProps {
   categories: TodoCategory[]
   onNewTodoChange: (newTodo: CreateTodoRequest & { category_id: string | null }) => void
   onConfirm: () => void
+  loading?: boolean
 }
 
 const labelClass = 'block text-xs font-medium text-text-secondary mb-1'
@@ -24,7 +25,8 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
   newTodo,
   categories,
   onNewTodoChange,
-  onConfirm
+  onConfirm,
+  loading = false
 }) => {
   return (
     <Modal
@@ -34,6 +36,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
       confirmText={editingTodo ? '保存' : '添加'}
       onConfirm={onConfirm}
       confirmDisabled={!newTodo.title.trim()}
+      loading={loading}
     >
       <div className="space-y-2">
         <div>

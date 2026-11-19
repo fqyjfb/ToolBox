@@ -107,6 +107,8 @@ const TodoManagerPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TodoTab>('in_progress');
   const [showAddTodoModal, setShowAddTodoModal] = useState(false);
+  const [submittingTodo, setSubmittingTodo] = useState(false);
+  const submittingTodoRef = useRef(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [editingCategory, setEditingCategory] = useState<TodoCategory | null>(null);
@@ -215,13 +217,19 @@ const TodoManagerPage: React.FC = () => {
   }, []);
 
   const handleAddTodo = async () => {
-    if (!user || !newTodo.title.trim()) return;
-
-    const success = await createTodo(newTodo);
-    if (success) {
-      resetNewTodo();
-      setShowAddTodoModal(false);
-      loadTodos();
+    if (!user || !newTodo.title.trim() || submittingTodoRef.current) return;
+    submittingTodoRef.current = true;
+    setSubmittingTodo(true);
+    try {
+      const success = await createTodo(newTodo);
+      if (success) {
+        resetNewTodo();
+        setShowAddTodoModal(false);
+        loadTodos();
+      }
+    } finally {
+      submittingTodoRef.current = false;
+      setSubmittingTodo(false);
     }
   };
 
@@ -276,14 +284,20 @@ const TodoManagerPage: React.FC = () => {
   }, [todos, isLoading, searchParams, handleEditTodo, loadTodos, setSearchParams]);
 
   const handleSaveEdit = async () => {
-    if (!user || !editingTodo || !newTodo.title.trim()) return;
-
-    const success = await updateTodo(editingTodo.id, newTodo);
-    if (success) {
-      setEditingTodo(null);
-      resetNewTodo();
-      setShowAddTodoModal(false);
-      loadTodos();
+    if (!user || !editingTodo || !newTodo.title.trim() || submittingTodoRef.current) return;
+    submittingTodoRef.current = true;
+    setSubmittingTodo(true);
+    try {
+      const success = await updateTodo(editingTodo.id, newTodo);
+      if (success) {
+        setEditingTodo(null);
+        resetNewTodo();
+        setShowAddTodoModal(false);
+        loadTodos();
+      }
+    } finally {
+      submittingTodoRef.current = false;
+      setSubmittingTodo(false);
     }
   };
 
@@ -496,6 +510,7 @@ const TodoManagerPage: React.FC = () => {
         categories={categories}
         onNewTodoChange={setNewTodo}
         onConfirm={editingTodo ? handleSaveEdit : handleAddTodo}
+        loading={submittingTodo}
       />
 
       <CategoryFormModal
