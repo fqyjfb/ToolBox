@@ -149,6 +149,16 @@ let backgroundThrottleTimer = null;
 let autoLockTimer = null;
 let lastActivityTime = Date.now();
 let isQuitting = false;
+let activeQuickLaunchScans = 0;
+
+const runQuickLaunchScan = async (event, scanPaths) => {
+  activeQuickLaunchScans++;
+  try {
+    return await scanQuickLaunchPaths(event, scanPaths);
+  } finally {
+    activeQuickLaunchScans--;
+  }
+};
 
 // 小窗（compact）尺寸约束，单位 DIP
 const COMPACT_WINDOW_SIZE = { width: 320, height: 725 };
@@ -963,8 +973,9 @@ const resetEdgeSnap = () => {
   clearEdgeDock();
 };
 
-const createWindow = (onReadyCallback, showOnReady = true) => {
+const createWindow = (onReadyCallback, showOnReady = true, options = {}) => {
   const { app } = require('electron');
+  const initialHash = typeof options.initialHash === 'string' ? options.initialHash : '';
 
   // 窗口底色取当前主题底色（与 src/styles/theme.css 的 --color-bg-primary 一致），
   // 避免窗口出现早于页面首帧时闪一下白屏
@@ -1055,24 +1066,30 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
         pathname: indexPath,
         protocol: 'file:',
         slashes: true,
+        hash: initialHash || undefined,
       }));
+    } else if (typeof options.onLoadError === 'function') {
+      setTimeout(() => options.onLoadError({ errorDescription: 'Could not find index.html.' }), 0);
     } else {
       mainWindow.loadURL('data:text/html,<h1>Error</h1><p>Could not find index.html.</p>');
     }
   } else {
-    mainWindow.loadURL('http://localhost:5174');
+    mainWindow.loadURL(`http://localhost:5174${initialHash}`);
     mainWindow.webContents.openDevTools();
   }
 
   mainWindow.webContents.on('did-finish-load', () => {
+    const loadedWindow = mainWindow;
+    if (!loadedWindow || loadedWindow.isDestroyed()) return;
     // 圆角设置放在页面加载完成后执行：属性一次设置持续有效，且仍早于下面的 show()，
     // 视觉与原先在建窗时同步调用完全一致，但不再与 loadURL 争抢启动关键路径。
     applyWin11RoundedCorners();
     setTimeout(() => {
+      if (mainWindow !== loadedWindow || loadedWindow.isDestroyed()) return;
       if (showOnReady) {
-        mainWindow.show();
+        loadedWindow.show();
       }
-      initShortcuts();
+      if (!options.preserveShortcuts) initShortcuts();
       startAutoLock();
       startMemoryOptimization(); // 开机即按当前设置启动内存优化（此前仅切换设置时启动，重启后不生效）
 
@@ -1087,8 +1104,11 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
     if (!isMainFrame) return;
     console.error('[Main] 主页面加载失败:', errorCode, errorDescription, validatedURL);
-    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+    if (options.showOnLoadError !== false && mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
       mainWindow.show();
+    }
+    if (typeof options.onLoadError === 'function') {
+      options.onLoadError({ errorCode, errorDescription, validatedURL });
     }
   });
 
@@ -1133,6 +1153,7 @@ const createWindow = (onReadyCallback, showOnReady = true) => {
     clearTimeout(backgroundThrottleTimer);
     backgroundThrottleTimer = null;
     stopAutoLock();
+    stopMemoryOptimization();
     clearEdgeDock();
     mainWindow = null;
   });
@@ -1334,7 +1355,7 @@ const registerIpcHandlers = () => {
   ipcMain.handle('scan-desktop-apps', async (event) => {
     const { app } = require('electron');
     try {
-      return await scanQuickLaunchPaths(event, [
+      return await runQuickLaunchScan(event, [
         app.getPath('desktop'),
         path.join(process.env.PUBLIC || 'C:\\Users\\Public', 'Desktop')
       ]);
@@ -1459,7 +1480,7 @@ const registerIpcHandlers = () => {
   // 命名/去重/进度/规则与桌面扫描完全一致（共享 scanQuickLaunchPaths）
   ipcMain.handle('scan-installed-apps', async (event) => {
     const { app } = require('electron');
-    return scanQuickLaunchPaths(event, [
+    return runQuickLaunchScan(event, [
       path.join(process.env.ProgramData || 'C:\\ProgramData', 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
       path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
       path.join(app.getPath('appData'), 'Microsoft', 'Internet Explorer', 'Quick Launch')
@@ -2041,6 +2062,29 @@ const registerIpcHandlers = () => {
   // 该模块已删除。今后若要拆分，必须先删掉上方内联实现，不能两套并存。
 };
 
+const getLockSleepSnapshot = () => {
+  if (!mainWindow || mainWindow.isDestroyed() || activeQuickLaunchScans > 0) return null;
+  if (mainWindow.webContents.isLoading()) return null;
+  try {
+    const hash = new URL(mainWindow.webContents.getURL()).hash || '#/';
+    if (!hash.startsWith('#/') || hash.slice(1).split('?')[0] !== '/') return null;
+    return { hash };
+  } catch {
+    return null;
+  }
+};
+
+const destroyForLockSleep = (expectedWindow) => {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow !== expectedWindow) return false;
+  try {
+    mainWindow.destroy();
+    return expectedWindow.isDestroyed();
+  } catch (error) {
+    console.error('[MainWindow] 锁屏休眠销毁主窗口失败:', error.message);
+    return false;
+  }
+};
+
 // P2: 应用退出时统一注销所有快启动全局热键
 const cleanupQuickLaunchHotkeys = () => {
   if (quickLaunchHotkeys.size === 0) return;
@@ -2065,4 +2109,6 @@ module.exports = {
   setIsQuitting: (val) => { isQuitting = val; },
   checkLockAndShowMain,
   cleanupQuickLaunchHotkeys,
+  getLockSleepSnapshot,
+  destroyForLockSleep,
 };

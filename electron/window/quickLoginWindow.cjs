@@ -110,4 +110,5 @@ const registerQuickLoginIpcHandlers = () => {
 module.exports = {
   registerQuickLoginIpcHandlers,
   openQuickLogin,
+  getQuickLoginWindow: () => quickLoginWindow,
 };

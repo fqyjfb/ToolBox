@@ -373,11 +373,12 @@ function scheduleReminderReconcile() {
   }
 }
 
-function onWindowReady() {
+function onWindowReady(restoreAuxWindows = true) {
   // 页面已加载完成，此时执行对账不再与首屏争抢（计划任务唤醒路径在启动时已同步跑过）
   runReminderReconcile();
 
   setTimeout(() => createTray(), DELAY_CREATE_TRAY);
+  if (!restoreAuxWindows) return;
 
   setTimeout(() => {
     const settings = getCachedSettings();
@@ -536,10 +537,7 @@ app.on('before-quit', () => {
     console.error('[Main] SQLite 关闭失败:', e.message);
   }
   try {
-    const emailIdle = require('./services/emailIdleService.cjs');
-    const emailSvc = require('./services/emailService.cjs');
-    if (typeof emailIdle.stopAll === 'function') emailIdle.stopAll();
-    if (typeof emailSvc.disposePool === 'function') emailSvc.disposePool();
+    require('./ipc/emailIpc.cjs').disposeEmailServices();
   } catch (e) {
     console.error('[Main] Email services shutdown failed:', e.message);
   }
@@ -553,12 +551,17 @@ app.on('window-all-closed', () => {
 
 module.exports = {
   startMemoryOptimization,
-  createWindowOnUnlock: () => {
-    if (!getMainWindow()) {
-      createWindow(onWindowReady, true);
-    } else {
-      getMainWindow().show();
-      getMainWindow().focus();
+  createWindowOnUnlock: (options = {}) => {
+    const mainWindow = getMainWindow();
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+      if (typeof options.onReady === 'function') options.onReady();
+      return;
     }
+    createWindow(() => {
+      onWindowReady(options.restoreAuxWindows !== false);
+      if (typeof options.onReady === 'function') options.onReady();
+    }, true, options);
   },
 };

@@ -102,7 +102,7 @@ const startCooldown = (seconds) => {
     clearInterval(cooldownTimer);
     cooldownTimer = null;
     passwordInput.disabled = false;
-    submitBtn.disabled = false;
+    syncDots();
     setState('idle');
     hideError();
     passwordInput.focus();
@@ -110,6 +110,22 @@ const startCooldown = (seconds) => {
 };
 
 // ---------------- 提交与结果编排 ----------------
+
+const requestUnlock = async () => {
+  try {
+    const result = await window.lockElectron.unlock();
+    if (result?.success !== false) return;
+    setState('idle');
+    showError(result.error || '主窗口恢复失败，请重试');
+    syncDots();
+    passwordInput.focus();
+  } catch (error) {
+    console.error('Restore error:', error);
+    setState('idle');
+    showError('主窗口恢复失败，请重试');
+    syncDots();
+  }
+};
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -136,7 +152,7 @@ form.addEventListener('submit', async (e) => {
       setState('success');
       // 等锁扣弹开 + 边框光扫完再关窗，由主进程恢复主窗口/悬浮球
       setTimeout(() => {
-        window.lockElectron.unlock();
+        void requestUnlock();
       }, 600);
       return;
     }
@@ -168,6 +184,7 @@ const handleFailure = (result) => {
 
   // 抖动期间冻结输入（圆点保持红色展示），抖动结束后圆点坠落再复位
   passwordInput.value = '';
+  submitBtn.disabled = true;
   passwordInput.readOnly = true;
 
   setTimeout(() => {
@@ -236,11 +253,14 @@ document.addEventListener('mouseup', () => {
 // ---------------- 时钟（盾正上方） ----------------
 
 const timeEl = document.getElementById('lkTime');
+const dateEl = document.getElementById('lkDate');
 const pad = (n) => String(n).padStart(2, '0');
+const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
 const renderClock = () => {
   const now = new Date();
-  timeEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  timeEl.innerHTML = `${pad(now.getHours())}<span class="lk-colon">:</span>${pad(now.getMinutes())}`;
+  dateEl.textContent = `${now.getMonth() + 1}月${now.getDate()}日 周${WEEKDAYS[now.getDay()]}`;
 };
 
 renderClock();

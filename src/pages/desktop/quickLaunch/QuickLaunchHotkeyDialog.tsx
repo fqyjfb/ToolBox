@@ -24,21 +24,23 @@ export function QuickLaunchHotkeyDialog({
 }: Props) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-surface-primary border border-content rounded-xl shadow-2xl p-6 m-4">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-content-tertiary hover:text-content-secondary transition-colors"
-          title="关闭"
-          aria-label="关闭"
-        >
-          <X size={18} />
-        </button>
-        <h2 className="text-lg font-semibold text-content-primary mb-4">
-          {hotkeyTargetApp ? `设置热键 - ${hotkeyTargetApp.name}` : '设置热键'}
-        </h2>
-        <div className="space-y-4">
+      <div className="relative w-full max-w-md bg-surface rounded-lg shadow-lg overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-surface-60">
+          <h2 className="text-sm font-semibold text-content-primary">
+            {hotkeyTargetApp ? `设置热键 - ${hotkeyTargetApp.name}` : '设置热键'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-md text-content-secondary hover:text-content-primary hover:bg-menu-hover transition-colors"
+            title="关闭"
+            aria-label="关闭"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="p-4 space-y-4">
           <div>
             <label className="block text-sm font-medium text-content-primary mb-2">快捷键</label>
             <div className="relative">
@@ -49,8 +51,7 @@ export function QuickLaunchHotkeyDialog({
                 onChange={() => {}}
                 placeholder="按下组合键（如 Ctrl+Alt+1），Esc 清除"
                 readOnly
-                className="w-full px-4 py-2 border-content rounded-lg bg-surface-secondary text-content-primary placeholder-text-content-secondary focus:outline-none focus:border-[var(--color-primary)]"
-                style={{ borderWidth: '1px', borderColor: 'var(--color-border)' }}
+                className="w-full px-4 py-2 rounded-lg bg-surface-secondary text-content-primary placeholder-text-content-secondary focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               {hotkeyInput && (
                 <button
@@ -73,9 +74,19 @@ export function QuickLaunchHotkeyDialog({
             </div>
           )}
         </div>
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="btn-secondary">取消</button>
-          <button onClick={onConfirm} className="btn-primary">保存</button>
+        <div className="flex items-center justify-center gap-3 px-4 py-3 bg-surface-40">
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 text-sm font-medium text-content-secondary bg-surface-secondary rounded-md hover:bg-menu-hover transition-colors"
+          >
+            取消
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-1.5 text-sm font-medium text-button-text bg-primary hover:bg-primary/90 rounded-md transition-colors"
+          >
+            保存
+          </button>
         </div>
       </div>
     </div>

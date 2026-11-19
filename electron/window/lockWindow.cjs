@@ -3,8 +3,13 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 const { loadSettings, saveSettings, isDarkTheme, loadThemeSnapshot, saveThemeSnapshot } = require('../lib/config.cjs');
+const lockSleepService = require('../services/lockSleepService.cjs');
+
+const AUX_RESTORE_DELAY_MS = 500;
+const LOCK_RESTORE_TIMEOUT_MS = 15000;
 
 let lockWindow = null;
+let restoreTimeout = null;
 let dragOffset = { x: 0, y: 0 };
 
 // 防暴力破解：连续失败达到上限后进入冷却，冷却时长每次翻倍（封顶 10 分钟）
@@ -30,6 +35,8 @@ let isAppQuitting = false;
 // 模块顶层注册 before-quit，避免 createLockWindow 重复调用时累积监听器
 app.on('before-quit', () => {
   isAppQuitting = true;
+  lockSleepService.dispose();
+  if (restoreTimeout) clearTimeout(restoreTimeout);
   if (lockWindow && !lockWindow.isDestroyed()) {
     lockWindow.removeAllListeners('close');
     lockWindow.close();
@@ -117,23 +124,26 @@ const lock = () => {
   saveSettings(settings);
 
   const mainWindow = require('./mainWindow.cjs').getMainWindow();
-  if (mainWindow) {
-    mainWindow.hide();
-  }
-
   const floatWindow = require('./floatWindow.cjs').getFloatWindow();
-  if (floatWindow) {
-    floatWindow.hide();
-  }
+  const stickyNoteWallWindow = require('./stickyNoteWallWindow.cjs');
+  const candidates = {
+    mainWindow,
+    floatWindow,
+    wallWindow: stickyNoteWallWindow.getWallWindow(),
+  };
+
+  if (mainWindow) mainWindow.hide();
+  if (floatWindow) floatWindow.hide();
 
   // 钉桌面便签跟随应用锁隐藏，避免锁屏后便签内容仍暴露在桌面上
   try {
-    require('./stickyNoteWallWindow.cjs').hideWall();
+    stickyNoteWallWindow.hideWall();
   } catch (error) {
     console.error('[Lock] 隐藏钉桌面便签失败:', error.message);
   }
 
   createLockWindow();
+  lockSleepService.startLockCycle(candidates);
   require('./tray.cjs').refreshTrayMenu();
 
   // 应用锁联动：锁定配置的外部应用（fire-and-forget，异常自吞不影响锁定主流程）
@@ -173,8 +183,7 @@ const lockOrPrompt = () => {
   return lock();
 };
 
-const unlock = () => {
-  // 应用锁联动：最先销毁遮罩并恢复外部应用（异步执行，不阻塞窗口恢复流程）
+const finalizeUnlock = () => {
   try {
     require('../services/appLockService.cjs').onAppUnlocking();
   } catch (error) {
@@ -185,7 +194,6 @@ const unlock = () => {
   settings.isLockEnabled = 0;
   settings.lockedAt = null;
   saveSettings(settings);
-
   require('./mainWindow.cjs').resetAutoLockTimer();
 
   if (lockWindow) {
@@ -193,21 +201,101 @@ const unlock = () => {
     lockWindow.close();
     lockWindow = null;
   }
-
-  require('../main.cjs').createWindowOnUnlock();
   require('./tray.cjs').refreshTrayMenu();
+};
 
+const restorePinnedWall = () => {
+  const wallModule = require('./stickyNoteWallWindow.cjs');
+  if (wallModule.getWallWindow()) {
+    wallModule.showWall();
+    return;
+  }
+  if (require('../services/stickyNotesService.cjs').listPinned().length > 0) {
+    wallModule.openWall();
+  }
+};
+
+const restoreAuxiliaryWindows = (restoreState) => {
   setTimeout(() => {
-    if (settings.isFloatWindowEnabled === 1) {
+    const settings = loadSettings();
+    if (!lockSleepService.isRestoreCycleActive(restoreState.cycleId) || settings.isLockEnabled === 1) return;
+    const snapshot = restoreState.snapshot;
+    if ((!snapshot || snapshot.restoreFloat) && settings.isFloatWindowEnabled === 1) {
       require('./floatWindow.cjs').createFloatWindow();
     }
-    // 解锁后恢复钉桌面便签
+    if (snapshot && !snapshot.restoreWall) return;
     try {
-      require('./stickyNoteWallWindow.cjs').showWall();
+      restorePinnedWall();
     } catch (error) {
       console.error('[Lock] 恢复钉桌面便签失败:', error.message);
     }
-  }, 500);
+  }, AUX_RESTORE_DELAY_MS);
+};
+
+const unlockDirectly = (restoreState) => {
+  finalizeUnlock();
+  require('../main.cjs').createWindowOnUnlock({ restoreAuxWindows: false });
+  restoreAuxiliaryWindows(restoreState);
+  return { success: true };
+};
+
+const failDeepRestore = (restoreState) => {
+  const mainWindowModule = require('./mainWindow.cjs');
+  const mainWindow = mainWindowModule.getMainWindow();
+  if (mainWindow) mainWindowModule.destroyForLockSleep(mainWindow);
+  lockSleepService.retainDeepSleep(restoreState.snapshot);
+  if (lockWindow && !lockWindow.isDestroyed()) {
+    lockWindow.show();
+    lockWindow.focus();
+  }
+  return { success: false, error: '主窗口恢复失败，请重试' };
+};
+
+const settleDeepRestore = (restoreState, success, resolve) => {
+  if (!lockSleepService.isRestoreCycleActive(restoreState.cycleId)) {
+    resolve({ success: false, error: '恢复已取消' });
+    return;
+  }
+  if (!success) {
+    resolve(failDeepRestore(restoreState));
+    return;
+  }
+  finalizeUnlock();
+  restoreAuxiliaryWindows(restoreState);
+  resolve({ success: true });
+};
+
+const unlockFromDeepSleep = (restoreState) => new Promise((resolve) => {
+  let settled = false;
+  const finish = (success) => {
+    if (settled) return;
+    settled = true;
+    if (restoreTimeout) clearTimeout(restoreTimeout);
+    restoreTimeout = null;
+    settleDeepRestore(restoreState, success, resolve);
+  };
+
+  restoreTimeout = setTimeout(() => finish(false), LOCK_RESTORE_TIMEOUT_MS);
+  try {
+    require('../main.cjs').createWindowOnUnlock({
+      initialHash: restoreState.snapshot.mainHash,
+      restoreAuxWindows: false,
+      preserveShortcuts: true,
+      showOnLoadError: false,
+      onReady: () => finish(true),
+      onLoadError: () => finish(false),
+    });
+  } catch (error) {
+    console.error('[Lock] 主窗口恢复失败:', error.message);
+    finish(false);
+  }
+});
+
+const unlock = () => {
+  const restoreState = lockSleepService.beginUnlock();
+  return restoreState.deepSleep
+    ? unlockFromDeepSleep(restoreState)
+    : unlockDirectly(restoreState);
 };
 
 const toggleLock = () => {
@@ -368,10 +456,7 @@ const registerLockIpcHandlers = () => {
     };
   });
 
-  ipcMain.handle('lock:unlock', () => {
-    unlock();
-    return { success: true };
-  });
+  ipcMain.handle('lock:unlock', () => unlock());
 
   ipcMain.handle('lock:closeWindow', () => {
     if (lockWindow) {

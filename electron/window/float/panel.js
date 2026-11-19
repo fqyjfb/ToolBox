@@ -151,12 +151,12 @@
     var content = String(text || '').trim();
     if (!content) return;
     var requestId = newRequestId();
+    // 先插用户消息（上），再占位助手气泡（下）：保证首次渲染时用户在 AI 回复上方
+    appendUser('[' + labelOf(preset) + '] ' + content);
     var bubble = appendAssistant();
     streaming = { requestId: requestId, body: bubble.body, root: bubble.root, text: '', thinkingEl: null, thinkingBody: null };
     lastAssistantText = '';
     setBusy(true);
-    // 用户气泡里完整展示输入内容，不再只截 80 字，避免「发送的内容不完整」的错觉
-    appendUser('[' + labelOf(preset) + '] ' + content);
     ensureSessionId();
     history.push({ role: 'user', content: content, label: labelOf(preset) });
     if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);
@@ -178,11 +178,12 @@
       startPreset(preset, text);
     } else {
       var requestId = newRequestId();
+      // 先插用户消息（上），再占位助手气泡（下）：保证首次渲染时用户在 AI 回复上方
+      appendUser(text);
       var bubble = appendAssistant();
       streaming = { requestId: requestId, body: bubble.body, root: bubble.root, text: '', thinkingEl: null, thinkingBody: null };
       lastAssistantText = '';
       setBusy(true);
-      appendUser(text);
       ensureSessionId();
       history.push({ role: 'user', content: text });
       if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);

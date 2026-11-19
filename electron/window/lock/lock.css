@@ -47,14 +47,46 @@ body {
 
 /* ── 时间：盾正上方 ─────────────────────────────────────── */
 .lk-clock {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 4px;
   line-height: 1;
 }
+
+.lk-date {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-tertiary, #9ca3af);
+  letter-spacing: 0.12em;
+  margin-bottom: 2px;
+}
+
 .lk-time {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary, #6b7280);
-  letter-spacing: 0.06em;
+  font-family: 'Segoe UI Variable', 'Segoe UI', -apple-system, sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--lk-accent, var(--color-text-primary, #111827));
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.lk-colon {
+  display: inline-block;
+  animation: lk-colon-blink 2s steps(1) infinite;
+}
+
+@keyframes lk-colon-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.35; }
+}
+
+.dark .lk-time {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* ── 上方：SVG盾徽（缩小后居中） ──────────────────────────────── */
@@ -153,11 +185,11 @@ body {
 
 /* ── 退出按钮（盾内左侧） ──────────────────────────────────────
    窗口 208，SVG 112 居中 → SVG 左 48、右 160
-   内缩 4px，按钮宽 20 → left: 48+4=52
-   top 与 close 对称，统一 */
+   内缩 12px，按钮宽 20 → left: 48+12=60 / 160-12-20=128
+   top 贴盾顶部，与 close 对称 */
 .lk-btn.lk-exit {
   position: absolute;
-  top: 24px;
+  top: 68px;
   left: 60px;
   width: 20px;
   height: 20px;
@@ -174,11 +206,10 @@ body {
   z-index: 10;
 }
 
-/* ── 关闭按钮（盾内右侧） ──────────────────────────────────────
-   SVG 右 160，按钮宽 20，内缩 4px → left: 160-20-4=136 */
+/* ── 关闭按钮（盾内右侧） ────────────────────────────────────── */
 .lk-btn.lk-close {
   position: absolute;
-  top: 24px;
+  top: 68px;
   left: 128px;
   width: 20px;
   height: 20px;
@@ -242,8 +273,37 @@ body.lk-focused .lk-btn.lk-close {
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+  opacity: 0;
+  visibility: hidden;
+  filter: blur(4px);
+  transform: translateY(-80px) scale(0.92);
+  pointer-events: none;
+  transition:
+    opacity 360ms ease-in,
+    transform 360ms cubic-bezier(0.4, 0, 1, 1),
+    filter 300ms ease-in,
+    visibility 0s linear 420ms,
+    border-color 260ms ease,
+    box-shadow 260ms ease,
+    background 260ms ease;
   overflow: hidden;
+}
+
+/* 入场舒缓展开，出场加速收回，双向切换保持连贯 */
+body.lk-focused .lk-input-wrap {
+  opacity: 1;
+  visibility: visible;
+  filter: blur(0);
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  transition:
+    opacity 840ms ease-out,
+    transform 1040ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 1040ms ease-out,
+    visibility 0s,
+    border-color 260ms ease,
+    box-shadow 260ms ease,
+    background 260ms ease;
 }
 
 .dark .lk-input-wrap {
@@ -353,18 +413,22 @@ body.lk-focused .lk-btn.lk-close {
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
+  opacity: 0;
+  transform: scale(0.85);
+  pointer-events: none;
   transition: opacity 150ms ease, transform 150ms ease;
   z-index: 2;
+}
+
+.lk-submit:not(:disabled) {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
 }
 
 .lk-submit:not(:disabled):hover {
   opacity: 0.88;
   transform: scale(1.08);
-}
-
-.lk-submit:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
 }
 
 /* ── 错误提示 ───────────────────────────────────────────────── */
@@ -423,5 +487,6 @@ body.lk-focused .lk-btn.lk-close {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
   }
 }

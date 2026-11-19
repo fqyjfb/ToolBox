@@ -1,4 +1,4 @@
-import { FolderOpen, Trash2 } from 'lucide-react';
+import { FolderOpen, Trash2, X } from 'lucide-react';
 import type { QuickLaunchItem } from '../../../utils/quickLaunch';
 
 interface Props {
@@ -19,15 +19,25 @@ export function QuickLaunchRepairDialog({
 }: Props) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-surface-primary border border-content rounded-xl shadow-2xl p-6 m-4">
-        <h2 className="text-lg font-semibold text-content-primary mb-4">
-          修复失效应用 ({invalidApps.length})
-        </h2>
-        <div className="space-y-2 max-h-96 overflow-auto">
+      <div className="relative w-full max-w-lg bg-surface rounded-lg shadow-lg overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-surface-60">
+          <h2 className="text-sm font-semibold text-content-primary">
+            修复失效应用 ({invalidApps.length})
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-md text-content-secondary hover:text-content-primary hover:bg-menu-hover transition-colors"
+            title="关闭"
+            aria-label="关闭"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="p-4 space-y-2 max-h-96 overflow-auto">
           {invalidApps.map(app => (
-            <div key={app.id} className="flex items-center justify-between gap-2 p-2 rounded border border-content">
+            <div key={app.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-surface-secondary">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-content-primary truncate">{app.name}</p>
                 <p className="text-xs text-content-secondary truncate">{app.path}</p>
@@ -51,8 +61,13 @@ export function QuickLaunchRepairDialog({
             </div>
           ))}
         </div>
-        <div className="flex justify-end mt-6">
-          <button onClick={onClose} className="btn-primary">关闭</button>
+        <div className="flex items-center justify-center px-4 py-3 bg-surface-40">
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 text-sm font-medium text-button-text bg-primary hover:bg-primary/90 rounded-md transition-colors"
+          >
+            关闭
+          </button>
         </div>
       </div>
     </div>

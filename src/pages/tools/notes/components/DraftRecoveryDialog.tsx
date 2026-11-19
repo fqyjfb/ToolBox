@@ -46,24 +46,26 @@ const DraftRecoveryDialog: React.FC<DraftRecoveryDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-[520px] max-w-[92vw] rounded-lg bg-surface shadow-xl">
-        <div className="flex items-center justify-between px-4 py-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="relative w-full max-w-lg bg-surface rounded-lg shadow-lg overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-surface-60">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-warning" />
-            <h3 className="text-base font-medium text-content-primary">
+            <h3 className="text-sm font-semibold text-content-primary">
               检测到未提交的草稿
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-content-tertiary hover:text-content-secondary"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-content-secondary hover:text-content-primary hover:bg-menu-hover transition-colors"
             title="关闭"
+            aria-label="关闭"
           >
-            <X className="h-4 w-4" />
+            <X size={16} />
           </button>
         </div>
-        <div className="px-4 py-3 max-h-72 overflow-y-auto scrollbar-5px">
+        <div className="p-4 max-h-72 overflow-y-auto scrollbar-5px">
           <p className="text-sm text-content-secondary mb-3">
             上次退出时存在 {drafts.length} 个未保存的草稿，请选择恢复或丢弃：
           </p>
@@ -123,18 +125,18 @@ const DraftRecoveryDialog: React.FC<DraftRecoveryDialogProps> = ({
             ))}
           </ul>
         </div>
-        <div className="flex items-center justify-end gap-2 px-4 py-3">
+        <div className="flex items-center justify-center gap-3 px-4 py-3 bg-surface-40">
           <button
             onClick={handleDiscardAll}
             disabled={busy !== null}
-            className="px-3 py-1.5 text-sm rounded text-content-secondary hover:bg-menu-hover disabled:opacity-50"
+            className="px-4 py-1.5 text-sm font-medium text-content-secondary bg-surface-secondary rounded-md hover:bg-menu-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             全部丢弃
           </button>
           <button
             onClick={handleRecoverAll}
             disabled={busy !== null}
-            className="px-3 py-1.5 text-sm rounded bg-primary text-button-text hover:bg-primary-hover disabled:opacity-50"
+            className="px-4 py-1.5 text-sm font-medium text-button-text bg-primary hover:bg-primary/90 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             全部恢复
           </button>

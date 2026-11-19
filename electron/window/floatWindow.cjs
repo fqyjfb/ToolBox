@@ -427,9 +427,19 @@ const registerFloatIpcHandlers = () => {
   ipcMain.handle('float-get-theme', () => ({ isDark: nativeTheme.shouldUseDarkColors }));
 };
 
+const destroyForLockSleep = (expectedWindow) => {
+  if (!floatWindow || floatWindow.isDestroyed() || floatWindow !== expectedWindow) return;
+  try {
+    floatWindow.destroy();
+  } catch (error) {
+    console.error('[Float] 锁屏休眠销毁悬浮球失败:', error.message);
+  }
+};
+
 module.exports = {
   createFloatWindow,
   toggleFloatWindow,
   registerFloatIpcHandlers,
   getFloatWindow: () => floatWindow,
+  destroyForLockSleep,
 };

@@ -286,6 +286,19 @@ const destroyWall = () => {
 
 const getWallWindow = () => wallWindow;
 
+const canSleepWall = async () => {
+  if (!wallWindow || wallWindow.isDestroyed()) return true;
+  if (wallWindow.webContents.isLoading()) return false;
+  try {
+    return await wallWindow.webContents.executeJavaScript(`!document.querySelector(
+      '.sticky-wall-card-textarea, .sticky-wall-card--dragging, .sticky-wall-card--resizing'
+    )`);
+  } catch (error) {
+    console.error('[StickyWall] 休眠状态检查失败:', error.message);
+    return false;
+  }
+};
+
 const isWallSender = (sender) => {
   if (!sender || !wallWindow || wallWindow.isDestroyed()) return false;
   return sender.id === wallWindow.webContents.id;
@@ -303,6 +316,7 @@ module.exports = {
   showWall,
   destroyWall,
   getWallWindow,
+  canSleepWall,
   isWallSender,
   setInteractive,
   setDragActive,

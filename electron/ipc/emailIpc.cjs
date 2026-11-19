@@ -4,11 +4,26 @@
 
 const { ipcMain, dialog, BrowserWindow } = require('electron');
 const fs = require('fs');
-const svc = require('../services/emailService.cjs');
-const idleService = require('../services/emailIdleService.cjs');
-const oauth = require('../services/emailOAuthService.cjs');
 
+let svc = null;
+let idleService = null;
+let oauth = null;
 let emailIpcRegistered = false;
+
+const getEmailService = () => {
+  if (!svc) svc = require('../services/emailService.cjs');
+  return svc;
+};
+
+const getEmailIdleService = () => {
+  if (!idleService) idleService = require('../services/emailIdleService.cjs');
+  return idleService;
+};
+
+const getEmailOAuthService = () => {
+  if (!oauth) oauth = require('../services/emailOAuthService.cjs');
+  return oauth;
+};
 
 // —— 错误码映射 ——
 
@@ -73,29 +88,33 @@ function registerEmailIpc() {
   if (emailIpcRegistered) return;
   emailIpcRegistered = true;
 
-  register('email:testConnection', svc.testConnection);
-  register('email:listFolders', svc.listFolders);
-  register('email:createFolder', svc.createFolder);
-  register('email:renameFolder', svc.renameFolder);
-  register('email:deleteFolder', svc.deleteFolder);
-  register('email:setFolderSubscribed', svc.setFolderSubscribed);
-  register('email:emptyFolder', svc.emptyFolder);
-  register('email:markFolderSeen', svc.markFolderSeen);
-  register('email:listMessages', svc.listMessages);
-  register('email:getMessage', svc.getMessage);
-  register('email:sendMessage', svc.sendMessage);
-  register('email:setFlags', svc.setFlags);
-  register('email:deleteMessages', svc.deleteMessages);
-  register('email:moveMessages', svc.moveMessages);
-  register('email:getUnreadCounts', svc.getUnreadCounts);
-  register('email:searchMessages', svc.searchMessages);
+  const registerService = (name, method) => {
+    register(name, (payload) => getEmailService()[method](payload));
+  };
+
+  registerService('email:testConnection', 'testConnection');
+  registerService('email:listFolders', 'listFolders');
+  registerService('email:createFolder', 'createFolder');
+  registerService('email:renameFolder', 'renameFolder');
+  registerService('email:deleteFolder', 'deleteFolder');
+  registerService('email:setFolderSubscribed', 'setFolderSubscribed');
+  registerService('email:emptyFolder', 'emptyFolder');
+  registerService('email:markFolderSeen', 'markFolderSeen');
+  registerService('email:listMessages', 'listMessages');
+  registerService('email:getMessage', 'getMessage');
+  registerService('email:sendMessage', 'sendMessage');
+  registerService('email:setFlags', 'setFlags');
+  registerService('email:deleteMessages', 'deleteMessages');
+  registerService('email:moveMessages', 'moveMessages');
+  registerService('email:getUnreadCounts', 'getUnreadCounts');
+  registerService('email:searchMessages', 'searchMessages');
 
   // IDLE 实时推送：启动监听（每个账号一个长连接），新邮件经主窗口 webContents 推送
   ipcMain.handle('email:watchStart', async (_event, payload) => {
     const { id, imap, credential } = payload || {};
     if (!id) return { ok: false, error: '缺少监听标识', code: 'UNKNOWN' };
     try {
-      idleService.startWatch(id, imap, credential, (evt) => pushNewMail(id, evt));
+      getEmailIdleService().startWatch(id, imap, credential, (evt) => pushNewMail(id, evt));
       return { ok: true, data: true };
     } catch (err) {
       console.error('[emailIpc] email:watchStart 失败:', err);
@@ -105,14 +124,14 @@ function registerEmailIpc() {
 
   ipcMain.handle('email:watchStop', async (_event, payload) => {
     const { id } = payload || {};
-    idleService.stopWatch(id);
+    if (idleService) idleService.stopWatch(id);
     return { ok: true, data: true };
   });
 
   // OAuth2 授权码 + PKCE：启动浏览器授权流，返回 { accessToken, refreshToken, expiresAt, ... }
   ipcMain.handle('email:oauthStart', async (_event, payload) => {
     try {
-      const data = await oauth.oauthStart(payload || {});
+      const data = await getEmailOAuthService().oauthStart(payload || {});
       return { ok: true, data };
     } catch (err) {
       console.error('[emailIpc] email:oauthStart 失败:', err);
@@ -123,7 +142,7 @@ function registerEmailIpc() {
   // 取消进行中的授权流（浏览器被关闭 / 用户点击取消），释放回跳端口
   ipcMain.handle('email:oauthCancel', async () => {
     try {
-      oauth.oauthCancel();
+      if (oauth) oauth.oauthCancel();
       return { ok: true, data: true };
     } catch (err) {
       console.error('[emailIpc] email:oauthCancel 失败:', err);
@@ -143,7 +162,7 @@ function registerEmailIpc() {
       if (canceled || !filePath) {
         return { ok: true, data: { saved: false, path: null } };
       }
-      const att = await svc.downloadAttachment({ imap, credential, folder, uid, filename });
+      const att = await getEmailService().downloadAttachment({ imap, credential, folder, uid, filename });
       await fs.promises.writeFile(filePath, att.content);
       return { ok: true, data: { saved: true, path: filePath } };
     } catch (err) {
@@ -153,4 +172,9 @@ function registerEmailIpc() {
   });
 }
 
-module.exports = { registerEmailIpc };
+function disposeEmailServices() {
+  if (idleService && typeof idleService.stopAll === 'function') idleService.stopAll();
+  if (svc && typeof svc.disposePool === 'function') svc.disposePool();
+}
+
+module.exports = { registerEmailIpc, disposeEmailServices };

@@ -3,6 +3,8 @@ const { ipcMain } = require('electron');
 const DEFAULT_TIMEOUT_MS = 60000;
 const MAX_TIMEOUT_MS = 180000;
 
+let activeChatRequests = 0;
+
 function normalizeTimeout(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return DEFAULT_TIMEOUT_MS;
@@ -34,6 +36,7 @@ async function handleChat(_event, payload) {
   }
 
   const controller = new AbortController();
+  activeChatRequests++;
   const timer = setTimeout(() => controller.abort(), normalizeTimeout(timeoutMs));
 
   // 去掉服务端错误里的 OpenAIException/ServiceUnavailableError 前缀，
@@ -91,6 +94,7 @@ async function handleChat(_event, payload) {
     };
   } finally {
     clearTimeout(timer);
+    activeChatRequests--;
   }
 }
 
@@ -100,4 +104,8 @@ function registerAIIpc() {
   require('../services/floatAssistantService.cjs').registerFloatAIIpc();
 }
 
-module.exports = { registerAIIpc, handleChat };
+module.exports = {
+  registerAIIpc,
+  handleChat,
+  hasActiveChatRequests: () => activeChatRequests > 0,
+};

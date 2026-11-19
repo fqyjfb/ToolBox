@@ -30,7 +30,17 @@
 - 图标按钮状态流转复用单一 `setButtonState()` 辅助函数，区分图标 / 文字两种 chip 形态，不破坏原有文字链路线上入口
 - 悬浮球展开菜单收拢为紧凑型：径向半径 78 → 52，按钮内边距 10 → 8px，名称标签间距 28 → 24px
 - 新增 `todo:create` IPC：Notes 页存待办复用既有 `float-ai-save-todo` 广播通道（主进程 notesService 向 mainWindow.send → 渲染层 App.tsx useFloatAiActions 监听 → todoService 写入），避免在主进程重复实现 Todo 模块逻辑；preload 暴露 `window.electron.todo.create`，`ALLOWED_INVOKE_CHANNELS` 同步放行
-- 重构锁屏界面UI
+- 重构锁屏界面 UI；锁屏时间区域去半透明背景，增大至 32px 粗体跟随主题色、新增日期行与冒号呼吸动画
+
+### 重构
+
+- 邮箱协议依赖（imapflow / nodemailer / mailparser）改为首次使用时懒加载，未使用邮箱时退出不再反向加载
+- 新增 `lockSleepService.cjs`，持续锁定 5 分钟后对可休眠窗口执行深度休眠（销毁主窗口 + 悬浮球 + 便签墙），解锁后按快照恢复
+- 深度休眠引入保守白名单与状态保护：非桌面首页、watcher / AI 请求 / 快启动扫描 / 快速登录 / 悬浮面板 / 便签编辑期间降级为仅隐藏，不触发销毁
+- 锁屏失败保留状态并支持重试，防止误判恢复成功或出现空白主窗口
+- 主窗口 hash 快照只收录桌面首页，辅助窗口单例化恢复避免重复创建
+- 统一快启动与记事本模块弹窗视觉：QuickLaunchHotkeyDialog / QuickLaunchRepairDialog 及 Notes 模块三个对话框（SidebarDialogs / DraftRecoveryDialog / ExternalChangeDialog）对齐共享 Modal 结构（头部灰带 + 内容区 + 底部按钮条），移除未定义的 `btn-primary`、`bg-surface-primary` 等类名；SidebarDialogs 抽取公共 `DialogShell` 消除模板重复
+- 修复悬浮球 AI 面板消息顺序反常问题：`panel.js` 中 `startPreset` / `send()` 调整为先插入用户消息再占位助手气泡，保证聊天时用户在 AI 回复上方
 
 ## \[3.1.3]
 
