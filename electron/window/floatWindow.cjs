@@ -26,6 +26,37 @@ const PET_HIT_PADDING = PetCatalog.geometry.hitPadding;
 // 看门狗周期：渲染层 mousemove 中断时（光标快速移出、未触发 mouseleave）用系统光标复核
 const HOVER_WATCHDOG_MS = 800;
 
+// 悬浮球窗口视口：窗口矩形 + 所在显示器的工作区/物理边界，供渲染层夹取提示层
+const getFloatViewport = () => {
+  if (!floatWindow || floatWindow.isDestroyed()) return null;
+  const bounds = floatWindow.getBounds();
+  const display = screen.getDisplayMatching(bounds);
+  return {
+    bounds,
+    workArea: display.workArea,          // 提示优先落在此区域（避开任务栏）
+    displayBounds: display.bounds,       // 硬裁剪边界（窗口压任务栏时兜底）
+    scaleFactor: display.scaleFactor,
+  };
+};
+
+// 视口只在低频时机推送：页面就绪、拖拽结束、展开、显示器变化
+const pushFloatViewport = () => {
+  if (!floatWindow || floatWindow.isDestroyed()) return;
+  const viewport = getFloatViewport();
+  if (viewport) floatWindow.webContents.send('float:viewport-changed', viewport);
+};
+
+// 松手时把球心夹回显示器物理边界：允许压任务栏，避免球体大半停在屏幕外
+const clampBallCenterToDisplay = (bounds, display) => {
+  const half = WINDOW_SIZE / 2;
+  const area = display.bounds;
+  const center = { x: bounds.x + half, y: bounds.y + half };
+  return {
+    x: Math.round(Math.min(Math.max(center.x, area.x), area.x + area.width) - half),
+    y: Math.round(Math.min(Math.max(center.y, area.y), area.y + area.height) - half),
+  };
+};
+
 // 系统光标是否落在球体矩形内（球心 = 窗口中心）
 const isCursorInBall = () => {
   if (!floatWindow || floatWindow.isDestroyed()) return false;
@@ -94,11 +125,16 @@ const createFloatWindow = () => {
   let x = defaultX;
   let y = defaultY;
   if (savedPos && typeof savedPos.x === 'number' && typeof savedPos.y === 'number') {
+    // 以球心（窗口中心）是否落在显示器内为准：窗口本身允许有一半在屏幕外
+    const half = WINDOW_SIZE / 2;
+    const centerX = savedPos.x + half;
+    const centerY = savedPos.y + half;
+    const area = targetDisplay.bounds;
     const inBounds =
-      savedPos.x >= workArea.x - WINDOW_SIZE / 2 &&
-      savedPos.x <= workArea.x + workArea.width - WINDOW_SIZE / 2 &&
-      savedPos.y >= workArea.y - WINDOW_SIZE / 2 &&
-      savedPos.y <= workArea.y + workArea.height - 40;
+      centerX >= area.x &&
+      centerX <= area.x + area.width &&
+      centerY >= area.y &&
+      centerY <= area.y + area.height;
     if (inBounds) {
       x = savedPos.x;
       y = savedPos.y;
@@ -154,6 +190,8 @@ const createFloatWindow = () => {
   // 启动卡：页面加载完成后由洞察服务推「今日概览」，取代原渲染层入场欢迎语。
   // 延迟 1.5s 等入场动画播完，避免卡片和弹出动画抢视线。
   floatWindow.webContents.once('did-finish-load', () => {
+    // 页面已就绪，先把视口推给渲染层，提示层首帧即可正确夹取
+    pushFloatViewport();
     setTimeout(() => {
       try { require('../services/floatInsightService.cjs').pushStartupCard(); } catch { /* 服务未加载时静默 */ }
     }, 1500);
@@ -300,16 +338,28 @@ const registerFloatIpcHandlers = () => {
   ipcMain.on('float-drag-end', () => {
     isDragging = false;
     if (!floatWindow) return;
-    const [bx, by] = floatWindow.getPosition();
     const settings = loadSettings();
     const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    // 松手时球心夹回显示器内（允许压任务栏），再反推窗口坐标保存
+    const position = clampBallCenterToDisplay(floatWindow.getBounds(), display);
+    floatWindow.setPosition(position.x, position.y);
     // 记录所在显示器：副屏拔掉后启动时可回落到主屏，不会把窗口留在屏幕外
-    settings.floatBallPosition = { x: bx, y: by, displayId: display.id };
+    settings.floatBallPosition = { x: position.x, y: position.y, displayId: display.id };
     saveSettings(settings);
     applyMousePassthrough();
+    // 位置/显示器可能已变化，刷新渲染层缓存的视口
+    pushFloatViewport();
   });
 
   ipcMain.handle('float:gestures-enabled', () => loadSettings().floatGesturesEnabled === 1);
+
+  // 视口查询：渲染层初始化时主动取一次（推送可能早于脚本订阅）
+  ipcMain.handle('float:get-viewport', () => getFloatViewport());
+
+  // 显示器变化（分辨率/缩放/任务栏/副屏热插拔）：刷新渲染层缓存的视口
+  screen.on('display-metrics-changed', pushFloatViewport);
+  screen.on('display-added', pushFloatViewport);
+  screen.on('display-removed', pushFloatViewport);
 
   // 球体命中（渲染层 mousemove 命中检测后上报）：取代原 250ms 全量轮询
   ipcMain.on('float:ball-hover', (_event, active) => {
@@ -412,6 +462,8 @@ const registerFloatIpcHandlers = () => {
     isExpanded = expanded;
     // 展开/收起都会改变是否需要接收鼠标事件（收起时若光标在球外应立即恢复穿透）
     applyMousePassthrough();
+    // 展开前保证渲染层持有最新的可视边界
+    if (expanded) pushFloatViewport();
   });
 
   ipcMain.handle('toggle-float-window', () => { return toggleFloatWindow(); });

@@ -33,6 +33,12 @@
   var BUBBLE_HOLD_MS = 4200;
   var IDLE_ANIM_DELAY_MS = 5000;
   var ENTER_POP_MS = 600;
+  // 气泡宽度与 CSS 令牌同源，避免两处各写 200
+  var BUBBLE_MAX_WIDTH = (function () {
+    var value = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--float-bubble-max-width'));
+    return isFinite(value) ? value : 200;
+  })();
+  var BUBBLE_MIN_WIDTH = 80;
 
   var eyeX = 0;
   var eyeY = 0;
@@ -113,11 +119,35 @@
     }
   }
 
+  // 气泡定位：按窗口可视区域翻转/夹取，箭头跟随球心；宿主未就绪时保持原样式
+  function positionBubble() {
+    var geometry = window.FloatGeometry;
+    if (!bubble || !geometry) return;
+
+    var visible = geometry.getVisibleRect();
+    var ballRect = ball.getBoundingClientRect();
+    var margin = geometry.edgeMargin || 8;
+    var maxWidth = Math.max(BUBBLE_MIN_WIDTH, Math.min(BUBBLE_MAX_WIDTH, visible.right - visible.left - margin * 2));
+    bubble.style.setProperty('--bubble-max-width', maxWidth + 'px');
+
+    var size = { width: bubble.offsetWidth, height: bubble.offsetHeight };
+    var anchor = { left: ballRect.left, top: ballRect.top, width: ballRect.width, height: ballRect.height };
+    var pos = geometry.placeFloatingBox(anchor, size, visible, 'top');
+
+    bubble.style.setProperty('--bubble-x', (pos.left - ballRect.left) + 'px');
+    bubble.style.setProperty('--bubble-y', (pos.top - ballRect.top) + 'px');
+    bubble.style.setProperty('--bubble-arrow-x', pos.arrowX + 'px');
+    bubble.dataset.placement = pos.placement;
+    bubble.dataset.placed = '1';
+  }
+
   function say(text) {
     if (!text) return;
     wakeAnimations();
     clearActions();
     bubbleText.textContent = text;
+    // 文本写入后、显示前完成测量与定位，避免先出现在错误位置再跳动
+    positionBubble();
     startTailTalk();
     bubble.classList.add('show');
     scheduleBubbleHide(BUBBLE_HOLD_MS, false);
@@ -155,6 +185,8 @@
     if (api && api.setInteractiveCard) {
       api.setInteractiveCard(hasActions);
     }
+    // 按钮渲染完成后重新测量高度，再定位显示
+    positionBubble();
     startTailTalk();
     bubble.classList.add('show');
     scheduleBubbleHide(card.ttl || BUBBLE_HOLD_MS, hasActions);

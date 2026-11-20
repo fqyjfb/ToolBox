@@ -220,7 +220,7 @@
   left: 50%;
   bottom: calc(100% + 10px);
   width: max-content;
-  max-width: 200px;
+  max-width: var(--bubble-max-width, var(--float-bubble-max-width));
   padding: 8px 12px;
   font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
   color: var(--bubble-text);
@@ -250,6 +250,18 @@
   transform: translateX(-50%) translateY(0) scale(1);
 }
 
+/* 完成定位后改用变量坐标；未定位时保留上方居中作为降级基线 */
+.float-ball .pet-bubble[data-placed="1"] {
+  left: 0;
+  top: 0;
+  bottom: auto;
+  transform: translate3d(var(--bubble-x, 0), var(--bubble-y, 0), 0) scale(.96);
+}
+
+.float-ball .pet-bubble[data-placed="1"].show {
+  transform: translate3d(var(--bubble-x, 0), var(--bubble-y, 0), 0) scale(1);
+}
+
 .float-ball .pet-bubble::after {
   content: "";
   position: absolute;
@@ -262,6 +274,18 @@
   border-right: 1px solid var(--bubble-border);
   border-bottom: 1px solid var(--bubble-border);
   transform: rotate(45deg);
+}
+
+/* 已定位时箭头跟随球心，避免横向夹取后指偏 */
+.float-ball .pet-bubble[data-placed="1"]::after {
+  left: var(--bubble-arrow-x, 50%);
+}
+
+/* 气泡翻到球体下方时，箭头转向上方 */
+.float-ball .pet-bubble[data-placed="1"][data-placement="bottom"]::after {
+  top: -6px;
+  bottom: auto;
+  transform: rotate(225deg);
 }
 
 /* ── 可交互卡片：只有带按钮时才接管鼠标，避免平时挡住球体拖拽 ── */

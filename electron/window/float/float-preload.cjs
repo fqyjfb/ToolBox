@@ -5,6 +5,7 @@ let outfitChangedCallback = null;
 let themeChangedCallback = null;
 let petStateCallback = null;
 let petCardCallback = null;
+let viewportChangedCallback = null;
 
 ipcRenderer.on('float-config-changed', (event, config) => {
   if (configChangedCallback) {
@@ -38,6 +39,13 @@ ipcRenderer.on('float-pet-card', (event, data) => {
   }
 });
 
+// 窗口在屏幕上的可视区域（位置/显示器变化时主进程低频推送）
+ipcRenderer.on('float:viewport-changed', (event, viewport) => {
+  if (viewportChangedCallback) {
+    viewportChangedCallback(viewport);
+  }
+});
+
 contextBridge.exposeInMainWorld('electronAPI', {
   dragStart: () => ipcRenderer.send('float-drag-start'),
   dragMove: () => ipcRenderer.send('float-drag-move'),
@@ -64,6 +72,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onPetCard: (callback) => {
     petCardCallback = callback;
+  },
+  // 视口：初始化主动取一次，之后随位置/显示器变化被动更新
+  getViewport: () => ipcRenderer.invoke('float:get-viewport'),
+  onViewportChanged: (callback) => {
+    viewportChangedCallback = callback;
   },
   // P2-3/P2-4 拖入文件：Electron 42 起必须用 webUtils.getPathForFile 取真实路径
   getPathForFile: (file) => {

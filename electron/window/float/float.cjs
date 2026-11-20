@@ -1,4 +1,89 @@
 const floatBall = document.getElementById('floatBall');
+const floatTip = document.getElementById('floatTip');
+
+// ── 视口感知：主进程下发窗口/显示器信息，提示层据此翻转/夹取 ──
+let viewport = null; // { bounds, workArea, displayBounds, scaleFactor }
+
+function clampValue(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+// 间距/宽度只在 CSS 令牌维护一份，脚本加载时读一次
+function readFloatToken(name, fallback) {
+  const value = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return Number.isFinite(value) ? value : fallback;
+}
+
+const EDGE_MARGIN = readFloatToken('--float-edge-margin', 8);
+const TIP_GAP = readFloatToken('--float-tip-gap', 8);
+const TIP_MAX_WIDTH = readFloatToken('--float-tip-max-width', 200);
+// 箭头距气泡左右边缘的安全距离
+const ARROW_INSET = 12;
+
+// 窗口在屏幕上的可视区域，换算为窗口内 client 坐标；视口未就绪时退化为整窗
+function getVisibleRect() {
+  if (!viewport) {
+    return { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+  }
+  const { bounds, workArea, displayBounds } = viewport;
+  const toClient = (area) => ({
+    left: Math.max(0, area.x - bounds.x),
+    top: Math.max(0, area.y - bounds.y),
+    right: Math.min(window.innerWidth, area.x + area.width - bounds.x),
+    bottom: Math.min(window.innerHeight, area.y + area.height - bounds.y),
+  });
+  const work = toClient(workArea);
+  // 窗口整体压在任务栏上时 work 可能为空，退回物理屏幕边界
+  return (work.right - work.left < 1 || work.bottom - work.top < 1)
+    ? toClient(displayBounds)
+    : work;
+}
+
+/**
+ * 在可视矩形内放置一个浮层。
+ * anchor  : 锚点（client 坐标 {left, top, width, height}）
+ * size    : 浮层尺寸 {width, height}
+ * visible : getVisibleRect() 结果
+ * prefer  : 优先方向（'bottom' | 'top'），放不下时自动翻转
+ */
+function placeFloatingBox(anchor, size, visible, prefer) {
+  const preferred = prefer || 'bottom';
+  const minLeft = visible.left + EDGE_MARGIN;
+  const minTop = visible.top + EDGE_MARGIN;
+  const maxRight = visible.right - EDGE_MARGIN;
+  const maxBottom = visible.bottom - EDGE_MARGIN;
+
+  let placement = preferred;
+  let top = preferred === 'bottom'
+    ? anchor.top + anchor.height + TIP_GAP
+    : anchor.top - TIP_GAP - size.height;
+
+  if (preferred === 'bottom' && top + size.height > maxBottom) {
+    placement = 'top';
+    top = anchor.top - TIP_GAP - size.height;
+  } else if (preferred === 'top' && top < minTop) {
+    placement = 'bottom';
+    top = anchor.top + anchor.height + TIP_GAP;
+  }
+  top = clampValue(top, minTop, Math.max(minTop, maxBottom - size.height));
+
+  const centerX = anchor.left + anchor.width / 2;
+  const left = clampValue(
+    centerX - size.width / 2,
+    minLeft,
+    Math.max(minLeft, maxRight - size.width)
+  );
+
+  return {
+    left,
+    top,
+    placement,
+    arrowX: clampValue(centerX, left + ARROW_INSET, left + size.width - ARROW_INSET) - left,
+  };
+}
+
+// 提示与气泡共用同一套定位实现，避免两份夹取逻辑
+window.FloatGeometry = { getVisibleRect, placeFloatingBox, edgeMargin: EDGE_MARGIN };
 
 let isExpanded = false;
 let isDragging = false;
@@ -69,16 +154,17 @@ const escapeHtml = (value) => String(value == null ? '' : value)
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 function renderFloatBall() {
+  // 重渲染会替换菜单节点，提示先收起，避免残留指向已移除的元素
+  hideItemTip();
   const tooltipContainer = getTooltipContainer();
   if (floatConfig.length === 0) {
     tooltipContainer.innerHTML = '<div class="tooltip-item"><span class="float-empty">暂无配置</span></div>';
   } else {
     const itemsHTML = floatConfig.map((item, index) => {
       const iconHTML = getIconByName(item.icon, item);
-      const name = escapeHtml(item.name);
       const body = iconHTML || '<span class="float-fallback-char">' + escapeHtml(item.name.charAt(0)) + '</span>';
-      // 名称仅用自定义 .tooltip-label 展示，不再加原生 title，避免悬浮时出现两个提示
-      return '<div class="tooltip-item" data-index="' + index + '">' + body + '<span class="tooltip-label">' + name + '</span></div>';
+      // 名称由共享的 #floatTip 在悬停时展示，不再加原生 title，避免悬浮时出现两个提示
+      return '<div class="tooltip-item" data-index="' + index + '">' + body + '</div>';
     }).join('');
     tooltipContainer.innerHTML = itemsHTML;
   }
@@ -117,12 +203,53 @@ function attachItemEvents() {
   const items = tooltipContainer.querySelectorAll('.tooltip-item');
   items.forEach(item => {
     item.addEventListener('click', handleItemClick);
-    item.addEventListener('mouseenter', handleFloatBallMouseEnter);
+    item.addEventListener('mouseenter', handleItemMouseEnter);
+    item.addEventListener('mouseleave', hideItemTip);
   });
+}
+
+// 悬停菜单项：显示名称提示；同时取消球体的自动收起计时
+function handleItemMouseEnter(e) {
+  handleFloatBallMouseEnter();
+  showItemTip(e.currentTarget);
+}
+
+// 名称提示：先设文本与最大宽度完成测量，再按可视区定位，最后显示
+function showItemTip(item) {
+  if (!floatTip) return;
+  const configItem = floatConfig[parseInt(item.dataset.index, 10)];
+  const name = configItem && configItem.name ? String(configItem.name) : '';
+  if (!name) return;
+
+  const visible = getVisibleRect();
+  const ballRect = floatBall.getBoundingClientRect();
+
+  floatTip.textContent = name;
+  const maxWidth = Math.max(80, Math.min(TIP_MAX_WIDTH, visible.right - visible.left - EDGE_MARGIN * 2));
+  floatTip.style.setProperty('--tip-max-width', maxWidth + 'px');
+
+  const size = { width: floatTip.offsetWidth, height: floatTip.offsetHeight };
+  const itemRect = item.getBoundingClientRect();
+  const pos = placeFloatingBox(
+    { left: itemRect.left, top: itemRect.top, width: itemRect.width, height: itemRect.height },
+    size,
+    visible,
+    'bottom'
+  );
+
+  floatTip.style.setProperty('--tip-x', (pos.left - ballRect.left) + 'px');
+  floatTip.style.setProperty('--tip-y', (pos.top - ballRect.top) + 'px');
+  floatTip.dataset.placement = pos.placement;
+  floatTip.classList.add('show');
+}
+
+function hideItemTip() {
+  if (floatTip) floatTip.classList.remove('show');
 }
 
 function handleItemClick(e) {
   e.stopPropagation();
+  hideItemTip();
 
   const index = parseInt(e.currentTarget.dataset.index, 10);
   const configItem = floatConfig[index];
@@ -172,6 +299,8 @@ function toggleExpand() {
   if (window.FloatPet.wakeAnimations) window.FloatPet.wakeAnimations();
   // 展开时让桌宠闭嘴，避免台词气泡和菜单项叠在一起
   if (isExpanded) window.FloatPet.clearBubble();
+  // 收起时名称提示必须立即消失
+  if (!isExpanded) hideItemTip();
   // 兜底：配置还没加载完就点击时，菜单项尚未构建，先补一次构建
   if (isExpanded && getTooltipContainer().children.length === 0) {
     renderFloatBall();
@@ -293,6 +422,7 @@ function handleFloatBallMouseDown(e) {
   // 一旦 setDragging(true) 会立刻 clearBubble()，按钮在 mouseup 前就被移除，click 永远不触发
   if (e.target && e.target.closest && e.target.closest('.pet-bubble')) return;
   e.preventDefault();
+  hideItemTip();
   isDragging = true;
   moved = false;
   longPressFired = false;
@@ -392,10 +522,14 @@ function initFloatBall() {
   document.addEventListener('dragleave', handleDragLeave);
   document.addEventListener('drop', handleDrop);
   // 光标移出窗口：不再收到 mousemove，必须主动上报离开，避免主进程一直保持可点击
-  document.addEventListener('mouseleave', function () { reportBallHover(false); });
+  document.addEventListener('mouseleave', function () {
+    hideItemTip();
+    reportBallHover(false);
+  });
   // 兜底：失焦时 mouseup 可能收不到，防止一直卡在拖拽态；同时复位球体命中态
   window.addEventListener('blur', function () {
     stopDrag();
+    hideItemTip();
     reportBallHover(false);
   });
 
@@ -403,6 +537,16 @@ function initFloatBall() {
     window.electronAPI.getGesturesEnabled()
       .then((value) => { gesturesEnabled = value !== false; })
       .catch(() => {});
+  }
+
+  // 视口：初始化主动取一次（推送可能早于订阅），之后随位置/显示器变化更新
+  if (window.electronAPI.getViewport) {
+    window.electronAPI.getViewport()
+      .then((data) => { if (data) viewport = data; })
+      .catch(() => {});
+  }
+  if (window.electronAPI.onViewportChanged) {
+    window.electronAPI.onViewportChanged((data) => { if (data) viewport = data; });
   }
   
   async function loadData() {
