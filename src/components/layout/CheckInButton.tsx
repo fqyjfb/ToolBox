@@ -18,7 +18,7 @@ const CheckInButton: React.FC<{ compact?: boolean }> = ({ compact = false }) => 
   // 打卡状态快照推给主进程：悬浮球「打卡提醒/连续打卡/周摘要/启动卡」的内容源。
   // check_ins 是云端表，主进程无法直读，故沿用 ai.json 同款快照惯例；推送失败静默。
   useEffect(() => {
-    if (!data || !window.electron?.floatDailySnapshot) return;
+    if (!data || data.failed || !window.electron?.floatDailySnapshot) return;
     const now = new Date();
     const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     try {
@@ -30,9 +30,13 @@ const CheckInButton: React.FC<{ compact?: boolean }> = ({ compact = false }) => 
 
   if (!userId) return null;
 
+  // 查询失败时 data.failed 为 true，checkInStatusQuery 已把状态归零，不会误判为"已签"
+  const failed = data?.failed ?? false;
   const checkedToday = data?.checkedToday ?? false;
   const streak = data?.streak ?? 0;
-  const tip = checkedToday ? `今日已签到 · 连续 ${streak} 天` : '每日签到';
+  const tip = failed
+    ? '签到状态获取失败，点击重试'
+    : checkedToday ? `今日已签到 · 连续 ${streak} 天` : '每日签到';
 
   const handleCheckIn = async () => {
     if (submitting) return;

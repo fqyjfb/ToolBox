@@ -493,7 +493,9 @@
 /* 拖拽/调整尺寸状态 */
 .sticky-wall-card--dragging {
   cursor: grabbing;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  /* 拖拽时用轻阴影：全屏透明窗口下大模糊阴影会随指针频率重绘 */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  will-change: transform;
   z-index: 100;
 }
 

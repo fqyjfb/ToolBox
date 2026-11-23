@@ -5,6 +5,8 @@
 const GW_HWNDNEXT = 2;
 const WM_SPAWN_WORKER = 0x052C;
 const SMTO_NORMAL = 0;
+const SWP_NOSIZE = 0x0001;
+const SWP_NOMOVE = 0x0002;
 const SWP_NOZORDER = 0x0004;
 const SWP_NOACTIVATE = 0x0010;
 const HWND_TOP = 0;
@@ -21,10 +23,6 @@ const buildApi = () => {
     const koffi = require('koffi');
     const user32 = koffi.load('user32.dll');
 
-    const RECT = koffi.struct('TBoxStickyRect', {
-      left: 'int32', top: 'int32', right: 'int32', bottom: 'int32',
-    });
-
     return {
       findWindow: user32.func('uintptr __stdcall FindWindowW(str16 lpClassName, str16 lpWindowName)'),
       findWindowEx: user32.func('uintptr __stdcall FindWindowExW(uintptr hWndParent, uintptr hWndChildAfter, str16 lpszClass, str16 lpszWindow)'),
@@ -36,7 +34,6 @@ const buildApi = () => {
       setParent: user32.func('uintptr __stdcall SetParent(uintptr hWndChild, uintptr hWndNewParent)'),
       getParent: user32.func('uintptr __stdcall GetParent(uintptr hWnd)'),
       setWindowPos: user32.func('int __stdcall SetWindowPos(uintptr hWnd, uintptr hWndInsertAfter, int X, int Y, int cx, int cy, uint32 uFlags)'),
-      getWindowRect: user32.func('int __stdcall GetWindowRect(uintptr hWnd, _Out_ TBoxStickyRect *rect)'),
     };
   } catch (error) {
     console.error('[DesktopLayer] koffi 初始化失败，桌面层挂载降级:', error.message);
@@ -86,20 +83,24 @@ const findDesktopHost = (a) => {
   return { progman, host: host || progman };
 };
 
-/** 解挂到普通顶层窗口。子窗口坐标是相对宿主的，setParent 后必须按屏幕坐标重新定位。 */
-const detachImpl = (a, win) => {
+/**
+ * 解挂到普通顶层窗口。
+ * 位置/尺寸统一交给 Electron（DIP），不混用 GetWindowRect 的物理像素，
+ * 否则 125%/150% 缩放或多屏下会偏移。
+ */
+const detachImpl = (a, win, dipBounds) => {
   const hwnd = toHwnd(win);
   const style = Number(a.getWindowLong(hwnd, GWL_STYLE)) >>> 0;
   if (style & WS_CHILD) {
     a.setWindowLong(hwnd, GWL_STYLE, (style & ~WS_CHILD) >>> 0);
   }
   a.setParent(hwnd, 0);
-  const bounds = win.getBounds();
+  win.setBounds(dipBounds || win.getBounds());
   // 不带 HWND_TOP：解挂不该把窗口瞬间提到所有窗口之上，层级由调用方决定
-  a.setWindowPos(hwnd, 0, bounds.x, bounds.y, bounds.width, bounds.height, SWP_NOZORDER | SWP_NOACTIVATE);
+  a.setWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 };
 
-const attachImpl = (a, win) => {
+const attachImpl = (a, win, dipBounds) => {
   const target = findDesktopHost(a);
   if (!target) return false;
 
@@ -120,28 +121,27 @@ const attachImpl = (a, win) => {
     }
   }
 
-  // 子窗口坐标相对宿主：屏幕坐标 - 宿主屏幕原点（多屏/副屏都适用）
-  const hostRect = { left: 0, top: 0, right: 0, bottom: 0 };
-  a.getWindowRect(target.host, hostRect);
-  const bounds = win.getBounds();
+  // 位置/尺寸交给 Electron 按 DIP 换算，禁止把 DIP 数值当物理像素传给 SetWindowPos。
+  // 桌面宿主在 DIP 坐标系中的原点固定为 (0,0)，因此直接使用屏幕 DIP 矩形即可。
+  win.setBounds(dipBounds || win.getBounds());
   a.setWindowPos(
     hwnd,
     HWND_TOP, // 同层内放在桌面图标之上、所有应用窗口之下
-    bounds.x - hostRect.left,
-    bounds.y - hostRect.top,
-    bounds.width,
-    bounds.height,
-    SWP_NOACTIVATE,
+    0,
+    0,
+    0,
+    0,
+    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
   );
   return true;
 };
 
-/** 挂到桌面层（幂等）。成功后关闭 alwaysOnTop，否则会破坏子窗口层级。 */
-const attach = (win) => {
+/** 挂到桌面层（幂等）。dipBounds 为窗口期望的屏幕 DIP 矩形。成功后关闭 alwaysOnTop，否则会破坏子窗口层级。 */
+const attach = (win, dipBounds) => {
   const a = getApi();
   if (!a || !win || win.isDestroyed()) return false;
   try {
-    const ok = attachImpl(a, win);
+    const ok = attachImpl(a, win, dipBounds);
     if (ok) win.setAlwaysOnTop(false);
     return ok;
   } catch (error) {
@@ -151,11 +151,11 @@ const attach = (win) => {
 };
 
 /** 解挂：编辑需要键盘焦点时必须先恢复成普通顶层窗口（WS_CHILD 子窗口无法被激活） */
-const detach = (win) => {
+const detach = (win, dipBounds) => {
   const a = getApi();
   if (!a || !win || win.isDestroyed()) return false;
   try {
-    detachImpl(a, win);
+    detachImpl(a, win, dipBounds);
     return true;
   } catch (error) {
     console.error('[DesktopLayer] 桌面层解挂失败:', error.message);

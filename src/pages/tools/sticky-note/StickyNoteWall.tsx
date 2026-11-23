@@ -6,10 +6,11 @@ import './StickyNote.css';
 /**
  * 便签墙：单透明 BrowserWindow 承载全部钉住便签卡片。
  *
- * 穿透判定（渲染层单一事实来源，可自愈）：
- *   每次 mousemove 用 elementFromPoint 判断光标是否落在卡片/右键菜单上，
- *   命中 → 窗口可交互；未命中 → 窗口穿透。
- *   主进程 blur 只做安全兜底，下一次 mousemove 会自动纠正，不存在计数泄漏。
+ * 穿透判定两层：
+ *   快速路径：每次 mousemove 用 elementFromPoint 判断光标是否落在卡片/右键菜单上，
+ *            命中 → 窗口可交互；未命中 → 窗口穿透。
+ *   主进程看门狗：依据卡片矩形 + 系统光标纠偏，覆盖 mousemove 转发丢失
+ *            （桌面层子窗口/触摸设备）导致的永久穿透。
  */
 const StickyNoteWall = () => {
   const wallApi = window.stickyWallAPI;
@@ -25,6 +26,9 @@ const StickyNoteWall = () => {
   useEffect(() => {
     if (!wallApi) return;
 
+    let hitFrame = 0;
+    let lastPoint = { x: 0, y: 0 };
+
     const sync = (over: boolean) => {
       if (over === overInteractiveRef.current) return;
       overInteractiveRef.current = over;
@@ -36,22 +40,35 @@ const StickyNoteWall = () => {
       return Boolean(el?.closest('.sticky-wall-card, .context-menu-container'));
     };
 
+    // 合帧：指针事件只记录坐标，每帧最多做一次 elementFromPoint（强制布局）
     const handleMove = (event: MouseEvent) => {
-      sync(hitTest(event.clientX, event.clientY));
+      lastPoint = { x: event.clientX, y: event.clientY };
+      if (hitFrame) return;
+      hitFrame = requestAnimationFrame(() => {
+        hitFrame = 0;
+        sync(hitTest(lastPoint.x, lastPoint.y));
+      });
     };
 
     // 鼠标移出窗口（如移向任务栏）不会再有 mousemove，必须兜底恢复穿透
-    const handleLeave = () => sync(false);
+    const handleLeave = () => {
+      if (hitFrame) {
+        cancelAnimationFrame(hitFrame);
+        hitFrame = 0;
+      }
+      sync(false);
+    };
 
     document.addEventListener('mousemove', handleMove, { passive: true });
     document.addEventListener('mouseleave', handleLeave);
     return () => {
+      if (hitFrame) cancelAnimationFrame(hitFrame);
       document.removeEventListener('mousemove', handleMove);
       document.removeEventListener('mouseleave', handleLeave);
     };
   }, [wallApi]);
 
-  // 窗口失焦后主进程会强制穿透，这里同步本地缓存等待下一次 mousemove 修正
+  // 窗口失焦时本地去重缓存可能与主进程不一致，复位后等下一次 mousemove 重新同步
   useEffect(() => {
     const handleBlur = () => {
       overInteractiveRef.current = false;
@@ -59,6 +76,33 @@ const StickyNoteWall = () => {
     window.addEventListener('blur', handleBlur);
     return () => window.removeEventListener('blur', handleBlur);
   }, []);
+
+  // ── 上报卡片命中矩形：主进程看门狗据此判断系统光标是否落在便签上 ──
+  // 渲染层矩形是窗口内 CSS 像素（= 屏幕 DIP），加上窗口原点即为屏幕 DIP 绝对坐标，
+  // 与 screen.getCursorScreenPoint() 口径一致。
+  const reportHitRects = useCallback(() => {
+    if (!wallApi) return;
+    const rects = Array.from(document.querySelectorAll('.sticky-wall-card')).map((el) => {
+      const rect = el.getBoundingClientRect();
+      return {
+        left: origin.x + rect.left,
+        top: origin.y + rect.top,
+        right: origin.x + rect.right,
+        bottom: origin.y + rect.bottom,
+      };
+    });
+    void wallApi.setHitRects(rects);
+  }, [wallApi, origin]);
+
+  useEffect(() => {
+    // 等一帧让卡片完成定位再测量
+    const frame = requestAnimationFrame(reportHitRects);
+    window.addEventListener('resize', reportHitRects);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', reportHitRects);
+    };
+  }, [reportHitRects, notes]);
 
   // ── 拉取钉住便签 ──
   const loadPinned = useCallback(async () => {

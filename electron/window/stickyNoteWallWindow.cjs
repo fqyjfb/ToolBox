@@ -1,6 +1,6 @@
 // 便签墙窗口：单例透明 BrowserWindow 承载全部钉住便签卡片。
-// 穿透判定：渲染层 mousemove + elementFromPoint 单源判定 → IPC 切换；
-//           主进程 win.on('blur') 只做安全兜底（强制穿透），状态由下一次 mousemove 自愈；
+// 穿透判定：渲染层 mousemove + elementFromPoint 作为快速路径 → IPC 切换；
+//           主进程用「系统光标 + 卡片矩形」看门狗纠偏，覆盖 mousemove 丢失/桌面层转发失效；
 //           拖拽/编辑/右键菜单期间 forceInteractive 强制可交互。
 // 无论钉住多少条便签，只占 1 个渲染进程。
 const fs = require('node:fs');
@@ -9,11 +9,20 @@ const { app, BrowserWindow, screen } = require('electron');
 const { getAppIcon } = require('../lib/appIcon.cjs');
 const desktopLayer = require('../lib/desktopLayer.cjs');
 
+const REPORT_FRESH_MS = 300; // 渲染层上报超过该时长视为 mousemove 已中断
+const WATCHDOG_INTERVAL_MS = 16; // 对齐一帧：消除鼠标移入后首次点击的穿透空窗
+const MAX_HIT_RECTS = 200;
+
 let wallWindow = null;
 let interactiveState = true; // 当前是否可交互（非穿透）
 let forceInteractive = false; // 拖拽/编辑期间强制可交互，优先级最高
 let displayListenerBound = false; // screen 监听只绑定一次，避免窗口重建后重复注册
 let desktopAttached = false; // 是否已挂到桌面层（Win+D 可见且不遮挡应用）
+let hitRects = []; // 渲染层上报的卡片屏幕 DIP 矩形（看门狗命中依据）
+let rendererOver = false; // 渲染层最近一次命中结果
+let lastReportAt = 0; // 渲染层最近一次上报时间
+let lastCursorPoint = { x: -1, y: -1 }; // 看门狗空转判断：光标未移动时无需重复命中测试
+let watchdogTimer = null;
 
 /**
  * 挂到桌面层：Win+D 后窗口仍在，但位于所有应用窗口之下。
@@ -21,7 +30,7 @@ let desktopAttached = false; // 是否已挂到桌面层（Win+D 可见且不遮
  */
 const applyDesktopLayer = () => {
   if (!wallWindow || wallWindow.isDestroyed()) return;
-  desktopAttached = desktopLayer.attach(wallWindow);
+  desktopAttached = desktopLayer.attach(wallWindow, computeWallBounds());
   if (!desktopAttached) {
     wallWindow.setAlwaysOnTop(true);
   }
@@ -75,6 +84,63 @@ const notifyOriginChanged = () => {
   wallWindow.webContents.send('sticky-wall:origin-changed', getWallOrigin());
 };
 
+const normalizeHitRects = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((rect) => rect
+      && Number.isFinite(rect.left)
+      && Number.isFinite(rect.top)
+      && Number.isFinite(rect.right)
+      && Number.isFinite(rect.bottom))
+    .slice(0, MAX_HIT_RECTS)
+    .map((rect) => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }));
+};
+
+const refreshCursorOver = (point = screen.getCursorScreenPoint()) => {
+  if (!wallWindow || wallWindow.isDestroyed() || hitRects.length === 0) return false;
+  return hitRects.some((rect) => (
+    point.x >= rect.left && point.x < rect.right && point.y >= rect.top && point.y < rect.bottom
+  ));
+};
+
+const stopWatchdog = () => {
+  lastCursorPoint = { x: -1, y: -1 };
+  if (!watchdogTimer) return;
+  clearInterval(watchdogTimer);
+  watchdogTimer = null;
+};
+
+const watchdogTick = () => {
+  if (!wallWindow || wallWindow.isDestroyed()) {
+    stopWatchdog();
+    return;
+  }
+  const point = screen.getCursorScreenPoint();
+  // 光标未移动时命中结果不变，直接返回，避免每帧做无效矩形扫描
+  if (point.x === lastCursorPoint.x && point.y === lastCursorPoint.y) return;
+  lastCursorPoint = point;
+  const nextOver = refreshCursorOver(point);
+  // 渲染层上报新鲜时以渲染层为准；过期说明 mousemove 已中断，用系统光标纠偏
+  if (Date.now() - lastReportAt > REPORT_FRESH_MS && nextOver !== interactiveState) {
+    interactiveState = nextOver;
+    applyInteractive();
+  }
+};
+
+const ensureWatchdog = () => {
+  if (watchdogTimer) return;
+  watchdogTimer = setInterval(watchdogTick, WATCHDOG_INTERVAL_MS);
+  watchdogTimer.unref?.();
+};
+
+// 根据当前 · 渲染层上报 / 系统光标 / forceInteractive 统一决定是否穿透
+const recomputeInteractive = () => {
+  if (!wallWindow || wallWindow.isDestroyed()) return;
+  const fresh = Date.now() - lastReportAt <= REPORT_FRESH_MS;
+  interactiveState = fresh ? rendererOver : refreshCursorOver();
+  if (wallWindow.isVisible()) applyInteractive();
+};
+
 // 根据当前 interactiveState + forceInteractive 决定是否穿透
 const applyInteractive = () => {
   if (!wallWindow || wallWindow.isDestroyed()) return;
@@ -88,27 +154,37 @@ const applyInteractive = () => {
 };
 
 const setInteractive = (value) => {
-  interactiveState = Boolean(value);
+  rendererOver = Boolean(value);
+  lastReportAt = Date.now();
+  interactiveState = rendererOver;
   applyInteractive();
 };
 
 const setDragActive = (value) => {
   forceInteractive = Boolean(value);
-  applyInteractive();
+  recomputeInteractive();
+};
+
+/**
+ * 渲染层上报卡片命中矩形（屏幕 DIP）。看门狗用它判断系统光标是否在便签上，
+ * 不依赖 mousemove 转发，解决桌面层子窗口/触摸设备上转发丢失导致的永久穿透。
+ */
+const setHitRects = (value) => {
+  hitRects = normalizeHitRects(value);
+  // 强制用系统光标复核一次：覆盖"便签刚出现时光标已停在其上、不会再有 mousemove"的情况
+  lastReportAt = 0;
+  recomputeInteractive();
 };
 
 const openWall = () => {
   if (wallWindow && !wallWindow.isDestroyed()) {
-    // 已可见时不改动穿透状态：命中判定由渲染层 mousemove 维护，
-    // 强制重置会让鼠标正悬停的卡片短暂失效
     if (!wallWindow.isVisible()) {
-      forceInteractive = false;
-      setInteractive(false);
-      wallWindow.showInactive();
-      applyDesktopLayer();
+      // 隐藏转显示：统一复位并按系统光标复核，避免渲染层缓存与主进程状态失步
+      showWall();
     } else if (!desktopAttached) {
       // 上次挂载失败（如 Explorer 重启过），下次打开时重试
       applyDesktopLayer();
+      notifyOriginChanged();
     }
     return wallWindow;
   }
@@ -143,6 +219,8 @@ const openWall = () => {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      // 桌面层子窗口会被 Win10 判为遮挡，关闭节流保证拖拽/悬停按帧响应
+      backgroundThrottling: false,
     },
   });
 
@@ -152,14 +230,21 @@ const openWall = () => {
   // 之后的可交互切换只增删 WS_EX_TRANSPARENT，见 applyInteractive。
   interactiveState = false;
   forceInteractive = false;
+  hitRects = [];
+  rendererOver = false;
+  lastReportAt = 0;
   wallWindow.setIgnoreMouseEvents(true, { forward: true });
 
-  // blur 兜底：窗口失焦时强制恢复穿透，覆盖极端丢事件场景。
-  // 渲染层收到 blur 后把本地命中缓存重置为 false，下一次 mousemove 会重新判定。
+  // 显示/隐藏期间同步看门狗启停，避免窗口隐藏后空转
+  wallWindow.on('show', ensureWatchdog);
+  wallWindow.on('hide', stopWatchdog);
+
+  // blur 兜底：拖拽/菜单/编辑期间不清强制位，否则会中断指针捕获、造成拖拽「失焦」；
+  // 其余场景清掉上报新鲜度后交给系统光标复核。
   wallWindow.on('blur', () => {
-    forceInteractive = false;
-    interactiveState = false;
-    applyInteractive();
+    if (forceInteractive) return;
+    lastReportAt = 0;
+    recomputeInteractive();
   });
 
   // close 事件：阻止默认，只隐藏。避免系统关机/重启时误取消钉住
@@ -171,10 +256,14 @@ const openWall = () => {
   });
 
   wallWindow.on('closed', () => {
+    stopWatchdog();
     wallWindow = null;
     interactiveState = true;
     forceInteractive = false;
     desktopAttached = false;
+    hitRects = [];
+    rendererOver = false;
+    lastReportAt = 0;
   });
 
   // 显示器变化：重算画布尺寸并通知渲染层新的坐标原点（只绑定一次）
@@ -183,11 +272,16 @@ const openWall = () => {
     screen.on('display-metrics-changed', () => {
       if (!wallWindow || wallWindow.isDestroyed()) return;
       try {
-        // 子窗口坐标相对桌面宿主，改尺寸前必须解挂，改完重新挂载
-        if (desktopAttached) desktopLayer.detach(wallWindow);
-        wallWindow.setBounds(computeWallBounds());
-        if (desktopAttached) applyDesktopLayer();
+        const nextBounds = computeWallBounds();
+        // 坐标/尺寸统一走 Electron 的 DIP 接口，避免与宿主的物理像素混算
+        if (desktopAttached) {
+          desktopLayer.detach(wallWindow, nextBounds);
+          applyDesktopLayer();
+        } else {
+          wallWindow.setBounds(nextBounds);
+        }
         notifyOriginChanged();
+        recomputeInteractive();
       } catch (error) {
         console.error('[StickyWall] 显示器变化调整窗口失败:', error.message);
       }
@@ -198,6 +292,9 @@ const openWall = () => {
     if (!wallWindow || wallWindow.isDestroyed()) return;
     wallWindow.showInactive();
     applyDesktopLayer();
+    notifyOriginChanged();
+    recomputeInteractive();
+    ensureWatchdog();
   };
 
   if (indexHtml) {
@@ -226,7 +323,9 @@ const closeWall = (force = false) => {
 const hideWall = () => {
   if (!wallWindow || wallWindow.isDestroyed()) return;
   forceInteractive = false;
-  setInteractive(false);
+  interactiveState = false;
+  stopWatchdog();
+  applyInteractive();
   try {
     wallWindow.hide();
   } catch (error) {
@@ -237,10 +336,16 @@ const hideWall = () => {
 const showWall = () => {
   if (!wallWindow || wallWindow.isDestroyed()) return;
   forceInteractive = false;
-  setInteractive(false);
+  interactiveState = false;
+  // 隐藏期间渲染层不会再上报，重置缓存后用系统光标复核，避免失步后永久穿透
+  rendererOver = false;
+  lastReportAt = 0;
   try {
     wallWindow.showInactive();
     applyDesktopLayer();
+    notifyOriginChanged();
+    recomputeInteractive();
+    ensureWatchdog();
   } catch (error) {
     console.error('[StickyWall] 显示便签墙失败:', error.message);
   }
@@ -254,7 +359,7 @@ const beginEditing = () => {
   if (!wallWindow || wallWindow.isDestroyed()) return;
   try {
     if (desktopAttached) {
-      desktopLayer.detach(wallWindow);
+      desktopLayer.detach(wallWindow, computeWallBounds());
       wallWindow.setAlwaysOnTop(true); // 编辑期间浮到最前，避免输入区被应用盖住
     }
     wallWindow.focus();
@@ -269,6 +374,8 @@ const endEditing = () => {
   if (!desktopAttached) return;
   try {
     applyDesktopLayer();
+    notifyOriginChanged();
+    recomputeInteractive();
   } catch (error) {
     console.error('[StickyWall] 退出编辑失败:', error.message);
   }
@@ -276,6 +383,7 @@ const endEditing = () => {
 
 const destroyWall = () => {
   if (!wallWindow || wallWindow.isDestroyed()) return;
+  stopWatchdog();
   try {
     wallWindow.destroy();
   } catch (error) {
@@ -320,6 +428,7 @@ module.exports = {
   isWallSender,
   setInteractive,
   setDragActive,
+  setHitRects,
   beginEditing,
   endEditing,
   getWallOrigin,

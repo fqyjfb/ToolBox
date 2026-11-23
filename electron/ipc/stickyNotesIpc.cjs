@@ -51,6 +51,16 @@ const registerStickyNotesIpc = () => {
     return { ok: true };
   });
 
+  // 渲染层上报卡片命中矩形：主进程看门狗据此判断系统光标是否在便签上
+  ipcMain.handle('sticky-wall:set-hit-rects', (event, rects) => {
+    const wallModule = require('../window/stickyNoteWallWindow.cjs');
+    if (!wallModule.isWallSender(event.sender)) {
+      return { ok: false, error: '权限拒绝' };
+    }
+    wallModule.setHitRects(rects);
+    return { ok: true };
+  });
+
   // 进入/退出编辑：桌面层子窗口无法激活，编辑时需临时解挂拿键盘焦点
   ipcMain.handle('sticky-wall:editing', (event, value) => {
     const wallModule = require('../window/stickyNoteWallWindow.cjs');

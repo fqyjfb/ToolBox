@@ -10,9 +10,10 @@ contextBridge.exposeInMainWorld('stickyWallAPI', {
   unpin: (id) => ipcRenderer.invoke('sticky-notes:set-pinned', { id, pinned: false }),
   openInApp: (id) => ipcRenderer.send('sticky-note:open-in-app', id),
 
-  // 穿透控制（mousemove 单源判定 + forceInteractive）
+  // 穿透控制（mousemove 快速路径 + 主进程看门狗纠偏 + forceInteractive）
   setInteractive: (value) => ipcRenderer.invoke('sticky-wall:set-interactive', value),
   setDragActive: (value) => ipcRenderer.invoke('sticky-wall:set-drag-active', value),
+  setHitRects: (rects) => ipcRenderer.invoke('sticky-wall:set-hit-rects', rects),
 
   // 进入/退出编辑（桌面层子窗口需临时解挂才能拿到键盘焦点）
   setEditing: (value) => ipcRenderer.invoke('sticky-wall:editing', value),

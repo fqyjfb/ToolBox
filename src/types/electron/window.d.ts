@@ -41,10 +41,12 @@ interface StickyWallAPI {
   saveBounds: (input: { id: string; bounds: Partial<import('../stickyNote').StickyNoteBounds> }) => Promise<{ ok: boolean; error?: string }>;
   unpin: (id: string) => Promise<{ ok: boolean; error?: string }>;
   openInApp: (id: string) => void;
-  /** 鼠标命中卡片/菜单切换穿透状态（mousemove 单源判定） */
+  /** 鼠标命中卡片/菜单切换穿透状态（mousemove 快速路径） */
   setInteractive: (value: boolean) => Promise<{ ok: boolean }>;
   /** 拖拽/编辑/菜单期间 forceInteractive */
   setDragActive: (value: boolean) => Promise<{ ok: boolean }>;
+  /** 上报卡片屏幕 DIP 矩形：主进程看门狗据此纠正穿透状态 */
+  setHitRects: (rects: Array<{ left: number; top: number; right: number; bottom: number }>) => Promise<{ ok: boolean }>;
   /** 进入/退出编辑：桌面层子窗口需临时解挂才能拿到键盘焦点 */
   setEditing: (value: boolean) => Promise<{ ok: boolean }>;
   /** 复制正文（主进程 clipboard） */

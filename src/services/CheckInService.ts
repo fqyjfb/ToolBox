@@ -14,7 +14,7 @@ const localDateStr = (d: Date): string =>
   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
 /** 计算连续签到天数：以最近一条为锚点，锚点不是今天/昨天则已连续中断计 0 */
-export const calcStreak = (records: CheckInRecord[]): number => {
+const calcStreak = (records: CheckInRecord[]): number => {
   if (records.length === 0) return 0;
   const days = new Set(records.map(r => r.check_in_date));
   const cursor = new Date();
@@ -31,7 +31,8 @@ export const calcStreak = (records: CheckInRecord[]): number => {
 };
 
 export const checkInService = {
-  async listCheckIns(userId: string): Promise<CheckInRecord[]> {
+  /** failed=true 表示本次查询失败（离网/RLS/表缺失等），不能等同于"今天没签" */
+  async listCheckIns(userId: string): Promise<{ records: CheckInRecord[]; failed: boolean }> {
     try {
       const { data, error } = await supabase
         .from('check_ins')
@@ -39,10 +40,10 @@ export const checkInService = {
         .eq('user_id', userId)
         .order('check_in_date', { ascending: false });
       if (error) throw error;
-      return (data || []) as CheckInRecord[];
+      return { records: (data || []) as CheckInRecord[], failed: false };
     } catch (error) {
       logError('获取签到记录失败', 'CheckInService', error as Error);
-      return [];
+      return { records: [], failed: true };
     }
   },
 
@@ -53,8 +54,8 @@ export const checkInService = {
     }
     try {
       const today = localDateStr(new Date());
-      const existing = await this.listCheckIns(userId);
-      if (existing.some(r => r.check_in_date === today)) {
+      const { records } = await this.listCheckIns(userId);
+      if (records.some(r => r.check_in_date === today)) {
         return { success: true, alreadyChecked: true };
       }
       const { error } = await supabase
@@ -72,10 +73,11 @@ export const checkInService = {
 
 // 头部签到按钮：当天签到状态 + 连续天数 + 本周打卡天数，随写操作 invalidate 刷新
 // weekCount 同时供悬浮球「每周摘要」快照使用（周一起算，与主进程聚合口径一致）
+// 刷新策略：应用启动后查询一次；仅签到成功后 invalidate 刷新，不轮询、不在聚焦/重连时重复查询
 export const checkInStatusQuery = (userId: string) => ({
   queryKey: queryKeys.checkIn.status(userId),
-  queryFn: async (): Promise<{ checkedToday: boolean; streak: number; weekCount: number }> => {
-    const records = await checkInService.listCheckIns(userId);
+  queryFn: async (): Promise<{ checkedToday: boolean; streak: number; weekCount: number; failed: boolean }> => {
+    const { records, failed } = await checkInService.listCheckIns(userId);
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
     const weekStartStr = localDateStr(weekStart);
@@ -83,6 +85,7 @@ export const checkInStatusQuery = (userId: string) => ({
       checkedToday: records.some(r => r.check_in_date === localDateStr(new Date())),
       streak: calcStreak(records),
       weekCount: records.filter(r => r.check_in_date >= weekStartStr).length,
+      failed,
     };
   },
   enabled: !!userId,

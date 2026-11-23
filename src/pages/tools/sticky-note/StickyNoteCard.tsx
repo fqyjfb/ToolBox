@@ -55,6 +55,9 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     moved: false,
   });
 
+  // 拖拽合帧：每帧最多写一次 transform
+  const dragFrameRef = useRef(0);
+
   // 调整尺寸 refs
   const resizeStateRef = useRef({
     startX: 0,
@@ -66,6 +69,14 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
   modeRef.current = mode;
   draftRef.current = draft;
   lastSavedRef.current = note.content;
+
+  // 拖拽期间用 transform 位移，避免每帧写 left/top 触发布局
+  const applyDragTransform = useCallback(() => {
+    const ds = dragStateRef.current;
+    const el = rootRef.current;
+    if (!el || !ds.moved) return;
+    el.style.transform = `translate3d(${ds.curLeft - ds.left}px, ${ds.curTop - ds.top}px, 0)`;
+  }, []);
 
   // 退出编辑统一出口：解除穿透强制位 + 把窗口挂回桌面层（恢复"Win+D 可见但不遮挡应用"）
   const exitEditing = useCallback(() => {
@@ -138,6 +149,10 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
   // 卸载前 flush
   useEffect(() => {
     return () => {
+      if (dragFrameRef.current) {
+        cancelAnimationFrame(dragFrameRef.current);
+        dragFrameRef.current = 0;
+      }
       if (modeRef.current === 'editing') {
         // 同步保存（主进程 API 无法在卸载时 await，尽力而为）
         void commitEdit();
@@ -208,27 +223,44 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     if (ds.moved) {
       ds.curLeft = Math.round(ds.left + dx);
       ds.curTop = Math.round(ds.top + dy);
-      if (rootRef.current) {
-        rootRef.current.style.left = `${ds.curLeft}px`;
-        rootRef.current.style.top = `${ds.curTop}px`;
-      }
+      // 合帧：指针事件只记录坐标，每帧最多写一次 transform
+      if (dragFrameRef.current) return;
+      dragFrameRef.current = requestAnimationFrame(() => {
+        dragFrameRef.current = 0;
+        applyDragTransform();
+      });
     }
-  }, [wallApi]);
+  }, [applyDragTransform, wallApi]);
 
-  const handlePointerUp = useCallback(() => {
+  // pointerup / pointercancel / lostpointercapture 共用收尾，必须幂等
+  const handlePointerEnd = useCallback((event: React.PointerEvent) => {
     const ds = dragStateRef.current;
     if (!ds.active) return;
     ds.active = false;
-    if (ds.moved) {
-      // 窗口内坐标 → 绝对桌面坐标后持久化
-      onBoundsChange(noteRef.current.id, {
-        x: originRef.current.x + ds.curLeft,
-        y: originRef.current.y + ds.curTop,
-      });
-      ds.moved = false;
-      setIsDragging(false);
-      void wallApi.setDragActive(false);
+    if (!ds.moved) return;
+
+    // lostpointercapture 没有可靠坐标，沿用最后一次 pointermove
+    if (event.type !== 'lostpointercapture') {
+      ds.curLeft = Math.round(ds.left + (event.clientX - ds.startX));
+      ds.curTop = Math.round(ds.top + (event.clientY - ds.startY));
     }
+    if (dragFrameRef.current) {
+      cancelAnimationFrame(dragFrameRef.current);
+      dragFrameRef.current = 0;
+    }
+    const el = rootRef.current;
+    if (el) el.style.transform = '';
+
+    ds.moved = false;
+    ds.pointerId = -1;
+    setIsDragging(false);
+    // 窗口内坐标 → 绝对桌面坐标后持久化
+    onBoundsChange(noteRef.current.id, {
+      x: originRef.current.x + ds.curLeft,
+      y: originRef.current.y + ds.curTop,
+    });
+    // 等新命中矩形上报后再解除强制位，避免新旧矩形之间出现穿透空窗
+    requestAnimationFrame(() => { void wallApi.setDragActive(false); });
   }, [onBoundsChange, wallApi]);
 
   // ── 调整宽度 ──
@@ -345,7 +377,9 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
       onContextMenu={handleContextMenu}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onLostPointerCapture={handlePointerEnd}
     >
       {mode === 'editing' ? (
         <textarea
