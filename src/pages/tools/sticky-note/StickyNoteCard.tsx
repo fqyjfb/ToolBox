@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Copy, Palette, PinOff } from 'lucide-react';
 import type { StickyNote, StickyNoteBounds, StickyNoteColor } from '../../../types/stickyNote';
 import ContextMenu from '../../../components/ui/ContextMenu';
 import { STICKY_NOTE_COLORS } from './stickyNoteColors';
+
+/** 便签墙窗口渲染端 clientId：便签墙内所有 update 带上它，让主进程 broadcast 可过滤自身回声。
+ *  模块级常量（不是 useRef），StickyNoteWall 和 StickyNoteCard 共享同一份。 */
+export const WALL_CLIENT_ID = `wall_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
 type Mode = 'view' | 'editing';
 
@@ -20,6 +24,8 @@ const MAX_WIDTH = 420;
 const RESIZE_HOT_ZONE = 8;
 const DRAG_THRESHOLD = 4;
 const IDLE_SAVE_DELAY = 800;
+/** 非编辑态截断预览长度，主进程 MAX_CONTENT=20000 但墙内展示前 2000 字符 */
+const PREVIEW_MAX_LEN = 2000;
 
 const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCardProps) => {
   const [mode, setMode] = useState<Mode>('view');
@@ -60,9 +66,16 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
 
   // 调整尺寸 refs
   const resizeStateRef = useRef({
+    active: false,
+    pointerId: -1,
     startX: 0,
     originWidth: 0,
+    lastDx: 0, // 最后一次 pointermove 的 dx，供 lostpointercapture 时使用
   });
+
+  // 调整尺寸合帧：每帧最多写一次 width
+  const resizeFrameRef = useRef(0);
+  const pendingWidthRef = useRef(0);
 
   noteRef.current = note;
   originRef.current = origin;
@@ -122,20 +135,37 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
 
     setSaving(true);
     setSaveError('');
-    const task = wallApi.update({ id: noteRef.current.id, content })
-      .then((result) => {
+    // P1-5 乐观并发：把当前已知的 updatedAt 传给主进程，冲突时提示刷新
+    const knownUpdatedAt = noteRef.current.updatedAt;
+    const task = wallApi.update({
+      id: noteRef.current.id,
+      content,
+      clientId: WALL_CLIENT_ID,
+      updatedAt: knownUpdatedAt,
+    })
+      .then(async (result) => {
         if (!result.ok) {
-          setSaveError(result.error || '保存失败');
+          // P1-3 保存失败 → 写草稿兜底，下次编辑时自动恢复
+          await wallApi.saveDraft(noteRef.current.id, content);
+          if ((result as { conflict?: boolean }).conflict) {
+            setSaveError(`${result.error || '此便签已被其他窗口修改'}，请刷新后重试`);
+          } else {
+            setSaveError(result.error || '保存失败（已存为草稿）');
+          }
           return false;
         }
         lastSavedRef.current = content;
+        // 保存成功 → 主进程会清草稿，这里再清一次确保
+        void wallApi.clearDraft(noteRef.current.id);
         if (options?.exitOnSuccess !== false) {
           exitEditing();
         }
         return true;
       })
-      .catch((error: unknown) => {
-        setSaveError(error instanceof Error ? error.message : '保存失败');
+      .catch(async (error: unknown) => {
+        // 网络/IO 异常 → 写草稿兜底
+        await wallApi.saveDraft(noteRef.current.id, content);
+        setSaveError(error instanceof Error ? `${error.message}（已存为草稿）` : '保存失败（已存为草稿）');
         return false;
       })
       .finally(() => {
@@ -152,6 +182,10 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
       if (dragFrameRef.current) {
         cancelAnimationFrame(dragFrameRef.current);
         dragFrameRef.current = 0;
+      }
+      if (resizeFrameRef.current) {
+        cancelAnimationFrame(resizeFrameRef.current);
+        resizeFrameRef.current = 0;
       }
       if (modeRef.current === 'editing') {
         // 同步保存（主进程 API 无法在卸载时 await，尽力而为）
@@ -269,35 +303,59 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     event.stopPropagation();
 
     const bounds = noteRef.current.bounds;
-    resizeStateRef.current = {
-      startX: event.clientX,
-      originWidth: bounds?.width ?? 280,
-    };
+    const rs = resizeStateRef.current;
+    rs.active = true;
+    rs.pointerId = event.pointerId;
+    rs.startX = event.clientX;
+    rs.originWidth = bounds?.width ?? 280;
+    rs.lastDx = 0;
 
+    pendingWidthRef.current = rs.originWidth;
     setIsResizing(true);
     void wallApi.setDragActive(true);
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   }, [wallApi]);
 
   const handleResizeMove = useCallback((event: React.PointerEvent) => {
-    if (!isResizing) return;
     const rs = resizeStateRef.current;
+    if (!rs.active) return;
     const dx = event.clientX - rs.startX;
-    const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(rs.originWidth + dx)));
-    if (rootRef.current) {
-      rootRef.current.style.width = `${newWidth}px`;
-    }
-  }, [isResizing]);
+    rs.lastDx = dx;
+    pendingWidthRef.current = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(rs.originWidth + dx)));
+    // 合帧：指针事件只记录目标值，每帧最多写一次 width
+    if (resizeFrameRef.current) return;
+    resizeFrameRef.current = requestAnimationFrame(() => {
+      resizeFrameRef.current = 0;
+      if (rootRef.current) {
+        rootRef.current.style.width = `${pendingWidthRef.current}px`;
+      }
+    });
+  }, []);
 
-  const handleResizeUp = useCallback((event: React.PointerEvent) => {
-    if (!isResizing) return;
+  // pointerup / pointercancel / lostpointercapture 共用的幂等收尾
+  const finalizeResize = useCallback((event?: React.PointerEvent) => {
     const rs = resizeStateRef.current;
-    const dx = event.clientX - rs.startX;
-    const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(rs.originWidth + dx)));
-    onBoundsChange(noteRef.current.id, { width: newWidth });
+    if (!rs.active) return;
+    rs.active = false;
+
+    const dx = event && event.type !== 'lostpointercapture' ? event.clientX - rs.startX : rs.lastDx;
+    const finalWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(rs.originWidth + dx)));
+
+    // 取消待执行的 rAF 合帧，避免收尾后又写一次过期 width
+    if (resizeFrameRef.current) {
+      cancelAnimationFrame(resizeFrameRef.current);
+      resizeFrameRef.current = 0;
+    }
+    if (rootRef.current) {
+      rootRef.current.style.width = `${finalWidth}px`;
+    }
+
+    rs.pointerId = -1;
     setIsResizing(false);
-    void wallApi.setDragActive(false);
-  }, [isResizing, onBoundsChange, wallApi]);
+    onBoundsChange(noteRef.current.id, { width: finalWidth });
+    // 等新命中矩形上报后再解除强制位，避免新旧矩形之间出现穿透空窗
+    requestAnimationFrame(() => { void wallApi.setDragActive(false); });
+  }, [onBoundsChange, wallApi]);
 
   // ── 键盘 ──
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -353,7 +411,7 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
 
   // 切换配色：走 update 通道，主进程广播后便签墙与主窗口同步刷新
   const handleColorChange = useCallback((color: StickyNoteColor) => {
-    void wallApi.update({ id: noteRef.current.id, color });
+    void wallApi.update({ id: noteRef.current.id, color, clientId: WALL_CLIENT_ID });
   }, [wallApi]);
 
   useEffect(() => () => {
@@ -368,6 +426,11 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     top: Math.max(0, (note.bounds?.y ?? 80) - origin.y),
     width: note.bounds?.width ?? 280,
   };
+
+  // 非编辑态截断预览：主进程 MAX_CONTENT=20000 但墙内展示前 PREVIEW_MAX_LEN 字符
+  const previewContent = note.content.length > PREVIEW_MAX_LEN
+    ? `${note.content.slice(0, PREVIEW_MAX_LEN)}…`
+    : note.content;
 
   return (
     <div
@@ -397,7 +460,7 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
           title="双击编辑"
           onDoubleClick={beginEdit}
         >
-          {note.content}
+          {previewContent}
         </div>
       )}
 
@@ -416,12 +479,14 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
         </div>
       )}
 
-      {/* 宽度调整热区 */}
+      {/* 宽度调整热区：与拖拽共用 pointer 捕获，pointercancel/lostpointercapture 全覆盖 */}
       <div
         className="sticky-resize-handle"
         onPointerDown={handleResizeDown}
         onPointerMove={handleResizeMove}
-        onPointerUp={handleResizeUp}
+        onPointerUp={finalizeResize}
+        onPointerCancel={finalizeResize}
+        onLostPointerCapture={finalizeResize}
         style={{ width: RESIZE_HOT_ZONE }}
       />
 
@@ -477,4 +542,4 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
   );
 };
 
-export default StickyNoteCard;
+export default React.memo(StickyNoteCard);

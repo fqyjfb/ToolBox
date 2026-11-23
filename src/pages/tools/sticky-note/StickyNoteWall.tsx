@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { StickyNote, StickyNoteBounds } from '../../../types/stickyNote';
-import StickyNoteCard from './StickyNoteCard';
+import StickyNoteCard, { WALL_CLIENT_ID } from './StickyNoteCard';
 import './StickyNote.css';
 
 /**
@@ -12,6 +12,7 @@ import './StickyNote.css';
  *   主进程看门狗：依据卡片矩形 + 系统光标纠偏，覆盖 mousemove 转发丢失
  *            （桌面层子窗口/触摸设备）导致的永久穿透。
  */
+
 const StickyNoteWall = () => {
   const wallApi = window.stickyWallAPI;
 
@@ -130,11 +131,42 @@ const StickyNoteWall = () => {
     return wallApi.onOriginChanged((next) => setOrigin(next));
   }, [wallApi]);
 
-  // ── 订阅变更广播：主进程是唯一数据源，任何变更都重新拉取 ──
+  // ── 订阅变更广播：过滤自身 clientId，按 action 局部更新 ──
   useEffect(() => {
     if (!wallApi) return;
-    return wallApi.onChanged(() => {
-      void loadPinned();
+    return wallApi.onChanged((payload: { action?: string; id?: string; clientId?: string }) => {
+      // 忽略自己发起的变更（主进程 broadcast 会带回发起方 clientId）
+      if (payload.clientId && payload.clientId === WALL_CLIENT_ID) return;
+
+      // 只对钉住便签有意义的变更做局部更新
+      switch (payload.action) {
+        case 'removed':
+          setNotes((prev) => prev.filter((n) => n.id !== payload.id));
+          break;
+        case 'created':
+        case 'pinned-changed':
+          // 新建或钉住状态变更：可能改变钉住列表整体结构，重新拉取稳妥
+          void loadPinned();
+          break;
+        case 'updated':
+          // 内容/颜色更新：调单条 get，如果该便签仍钉住则局部替换
+          if (!payload.id) break;
+          void wallApi.get(payload.id).then((result) => {
+            if (!result.ok || !result.note || !result.note.pinned) {
+              // 被更新的便签已取消钉住：从列表移除
+              setNotes((prev) => prev.filter((n) => n.id !== payload.id));
+              return;
+            }
+            const updatedNote = result.note;
+            setNotes((prev) => prev.map((n) => (n.id === payload.id ? updatedNote : n)));
+          }).catch(() => {
+            // get 失败回退全量
+            void loadPinned();
+          });
+          break;
+        default:
+          void loadPinned();
+      }
     });
   }, [wallApi, loadPinned]);
 

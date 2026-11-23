@@ -7,6 +7,17 @@
 - 修复 Windows 10 设备上桌面便签卡顿、鼠标移入后首次点击被穿透、拖拽中途失焦掉帧的问题
 - 修复便签拖拽期间窗口失焦被强制切回穿透，导致指针捕获中断、卡片脱手
 - 修复签到状态在其他设备或跨天后不同步，查询失败时被误判为「今日未签」并拦截重试
+- 修复便签墙窗口在 Alt+Tab、锁屏或 Win+D 后可能残留强制可交互状态，导致桌面点击被拦截
+- 修复便签墙广播无来源过滤，编辑期间每 800ms 触发整墙卡片重渲染
+- 修复主进程并发 IPC 间基于同一份旧快照修改便签导致丢更新
+- 修复便签坐标无屏幕范围裁剪，显示器插拔/缩放变化后便签可能完全消失
+- 修复 Explorer 重启后 WorkerW 重建，便签墙失去桌面层父子关系导致 Win+D 后消失
+- 修复同一便签被多窗口同时编辑时，先保存的一方会被后保存覆盖无任何提示
+- 修复保存失败（磁盘只读/IO 异常）时草稿仅存内存，取消钉住或关闭窗口后静默丢失
+
+### 新功能
+
+- **便签保存失败草稿兜底**：编辑保存失败时自动写入本地 `sticky-drafts.json`，下次进入编辑模式优先恢复草稿内容；保存成功后自动清除对应草稿；主进程新增 `saveDraft/loadDraft/clearDraft` 三个 IPC 通道
 
 ### 优化
 
@@ -14,6 +25,13 @@
 - 看门狗周期由 150ms 调整为 16ms 并增加光标空转判断，消除首次点击前的穿透空窗
 - 便签拖拽改为合帧 `transform` 位移、拖拽态使用轻阴影，命中判定每帧最多执行一次
 - 签到查询精简为应用启动后查询一次，仅读写 Supabase 云端 `check_ins`，签到成功后单次刷新
+- **便签墙独立入口挂载**：在 `main.tsx` 直接挂载 StickyNoteWall，完全跳过 App 函数体与所有全局初始化 hooks（网络请求 / Supabase / auth / 同步管理器 / 插件扫描 / settingChanged 监听等），启动内存与无关后台任务归零；App.tsx 中对应 standalone render 分支已清理
+- **便签墙渲染端局部更新**：`onChanged` 按 action 分流处理（`removed` 直接过滤、`updated` 调单条 `get` 替换、`created/pinned-changed` 才全量刷新），并过滤自身 clientId 的广播回声
+- **主进程持久化与并发安全**：`JSON.stringify` 去掉 2 空格缩进；五个变更函数（create/update/remove/setPinned/saveBounds）全部包进 `runExclusive` 写队列原子化（读-改-写-广播链路不被其他 IPC 插队）；`update` 增加 `updatedAt` 乐观并发校验（不一致时返回 `conflict=true` + 服务端最新快照）
+- **便签坐标裁剪与死字段清理**：主进程新增 `clipBoundsToWorkArea` 把 bounds 裁剪到所有显示器 workArea 并集内（8px 边距），在启动时一次性修复历史离屏坐标 + 补旧版本缺失的默认 bounds；`normalizeBounds` 删除死字段 `displayId`；`saveBounds` 持久化前再次裁剪
+- **stickyNoteWallWindow 钉住上限与定时重挂**：新增 `MAX_PINNED=50` 上限（超出时返回明确错误）；每 60s 定时对桌面层执行幂等 `attach`，Explorer 重启 WorkerW 重建后自动恢复父子关系
+- **StickyNoteCard resize 重写**：幂等 `finalizeResize` 收尾同时绑定 `pointercancel` 和 `lostpointercapture`；resize 移动路径改用 rAF 合帧写 width；非编辑态截断为 2000 字符预览避免大量钉住时的合成开销；组件导出加 `React.memo`
+- **listPinned 纯读化**：历史数据迁移（旧版本钉住补默认 bounds）移入 `load()` 末尾统一执行，`listPinned` 不再有副作用
 
 ## \[3.1.5]
 

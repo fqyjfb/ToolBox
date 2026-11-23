@@ -10,6 +10,11 @@ contextBridge.exposeInMainWorld('stickyWallAPI', {
   unpin: (id) => ipcRenderer.invoke('sticky-notes:set-pinned', { id, pinned: false }),
   openInApp: (id) => ipcRenderer.send('sticky-note:open-in-app', id),
 
+  // P1-3 草稿持久化：保存失败时写本地临时草稿，下次编辑恢复
+  saveDraft: (id, content) => ipcRenderer.invoke('sticky-notes:save-draft', { id, content }),
+  loadDraft: (id) => ipcRenderer.invoke('sticky-notes:load-draft', id),
+  clearDraft: (id) => ipcRenderer.invoke('sticky-notes:clear-draft', id),
+
   // 穿透控制（mousemove 快速路径 + 主进程看门狗纠偏 + forceInteractive）
   setInteractive: (value) => ipcRenderer.invoke('sticky-wall:set-interactive', value),
   setDragActive: (value) => ipcRenderer.invoke('sticky-wall:set-drag-active', value),

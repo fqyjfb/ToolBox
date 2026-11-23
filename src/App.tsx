@@ -27,8 +27,6 @@ import { desktopRoutes, webRoutes, mobileRoutes, protectedRoutes, adminRoutes, R
 import { useQueryClient } from '@tanstack/react-query';
 import { websiteBookmarksQuery, websiteCategoriesQuery } from './services/websiteQueries';
 const LogsPage = React.lazy(() => import('./pages/logs/index'));
-const ReminderPopup = React.lazy(() => import('./pages/tools/reminder/ReminderPopup'));
-const StickyNoteWall = React.lazy(() => import('./pages/tools/sticky-note/StickyNoteWall'));
 import { isElectron } from './utils/environment';
 import { usePreloadTools } from './hooks/usePreloadTools';
 import { useFloatAiActions } from './hooks/useFloatAiActions';
@@ -430,35 +428,8 @@ function App() {
     };
   }, [isAuthenticated, user?.id, setSyncEnabled, setStorageLocation, setSyncModules, setLastSyncTime, setSyncOnStartupEnabled]);
 
-  // 提醒弹窗是主进程创建的独立 BrowserWindow，与主窗口无任何关联：
-  // 不进入下面的初始化等待（鉴权/插件/预取均为网络或 IPC 耗时操作），
-  // 也不挂载 Router 与各 Provider，收到 show-reminder 即刻渲染。
-  // 此处位于全部 hooks 之后，条件返回不影响 hooks 调用顺序。
-  if (isStandaloneReminderPopup()) {
-    return (
-      <Suspense
-        fallback={
-          <div className="w-full h-full flex items-center justify-center bg-bg-primary">
-            <LoadingSpinner size="md" />
-          </div>
-        }
-      >
-        <RouteBoundary>
-          <ReminderPopup />
-        </RouteBoundary>
-      </Suspense>
-    );
-  }
-
-  if (isStandaloneStickyWall()) {
-    return (
-      <Suspense fallback={<div className="sticky-wall" />}>
-        <RouteBoundary>
-          <StickyNoteWall />
-        </RouteBoundary>
-      </Suspense>
-    );
-  }
+  // 注：提醒弹窗和便签墙现在由 main.tsx 入口层直接挂载，
+  // 不再进入 App 函数体，所以 standalone render 分支已移除。
 
   // 只等本地初始化完成；鉴权是网络请求，不能阻塞首屏（首页是公开路由，不依赖登录态）
   if (!isInitialized) {

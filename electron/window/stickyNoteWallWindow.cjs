@@ -12,6 +12,7 @@ const desktopLayer = require('../lib/desktopLayer.cjs');
 const REPORT_FRESH_MS = 300; // 渲染层上报超过该时长视为 mousemove 已中断
 const WATCHDOG_INTERVAL_MS = 16; // 对齐一帧：消除鼠标移入后首次点击的穿透空窗
 const MAX_HIT_RECTS = 200;
+const DESKTOP_REATTACH_INTERVAL_MS = 60000; // 每 60s 校验桌面层挂载状态，覆盖 Explorer 重启导致的层丢失
 
 let wallWindow = null;
 let interactiveState = true; // 当前是否可交互（非穿透）
@@ -23,6 +24,7 @@ let rendererOver = false; // 渲染层最近一次命中结果
 let lastReportAt = 0; // 渲染层最近一次上报时间
 let lastCursorPoint = { x: -1, y: -1 }; // 看门狗空转判断：光标未移动时无需重复命中测试
 let watchdogTimer = null;
+let desktopReattachTimer = null; // Explorer 重启后自动重挂桌面层的定时校验
 
 /**
  * 挂到桌面层：Win+D 后窗口仍在，但位于所有应用窗口之下。
@@ -131,6 +133,41 @@ const ensureWatchdog = () => {
   if (watchdogTimer) return;
   watchdogTimer = setInterval(watchdogTick, WATCHDOG_INTERVAL_MS);
   watchdogTimer.unref?.();
+};
+
+// ── 桌面层重挂定时校验：Explorer 重启后 WorkerW 会重建，窗口失去桌面层父子关系
+// 表现为 Win+D 后便签墙消失、层级异常、setClickThrough 失效。这里每 60s 直接重挂一次
+// applyDesktopLayer 内部调用 desktopLayer.attach（幂等）：正确状态下不产生副作用，
+// WorkerW 重建时自动挂到新 WorkerW 下，Win+D 恢复后便签墙继续可见。
+const desktopReattachTick = () => {
+  if (!wallWindow || wallWindow.isDestroyed()) {
+    stopDesktopReattach();
+    return;
+  }
+  // 当前不在桌面层状态（如编辑中已解挂），跳过校验
+  if (!desktopAttached) return;
+  try {
+    // 直接重挂。attach 内部会检测当前 parent 是否正确，已正确时无副作用
+    const layerOk = applyDesktopLayer();
+    // 挂载成功则确保 origin 同步；挂载失败（如 WorkerW 暂不存在）等下次 tick
+    if (layerOk) {
+      notifyOriginChanged();
+    }
+  } catch (error) {
+    console.error('[StickyWall] 桌面层定时重挂失败:', error.message);
+  }
+};
+
+const ensureDesktopReattach = () => {
+  if (desktopReattachTimer) return;
+  desktopReattachTimer = setInterval(desktopReattachTick, DESKTOP_REATTACH_INTERVAL_MS);
+  desktopReattachTimer.unref?.();
+};
+
+const stopDesktopReattach = () => {
+  if (!desktopReattachTimer) return;
+  clearInterval(desktopReattachTimer);
+  desktopReattachTimer = null;
 };
 
 // 根据当前 · 渲染层上报 / 系统光标 / forceInteractive 统一决定是否穿透
@@ -257,6 +294,7 @@ const openWall = () => {
 
   wallWindow.on('closed', () => {
     stopWatchdog();
+    stopDesktopReattach();
     wallWindow = null;
     interactiveState = true;
     forceInteractive = false;
@@ -295,6 +333,7 @@ const openWall = () => {
     notifyOriginChanged();
     recomputeInteractive();
     ensureWatchdog();
+    ensureDesktopReattach();
   };
 
   if (indexHtml) {
@@ -325,6 +364,7 @@ const hideWall = () => {
   forceInteractive = false;
   interactiveState = false;
   stopWatchdog();
+  stopDesktopReattach();
   applyInteractive();
   try {
     wallWindow.hide();
@@ -346,6 +386,7 @@ const showWall = () => {
     notifyOriginChanged();
     recomputeInteractive();
     ensureWatchdog();
+    ensureDesktopReattach();
   } catch (error) {
     console.error('[StickyWall] 显示便签墙失败:', error.message);
   }

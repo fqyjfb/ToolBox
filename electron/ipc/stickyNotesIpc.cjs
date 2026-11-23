@@ -32,6 +32,11 @@ const registerStickyNotesIpc = () => {
   handle('sticky-notes:set-pinned', (payload) => service.setPinned(payload));
   handle('sticky-notes:save-bounds', (payload) => service.saveBounds(payload));
 
+  // P1-3 草稿持久化：保存失败时渲染层写草稿，下次编辑时优先恢复
+  handle('sticky-notes:save-draft', ({ id, content }) => service.saveDraft(id, content));
+  handle('sticky-notes:load-draft', (id) => service.loadDraft(id));
+  handle('sticky-notes:clear-draft', (id) => service.clearDraft(id));
+
   // 穿透控制通道：由便签墙窗口调用
   ipcMain.handle('sticky-wall:set-interactive', (event, value) => {
     const wallModule = require('../window/stickyNoteWallWindow.cjs');

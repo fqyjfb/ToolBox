@@ -37,10 +37,14 @@ interface AppLockResolvedApp {
 interface StickyWallAPI {
   listPinned: () => Promise<{ ok: boolean; notes?: import('../stickyNote').StickyNote[]; origin?: { x: number; y: number }; error?: string }>;
   get: (id: string) => Promise<{ ok: boolean; note?: import('../stickyNote').StickyNote; error?: string }>;
-  update: (input: import('../stickyNote').StickyNoteUpdateInput) => Promise<{ ok: boolean; note?: import('../stickyNote').StickyNote; error?: string }>;
+  update: (input: import('../stickyNote').StickyNoteUpdateInput) => Promise<{ ok: boolean; note?: import('../stickyNote').StickyNote; error?: string; conflict?: boolean; serverNote?: import('../stickyNote').StickyNote }>;
   saveBounds: (input: { id: string; bounds: Partial<import('../stickyNote').StickyNoteBounds> }) => Promise<{ ok: boolean; error?: string }>;
   unpin: (id: string) => Promise<{ ok: boolean; error?: string }>;
   openInApp: (id: string) => void;
+  /** P1-3 草稿持久化：保存失败时渲染层写本地临时草稿，下次编辑恢复 */
+  saveDraft: (id: string, content: string) => Promise<{ ok: boolean }>;
+  loadDraft: (id: string) => Promise<{ ok: boolean; content?: string }>;
+  clearDraft: (id: string) => Promise<{ ok: boolean }>;
   /** 鼠标命中卡片/菜单切换穿透状态（mousemove 快速路径） */
   setInteractive: (value: boolean) => Promise<{ ok: boolean }>;
   /** 拖拽/编辑/菜单期间 forceInteractive */

@@ -35,6 +35,8 @@ export interface StickyNoteUpdateInput {
   color?: StickyNoteColor;
   /** 渲染层客户端标识，用于广播时忽略自己的回声 */
   clientId?: string;
+  /** P1-5 乐观并发：调用方已知的 updatedAt，与主进程不一致时返回 conflict=true */
+  updatedAt?: number;
 }
 
 export interface StickyNoteChangedPayload {
