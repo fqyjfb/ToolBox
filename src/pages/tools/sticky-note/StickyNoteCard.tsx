@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Copy, Palette, PinOff } from 'lucide-react';
 import type { StickyNote, StickyNoteBounds, StickyNoteColor } from '../../../types/stickyNote';
 import ContextMenu from '../../../components/ui/ContextMenu';
@@ -17,6 +18,8 @@ interface StickyNoteCardProps {
   wallApi: NonNullable<Window['stickyWallAPI']>;
   /** 位置/尺寸变更后持久化（绝对桌面坐标） */
   onBoundsChange: (id: string, bounds: Partial<StickyNoteBounds>) => void;
+  /** 拖拽开始/结束时通知墙：墙据此持续上报 hit-rect（拖拽中 transform 改变但 notes 不变，需主动驱动） */
+  onDragStateChange?: (dragging: boolean) => void;
 }
 
 const MIN_WIDTH = 220;
@@ -24,10 +27,12 @@ const MAX_WIDTH = 420;
 const RESIZE_HOT_ZONE = 8;
 const DRAG_THRESHOLD = 4;
 const IDLE_SAVE_DELAY = 800;
+/** 收尾位置安全阈值：与最后一次 pointermove 偏差超过该值视为异常事件坐标，回退到最后一次移动位置 */
+const MAX_END_JUMP = 1200;
 /** 非编辑态截断预览长度，主进程 MAX_CONTENT=20000 但墙内展示前 2000 字符 */
 const PREVIEW_MAX_LEN = 2000;
 
-const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCardProps) => {
+const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange, onDragStateChange }: StickyNoteCardProps) => {
   const [mode, setMode] = useState<Mode>('view');
   const [draft, setDraft] = useState(note.content);
   const [saving, setSaving] = useState(false);
@@ -58,7 +63,11 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     startX: 0, startY: 0,
     left: 0, top: 0,
     curLeft: 0, curTop: 0,
+    // 最后一次 pointermove 的累积位置：收尾时若事件坐标不可信，作为兜底基准
+    lastMoveLeft: 0, lastMoveTop: 0,
     moved: false,
+    // 拖拽序号：收尾是异步的（可能要取系统光标），期间若已开始新拖拽则丢弃旧提交
+    gen: 0,
   });
 
   // 拖拽合帧：每帧最多写一次 transform
@@ -228,6 +237,7 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     const top = root?.offsetTop ?? 0;
     const ds = dragStateRef.current;
     ds.active = true;
+    ds.gen += 1;
     ds.pointerId = event.pointerId;
     ds.startX = event.clientX;
     ds.startY = event.clientY;
@@ -235,6 +245,8 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     ds.top = top;
     ds.curLeft = left;
     ds.curTop = top;
+    ds.lastMoveLeft = left;
+    ds.lastMoveTop = top;
     ds.moved = false;
     // 注意：这里不立即 setPointerCapture，否则 Chromium 会把 click/dblclick
     // 目标重定向到捕获元素，导致子节点的双击编辑失效。超过阈值后再捕获。
@@ -250,13 +262,21 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     if (!ds.moved && Math.hypot(dx, dy) >= DRAG_THRESHOLD) {
       ds.moved = true;
       setIsDragging(true);
+      onDragStateChange?.(true);
       void wallApi.setDragActive(true);
-      (event.currentTarget as HTMLElement).setPointerCapture(ds.pointerId);
+      // 用 ref 而非 event.currentTarget：document 兜底监听时 currentTarget 是 document
+      try {
+        rootRef.current?.setPointerCapture(ds.pointerId);
+      } catch {
+        // 指针已失效时抛 NotFoundError，忽略即可，document 监听仍能继续驱动
+      }
     }
 
     if (ds.moved) {
       ds.curLeft = Math.round(ds.left + dx);
       ds.curTop = Math.round(ds.top + dy);
+      ds.lastMoveLeft = ds.curLeft;
+      ds.lastMoveTop = ds.curTop;
       // 合帧：指针事件只记录坐标，每帧最多写一次 transform
       if (dragFrameRef.current) return;
       dragFrameRef.current = requestAnimationFrame(() => {
@@ -264,7 +284,7 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
         applyDragTransform();
       });
     }
-  }, [applyDragTransform, wallApi]);
+  }, [applyDragTransform, wallApi, onDragStateChange]);
 
   // pointerup / pointercancel / lostpointercapture 共用收尾，必须幂等
   const handlePointerEnd = useCallback((event: React.PointerEvent) => {
@@ -273,29 +293,88 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     ds.active = false;
     if (!ds.moved) return;
 
-    // lostpointercapture 没有可靠坐标，沿用最后一次 pointermove
-    if (event.type !== 'lostpointercapture') {
-      ds.curLeft = Math.round(ds.left + (event.clientX - ds.startX));
-      ds.curTop = Math.round(ds.top + (event.clientY - ds.startY));
-    }
-    if (dragFrameRef.current) {
-      cancelAnimationFrame(dragFrameRef.current);
-      dragFrameRef.current = 0;
-    }
-    const el = rootRef.current;
-    if (el) el.style.transform = '';
+    const gen = ds.gen;
 
-    ds.moved = false;
-    ds.pointerId = -1;
-    setIsDragging(false);
-    // 窗口内坐标 → 绝对桌面坐标后持久化
-    onBoundsChange(noteRef.current.id, {
-      x: originRef.current.x + ds.curLeft,
-      y: originRef.current.y + ds.curTop,
+    // 只有 pointerup 的 event 坐标可靠。pointercancel / lostpointercapture 的
+    // clientX/clientY 不可信（Chromium 或系统取消指针时常为 0），若直接套公式会
+    // 得到极端负坐标，被主进程 clipBoundsToWorkArea 裁到 workArea 边缘，表现为
+    // 便签瞬移到屏幕边缘或消失。这两类必须取主进程系统光标位置反推。
+    const coordsReliable = event.type === 'pointerup'
+      && Number.isFinite(event.clientX) && Number.isFinite(event.clientY);
+
+    const resolveFinalPosition = async () => {
+      // 默认基准：最后一次 pointermove 的累积位置（拖拽期间持续更新）
+      let nextLeft = ds.lastMoveLeft;
+      let nextTop = ds.lastMoveTop;
+
+      if (coordsReliable) {
+        nextLeft = Math.round(ds.left + (event.clientX - ds.startX));
+        nextTop = Math.round(ds.top + (event.clientY - ds.startY));
+      } else {
+        try {
+          const res = await wallApi.getCursorScreenPoint();
+          if (res.ok && res.point) {
+            // 系统光标是屏幕 DIP，减去窗口 origin 得到窗口内坐标
+            const clientX = res.point.x - originRef.current.x;
+            const clientY = res.point.y - originRef.current.y;
+            nextLeft = Math.round(ds.left + (clientX - ds.startX));
+            nextTop = Math.round(ds.top + (clientY - ds.startY));
+          }
+        } catch {
+          // 静默：沿用最后一次 pointermove 位置
+        }
+      }
+
+      // 安全网：坐标非法或与最后一次移动位置偏差过大时回退，避免任何异常事件
+      // 把便签甩到屏幕边缘（主进程裁剪会把它固化成"消失"）。
+      const jumped = !Number.isFinite(nextLeft) || !Number.isFinite(nextTop)
+        || Math.hypot(nextLeft - ds.lastMoveLeft, nextTop - ds.lastMoveTop) > MAX_END_JUMP;
+      if (jumped) {
+        nextLeft = ds.lastMoveLeft;
+        nextTop = ds.lastMoveTop;
+      }
+
+      return { nextLeft, nextTop };
+    };
+
+    void resolveFinalPosition().then(({ nextLeft, nextTop }) => {
+      // 异步期间若已开始新的拖拽，丢弃本次提交，避免覆盖新拖拽状态；
+      // 但拖拽计数必须归还，否则便签墙的 rAF 上报循环会常驻
+      if (ds.gen !== gen) {
+        onDragStateChange?.(false);
+        return;
+      }
+
+      if (dragFrameRef.current) {
+        cancelAnimationFrame(dragFrameRef.current);
+        dragFrameRef.current = 0;
+      }
+
+      ds.moved = false;
+      ds.pointerId = -1;
+      setIsDragging(false);
+      onDragStateChange?.(false);
+
+      // 先同步提交新位置让 React 用新 left/top 完成重渲染，再清 transform：
+      // 两步在同一帧内完成，卡片从"transform 位移"无缝切到"left/top 定位"，
+      // 不会出现先回跳原位置再跳到新位置的闪烁。
+      flushSync(() => {
+        onBoundsChange(noteRef.current.id, {
+          x: originRef.current.x + nextLeft,
+          y: originRef.current.y + nextTop,
+        });
+      });
+      const el = rootRef.current;
+      if (el) el.style.transform = '';
+
+      // 穿透空窗防护：等两帧再解除强制位。
+      // 第 1 帧 React 用新 bounds 重渲染并触发 reportHitRects（rAF）；
+      // 第 2 帧 hit-rect IPC 已到主进程，此时解除强制位看门狗不会用旧矩形误判切穿透。
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { void wallApi.setDragActive(false); });
+      });
     });
-    // 等新命中矩形上报后再解除强制位，避免新旧矩形之间出现穿透空窗
-    requestAnimationFrame(() => { void wallApi.setDragActive(false); });
-  }, [onBoundsChange, wallApi]);
+  }, [onBoundsChange, wallApi, onDragStateChange]);
 
   // ── 调整宽度 ──
   const handleResizeDown = useCallback((event: React.PointerEvent) => {
@@ -338,7 +417,11 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     if (!rs.active) return;
     rs.active = false;
 
-    const dx = event && event.type !== 'lostpointercapture' ? event.clientX - rs.startX : rs.lastDx;
+    // 只有 pointerup 的 event 坐标可靠；pointercancel / lostpointercapture 常为 0，
+    // 直接套公式会把宽度算到最小值，必须沿用最后一次 pointermove 的位移
+    const dx = event?.type === 'pointerup' && Number.isFinite(event.clientX)
+      ? event.clientX - rs.startX
+      : rs.lastDx;
     const finalWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(rs.originWidth + dx)));
 
     // 取消待执行的 rAF 合帧，避免收尾后又写一次过期 width
@@ -353,9 +436,56 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
     rs.pointerId = -1;
     setIsResizing(false);
     onBoundsChange(noteRef.current.id, { width: finalWidth });
-    // 等新命中矩形上报后再解除强制位，避免新旧矩形之间出现穿透空窗
-    requestAnimationFrame(() => { void wallApi.setDragActive(false); });
+    // 与拖拽收尾一致：等新命中矩形上报生效后再解除强制位，避免穿透空窗
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { void wallApi.setDragActive(false); });
+    });
   }, [onBoundsChange, wallApi]);
+
+  // 输入兜底：Win10 桌面层子窗口会丢失 pointer capture，事件不再派发到卡片元素，
+  // 表现为快速拖拽时便签脱离鼠标、卡住、松手后位置跳变。改为在 document 上接管
+  // 拖拽/缩放的 move 与 end，只要窗口还能收到输入就能持续跟随并正常收尾。
+  // 同时覆盖 Alt+Tab / Win+D 收不到 pointerup 的失焦场景。
+  useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      if (resizeStateRef.current.active) {
+        if (event.pointerId === resizeStateRef.current.pointerId) {
+          handleResizeMove(event as unknown as React.PointerEvent);
+        }
+        return;
+      }
+      if (event.pointerId === dragStateRef.current.pointerId) {
+        handlePointerMove(event as unknown as React.PointerEvent);
+      }
+    };
+    const onEnd = (event: PointerEvent) => {
+      if (resizeStateRef.current.active) {
+        if (event.pointerId === resizeStateRef.current.pointerId) {
+          finalizeResize(event as unknown as React.PointerEvent);
+        }
+        return;
+      }
+      if (event.pointerId === dragStateRef.current.pointerId) {
+        handlePointerEnd(event as unknown as React.PointerEvent);
+      }
+    };
+    const onBlur = () => {
+      finalizeResize();
+      if (dragStateRef.current.active) {
+        handlePointerEnd({ type: 'lostpointercapture' } as React.PointerEvent);
+      }
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onEnd);
+    document.addEventListener('pointercancel', onEnd);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onEnd);
+      document.removeEventListener('pointercancel', onEnd);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [finalizeResize, handlePointerEnd, handlePointerMove, handleResizeMove]);
 
   // ── 键盘 ──
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -439,9 +569,6 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
       style={style}
       onContextMenu={handleContextMenu}
       onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerEnd}
-      onPointerCancel={handlePointerEnd}
       onLostPointerCapture={handlePointerEnd}
     >
       {mode === 'editing' ? (
@@ -479,13 +606,10 @@ const StickyNoteCard = ({ note, origin, wallApi, onBoundsChange }: StickyNoteCar
         </div>
       )}
 
-      {/* 宽度调整热区：与拖拽共用 pointer 捕获，pointercancel/lostpointercapture 全覆盖 */}
+      {/* 宽度调整热区：move/up/cancel 统一由 document 兜底监听处理，避免捕获丢失后失效 */}
       <div
         className="sticky-resize-handle"
         onPointerDown={handleResizeDown}
-        onPointerMove={handleResizeMove}
-        onPointerUp={finalizeResize}
-        onPointerCancel={finalizeResize}
         onLostPointerCapture={finalizeResize}
         style={{ width: RESIZE_HOT_ZONE }}
       />

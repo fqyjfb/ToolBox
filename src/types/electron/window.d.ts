@@ -51,6 +51,8 @@ interface StickyWallAPI {
   setDragActive: (value: boolean) => Promise<{ ok: boolean }>;
   /** 上报卡片屏幕 DIP 矩形：主进程看门狗据此纠正穿透状态 */
   setHitRects: (rects: Array<{ left: number; top: number; right: number; bottom: number }>) => Promise<{ ok: boolean }>;
+  /** 拖拽收尾时取系统光标位置：lostpointercapture 的 event 坐标不可信 */
+  getCursorScreenPoint: () => Promise<{ ok: boolean; point?: { x: number; y: number } }>;
   /** 进入/退出编辑：桌面层子窗口需临时解挂才能拿到键盘焦点 */
   setEditing: (value: boolean) => Promise<{ ok: boolean }>;
   /** 复制正文（主进程 clipboard） */

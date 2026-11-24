@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('stickyWallAPI', {
   setInteractive: (value) => ipcRenderer.invoke('sticky-wall:set-interactive', value),
   setDragActive: (value) => ipcRenderer.invoke('sticky-wall:set-drag-active', value),
   setHitRects: (rects) => ipcRenderer.invoke('sticky-wall:set-hit-rects', rects),
+  // 拖拽收尾时取系统光标位置：lostpointercapture 的 event 坐标不可信，必须以系统光标为准
+  getCursorScreenPoint: () => ipcRenderer.invoke('sticky-wall:get-cursor-screen-point'),
 
   // 进入/退出编辑（桌面层子窗口需临时解挂才能拿到键盘焦点）
   setEditing: (value) => ipcRenderer.invoke('sticky-wall:editing', value),

@@ -1,5 +1,5 @@
 // 便签 IPC：主窗口与便签墙窗口均通过这里访问 stickyNotesService。
-const { ipcMain, clipboard } = require('electron');
+const { ipcMain, clipboard, screen } = require('electron');
 const service = require('../services/stickyNotesService.cjs');
 
 let registered = false;
@@ -64,6 +64,16 @@ const registerStickyNotesIpc = () => {
     }
     wallModule.setHitRects(rects);
     return { ok: true };
+  });
+
+  // 拖拽收尾时取系统光标位置：lostpointercapture 的 event 坐标不可信
+  ipcMain.handle('sticky-wall:get-cursor-screen-point', (event) => {
+    const wallModule = require('../window/stickyNoteWallWindow.cjs');
+    if (!wallModule.isWallSender(event.sender)) {
+      return { ok: false, error: '权限拒绝' };
+    }
+    const point = screen.getCursorScreenPoint();
+    return { ok: true, point };
   });
 
   // 进入/退出编辑：桌面层子窗口无法激活，编辑时需临时解挂拿键盘焦点

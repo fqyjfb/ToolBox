@@ -14,6 +14,12 @@
 - 修复 Explorer 重启后 WorkerW 重建，便签墙失去桌面层父子关系导致 Win+D 后消失
 - 修复同一便签被多窗口同时编辑时，先保存的一方会被后保存覆盖无任何提示
 - 修复保存失败（磁盘只读/IO 异常）时草稿仅存内存，取消钉住或关闭窗口后静默丢失
+- 修复桌面便签快速拖拽时卡片脱离鼠标、松手后位置跳变的问题
+- 修复桌面便签拖拽过程中卡顿、桌面反复闪烁的问题
+- 修复桌面便签拖拽结束后偶发消失或瞬移到屏幕边缘的问题
+- 修复桌面便签拖拽中 Alt+Tab / Win+D 切走窗口后卡片卡在拖拽态无法释放的问题
+- 修复 Windows 10 上桌面层子窗口丢失指针捕获后，拖拽卡片停在原地、松手位置跳变的问题
+- 修复深色主题下桌面便签背景色被主题色覆盖，切换主题或重启后便签颜色被改变的问题
 
 ### 新功能
 
@@ -32,6 +38,7 @@
 - **stickyNoteWallWindow 钉住上限与定时重挂**：新增 `MAX_PINNED=50` 上限（超出时返回明确错误）；每 60s 定时对桌面层执行幂等 `attach`，Explorer 重启 WorkerW 重建后自动恢复父子关系
 - **StickyNoteCard resize 重写**：幂等 `finalizeResize` 收尾同时绑定 `pointercancel` 和 `lostpointercapture`；resize 移动路径改用 rAF 合帧写 width；非编辑态截断为 2000 字符预览避免大量钉住时的合成开销；组件导出加 `React.memo`
 - **listPinned 纯读化**：历史数据迁移（旧版本钉住补默认 bounds）移入 `load()` 末尾统一执行，`listPinned` 不再有副作用
+- **便签拖拽穿透链路重构**：拖拽期间由便签墙按 rAF 持续上报 hit-rect（此前仅在 notes 变化时上报，拖拽中矩形完全停滞）；`forceInteractive` 期间看门狗冻结穿透切换，消除 60Hz 乒乓闪烁；拖拽收尾改用主进程系统光标坐标反推（`lostpointercapture` 的 event 坐标不可信），并延迟两帧解除强制位，等新 hit-rect 生效后再放开；拖拽/缩放的 `pointermove / pointerup / pointercancel` 改为 document 级兜底监听（带 `pointerId` 校验），并合并 `window.blur` 收尾，不再依赖 pointer capture 存活
 
 ## \[3.1.5]
 

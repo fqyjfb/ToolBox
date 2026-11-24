@@ -105,6 +105,41 @@ const StickyNoteWall = () => {
     };
   }, [reportHitRects, notes]);
 
+  // ── 拖拽期间持续上报 hit-rect：transform 改变不影响 notes 状态，
+  // 上面的 useEffect 不会在拖拽中触发，必须由拖拽计数驱动 rAF 循环主动上报。
+  // 计数而非布尔：多张卡片同时拖拽（理论上）也能正确计数。
+  const draggingCountRef = useRef(0);
+  const dragLoopFrameRef = useRef(0);
+  const handleDragStateChange = useCallback((dragging: boolean) => {
+    draggingCountRef.current = Math.max(0, draggingCountRef.current + (dragging ? 1 : -1));
+
+    if (draggingCountRef.current > 0) {
+      // 启动 rAF 循环（已启动则跳过）
+      if (dragLoopFrameRef.current) return;
+      const loop = () => {
+        if (draggingCountRef.current <= 0) {
+          dragLoopFrameRef.current = 0;
+          return;
+        }
+        reportHitRects();
+        dragLoopFrameRef.current = requestAnimationFrame(loop);
+      };
+      dragLoopFrameRef.current = requestAnimationFrame(loop);
+    } else {
+      // 全部拖拽结束：停循环，并立即补一次最终位置上报
+      if (dragLoopFrameRef.current) {
+        cancelAnimationFrame(dragLoopFrameRef.current);
+        dragLoopFrameRef.current = 0;
+      }
+      reportHitRects();
+    }
+  }, [reportHitRects]);
+
+  // 卸载时停循环
+  useEffect(() => () => {
+    if (dragLoopFrameRef.current) cancelAnimationFrame(dragLoopFrameRef.current);
+  }, []);
+
   // ── 拉取钉住便签 ──
   const loadPinned = useCallback(async () => {
     if (!wallApi) return;
@@ -204,6 +239,7 @@ const StickyNoteWall = () => {
           origin={origin}
           wallApi={wallApi}
           onBoundsChange={handleBoundsChange}
+          onDragStateChange={handleDragStateChange}
         />
       ))}
     </div>

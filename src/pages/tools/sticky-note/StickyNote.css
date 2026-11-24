@@ -470,7 +470,8 @@
   border-radius: 2px;
 }
 
-/* 便签颜色（便签墙专用） */
+/* 便签颜色（便签墙专用）：颜色归属便签自身，不随主题变化，
+   否则切换/重启后便签会被主题色覆盖。文字为固定深色，浅底在深色主题下同样可读。 */
 .sticky-wall-card-amber { background: #fff9e6; }
 .sticky-wall-card-blue { background: #eef5ff; }
 .sticky-wall-card-green { background: #f0fbf3; }
@@ -479,16 +480,6 @@
 .sticky-wall-card-purple { background: #f6f3ff; }
 .sticky-wall-card-cyan { background: #eefbfd; }
 .sticky-wall-card-orange { background: #fff6ec; }
-
-/* 暗色主题覆盖：便签墙内卡片背景微调以保持可见 */
-.dark .sticky-wall-card-amber { background: #3a3520; }
-.dark .sticky-wall-card-blue { background: #1a2332; }
-.dark .sticky-wall-card-green { background: #1a2b22; }
-.dark .sticky-wall-card-gray { background: #26282d; }
-.dark .sticky-wall-card-rose { background: #3a2530; }
-.dark .sticky-wall-card-purple { background: #2b2439; }
-.dark .sticky-wall-card-cyan { background: #173034; }
-.dark .sticky-wall-card-orange { background: #3a2b1d; }
 
 /* 拖拽/调整尺寸状态 */
 .sticky-wall-card--dragging {

@@ -121,6 +121,10 @@ const watchdogTick = () => {
   // 光标未移动时命中结果不变，直接返回，避免每帧做无效矩形扫描
   if (point.x === lastCursorPoint.x && point.y === lastCursorPoint.y) return;
   lastCursorPoint = point;
+  // 拖拽/编辑/菜单期间 forceInteractive=true：冻结状态切换，避免看门狗用
+  // 过期 hitRects 误判切穿透 → 渲染层强制恢复 → 再切穿透的乒乓抖动。
+  // 此期间仍更新 lastCursorPoint，解除强制位后下一 tick 用最新位置判断。
+  if (forceInteractive) return;
   const nextOver = refreshCursorOver(point);
   // 渲染层上报新鲜时以渲染层为准；过期说明 mousemove 已中断，用系统光标纠偏
   if (Date.now() - lastReportAt > REPORT_FRESH_MS && nextOver !== interactiveState) {
