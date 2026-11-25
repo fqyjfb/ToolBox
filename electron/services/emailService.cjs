@@ -281,31 +281,78 @@ async function listMessages({ imap, credential, folder, offset = 0, limit = 50 }
   });
 }
 
+// —— 正文解析缓存（LRU + TTL）——
+// 同一封邮件（账号 + 文件夹 + uid）只下载并 simpleParser 一次；重复打开 / 取附件命中缓存，
+// 消除反复打开大邮件的网络与解析开销。删除 / 移动时主动失效。
+const BODY_CACHE_MAX = 30;
+const BODY_CACHE_TTL = 10 * 60 * 1000; // 10 分钟
+const bodyCache = new Map(); // key -> { parsed, ts }
+
+function bodyCacheKey(imap, credential, folder, uid) {
+  return `${imap.host}:${credential.username}:${folder}:${uid}`;
+}
+
+function getBodyCache(key) {
+  const entry = bodyCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > BODY_CACHE_TTL) {
+    bodyCache.delete(key);
+    return null;
+  }
+  // LRU：命中移到末尾
+  bodyCache.delete(key);
+  bodyCache.set(key, entry);
+  return entry.parsed;
+}
+
+function setBodyCache(key, parsed) {
+  if (bodyCache.has(key)) bodyCache.delete(key);
+  else if (bodyCache.size >= BODY_CACHE_MAX) {
+    const first = bodyCache.keys().next().value;
+    if (first != null) bodyCache.delete(first);
+  }
+  bodyCache.set(key, { parsed, ts: Date.now() });
+}
+
+function invalidateBodyCache(imap, credential, folder, uids) {
+  if (!uids || !uids.length) return;
+  for (const uid of uids) bodyCache.delete(bodyCacheKey(imap, credential, folder, uid));
+}
+
+// mailparser 结果 → getMessage 返回结构（纯元数据，不含附件内容 Buffer）
+function parsedToDetail(parsed, uid) {
+  return {
+    uid,
+    messageId: parsed.messageId || null,
+    from: parsed.from?.value?.[0] || null,
+    to: parsed.to?.value || [],
+    cc: parsed.cc?.value || [],
+    subject: parsed.subject || '(无主题)',
+    text: parsed.text || null,
+    html: parsed.html ? String(parsed.html) : null,
+    date: parsed.date ? parsed.date.getTime() : Date.now(),
+    attachments: (parsed.attachments || []).map((a) => ({
+      filename: a.filename || '未命名附件',
+      contentType: a.contentType || 'application/octet-stream',
+      size: a.size || 0,
+      cid: a.cid || null,
+    })),
+  };
+}
+
 // 拉取单封完整邮件（正文 + 附件元数据；附件内容不返回，走 downloadAttachment）
 async function getMessage({ imap, credential, folder, uid }) {
+  const key = bodyCacheKey(imap, credential, folder, uid);
+  const cached = getBodyCache(key);
+  if (cached) return parsedToDetail(cached, uid);
   return withClient(imap, credential, async (client) => {
     const lock = await client.getMailboxLock(folder);
     try {
       const { content } = await client.download(uid, undefined, { uid: true });
       const buf = await streamToBuffer(content);
       const parsed = await simpleParser(buf);
-      return {
-        uid,
-        messageId: parsed.messageId || null,
-        from: parsed.from?.value?.[0] || null,
-        to: parsed.to?.value || [],
-        cc: parsed.cc?.value || [],
-        subject: parsed.subject || '(无主题)',
-        text: parsed.text || null,
-        html: parsed.html ? String(parsed.html) : null,
-        date: parsed.date ? parsed.date.getTime() : Date.now(),
-        attachments: (parsed.attachments || []).map((a) => ({
-          filename: a.filename || '未命名附件',
-          contentType: a.contentType || 'application/octet-stream',
-          size: a.size || 0,
-          cid: a.cid || null,
-        })),
-      };
+      setBodyCache(key, parsed);
+      return parsedToDetail(parsed, uid);
     } finally {
       lock.release();
     }
@@ -313,26 +360,31 @@ async function getMessage({ imap, credential, folder, uid }) {
 }
 
 // 下载附件内容（返回 Buffer，由 emailIpc 负责弹框与落盘）
-// 注：MVP 采用「重新下载整封邮件 → simpleParser → 按 filename 匹配」的简单实现，
-// 保证正确性；后续可优化为按 bodyStructure.part 直取单个 MIME 部件。
+// 命中正文缓存则不再下载整封邮件；未命中才下载并回填缓存。
 async function downloadAttachment({ imap, credential, folder, uid, filename }) {
-  return withClient(imap, credential, async (client) => {
-    const lock = await client.getMailboxLock(folder);
-    try {
-      const { content } = await client.download(uid, undefined, { uid: true });
-      const buf = await streamToBuffer(content);
-      const parsed = await simpleParser(buf);
-      const att = (parsed.attachments || []).find((a) => a.filename === filename);
-      if (!att) throw new Error('未找到对应附件');
-      return {
-        filename: att.filename,
-        contentType: att.contentType || 'application/octet-stream',
-        content: att.content,
-      };
-    } finally {
-      lock.release();
-    }
-  });
+  const key = bodyCacheKey(imap, credential, folder, uid);
+  let parsed = getBodyCache(key);
+  if (!parsed) {
+    parsed = await withClient(imap, credential, async (client) => {
+      const lock = await client.getMailboxLock(folder);
+      try {
+        const { content } = await client.download(uid, undefined, { uid: true });
+        const buf = await streamToBuffer(content);
+        const p = await simpleParser(buf);
+        setBodyCache(key, p);
+        return p;
+      } finally {
+        lock.release();
+      }
+    });
+  }
+  const att = (parsed.attachments || []).find((a) => a.filename === filename);
+  if (!att) throw new Error('未找到对应附件');
+  return {
+    filename: att.filename,
+    contentType: att.contentType || 'application/octet-stream',
+    content: att.content,
+  };
 }
 
 // 发送邮件（支持回复线程 inReplyTo / references）
@@ -384,6 +436,7 @@ async function deleteMessages({ imap, credential, folder, trashFolder, uids }) {
       } else {
         await client.messageDelete(range, { uid: true });
       }
+      invalidateBodyCache(imap, credential, folder, uids);
       return { ok: true };
     } finally {
       lock.release();
@@ -397,6 +450,7 @@ async function moveMessages({ imap, credential, fromFolder, toFolder, uids }) {
     const lock = await client.getMailboxLock(fromFolder);
     try {
       await client.messageMove(uids.join(','), toFolder, { uid: true });
+      invalidateBodyCache(imap, credential, fromFolder, uids);
       return { ok: true };
     } finally {
       lock.release();
